@@ -1,63 +1,274 @@
+// app/page.tsx
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowUpRight, BarChart3, Bell, CalendarDays, Check, ChevronDown, CircleDollarSign, CreditCard, Dumbbell, Home, Menu, MessageSquare, MoreHorizontal, Plus, Search, Settings, Sparkles, Users, X, Zap } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, X, ChevronRight } from 'lucide-react'
+import { soloLetras, soloNumeros, emailValido } from '@/lib/validators'
 
-const navItems = [
-  { label: 'Inicio', icon: Home },
-  { label: 'Alumnos', icon: Users },
-  { label: 'Calendario', icon: CalendarDays },
-  { label: 'Pagos', icon: CreditCard },
-  { label: 'Rutinas', icon: Dumbbell },
-]
 const payments = [
-  ['Sofia Martinez', 'Membresía Full', '24 Ago, 2026', '$44.900', 'Pagado', 'SM'],
-  ['Liam Chen', 'Entrenamiento Élite', '23 Ago, 2026', '$69.900', 'Pagado', 'LC'],
-  ['Amelia Ross', 'Membresía Flex', '22 Ago, 2026', '$29.900', 'Pendiente', 'AR'],
-  ['Noah Williams', 'Membresía Full', '21 Ago, 2026', '$44.900', 'Pagado', 'NW'],
+  { name: 'María González', plan: 'Plan Premium', amount: '$45.000', time: 'Hoy, 09:42', initials: 'MG' },
+  { name: 'Carlos Ramírez', plan: 'Plan Mensual', amount: '$30.000', time: 'Hoy, 08:16', initials: 'CR' },
+  { name: 'Sofía Torres', plan: 'Plan Premium', amount: '$45.000', time: 'Ayer, 18:35', initials: 'ST' },
 ]
-const students = [
-  ['Sofia Martinez', 'sofia@ejemplo.com', '38.456.789', 'Full', 'Activo'],
-  ['Liam Chen', 'liam@ejemplo.com', '40.123.456', 'Élite', 'Activo'],
-  ['Amelia Ross', 'amelia@ejemplo.com', '41.987.654', 'Flex', 'Inactivo'],
-  ['Noah Williams', 'noah@ejemplo.com', '39.654.321', 'Full', 'Activo'],
+const routines = [
+  { name: 'Hipertrofia — Nivel 2', student: 'Lucas Fernández', progress: 78, tone: 'bg-blue-600' },
+  { name: 'Fuerza y potencia', student: 'Ana Martínez', progress: 54, tone: 'bg-blue-500' },
+  { name: 'Acondicionamiento', student: 'Diego Silva', progress: 32, tone: 'bg-blue-400' },
 ]
-const leads = [['Elena García', 'Interesada en programa de fuerza', 'Hace 2 min', 'EG'], ['Marcus Thompson', 'Referido por Sofia Martinez', 'Hace 18 min', 'MT'], ['Chloe Dubois', 'Solicitud de clase de prueba', 'Hace 1 hr', 'CD']]
-const routines = [['Potencia Tren Superior', '12 alumnos', 78], ['Movilidad & Core', '8 alumnos', 54], ['Fundamentos Principiantes', '16 alumnos', 34]]
 
-export default function DashboardPage() {
-  const [activeView, setActiveView] = useState('Inicio')
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [toast, setToast] = useState('')
-  const [form, setForm] = useState({ nombre: '', email: '', dni: '', telefono: '', plan: 'Full' })
-  function notify(text: string) { setToast(text); window.setTimeout(() => setToast(''), 2800) }
-  function submit(e: React.FormEvent) { e.preventDefault(); notify(`Alumno ${form.nombre} agregado al plan ${form.plan}`); setShowForm(false); setForm({ nombre: '', email: '', dni: '', telefono: '', plan: 'Full' }) }
-  const go = (view: string) => { setActiveView(view); setMobileOpen(false) }
-
-  return <main className="min-h-screen bg-background text-foreground">
-    <aside className={`${mobileOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-border bg-sidebar px-4 py-5 transition-transform lg:translate-x-0`}>
-      <div className="flex items-center justify-between px-3"><div className="flex items-center gap-2.5"><span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground"><Zap className="size-4" fill="currentColor" /></span><span className="font-mono text-lg font-bold tracking-[0.2em]">VÖLT</span></div><button className="text-muted-foreground lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Cerrar navegación"><X /></button></div>
-      <nav className="mt-10 flex flex-1 flex-col gap-1"><p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Espacio de trabajo</p>{navItems.map(({ label, icon: Icon }) => <button key={label} onClick={() => go(label)} className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${activeView === label ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}><Icon className="size-[18px]" />{label}{label === 'Alumnos' && <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px]">36</span>}</button>)}<p className="mt-8 px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Gestión</p><button onClick={() => notify('Abriendo analíticas...')} className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"><BarChart3 className="size-[18px]" />Analíticas</button><button onClick={() => notify('Abriendo configuración...')} className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"><Settings className="size-[18px]" />Configuración</button></nav>
-      <div className="border-t border-border pt-4"><button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-muted"><span className="flex size-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">JP</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm">Jordan Price</strong><small className="block truncate text-xs text-muted-foreground">Head coach</small></span><MoreHorizontal className="size-4 text-muted-foreground" /></button></div>
-    </aside>
-    {mobileOpen && <button className="fixed inset-0 z-20 bg-background/70 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Cerrar fondo" />}
-    <section className="lg:pl-64"><header className="flex min-h-20 items-center justify-between gap-4 border-b border-border px-5 py-4 md:px-8"><div className="flex items-center gap-3"><button className="text-muted-foreground lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Abrir navegación"><Menu /></button><div><p className="text-xs text-muted-foreground">Lunes, 24 de Agosto de 2026</p><h1 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">Buenos días, Jordan <span className="text-primary">●</span></h1></div></div><div className="flex items-center gap-2"><button onClick={() => notify('Búsqueda global no implementada')} className="hidden size-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted sm:flex" aria-label="Buscar"><Search className="size-4" /></button><button onClick={() => notify('No hay notificaciones nuevas')} className="relative flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted" aria-label="Notificaciones"><Bell className="size-4" /><span className="absolute right-2 top-2 size-1.5 rounded-full bg-primary" /></button><Button onClick={() => setShowForm(true)} className="ml-2 gap-2 glow-violet"><Plus data-icon="inline-start" />Nuevo alumno</Button></div></header>
-      <div className="mx-auto max-w-[1500px] p-5 md:p-8">{activeView === 'Inicio' && <Overview notify={notify} go={go} />}{activeView === 'Alumnos' && <Students />}{activeView === 'Calendario' && <CalendarView notify={notify} />}{activeView === 'Pagos' && <Payments />}{activeView === 'Rutinas' && <Routines />}</div></section>
-    {showForm && <div className="fixed inset-0 z-40 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"><div role="dialog" aria-modal="true" aria-labelledby="new-student-title" className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Agregar al sistema</p><h2 id="new-student-title" className="mt-2 text-xl font-semibold">Nuevo alumno</h2></div><button onClick={() => setShowForm(false)} aria-label="Cerrar"><X className="text-muted-foreground" /></button></div><form onSubmit={submit} className="mt-6 flex flex-col gap-4">{[['nombre','Nombre y apellido','text','Ej. Maya Patel'],['email','Correo electrónico','email','maya@ejemplo.com'],['dni','DNI / Documento','text','Sin puntos'],['telefono','Teléfono','tel','+54 11...']].map(([key,label,type,placeholder]) => <label key={key} className="flex flex-col gap-2 text-sm font-medium">{label}<input required type={type} value={form[key as keyof typeof form]} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder={placeholder} className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary" /></label>)}<label className="flex flex-col gap-2 text-sm font-medium">Plan seleccionado<select value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option>Flex</option><option>Full</option><option>Élite</option></select></label><div className="flex gap-3 pt-4"><Button type="button" variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Cancelar</Button><Button type="submit" className="flex-1 glow-violet">Guardar alumno</Button></div></form></div></div>}
-    {toast && <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-md border border-primary/30 bg-card px-4 py-3 text-sm shadow-xl"><Check className="size-4 text-primary" />{toast}</div>}
-  </main>
+function SectionHeader({ title, action }: { title: string; action?: string }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-base font-bold text-slate-900">{title}</h2>
+      {action && (
+        <Link href="/finanzas" className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+          {action}<ChevronRight className="size-3" />
+        </Link>
+      )}
+    </div>
+  )
 }
 
-function Overview({ notify, go }: { notify: (text: string) => void; go: (view: string) => void }) { return <><div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><p className="text-sm font-medium text-primary">Panel de control</p><h2 className="mt-1 text-3xl font-semibold tracking-tight">Tu estudio de un vistazo</h2><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Mantenete al tanto de los detalles que mantienen a tus alumnos avanzando.</p></div><Button variant="outline" className="w-fit gap-2"><CalendarDays data-icon="inline-start" />Este mes<ChevronDown /></Button></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><Stat title="Ingresos mensuales" value="$354.200" icon={CircleDollarSign} meta="+12.5% este mes" /><Stat title="Alumnos activos" value="36" icon={Users} meta="+4 este mes" /><Stat title="Sesiones esta semana" value="48" icon={Dumbbell} meta="78% completado" /></div><div className="mt-8 grid gap-6 xl:grid-cols-[1.45fr_1fr]"><section className="rounded-md border border-border bg-card"><SectionHead title="Pagos recientes" subtitle="Tus últimas transacciones registradas" action="Ver todos" onClick={() => go('Pagos')} /><TableRows /></section><section className="rounded-md border border-border bg-card"><SectionHead title="Nuevos pre-inscriptos" subtitle="Personas esperando ser contactadas" /><div className="flex flex-col gap-1 p-3">{leads.map(([name,note,time,initials]) => <div key={name} className="flex items-center gap-3 rounded-md p-2 hover:bg-muted"><span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{initials}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{name}</p><p className="truncate text-xs text-muted-foreground">{note}</p><p className="mt-1 text-[10px] text-muted-foreground">{time}</p></div><div className="flex gap-1"><button onClick={() => notify(`Aprobaste a ${name}`)} className="flex size-7 items-center justify-center rounded-md bg-primary/12 text-primary" aria-label={`Aprobar a ${name}`}><Check className="size-3.5" /></button><button onClick={() => notify(`Abriendo chat con ${name}`)} className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted" aria-label={`Mensaje a ${name}`}><MessageSquare className="size-3.5" /></button></div></div>)}</div></section></div><section className="mt-6 rounded-md border border-border bg-card"><SectionHead title="Rutinas activas" subtitle="Supervisá los programas actuales" action="Gestionar rutinas" onClick={() => go('Rutinas')} /><div className="grid gap-4 p-5 md:grid-cols-3">{routines.map(([name, students, progress]) => <RoutineCard key={name} name={name} students={students} progress={progress as number} notify={notify} />)}</div></section></> }
-function Stat({ title, value, icon: Icon, meta }: any) { return <article className="rounded-md border border-border bg-card p-5 first:border-primary/30 first:glow-violet"><div className="flex items-start justify-between"><span className="flex size-10 items-center justify-center rounded-md bg-primary/15 text-primary"><Icon className="size-5" /></span><span className="text-xs font-semibold text-primary">{meta}</span></div><p className="mt-6 text-sm text-muted-foreground">{title}</p><p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p><div className="mt-5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full w-3/4 rounded-full bg-primary" /></div></article> }
-function SectionHead({ title, subtitle, action, onClick }: any) { return <div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h3 className="font-semibold">{title}</h3><p className="mt-1 text-xs text-muted-foreground">{subtitle}</p></div>{action && <Button variant="ghost" size="sm" className="text-primary" onClick={onClick}>{action}<ArrowUpRight data-icon="inline-end" /></Button>}</div> }
-function TableRows() { return <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs text-muted-foreground"><tr>{['Alumno','Fecha','Monto','Estado'].map(x => <th key={x} className="px-5 py-3 font-medium">{x}</th>)}</tr></thead><tbody>{payments.map(([name,type,date,amount,status,initials]) => <tr key={name} className="border-t border-border/70"><td className="px-5 py-3.5"><div className="flex items-center gap-3"><span className="flex size-8 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">{initials}</span><div><p className="font-medium">{name}</p><p className="text-xs text-muted-foreground">{type}</p></div></div></td><td className="px-5 py-3.5 text-muted-foreground">{date}</td><td className="px-5 py-3.5 font-medium">{amount}</td><td className="px-5 py-3.5"><span className={`rounded px-2 py-1 text-[10px] font-semibold ${status === 'Pagado' ? 'bg-primary/12 text-primary' : 'bg-muted text-muted-foreground'}`}>{status}</span></td></tr>)}</tbody></table></div> }
-function Students() { return <PageShell title="Gestión de Alumnos" description="Administrá las inscripciones, planes y datos personales de tus clientes."><div className="mb-4 flex items-center gap-2"><Search className="text-muted-foreground" /><input placeholder="Buscar alumno..." className="h-10 w-64 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary" /></div><DataTable /></PageShell> }
-function DataTable() { return <div className="overflow-x-auto rounded-md border border-border bg-card"><table className="w-full text-left text-sm"><thead className="border-b border-border text-xs text-muted-foreground"><tr>{['Nombre completo','DNI','Plan','Estado','Acciones'].map(x => <th key={x} className="px-5 py-4 font-medium">{x}</th>)}</tr></thead><tbody>{students.map(([name,email,dni,plan,status]) => <tr key={name} className="border-b border-border/50 hover:bg-muted/50"><td className="px-5 py-4"><p className="font-medium">{name}</p><p className="text-xs text-muted-foreground">{email}</p></td><td className="px-5 py-4 text-muted-foreground">{dni}</td><td className="px-5 py-4">{plan}</td><td className="px-5 py-4"><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${status === 'Activo' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{status}</span></td><td className="px-5 py-4"><button aria-label={`Opciones de ${name}`}><MoreHorizontal className="text-muted-foreground" /></button></td></tr>)}</tbody></table></div> }
-function PageShell({ title, description, children }: any) { return <><div className="mb-8"><p className="text-sm font-medium text-primary">Panel de control</p><h2 className="mt-1 text-3xl font-semibold tracking-tight">{title}</h2><p className="mt-2 text-sm text-muted-foreground">{description}</p></div>{children}</> }
-function CalendarView({ notify }: { notify: (text: string) => void }) { return <PageShell title="Calendario de Clases" description="Organizá las clases y los horarios de tu equipo."><Button className="mb-5 gap-2 glow-violet" onClick={() => notify('Nueva clase lista para configurar')}><Plus data-icon="inline-start" />Nueva clase</Button><div className="grid min-w-[720px] grid-cols-6 rounded-md border border-border bg-card text-sm"><div className="border-b border-border p-4 text-muted-foreground">Horario</div>{['Lun','Mar','Mié','Jue','Vie'].map(x => <div key={x} className="border-b border-l border-border p-4 font-semibold">{x}</div>)}{['07:00','09:00','11:00','18:00','20:00'].map((time,i) => <div key={time} className="contents"><div className="border-b border-border p-4 text-muted-foreground">{time}</div>{['Crossfit','Yoga','Musculación','Crossfit','Yoga'].map((course,j) => <div key={`${time}-${j}`} className="border-b border-l border-border p-2">{(i+j)%3 !== 1 && <div className="rounded-md bg-primary/15 p-3 text-primary"><p className="font-semibold">{course}</p><p className="mt-1 text-xs text-muted-foreground">Coach {j%2 ? 'Jordan' : 'Maya'}</p></div>}</div>)}</div>)}</div></PageShell> }
-function Payments() { return <PageShell title="Control Financiero y Cuotas" description="Revisá la recaudación y los vencimientos de tus alumnos."><div className="mb-6 grid gap-4 md:grid-cols-2"><Stat title="Recaudación total" value="$354.200" icon={CircleDollarSign} meta="Este mes" /><Stat title="Cuotas pendientes" value="$29.900" icon={CreditCard} meta="1 pendiente" /></div><div className="rounded-md border border-border bg-card"><SectionHead title="Detalle de pagos" subtitle="Estado actualizado de las cuotas" /><TableRows /></div></PageShell> }
-function Routines() { return <PageShell title="Planificación de Rutinas" description="Supervisá los programas actuales de entrenamiento."><Button className="mb-5 gap-2 glow-violet"><Plus data-icon="inline-start" />Crear rutina</Button><div className="grid gap-4 md:grid-cols-3">{routines.map(([name,students,progress]) => <RoutineCard key={name} name={name} students={students} progress={progress as number} />)}</div></PageShell> }
-function RoutineCard({ name, students, progress, notify }: { name: string; students: string; progress: number; notify?: (text: string) => void }) { return <article className="rounded-md border border-border bg-card p-5"><div className="flex items-start justify-between"><span className="flex size-9 items-center justify-center rounded-md bg-muted"><Sparkles className="size-4 text-primary" /></span><button onClick={() => notify?.(`Opciones para ${name}`)} aria-label={`Más opciones para ${name}`}><MoreHorizontal className="text-muted-foreground" /></button></div><h3 className="mt-4 font-semibold">{name}</h3><p className="mt-1 text-xs text-muted-foreground">{students}</p><div className="mt-5 flex items-center gap-3"><div className="h-1.5 flex-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} /></div><span className="text-xs text-muted-foreground">{progress}%</span></div></article> }
+export default function Page() {
+  const [showModal, setShowModal] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+  const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
+
+  function validarAlumno() {
+    const errores: Record<string, string> = {}
+    if (formAlumno.nombre.trim().length < 3) errores.nombre = 'Ingresá el nombre completo'
+    if (!emailValido(formAlumno.email)) errores.email = 'Correo inválido'
+    if (formAlumno.dni.length < 7 || formAlumno.dni.length > 8) errores.dni = 'El DNI debe tener 7 u 8 dígitos'
+    if (formAlumno.celular.length < 8 || formAlumno.celular.length > 13) errores.celular = 'Celular inválido'
+    if (!formAlumno.plan) errores.plan = 'Seleccioná un plan'
+    setErroresAlumno(errores)
+    return Object.keys(errores).length === 0
+  }
+
+  function cerrarModalAlumno() {
+    setShowModal(false)
+    setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+    setErroresAlumno({})
+  }
+
+  return (
+    <>
+      {/* HEADER SUPERIOR OSCURO */}
+      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-5 md:px-10">
+        <div className="flex items-center gap-3 md:hidden">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white">A</span>
+          <span className="font-black tracking-[0.15em] text-white">ATLAS</span>
+        </div>
+        <div className="relative hidden w-80 sm:block group">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar alumnos, rutinas, pagos..." className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-all placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10" />
+        </div>
+        <div className="ml-auto flex items-center gap-6">
+          <button className="relative text-slate-400 transition-all hover:text-white hover:scale-110" aria-label="Notificaciones">
+            <Bell className="size-5" />
+            <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-slate-950 bg-blue-500" />
+          </button>
+          <div className="hidden h-8 w-px bg-slate-800 sm:block" />
+          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">Martes, 24 de junio<br /><span className="text-xs font-medium text-slate-500">Buenos Aires, AR</span></p>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10">
+
+        {/* SECCIÓN BIENVENIDA */}
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500">Resumen de actividad</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">Hola, Coach <span className="text-blue-500">Julián.</span></h1>
+            <p className="mt-2 text-base text-slate-400">Esto es lo que está pasando en tu gimnasio hoy.</p>
+          </div>
+          <Button onClick={() => setShowModal(true)} className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">
+            <Plus data-icon="inline-start" className="mr-2 size-5" />Nuevo Alumno
+          </Button>
+        </div>
+
+        {/* TARJETAS SUPERIORES (BLANCAS Y FLOTANTES) */}
+        <section className="mt-10 grid gap-6 md:grid-cols-2">
+          <article className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 text-slate-900 border border-slate-200 cursor-default">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Alumnos activos</p>
+                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">128</p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600"><ArrowUpRight className="size-4" />12.5% <span className="font-medium text-slate-400">vs. mes anterior</span></p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110 group-hover:bg-blue-100"><Users className="size-7" /></div>
+            </div>
+            <div className="absolute bottom-0 left-0 h-1.5 w-[72%] bg-blue-600 transition-all duration-500 group-hover:w-[75%]" />
+          </article>
+
+          <article className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/10 text-slate-900 border border-slate-200 cursor-default">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Cuotas pendientes</p>
+                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">$186.400</p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500"><ArrowUpRight className="size-4" />8 pendientes <span className="font-medium text-slate-400">requieren atención</span></p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-transform duration-300 group-hover:scale-110 group-hover:bg-rose-100"><WalletCards className="size-7" /></div>
+            </div>
+            <div className="absolute bottom-0 left-0 h-1.5 w-[34%] bg-rose-500 transition-all duration-500 group-hover:w-[36%]" />
+          </article>
+        </section>
+
+        {/* LISTAS INFERIORES (BLANCAS Y FLOTANTES) */}
+        <section className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-lg text-slate-900 border border-slate-200">
+            <SectionHeader title="Pagos recientes" action="Ver finanzas" />
+            <div className="mt-2 flex flex-col">
+              {payments.map((p) => (
+                <div key={p.name} className="group flex items-center gap-4 border-b border-slate-100 py-4 last:border-0 hover:bg-slate-50 -mx-4 px-4 rounded-xl transition-colors">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-blue-600 transition-colors group-hover:bg-blue-100">{p.initials}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-bold text-slate-900">{p.name}</p>
+                    <p className="text-sm font-medium text-slate-500">{p.plan} · {p.time}</p>
+                  </div>
+                  <p className="text-base font-black text-slate-900">{p.amount}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-lg text-slate-900 border border-slate-200">
+            <SectionHeader title="Rutinas activas" action="Ver todas" />
+            <div className="mt-4 flex flex-col gap-6">
+              {routines.map((r) => (
+                <div key={r.name} className="group">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-bold text-slate-900">{r.name}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-500">{r.student}</p>
+                    </div>
+                    <span className="text-sm font-black text-blue-600">{r.progress}%</span>
+                  </div>
+                  <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className={`h-full rounded-full ${r.tone} transition-all duration-1000 ease-out`} style={{ width: `${r.progress}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-12 flex items-center justify-between border-t border-slate-800/50 pt-6 text-sm font-medium text-slate-500">
+          <p>Última actualización hace 3 min</p>
+          <p>ATLAS Admin · v2.4.0</p>
+        </div>
+      </div>
+
+      {/* MODAL NUEVO ALUMNO */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm transition-all" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div className="w-full max-w-md scale-100 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-2xl transition-transform">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 id="modal-title" className="text-2xl font-black text-slate-900">Nuevo alumno</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">Agrega los datos para crear un perfil.</p>
+              </div>
+              <button onClick={cerrarModalAlumno} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                <X className="size-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!validarAlumno()) return
+                cerrarModalAlumno()
+              }}
+              className="mt-6 flex flex-col gap-5"
+            >
+              <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                Nombre completo
+                <input
+                  required
+                  value={formAlumno.nombre}
+                  onChange={(e) => setFormAlumno({ ...formAlumno, nombre: soloLetras(e.target.value) })}
+                  maxLength={60}
+                  className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.nombre ? 'border-rose-400' : 'border-slate-200'}`}
+                  placeholder="Ej. Martín Gómez"
+                />
+                {erroresAlumno.nombre && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.nombre}</span>}
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                Correo electrónico
+                <input
+                  required
+                  type="email"
+                  value={formAlumno.email}
+                  onChange={(e) => setFormAlumno({ ...formAlumno, email: e.target.value })}
+                  maxLength={80}
+                  className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-400' : 'border-slate-200'}`}
+                  placeholder="correo@ejemplo.com"
+                />
+                {erroresAlumno.email && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.email}</span>}
+              </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                  DNI
+                  <input
+                    required
+                    inputMode="numeric"
+                    value={formAlumno.dni}
+                    onChange={(e) => setFormAlumno({ ...formAlumno, dni: soloNumeros(e.target.value).slice(0, 8) })}
+                    maxLength={8}
+                    className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.dni ? 'border-rose-400' : 'border-slate-200'}`}
+                    placeholder="Ej. 32456789"
+                  />
+                  {erroresAlumno.dni && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.dni}</span>}
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                  Celular
+                  <input
+                    required
+                    type="tel"
+                    inputMode="numeric"
+                    value={formAlumno.celular}
+                    onChange={(e) => setFormAlumno({ ...formAlumno, celular: soloNumeros(e.target.value).slice(0, 13) })}
+                    maxLength={13}
+                    className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.celular ? 'border-rose-400' : 'border-slate-200'}`}
+                    placeholder="Ej. 5491112345678"
+                  />
+                  {erroresAlumno.celular && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.celular}</span>}
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                Plan asignado
+                <Select
+                  required
+                  value={formAlumno.plan}
+                  onValueChange={(v) => setFormAlumno((prev) => ({ ...prev, plan: v ?? '' }))}
+                >
+                  <SelectTrigger className={`h-12 rounded-xl bg-slate-50 font-medium text-slate-900 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}>
+                    <SelectValue placeholder="Seleccioná un plan" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 bg-white shadow-xl">
+                    <SelectItem value="mensual" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Mensual — $30.000</SelectItem>
+                    <SelectItem value="premium" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Premium — $45.000</SelectItem>
+                    <SelectItem value="trimestral" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Trimestral — $80.000</SelectItem>
+                  </SelectContent>
+                </Select>
+                {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.plan}</span>}
+              </label>
+
+              <div className="mt-4 flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={cerrarModalAlumno} className="h-12 rounded-xl border-slate-200 px-6 font-bold text-slate-600 hover:bg-slate-50">Cancelar</Button>
+                <Button type="submit" className="h-12 rounded-xl bg-blue-600 px-8 font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
