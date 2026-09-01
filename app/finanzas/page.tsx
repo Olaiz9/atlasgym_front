@@ -12,6 +12,7 @@ import {
   Search,
   ChevronDown,
   Trash2,
+  MessageCircle,
 } from "lucide-react";
 import { soloLetras } from "@/lib/validators";
 
@@ -52,32 +53,86 @@ const ESTADO_STYLES: Record<EstadoPago, string> = {
   VENCIDO: "bg-red-50 text-red-700 border border-red-200",
 };
 
+const NOMBRES_MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+function SelectorMes({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string; // "YYYY-MM"
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  const [anioStr, mesStr] = value.split("-");
+  const anioActual = new Date().getFullYear();
+  const anios = Array.from({ length: 7 }, (_, i) => anioActual - 3 + i);
+
+  return (
+    <div
+      className={`flex items-center h-11 rounded-full border border-slate-200 bg-white transition-opacity ${
+        disabled ? "opacity-40" : ""
+      }`}
+    >
+      <select
+        disabled={disabled}
+        value={Number(mesStr) - 1}
+        onChange={(e) =>
+          onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
+        }
+        className="h-full pl-4 pr-2 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+      >
+        {NOMBRES_MESES.map((nombre, i) => (
+          <option key={nombre} value={i}>{nombre}</option>
+        ))}
+      </select>
+      <div className="h-5 w-px bg-slate-200 shrink-0" />
+      <select
+        disabled={disabled}
+        value={anioStr}
+        onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
+        className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+      >
+        {anios.map((a) => (
+          <option key={a} value={a}>{a}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function formatearMes(mesStr: string) {
   const [anio, mesNum] = mesStr.split("-").map(Number);
   const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
   });
+  
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 // ---------- Componente principal ----------
+function mesActualISO() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default function FinanzasPage() {
   const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
-  const [mes, setMes] = useState<string>("TODOS");
+  const [mes, setMes] = useState<string>(mesActualISO());
+  const [verTodos, setVerTodos] = useState(false);
   const [filtro, setFiltro] = useState<EstadoPago | "TODOS">("TODOS");
   const [busqueda, setBusqueda] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pagoAEliminar, setPagoAEliminar] = useState<Pago | null>(null);
 
-  const mesesDisponibles = useMemo(() => {
-    const set = new Set(pagos.map((p) => p.fecha.slice(0, 7)));
-    return Array.from(set).sort().reverse();
-  }, [pagos]);
-
   const pagosDelMes = useMemo(() => {
-    return pagos.filter((p) => mes === "TODOS" || p.fecha.slice(0, 7) === mes);
-  }, [pagos, mes]);
+    if (verTodos) return pagos;
+    return pagos.filter((p) => p.fecha.slice(0, 7) === mes);
+  }, [pagos, mes, verTodos]);
 
   const metrica = useMemo(() => {
     const ingresosDelMes = pagosDelMes
@@ -126,33 +181,55 @@ export default function FinanzasPage() {
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Finanzas</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Seguimiento de pagos, cuotas pendientes y vencidas.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 cursor-pointer"
-          >
-            <option value="TODOS">Todos los meses</option>
-            {mesesDisponibles.map((m) => (
-              <option key={m} value={m}>
-                {formatearMes(m)}
-              </option>
-            ))}
-          </select>
+            {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Finanzas</h1>
+            <p className="text-sm text-slate-400 mt-1">
+              {verTodos
+                ? "Viendo el historial completo de pagos."
+                : `Viendo ${formatearMes(mes)} — cada mes arranca con una planilla limpia.`}
+            </p>
+          </div>
           <button
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Registrar pago
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <SelectorMes
+            value={mes}
+            disabled={verTodos}
+            onChange={(v) => {
+              setMes(v);
+              setVerTodos(false);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setMes(mesActualISO());
+              setVerTodos(false);
+            }}
+            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+          >
+            Mes actual
+          </button>
+          <button
+            type="button"
+            onClick={() => setVerTodos((v) => !v)}
+            className={`h-11 px-4 rounded-full text-sm font-bold transition-all duration-300 active:scale-95 ${
+              verTodos
+                ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Ver todos
           </button>
         </div>
       </div>
@@ -161,7 +238,7 @@ export default function FinanzasPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           icon={<DollarSign className="size-6" />}
-          label="Ingresos del mes"
+          label={verTodos ? "Ingresos totales" : "Ingresos del mes"}
           value={`$${metrica.ingresosDelMes.toLocaleString("es-AR")}`}
           tint={{ bg: "bg-blue-50", text: "text-blue-600", bar: "bg-blue-600" }}
         />
@@ -235,9 +312,7 @@ export default function FinanzasPage() {
                   key={pago.id}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
                 >
-                  <td className="px-6 py-4 font-bold text-slate-900">
-                    {pago.alumno}
-                  </td>
+                  <td className="px-6 py-4 font-bold text-slate-900">{pago.alumno}</td>
                   <td className="px-6 py-4 text-slate-500 font-medium">{pago.plan}</td>
                   <td className="px-6 py-4 font-black text-slate-900">
                     ${pago.monto.toLocaleString("es-AR")}
@@ -276,7 +351,9 @@ export default function FinanzasPage() {
               {pagosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">
-                    No se encontraron pagos con ese criterio.
+                    {verTodos
+                      ? "No se encontraron pagos con ese criterio."
+                      : `Todavía no hay pagos registrados en ${formatearMes(mes)}. Arrancá agregando el primero.`}
                   </td>
                 </tr>
               )}
@@ -286,10 +363,7 @@ export default function FinanzasPage() {
       </div>
 
       {modalAbierto && (
-        <ModalRegistrarPago
-          onClose={() => setModalAbierto(false)}
-          onSubmit={handleNuevoPago}
-        />
+        <ModalRegistrarPago onClose={() => setModalAbierto(false)} onSubmit={handleNuevoPago} />
       )}
 
       {pagoAEliminar && (
@@ -375,6 +449,31 @@ function ModalConfirmarEliminar({
 }
 
 // ---------- Modal: registrar pago ----------
+// Agregá "MessageCircle" a los imports de lucide-react ya existentes:
+// import { DollarSign, AlertCircle, Clock, Users, Plus, X, Search, ChevronDown, Trash2, MessageCircle } from "lucide-react";
+
+// ---------- Helpers de WhatsApp ----------
+function construirLinkWhatsapp(celular: string, mensaje: string) {
+  let numero = celular.replace(/\D/g, "");
+  // Heurística para celulares argentinos sin código de país (10 dígitos locales)
+  if (numero.length === 10) numero = `549${numero}`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
+
+function mensajePagoTemplate(nombre: string, plan: string, monto: string) {
+  const montoFmt = monto ? `$${Number(monto).toLocaleString("es-AR")}` : "$0";
+  return `Hola ${nombre || "!"}! ✅ Registramos tu pago de ${montoFmt} correspondiente al plan ${plan || "tu plan"} en ATLAS. ¡Gracias por seguir entrenando con nosotros! 💪`;
+}
+
+function mensajeBienvenidaTemplate(nombre: string, usuario: string, password: string) {
+  return `Hola ${nombre || "!"}! 🎉 Ya sos parte de ATLAS. Estos son tus datos de acceso a la app:\n\nUsuario: ${usuario || "-"}\nContraseña: ${password || "-"}\n\nPor seguridad te recomendamos cambiarla apenas ingreses. ¡Nos vemos en el gym! 💪`;
+}
+
+function generarPassword() {
+  return Math.random().toString(36).slice(-8);
+}
+
+// ---------- Modal: registrar pago ----------
 function ModalRegistrarPago({
   onClose,
   onSubmit,
@@ -391,15 +490,36 @@ function ModalRegistrarPago({
     estado: "PAGADO" as EstadoPago,
   });
 
+  const [celular, setCelular] = useState("");
+  const [tipoMensaje, setTipoMensaje] = useState<"pago" | "bienvenida">("pago");
+  const [usuarioApp, setUsuarioApp] = useState("");
+  const [passwordApp, setPasswordApp] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.alumno || !form.monto) return;
     onSubmit({ ...form, monto: Number(form.monto) });
   };
 
+  const generarMensaje = () => {
+    const texto =
+      tipoMensaje === "pago"
+        ? mensajePagoTemplate(form.alumno, form.plan, form.monto)
+        : mensajeBienvenidaTemplate(form.alumno, usuarioApp, passwordApp);
+    setMensaje(texto);
+  };
+
+  const puedeEnviar = celular.replace(/\D/g, "").length >= 10 && mensaje.trim().length > 0;
+
+  const enviarWhatsapp = () => {
+    if (!puedeEnviar) return;
+    window.open(construirLinkWhatsapp(celular, mensaje), "_blank");
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-sm text-slate-900 border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-white rounded-2xl shadow-sm text-slate-900 border border-slate-200 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold">Registrar pago</h2>
           <button
@@ -481,14 +601,122 @@ function ModalRegistrarPago({
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95 mt-2"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
           >
             Guardar pago
           </button>
+
+          {/* ---------- Notificación por WhatsApp ---------- */}
+          <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+            <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
+              Notificar por WhatsApp (opcional)
+            </p>
+
+            <Field label="Celular del alumno">
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={celular}
+                onChange={(e) => setCelular(soloNumerosLocal(e.target.value).slice(0, 13))}
+                maxLength={13}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Ej. 2611234567 o 5492611234567"
+              />
+            </Field>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTipoMensaje("pago")}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  tipoMensaje === "pago"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Confirmación de pago
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoMensaje("bienvenida")}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  tipoMensaje === "bienvenida"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Primera inscripción
+              </button>
+            </div>
+
+            {tipoMensaje === "bienvenida" && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Usuario">
+                  <input
+                    value={usuarioApp}
+                    onChange={(e) => setUsuarioApp(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="Ej. lucia.fernandez"
+                  />
+                </Field>
+                <Field label="Contraseña">
+                  <div className="flex gap-1.5">
+                    <input
+                      value={passwordApp}
+                      onChange={(e) => setPasswordApp(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Generala →"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPasswordApp(generarPassword())}
+                      className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
+                    >
+                      Generar
+                    </button>
+                  </div>
+                </Field>
+              </div>
+            )}
+
+            <Field label="Mensaje">
+              <textarea
+                value={mensaje}
+                onChange={(e) => setMensaje(e.target.value)}
+                rows={4}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                placeholder="Generá el mensaje o escribí uno propio..."
+              />
+            </Field>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={generarMensaje}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all duration-300 active:scale-95"
+              >
+                Generar mensaje
+              </button>
+              <button
+                type="button"
+                onClick={enviarWhatsapp}
+                disabled={!puedeEnviar}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Enviar por WhatsApp
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </div>
   );
+}
+
+function soloNumerosLocal(valor: string) {
+  return valor.replace(/[^0-9]/g, "");
 }
 
 function Field({

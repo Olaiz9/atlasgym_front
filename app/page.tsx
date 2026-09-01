@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, X, ChevronRight } from 'lucide-react'
@@ -39,6 +39,44 @@ export default function Page() {
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
 
+  const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
+  const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
+
+  useEffect(() => {
+  setFechaHoy(new Date());
+  // Por si la pestaña queda abierta hasta pasar la medianoche
+  const intervalo = setInterval(() => setFechaHoy(new Date()), 60_000);
+  return () => clearInterval(intervalo);
+}, []);
+
+useEffect(() => {
+  if (!("geolocation" in navigator)) {
+    setUbicacion("Ubicación no disponible");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`
+        );
+        const data = await res.json();
+        const ciudad = data.city || data.locality || data.principalSubdivision;
+        setUbicacion(ciudad ? `${ciudad}, ${data.countryCode}` : "Ubicación no disponible");
+      } catch {
+        setUbicacion("Ubicación no disponible");
+      }
+    },
+    () => setUbicacion("Ubicación no disponible"),
+    { timeout: 8000 }
+  );
+}, []);
+
+  function capitalizar(texto: string) {
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
   function validarAlumno() {
     const errores: Record<string, string> = {}
     if (formAlumno.nombre.trim().length < 3) errores.nombre = 'Ingresá el nombre completo'
@@ -74,7 +112,15 @@ export default function Page() {
             <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-slate-950 bg-blue-500" />
           </button>
           <div className="hidden h-8 w-px bg-slate-800 sm:block" />
-          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">Martes, 24 de junio<br /><span className="text-xs font-medium text-slate-500">Buenos Aires, AR</span></p>
+          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
+            {fechaHoy
+              ? capitalizar(
+                  fechaHoy.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
+                )
+              : "Cargando fecha..."}
+            <br />
+            <span className="text-xs font-medium text-slate-500">{ubicacion}</span>
+          </p>
         </div>
       </header>
 
