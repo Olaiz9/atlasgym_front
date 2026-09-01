@@ -14,31 +14,9 @@ import {
   Trash2,
   MessageCircle,
 } from "lucide-react";
-import { soloLetras } from "@/lib/validators";
-
-// ---------- Tipos ----------
-type EstadoPago = "PAGADO" | "PENDIENTE" | "VENCIDO";
-
-interface Pago {
-  id: string;
-  alumno: string;
-  plan: string;
-  monto: number;
-  fecha: string; // "YYYY-MM-DD"
-  metodo: string;
-  estado: EstadoPago;
-}
-
-// ---------- Datos mock (reemplazar por fetch al backend) ----------
-const PAGOS_MOCK: Pago[] = [
-  { id: "1", alumno: "Lucía Fernández", plan: "Musculación", monto: 15000, fecha: "2026-08-20", metodo: "Transferencia", estado: "PAGADO" },
-  { id: "2", alumno: "Martín Torres", plan: "Full Access", monto: 22000, fecha: "2026-08-18", metodo: "Efectivo", estado: "PAGADO" },
-  { id: "3", alumno: "Sofía Ramírez", plan: "Funcional", monto: 18000, fecha: "2026-08-05", metodo: "Tarjeta", estado: "VENCIDO" },
-  { id: "4", alumno: "Diego Castro", plan: "Musculación", monto: 15000, fecha: "2026-08-25", metodo: "-", estado: "PENDIENTE" },
-  { id: "5", alumno: "Valentina Ríos", plan: "Full Access", monto: 22000, fecha: "2026-08-25", metodo: "-", estado: "PENDIENTE" },
-  { id: "6", alumno: "Lucía Fernández", plan: "Musculación", monto: 15000, fecha: "2026-07-19", metodo: "Transferencia", estado: "PAGADO" },
-  { id: "7", alumno: "Martín Torres", plan: "Full Access", monto: 22000, fecha: "2026-07-17", metodo: "Efectivo", estado: "PAGADO" },
-];
+import Link from "next/link";
+import { useAppData } from "@/lib/store";
+import { EstadoPago, Pago } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -110,18 +88,20 @@ function formatearMes(mesStr: string) {
     month: "long",
     year: "numeric",
   });
-  
+
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-// ---------- Componente principal ----------
 function mesActualISO() {
   const hoy = new Date();
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// ---------- Componente principal ----------
 export default function FinanzasPage() {
-  const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
+  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno } =
+    useAppData();
+
   const [mes, setMes] = useState<string>(mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
   const [filtro, setFiltro] = useState<EstadoPago | "TODOS">("TODOS");
@@ -140,7 +120,7 @@ export default function FinanzasPage() {
       .reduce((acc, p) => acc + p.monto, 0);
     const pendientes = pagosDelMes.filter((p) => p.estado === "PENDIENTE");
     const vencidos = pagosDelMes.filter((p) => p.estado === "VENCIDO");
-    const morosos = new Set(vencidos.map((p) => p.alumno)).size;
+    const morosos = new Set(vencidos.map((p) => p.alumnoId)).size;
 
     return {
       ingresosDelMes,
@@ -155,33 +135,28 @@ export default function FinanzasPage() {
   const pagosFiltrados = useMemo(() => {
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
-      const coincideBusqueda = p.alumno
+      const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? "";
+      const coincideBusqueda = nombreAlumno
         .toLowerCase()
         .includes(busqueda.toLowerCase());
       return coincideFiltro && coincideBusqueda;
     });
-  }, [pagosDelMes, filtro, busqueda]);
+  }, [pagosDelMes, filtro, busqueda, getAlumno]);
 
   const handleNuevoPago = (nuevo: Omit<Pago, "id">) => {
-    setPagos((prev) => [{ ...nuevo, id: crypto.randomUUID() }, ...prev]);
+    agregarPago(nuevo);
     setModalAbierto(false);
-  };
-
-  const actualizarEstado = (id: string, nuevoEstado: EstadoPago) => {
-    setPagos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p))
-    );
   };
 
   const confirmarEliminar = () => {
     if (!pagoAEliminar) return;
-    setPagos((prev) => prev.filter((p) => p.id !== pagoAEliminar.id));
+    eliminarPago(pagoAEliminar.id);
     setPagoAEliminar(null);
   };
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
-            {/* Header */}
+      {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -307,47 +282,58 @@ export default function FinanzasPage() {
               </tr>
             </thead>
             <tbody>
-              {pagosFiltrados.map((pago) => (
-                <tr
-                  key={pago.id}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
-                >
-                  <td className="px-6 py-4 font-bold text-slate-900">{pago.alumno}</td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">{pago.plan}</td>
-                  <td className="px-6 py-4 font-black text-slate-900">
-                    ${pago.monto.toLocaleString("es-AR")}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">
-                    {new Date(pago.fecha).toLocaleDateString("es-AR")}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
-                  <td className="px-6 py-4">
-                    <div className="relative inline-block">
-                      <select
-                        value={pago.estado}
-                        onChange={(e) =>
-                          actualizarEstado(pago.id, e.target.value as EstadoPago)
-                        }
-                        className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+              {pagosFiltrados.map((pago) => {
+                const alumno = getAlumno(pago.alumnoId);
+                return (
+                  <tr
+                    key={pago.id}
+                    className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-bold text-slate-900">
+                      {alumno ? (
+                        <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-600 hover:underline underline-offset-2">
+                          {alumno.nombre}
+                        </Link>
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">Alumno eliminado</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 font-medium">{pago.plan}</td>
+                    <td className="px-6 py-4 font-black text-slate-900">
+                      ${pago.monto.toLocaleString("es-AR")}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 font-medium">
+                      {new Date(pago.fecha).toLocaleDateString("es-AR")}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
+                    <td className="px-6 py-4">
+                      <div className="relative inline-block">
+                        <select
+                          value={pago.estado}
+                          onChange={(e) =>
+                            actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
+                          }
+                          className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+                        >
+                          <option value="PAGADO">PAGADO</option>
+                          <option value="PENDIENTE">PENDIENTE</option>
+                          <option value="VENCIDO">VENCIDO</option>
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => setPagoAEliminar(pago)}
+                        aria-label={`Eliminar pago de ${alumno?.nombre ?? "alumno"}`}
+                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 active:scale-90"
                       >
-                        <option value="PAGADO">PAGADO</option>
-                        <option value="PENDIENTE">PENDIENTE</option>
-                        <option value="VENCIDO">VENCIDO</option>
-                      </select>
-                      <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setPagoAEliminar(pago)}
-                      aria-label={`Eliminar pago de ${pago.alumno}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 active:scale-90"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {pagosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">
@@ -363,12 +349,17 @@ export default function FinanzasPage() {
       </div>
 
       {modalAbierto && (
-        <ModalRegistrarPago onClose={() => setModalAbierto(false)} onSubmit={handleNuevoPago} />
+        <ModalRegistrarPago
+          alumnos={alumnos}
+          onClose={() => setModalAbierto(false)}
+          onSubmit={handleNuevoPago}
+        />
       )}
 
       {pagoAEliminar && (
         <ModalConfirmarEliminar
           pago={pagoAEliminar}
+          nombreAlumno={getAlumno(pagoAEliminar.alumnoId)?.nombre ?? "este alumno"}
           onCancel={() => setPagoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />
@@ -411,10 +402,12 @@ function MetricCard({
 // ---------- Modal: confirmar eliminación ----------
 function ModalConfirmarEliminar({
   pago,
+  nombreAlumno,
   onCancel,
   onConfirm,
 }: {
   pago: Pago;
+  nombreAlumno: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -426,7 +419,7 @@ function ModalConfirmarEliminar({
         </div>
         <h2 className="text-lg font-bold text-slate-900">¿Eliminar este pago?</h2>
         <p className="mt-1.5 text-sm text-slate-500">
-          Vas a eliminar el pago de <span className="font-semibold text-slate-700">{pago.alumno}</span> por{" "}
+          Vas a eliminar el pago de <span className="font-semibold text-slate-700">{nombreAlumno}</span> por{" "}
           <span className="font-semibold text-slate-700">${pago.monto.toLocaleString("es-AR")}</span>. Esta acción no se puede deshacer.
         </p>
         <div className="mt-6 flex justify-end gap-3">
@@ -447,10 +440,6 @@ function ModalConfirmarEliminar({
     </div>
   );
 }
-
-// ---------- Modal: registrar pago ----------
-// Agregá "MessageCircle" a los imports de lucide-react ya existentes:
-// import { DollarSign, AlertCircle, Clock, Users, Plus, X, Search, ChevronDown, Trash2, MessageCircle } from "lucide-react";
 
 // ---------- Helpers de WhatsApp ----------
 function construirLinkWhatsapp(celular: string, mensaje: string) {
@@ -475,14 +464,16 @@ function generarPassword() {
 
 // ---------- Modal: registrar pago ----------
 function ModalRegistrarPago({
+  alumnos,
   onClose,
   onSubmit,
 }: {
+  alumnos: { id: string; nombre: string }[];
   onClose: () => void;
   onSubmit: (pago: Omit<Pago, "id">) => void;
 }) {
   const [form, setForm] = useState({
-    alumno: "",
+    alumnoId: alumnos[0]?.id ?? "",
     plan: "",
     monto: "",
     fecha: new Date().toISOString().slice(0, 10),
@@ -496,17 +487,19 @@ function ModalRegistrarPago({
   const [passwordApp, setPasswordApp] = useState("");
   const [mensaje, setMensaje] = useState("");
 
+  const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.alumno || !form.monto) return;
+    if (!form.alumnoId || !form.monto) return;
     onSubmit({ ...form, monto: Number(form.monto) });
   };
 
   const generarMensaje = () => {
     const texto =
       tipoMensaje === "pago"
-        ? mensajePagoTemplate(form.alumno, form.plan, form.monto)
-        : mensajeBienvenidaTemplate(form.alumno, usuarioApp, passwordApp);
+        ? mensajePagoTemplate(alumnoSeleccionado?.nombre ?? "", form.plan, form.monto)
+        : mensajeBienvenidaTemplate(alumnoSeleccionado?.nombre ?? "", usuarioApp, passwordApp);
     setMensaje(texto);
   };
 
@@ -530,186 +523,202 @@ function ModalRegistrarPago({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Alumno">
-            <input
-              value={form.alumno}
-              onChange={(e) => setForm({ ...form, alumno: soloLetras(e.target.value) })}
-              maxLength={60}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Nombre y apellido"
-              required
-            />
-          </Field>
-
-          <Field label="Plan">
-            <input
-              value={form.plan}
-              onChange={(e) => setForm({ ...form, plan: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Ej: Musculación"
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Monto">
-              <input
-                type="number"
-                value={form.monto}
-                onChange={(e) => setForm({ ...form, monto: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="$"
-                required
-              />
-            </Field>
-            <Field label="Fecha">
-              <input
-                type="date"
-                value={form.fecha}
-                onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Método">
-              <select
-                value={form.metodo}
-                onChange={(e) => setForm({ ...form, metodo: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option>Efectivo</option>
-                <option>Transferencia</option>
-                <option>Tarjeta</option>
-              </select>
-            </Field>
-            <Field label="Estado">
-              <select
-                value={form.estado}
-                onChange={(e) =>
-                  setForm({ ...form, estado: e.target.value as EstadoPago })
-                }
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="PAGADO">Pagado</option>
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="VENCIDO">Vencido</option>
-              </select>
-            </Field>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
-          >
-            Guardar pago
-          </button>
-
-          {/* ---------- Notificación por WhatsApp ---------- */}
-          <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
-            <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-emerald-600" />
-              Notificar por WhatsApp (opcional)
+        {alumnos.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-sm text-slate-500">
+              Todavía no hay alumnos cargados. Agregá un alumno primero para poder registrarle un pago.
             </p>
-
-            <Field label="Celular del alumno">
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={celular}
-                onChange={(e) => setCelular(soloNumerosLocal(e.target.value).slice(0, 13))}
-                maxLength={13}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="Ej. 2611234567 o 5492611234567"
-              />
-            </Field>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setTipoMensaje("pago")}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                  tipoMensaje === "pago"
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                Confirmación de pago
-              </button>
-              <button
-                type="button"
-                onClick={() => setTipoMensaje("bienvenida")}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                  tipoMensaje === "bienvenida"
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                Primera inscripción
-              </button>
-            </div>
-
-            {tipoMensaje === "bienvenida" && (
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Usuario">
-                  <input
-                    value={usuarioApp}
-                    onChange={(e) => setUsuarioApp(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Ej. lucia.fernandez"
-                  />
-                </Field>
-                <Field label="Contraseña">
-                  <div className="flex gap-1.5">
-                    <input
-                      value={passwordApp}
-                      onChange={(e) => setPasswordApp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Generala →"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPasswordApp(generarPassword())}
-                      className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
-                    >
-                      Generar
-                    </button>
-                  </div>
-                </Field>
-              </div>
-            )}
-
-            <Field label="Mensaje">
-              <textarea
-                value={mensaje}
-                onChange={(e) => setMensaje(e.target.value)}
-                rows={4}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                placeholder="Generá el mensaje o escribí uno propio..."
-              />
-            </Field>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={generarMensaje}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all duration-300 active:scale-95"
-              >
-                Generar mensaje
-              </button>
-              <button
-                type="button"
-                onClick={enviarWhatsapp}
-                disabled={!puedeEnviar}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Enviar por WhatsApp
-              </button>
-            </div>
+            <Link
+              href="/alumnos"
+              className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-10 px-5 rounded-xl transition-colors"
+            >
+              Ir a Alumnos
+            </Link>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field label="Alumno">
+              <select
+                value={form.alumnoId}
+                onChange={(e) => setForm({ ...form, alumnoId: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                required
+              >
+                {alumnos.map((a) => (
+                  <option key={a.id} value={a.id}>{a.nombre}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Plan">
+              <input
+                value={form.plan}
+                onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Ej: Musculación"
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Monto">
+                <input
+                  type="number"
+                  value={form.monto}
+                  onChange={(e) => setForm({ ...form, monto: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="$"
+                  required
+                />
+              </Field>
+              <Field label="Fecha">
+                <input
+                  type="date"
+                  value={form.fecha}
+                  onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Método">
+                <select
+                  value={form.metodo}
+                  onChange={(e) => setForm({ ...form, metodo: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option>Efectivo</option>
+                  <option>Transferencia</option>
+                  <option>Tarjeta</option>
+                </select>
+              </Field>
+              <Field label="Estado">
+                <select
+                  value={form.estado}
+                  onChange={(e) =>
+                    setForm({ ...form, estado: e.target.value as EstadoPago })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="PAGADO">Pagado</option>
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="VENCIDO">Vencido</option>
+                </select>
+              </Field>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
+            >
+              Guardar pago
+            </button>
+
+            {/* ---------- Notificación por WhatsApp ---------- */}
+            <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                Notificar por WhatsApp (opcional)
+              </p>
+
+              <Field label="Celular del alumno">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={celular}
+                  onChange={(e) => setCelular(soloNumerosLocal(e.target.value).slice(0, 13))}
+                  maxLength={13}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="Ej. 2611234567 o 5492611234567"
+                />
+              </Field>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTipoMensaje("pago")}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                    tipoMensaje === "pago"
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Confirmación de pago
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoMensaje("bienvenida")}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                    tipoMensaje === "bienvenida"
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Primera inscripción
+                </button>
+              </div>
+
+              {tipoMensaje === "bienvenida" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Usuario">
+                    <input
+                      value={usuarioApp}
+                      onChange={(e) => setUsuarioApp(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Ej. lucia.fernandez"
+                    />
+                  </Field>
+                  <Field label="Contraseña">
+                    <div className="flex gap-1.5">
+                      <input
+                        value={passwordApp}
+                        onChange={(e) => setPasswordApp(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="Generala"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPasswordApp(generarPassword())}
+                        className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
+                      >
+                        Generar
+                      </button>
+                    </div>
+                  </Field>
+                </div>
+              )}
+
+              <Field label="Mensaje">
+                <textarea
+                  value={mensaje}
+                  onChange={(e) => setMensaje(e.target.value)}
+                  rows={4}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  placeholder="Generá el mensaje o escribí uno propio..."
+                />
+              </Field>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={generarMensaje}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all duration-300 active:scale-95"
+                >
+                  Generar mensaje
+                </button>
+                <button
+                  type="button"
+                  onClick={enviarWhatsapp}
+                  disabled={!puedeEnviar}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Enviar por WhatsApp
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

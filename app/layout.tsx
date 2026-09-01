@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AppShell } from '@/components/app-shell'
+import { AppDataProvider } from '@/lib/store'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="es" className="bg-background">
       <body className="antialiased">
-        <AppShell>{children}</AppShell>
+        <AppDataProvider>
+          <AppShell>{children}</AppShell>
+        </AppDataProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
