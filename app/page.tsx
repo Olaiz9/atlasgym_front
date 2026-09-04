@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, X, ChevronRight } from 'lucide-react'
+import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, X, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar } from 'lucide-react'
+import { useAppData } from '@/lib/store'
 import { soloLetras, soloNumeros, emailValido } from '@/lib/validators'
 
 const payments = [
@@ -32,7 +33,237 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
   )
 }
 
+// ---------- Home personalizado para el Alumno ----------
+function HomeAlumno({
+  usuario,
+  fechaHoy,
+  ubicacion,
+}: {
+  usuario: any
+  fechaHoy: Date | null
+  ubicacion: string
+}) {
+  const { alumnos, getEstadoCuenta } = useAppData()
+  const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0]
+  const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
+
+  function capitalizar(texto: string) {
+    return texto.charAt(0).toUpperCase() + texto.slice(1)
+  }
+
+  const videosDestacados = [
+    {
+      titulo: 'Press de Banca con Mancuernas',
+      categoria: 'Pecho',
+      duracion: '01:45',
+      nivel: 'Técnica estricta',
+      thumbnail: 'bg-gradient-to-br from-blue-900/60 to-slate-900',
+    },
+    {
+      titulo: 'Sentadilla Profunda y Postura',
+      categoria: 'Piernas',
+      duracion: '02:10',
+      nivel: 'Biomecánica',
+      thumbnail: 'bg-gradient-to-br from-indigo-900/60 to-slate-900',
+    },
+    {
+      titulo: 'Remo con Barra Agarre Prono',
+      categoria: 'Espalda',
+      duracion: '01:30',
+      nivel: 'Activación dorsal',
+      thumbnail: 'bg-gradient-to-br from-cyan-900/60 to-slate-900',
+    },
+  ]
+
+  return (
+    <>
+      {/* Header Superior */}
+      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-5 md:px-10">
+        <div className="flex items-center gap-3 md:hidden">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white">A</span>
+          <span className="font-black tracking-[0.15em] text-white">ATLAS</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold">
+            Portal del Alumno
+          </span>
+        </div>
+        <div className="ml-auto flex items-center gap-6">
+          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
+            {fechaHoy
+              ? capitalizar(
+                  fechaHoy.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                )
+              : 'Cargando fecha...'}
+            <br />
+            <span className="text-xs font-medium text-slate-500">{ubicacion}</span>
+          </p>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-10">
+        {/* Bienvenida Alumno */}
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">Mi Panel de Entrenamiento</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
+              ¡Hola, <span className="text-blue-500">{usuario.nombre.split(' ')[0]}</span>! 💪
+            </h1>
+            <p className="mt-2 text-base text-slate-400">
+              Tenés todo listo para romperla en tu entrenamiento de hoy.
+            </p>
+          </div>
+          <Link
+            href={`/alumnos/${usuario.alumnoId || 'a1'}`}
+            className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95 text-sm"
+          >
+            <Dumbbell className="size-4" />
+            Empezar entrenamiento
+          </Link>
+        </div>
+
+        {/* 3 Tarjetas de Impacto */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Tarjeta 1: Mi Rutina */}
+          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
+                <p className="mt-2 text-2xl font-black text-slate-900">Hipertrofia Nivel 2</p>
+                <p className="mt-1 text-sm font-semibold text-blue-600">Pecho, Hombros y Tríceps</p>
+                <p className="mt-4 text-xs font-medium text-slate-500">5 ejercicios asignados</p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                <Dumbbell className="size-7" />
+              </div>
+            </div>
+            <Link
+              href="/rutinas"
+              className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              Ver ejercicios y series <ChevronRight className="size-3.5" />
+            </Link>
+            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-600" />
+          </div>
+
+          {/* Tarjeta 2: Mi Cuota */}
+          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado de mi cuota</span>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {estadoCuenta === 'AL_DIA' ? 'Al día' : estadoCuenta}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-bold text-slate-900">{alumno?.plan || 'Plan Musculación'}</p>
+                <p className="mt-1 text-xs text-slate-500 font-medium">Vence el 10 de Septiembre</p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+                <WalletCards className="size-7" />
+              </div>
+            </div>
+            <Link
+              href="/finanzas"
+              className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+            >
+              Ver mis pagos y datos de cuota <ChevronRight className="size-3.5" />
+            </Link>
+            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
+          </div>
+
+          {/* Tarjeta 3: Mi Asistencia */}
+          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Constancia</span>
+                <p className="mt-2 text-2xl font-black text-slate-900">12 entrenos</p>
+                <p className="mt-1 text-sm font-semibold text-slate-600">registrados este mes</p>
+                <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform duration-300 group-hover:scale-110">
+                <Sparkles className="size-7" />
+              </div>
+            </div>
+            <div className="mt-5 text-xs font-bold text-slate-500">
+              ¡Mantené el ritmo esta semana! 🔥
+            </div>
+            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
+          </div>
+        </div>
+
+        {/* Sección: Videoteca Destacada */}
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8 backdrop-blur-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">
+                <PlayCircle className="size-4" />
+                Videoteca ATLAS
+              </div>
+              <h2 className="text-2xl font-black text-white">Técnica y Ejecución de Ejercicios</h2>
+              <p className="text-sm text-slate-400 mt-1">
+                Mirá los videos de técnica correcta para optimizar tu entrenamiento y prevenir lesiones.
+              </p>
+            </div>
+            <Link
+              href="/videoteca"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors shrink-0"
+            >
+              Explorar videoteca completa <ChevronRight className="size-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {videosDestacados.map((v) => (
+              <Link
+                key={v.titulo}
+                href="/videoteca"
+                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-all duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/20"
+              >
+                <div className={`h-36 w-full rounded-xl ${v.thumbnail} flex items-center justify-center relative overflow-hidden border border-slate-800 group-hover:border-blue-500/30 transition-colors`}>
+                  <div className="size-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110">
+                    <PlayCircle className="size-6" />
+                  </div>
+                  <span className="absolute bottom-2 right-2 rounded-md bg-slate-950/80 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800">
+                    {v.duracion}
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-[10px] font-bold text-blue-400 border border-blue-500/20">
+                      {v.categoria}
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-500">{v.nivel}</span>
+                  </div>
+                  <h3 className="mt-2 text-base font-bold text-white group-hover:text-blue-400 transition-colors">
+                    {v.titulo}
+                  </h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Sección: Información & Horarios de ATLAS */}
+        <div className="rounded-2xl border border-slate-800/80 bg-slate-950 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-blue-600/10 text-blue-400 flex items-center justify-center shrink-0">
+              <Calendar className="size-5" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-200">Horarios de atención de ATLAS Gym</p>
+              <p className="text-xs text-slate-500">Lunes a Viernes: 07:00 a 22:00 hs · Sábados: 09:00 a 14:00 hs</p>
+            </div>
+          </div>
+          <p className="text-xs font-semibold text-slate-500">ATLAS Gym · Tu mejor versión cada día</p>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function Page() {
+  const { usuarioActual } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -94,6 +325,10 @@ useEffect(() => {
     setErroresAlumno({})
   }
 
+  if (usuarioActual.rol === 'ALUMNO') {
+    return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} ubicacion={ubicacion} />
+  }
+
   return (
     <>
       {/* HEADER SUPERIOR OSCURO */}
@@ -130,7 +365,7 @@ useEffect(() => {
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500">Resumen de actividad</p>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">Hola, Coach <span className="text-blue-500">Julián.</span></h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">Hola, <span className="text-blue-500">{usuarioActual.nombre}.</span></h1>
             <p className="mt-2 text-base text-slate-400">Esto es lo que está pasando en tu gimnasio hoy.</p>
           </div>
           <Button onClick={() => setShowModal(true)} className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">

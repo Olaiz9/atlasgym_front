@@ -14,7 +14,7 @@ import {
   Dumbbell,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
-import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES } from "@/lib/types";
+import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio } from "@/lib/types";
 
 const ESTADO_PAGO_STYLES = {
   PAGADO: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -31,9 +31,10 @@ function diasDesde(fecha: string) {
 
 export default function FichaAlumnoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { getAlumno, getEstadoCuenta, getPagosDeAlumno } = useAppData();
+  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno } = useAppData();
 
   const alumno = getAlumno(id);
+  const rutinaAsignada = alumno ? getRutinaDeAlumno(alumno.id) : undefined;
 
   if (!alumno) {
     return (
@@ -140,16 +141,64 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        {/* Rutina — placeholder hasta que exista el módulo */}
-        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-slate-900">
-          <h2 className="font-bold flex items-center gap-2">
-            <Dumbbell className="w-4 h-4 text-slate-400" />
-            Rutina asignada
-          </h2>
-          <p className="mt-3 text-sm text-slate-400">
-            Todavía no existe el módulo de Rutinas. Cuando esté listo, desde acá se va a poder
-            asignar ejercicios a este alumno directamente.
-          </p>
+        {/* Rutina Asignada */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-slate-900 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold flex items-center gap-2 text-slate-900">
+              <Dumbbell className="w-4 h-4 text-blue-600" />
+              Rutina asignada
+            </h2>
+            <Link
+              href="/rutinas"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              {rutinaAsignada ? "Cambiar rutina →" : "Asignar rutina →"}
+            </Link>
+          </div>
+
+          {rutinaAsignada ? (
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-slate-900">{rutinaAsignada.nombre}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200">
+                  {rutinaAsignada.objetivo}
+                </span>
+              </div>
+              {rutinaAsignada.descripcion && (
+                <p className="text-xs text-slate-500">{rutinaAsignada.descripcion}</p>
+              )}
+
+              <div className="pt-2 space-y-2">
+                {rutinaAsignada.dias.map((dia: DiaRutina) => (
+                  <div key={dia.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                    <p className="font-bold text-slate-800 mb-1">{dia.nombre}</p>
+                    <div className="space-y-0.5 text-slate-500">
+                      {dia.ejercicios.slice(0, 3).map((ej: Ejercicio) => (
+                        <p key={ej.id} className="truncate">
+                          • {ej.nombre} ({ej.series}x{ej.repeticiones})
+                        </p>
+                      ))}
+                      {dia.ejercicios.length > 3 && (
+                        <p className="text-[11px] font-medium text-slate-400">
+                          + {dia.ejercicios.length - 3} ejercicios más
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 text-center py-4">
+              <p className="text-xs text-slate-400">Este alumno todavía no tiene una rutina asignada.</p>
+              <Link
+                href="/rutinas"
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-colors"
+              >
+                Elegir una rutina de la biblioteca
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

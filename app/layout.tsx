@@ -5,9 +5,8 @@ import { AppDataProvider } from '@/lib/store'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ATLAS — Panel del Profesor',
-  description: 'Panel de administración para gestionar tu gimnasio ATLAS.',
-  generator: 'v0.app',
+  title: 'ATLAS GYM',
+  description: 'Plataforma de entrenamiento y gestión ATLAS GYM.',
 }
 
 export const viewport: Viewport = {

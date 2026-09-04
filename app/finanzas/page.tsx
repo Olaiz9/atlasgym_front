@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { EstadoPago, Pago } from "@/lib/types";
+import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -97,10 +97,191 @@ function mesActualISO() {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// ---------- Vista dedicada para el Alumno (Mis Cuotas) ----------
+function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
+  const { alumnos, getPagosDeAlumno, getEstadoCuenta } = useAppData();
+  const [copiado, setCopiado] = useState(false);
+
+  const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0];
+  const misPagos = alumno ? getPagosDeAlumno(alumno.id) : [];
+  const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : "AL_DIA";
+
+  const ultimoPago = misPagos[0];
+  const planMonto = ultimoPago ? ultimoPago.monto : 15000;
+
+  const copiarAlias = () => {
+    navigator.clipboard.writeText("ATLAS.GYM.MP");
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-5 py-8 md:px-10 md:py-10 space-y-8">
+      {/* Header Alumno */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
+          Portal del Alumno
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          Mis Cuotas y Pagos
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Hola, <strong className="text-white">{usuario.nombre}</strong>. Revisá el estado de tu suscripción en Atlas Gym y consultá los datos para abonar.
+        </p>
+      </div>
+
+      {/* Tarjetas de Resumen */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Estado de Cuenta */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado de mi cuota</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-black ${
+                ESTADO_CUENTA_STYLES[estadoCuenta]
+              }`}
+            >
+              {ESTADO_CUENTA_LABEL[estadoCuenta]}
+            </span>
+          </div>
+          <p className="mt-3 text-xs text-slate-500 font-medium leading-relaxed">
+            {estadoCuenta === "AL_DIA"
+              ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
+              : estadoCuenta === "PENDIENTE"
+              ? "Tenés una cuota en proceso de pago para este mes."
+              : "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."}
+          </p>
+        </div>
+
+        {/* Plan Actual */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mi Plan actual</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">{alumno?.plan || "Musculación"}</p>
+          <p className="mt-1 text-sm font-bold text-blue-600">
+            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-400 font-medium">/ mes</span>
+          </p>
+        </div>
+
+        {/* Próximo Vencimiento */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Próximo vencimiento</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">10 de Septiembre</p>
+          <p className="mt-1 text-xs text-slate-400 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
+        </div>
+      </div>
+
+      {/* Datos para pagar / Transferencia */}
+      <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 md:p-8 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
+              💳 Datos para abonar tu cuota
+            </span>
+            <h2 className="text-xl font-black">Transferencia Bancaria o Mercado Pago</h2>
+            <p className="text-sm text-slate-400 mt-1 max-w-xl">
+              Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400 font-semibold">Alias:</span>
+                <span className="text-sm font-mono font-black text-blue-400">ATLAS.GYM.MP</span>
+                <button
+                  type="button"
+                  onClick={copiarAlias}
+                  className="ml-2 text-xs text-slate-300 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg font-bold active:scale-95"
+                >
+                  {copiado ? "¡Copiado! ✓" : "Copiar"}
+                </button>
+              </div>
+              <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
+                <span className="text-slate-400">Titular:</span> <strong>Atlas Gimnasio SRL</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <a
+              href={`https://wa.me/5492611234567?text=${encodeURIComponent(
+                `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 text-sm"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Enviar comprobante por WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Historial de mis pagos */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-slate-900 shadow-sm">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold">Historial de mis cuotas</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Registro histórico de tus pagos</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b border-slate-100 bg-slate-50/50">
+                <th className="font-bold px-6 py-3.5">Plan / Concepto</th>
+                <th className="font-bold px-6 py-3.5">Monto</th>
+                <th className="font-bold px-6 py-3.5">Fecha</th>
+                <th className="font-bold px-6 py-3.5">Medio de pago</th>
+                <th className="font-bold px-6 py-3.5">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {misPagos.map((pago) => (
+                <tr key={pago.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-900">{pago.plan}</td>
+                  <td className="px-6 py-4 font-black text-slate-900">
+                    ${pago.monto.toLocaleString("es-AR")}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 font-medium">
+                    {new Date(pago.fecha).toLocaleDateString("es-AR")}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        ESTADO_STYLES[pago.estado]
+                      }`}
+                    >
+                      {pago.estado}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {misPagos.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
+                    No tenés pagos registrados en el sistema todavía.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Componente principal ----------
 export default function FinanzasPage() {
-  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno } =
+  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
     useAppData();
+
+  // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
+  if (usuarioActual.rol === "ALUMNO") {
+    return <VistaCuotasAlumno usuario={usuarioActual} />;
+  }
 
   const [mes, setMes] = useState<string>(mesActualISO());
   const [verTodos, setVerTodos] = useState(false);

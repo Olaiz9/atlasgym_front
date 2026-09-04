@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bitácora de Cambios - ATLAS GYM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+    }
+    @page {
+      margin: 12mm 15mm 12mm 15mm;
+      size: A4;
+    }
+    footer, .footer {
+      page-break-after: avoid;
+    }
+      print-color-adjust: exact;
+    }
+    @page {
+      margin: 15mm 15mm 15mm 15mm;
+      size: A4;
+    }
+    h1, h2, h3 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    li, p, div {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  </style>
+</head>
+<body class="p-8 max-w-4xl mx-auto">
+  <!-- Header decorativo Atlas Gym -->
+  <div class="flex items-center justify-between border-b-2 border-slate-900 pb-5 mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+        A
+      </div>
+      <div>
+        <span class="text-2xl font-black tracking-widest text-slate-900 block leading-tight">ATLAS GYM</span>
+        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Software de Gestión & Entrenamiento</span>
+      </div>
+    </div>
+    <div class="text-right">
+      <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Documento Técnico & Decisiones</span>
+      <span class="text-xs font-semibold text-slate-600">Equipo: Lucas, Augusto, Bruno</span>
+    </div>
+  </div>
+
+  <h1 class="text-3xl font-black text-slate-900 border-b-2 border-blue-600 pb-3 mb-6">📋 Bitácora de Cambios — Atlas Gym Frontend</h1>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">Este documento registra cada modificación realizada en el sistema, el motivo de negocio/técnico detrás de cada decisión y los archivos exactos afectados. Servirá de referencia tanto para el equipo de desarrollo como para reportar avances al cliente.</p>
+<hr class="my-6 border-slate-200" />
+<h2 class="text-2xl font-black text-blue-700 mt-8 mb-4">📌 Sprint 1: Panel de Alumnos (Completitud Crítica)</h2>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">1. Edición de Alumnos (Botón y Modal)</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Requerimiento del Proyecto (Lucas / Cuaderno de Requerimientos):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"A todo lo que hagamos tenemos que armar un documento con los cambios, el por qué y el dónde se hicieron."</em>”</div>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>Requerimiento base relevado del cliente:</em> En el cuaderno manuscrito de especificaciones se pedía explícitamente en el Panel de Alumnos la acción de <strong>"Editar"</strong>, la cual faltaba en la plantilla inicial.”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se agregó un botón con ícono de lápiz (✏️) en cada fila de la tabla de alumnos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se construyó el componente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ModalEditarAlumno</code>, que se abre al hacer clic en dicho botón y viene pre-cargado con los datos actuales del alumno (Nombre, Plan, Email, Celular y Estado Activo/Inactivo).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se conectó la acción "Guardar cambios" directamente al store centralizado mediante la función <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">actualizarAlumno()</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Requerimiento del cliente:</strong> El sistema solo permitía agregar alumnos nuevos o eliminarlos; no había forma de corregir un número de teléfono, cambiar un plan o actualizar datos sin borrar y volver a crear al alumno desde cero.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/page.tsx</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se importó el ícono <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Pencil</code> de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lucide-react</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se extrajo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">actualizarAlumno</code> desde <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">useAppData()</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se agregó el estado local <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">alumnoAEditar</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se añadió el botón en la columna de acciones de la tabla.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se implementó el componente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ModalEditarAlumno</code>.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">2. Detección e Inactividad Automática (+60 días)</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Planteo del Problema (Lucas / Equipo Atlas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>Consulta y consenso operativo:</em> ¿Cómo detecta el gimnasio si un alumno abandonó sin tener molinetes caros ni obligar al profesor a tildar a mano uno por uno?”</div>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>Decisión adoptada:</em> Automatizar el estado en base a la falta de pago (+60 días sin cuotas abonadas).”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se agregó el estado <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">"INACTIVO"</code> al tipo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">EstadoCuenta</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se programó una función lógica en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code> (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">estadoCuentaDeAlumno</code>) que calcula automáticamente la inactividad: si un alumno lleva más de 60 días sin registrar ningún pago de cuota (o más de 60 días desde su fecha de alta sin pagos), el sistema lo clasifica como <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Inactivo (+60d)</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Si el alumno abona una cuota nueva en Finanzas, el sistema lo reactiva automáticamente a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Al día</code> o <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Pendiente</code> sin intervención manual.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Problema operativo real:</strong> El gimnasio no cuenta con lectores de huella o molinetes automáticos para registrar entradas. El cliente no tiene tiempo de cambiar manualmente el estado de cada persona uno por uno.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Solución de negocio:</strong> La fuente de verdad más confiable que el dueño sí carga con regularidad son los pagos en Finanzas. Si alguien deja de pagar por 2 meses consecutivos, el sistema asume inteligentemente el abandono, ahorrándole al dueño horas de gestión manual.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Ampliación de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">EstadoCuenta</code>: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">"AL_DIA" | "PENDIENTE" | "MOROSO" | "INACTIVO"</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Actualización de la función <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">estadoCuentaDeAlumno(alumnoId, pagos, fechaAlta)</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Definición de etiquetas y estilos para el badge de inactivo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">bg-slate-100 text-slate-500 border-slate-200</code>).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se actualizó <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">getEstadoCuenta</code> para pasar la fecha de alta del alumno como parámetro de cálculo.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">3. Nuevas Columnas en la Tabla: "Rutina" y "Último ingreso"</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Requerimiento del Cliente (Relevado del Cuaderno):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Listado: Rutina sí/no — último ingreso — cuota — estado — Editar"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se sumó la columna <strong>"Rutina"</strong>: Muestra una pastilla distintiva con ícono de mancuerna (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Asignada</code> en azul suave si tiene rutina asignada, o <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Sin rutina</code> en gris neutro).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se sumó la columna <strong>"Último ingreso"</strong>: Muestra el tiempo transcurrido desde la última asistencia con formato amigable (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Hoy</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Ayer</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Hace X días</code> o <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Sin registros</code> en cursiva).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Le da al dueño un paneo visual inmediato de a qué alumnos les falta armarles la rutina y quiénes asisten con regularidad.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>: Se añadió el campo opcional <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">tieneRutina?: boolean</code> en la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Alumno</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code>: Se completaron los datos mockeados con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">tieneRutina</code> y se sumó un alumno inactivo de prueba (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Esteban Morales</code>, último pago en mayo de 2026).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/page.tsx</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Creación del helper <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">formatDiasIngreso(fecha: string)</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Nuevas cabeceras <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><th></code> en la tabla y nuevas celdas <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><td></code> con sus respectivos estilos y badges.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Actualización del <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">colSpan={6}</code> para el estado vacío.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">4. Cuarta Tarjeta de Métricas y Filtro Rápido</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Objetivo de Gestión Comercial:</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>Definición de producto:</em> Permitir al gimnasio segmentar a los alumnos que dejaron de asistir para poder enviarles un WhatsApp de reinscripción o promoción.”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se rediseñó la cabecera de métricas para pasar de 3 a 4 tarjetas responsivas:</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">1. <strong>Total de alumnos</strong> (Azul)</p>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">2. <strong>Al día</strong> (Verde)</p>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">3. <strong>Morosos</strong> (Rojo)</p>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">4. <strong>Inactivos</strong> (Gris / Pizarra) con ícono de usuario tachado (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">UserX</code>).</p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se incorporó el botón <strong><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Inactivos (+60d)</code></strong> en la barra de filtros rápidos sobre la tabla.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Permite al dueño o recepcionista filtrar con un solo clic a todos los clientes inactivos para lanzar campañas de reactivación/fidelización.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/page.tsx</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Actualización de la métrica <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">inactivos</code> en el hook <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">useMemo</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Nueva tarjeta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">MetricCard</code> con icono <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">UserX</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Nuevo botón en el array <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">FILTROS</code>.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">5. Pantalla de Inicio de Sesión (`/login`)</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Consulta del Usuario (Lucas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"El login estaría bueno que hagamos primero, no? pasa que no sé nada de apis yo como para buscar una que tenga todos los ejercicios"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se construyó una pantalla de Login completa en la ruta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/login</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Diseño 100% alineado con la marca Atlas: fondo oscuro con resplandor radial azul, tarjeta con efecto cristal (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">backdrop-blur</code>), isotipo de Atlas y tipografía estilizada.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Selector de rol mediante pestañas interactivas: <strong>"Dueño / Admin"</strong> vs <strong>"Alumno"</strong>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Formulario con validación, iconos de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Mail</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Lock</code>, toggle para ver/ocultar contraseña (ojo 👁️) y checkbox de "Recordar sesión".</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Caja de <strong>Acceso Rápido Demo</strong> con 2 botones de un solo clic (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">👑 Admin</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">🏋️ Alumno</code>) para agilizar pruebas de navegación sin tener que tipear contraseñas cada vez.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se actualizó <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/app-shell.tsx</code> para detectar la ruta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/login</code> y ocultar automáticamente la barra lateral (Sidebar).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Requerimiento de negocio y seguridad:</strong> El sistema contempla perfiles con accesos diferentes (los dueños administran todo el gimnasio, mientras que los alumnos consultan sus rutinas y pagos). Se necesita un punto de entrada visual antes de conectar la autenticación del backend.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/login/page.tsx</code>: Creación de la página y lógica de acceso rápido.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/app-shell.tsx</code>: Ocultamiento de la barra lateral en la ruta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/login</code>.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">6. Vista Personalizada de Cuotas para el Alumno</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Observación del Usuario (Lucas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Quedó linda la prueba, después lo mejoramos. Pero noté que si entramos como alumno en finanzas es el mismo dashboard, para mí solo debería decir cuotas si entras como alumno y próximas cuotas"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se integró la gestión de sesión activa (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">usuarioActual</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">iniciarSesion</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">cerrarSesion</code>) en el store central (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>, el menú se adapta dinámicamente según el rol:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Si ingresa un <strong>Alumno</strong>, se ocultan los módulos administrativos ("Inicio", "Alumnos", "Catálogo") y solo se le muestra <strong>"Mis Cuotas"</strong> y <strong>"Mi Rutina"</strong>, además de su propio nombre y avatar en el perfil inferior.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/finanzas/page.tsx</code>, se añadió la vista dedicada <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><VistaCuotasAlumno /></code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Oculta totalmente la contabilidad general, ingresos del gimnasio y pagos de otros alumnos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Muestra tarjetas personales: Estado de su cuota (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Al día</code> / <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Pendiente</code>), su Plan actual y fecha de próximo vencimiento (10 de cada mes).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Sección de pago por transferencia con Alias copiable en 1 clic (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ATLAS.GYM.MP</code>) y botón directo para enviar el comprobante por WhatsApp.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Tabla privada con únicamente el historial de pagos del alumno logueado.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Privacidad y lógica de negocio:</strong> Un alumno jamás debe tener visibilidad sobre la facturación global, ingresos ni los pagos del resto de los clientes del gimnasio. Su experiencia debe estar enfocada exclusivamente en saber cuánto debe, cuándo vence y cómo pagar.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>: Definición de la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">UsuarioSesion</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>: Manejo de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">usuarioActual</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">iniciarSesion</code> y persistencia de sesión.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>: Menú dinámico y perfil adaptado a Alumno vs Admin.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/finanzas/page.tsx</code>: Componente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><VistaCuotasAlumno /></code> y render condicional por rol.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/login/page.tsx</code>: Conexión de login con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">iniciarSesion()</code>.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">7. Home Personalizado del Alumno y Videoteca en Menú</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Observación del Usuario (Lucas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Sigue diciendo panel para profesor arriba, nada que ver. Igual me gustó. Habría que idear la lógica de un home para alumnos y la videoteca debe poder verla"</em>”</div>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Acordate de anotar más que nada la lógica en ese documento además de lo que te pedí. Me gustó la lógica"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se corrigió el título global de la pestaña del navegador en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/layout.tsx</code> de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">"ATLAS — Panel del Profesor"</code> a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">"ATLAS GYM"</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se implementó el componente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><HomeAlumno /></code> en la raíz (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/</code>), que se activa automáticamente cuando el usuario logueado tiene rol <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ALUMNO</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Saludo personalizado y motivacional (*"¡Hola, {nombre}! Lista para romperla en tu entrenamiento de hoy"*).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Tarjeta "Mi Rutina de hoy":</strong> Muestra la rutina asignada ("Hipertrofia Nivel 2", grupo muscular del día, ejercicios) con botón directo para ver los ejercicios y series.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Tarjeta "Estado de mi cuota":</strong> Indicador rápido (*Al día / Pendiente*) con acceso a sus cuotas.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Tarjeta "Mi Constancia":</strong> Registro de asistencias y racha de entrenamientos del mes.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Sección "Videoteca Destacada":</strong> Miniaturas y accesos rápidos a videos de técnica de ejercicios (Press banca, Sentadillas, Remo con barra).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Sección "Horarios y Avisos":</strong> Información del gimnasio y recordatorios comunitarios.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se agregó el botón <strong>"Inicio"</strong> para los alumnos para que puedan volver a su Home cuando quieran.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se agregó la sección <strong>"Videoteca"</strong> (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/videoteca</code>) tanto para el Administrador como para el Alumno con icono de video.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Por qué se hizo? (Lógica de negocio y UX)</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Experiencia de usuario diferenciada:</strong> El alumno que abre la app en el gimnasio desde su celular necesita ver inmediatamente qué le toca entrenar hoy, si su cuota está al día y cómo hacer bien los ejercicios para no lesionarse. No tiene sentido abrumarlo con números de facturación ni listas de otros alumnos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Acceso universal a la Videoteca:</strong> La videoteca es una herramienta de valor para el cliente del gimnasio (para consultar cómo se hace un ejercicio) y para el profesor/dueño (para cargar nuevos videos demostrativos).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/layout.tsx</code>: Corrección del <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">title</code> en los metadatos globales.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>: Componente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><HomeAlumno /></code>, condicional de render por rol y saludo dinámico para administradores.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>: Pestaña "Videoteca" e "Inicio" en los items de navegación de ambos roles.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">8. Módulo Completo de Rutinas: Plantillas Genéricas, Días de Entrenamiento y Asignación a Alumnos</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Consulta del Usuario (Lucas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Bueno acá tengo yo un par de ideas pero mañana cuando hable con mis compañeros puede cambiar: El nombre de la rutina lo debe poner el dueño O debe ser "Día 1", "Día 2", etc... acordate que, los dueños pueden asignarle a cada alumno una rutina o armar rutinas genéricas con el nombre que ellos quieran, esas rutinas genéricas debense poder asignar a el alumno que ellos quieran también, ¿se entiende?"</em>”</div>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Vamos con rutinas. En el documento poné también la orden que te di yo o la consulta para llegar a la conclusión que se llegó para que ellos entiendan también"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Conclusión y Lógica de Negocio Adoptada:</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Para satisfacer ambos requerimientos (libertad total para el dueño y orden claro para el alumno), se diseñó una <strong>arquitectura jerárquica de 3 niveles</strong>:</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">1. <strong>Nivel 1 — Nombre General de la Rutina:</strong> Lo define libremente el dueño/profesor según el objetivo (ej: <em>"Hipertrofia Nivel 2"</em>, <em>"Fuerza Básica 3 Días"</em>, <em>"Adaptación Inicial"</em>, <em>"Pérdida de Grasa"</em>).</p>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">2. <strong>Nivel 2 — Días o Bloques:</strong> Cada rutina se desglosa internamente en días específicos titulados de forma clara (ej: <em>"Día 1 — Pecho y Tríceps"</em>, <em>"Día 2 — Espalda y Bíceps"</em>, <em>"Día 3 — Piernas y Hombros"</em>).</p>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">3. <strong>Nivel 3 — Ejercicios del Día:</strong> Cada día contiene sus ejercicios con: <em>Nombre</em>, <em>Series</em>, <em>Repeticiones</em>, <em>Descanso (ej: 90s)</em> y <em>Notas de técnica</em>.</p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Plantillas Genéricas vs Asignación:</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Las rutinas se guardan en el sistema como plantillas maestras disponibles en el catálogo.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Cualquier plantilla genérica se puede asignar a uno o varios alumnos desde un selector modal con un solo clic.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">A su vez, en la ficha individual de cada alumno (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/alumnos/[id]</code>) se visualiza su rutina activa y se le puede reasignar otra cuando progrese.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Los alumnos, al entrar con su usuario o consultar <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/rutinas</code>, ven exclusivamente la rutina que les fue asignada (<strong>"Mi Rutina"</strong>) con sus días y ejercicios.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo a nivel de código?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Tipos y Modelo de Datos (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>):</strong> Se crearon las interfaces <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Ejercicio</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">DiaRutina</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Rutina</code> y se enlazó el campo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">rutinaId</code> opcional en la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Alumno</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Mock Data & Store (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se cargaron rutinas completas de ejemplo con ejercicios reales y descansos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se crearon las funciones de store: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarRutina()</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">asignarRutinaAAlumno()</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">eliminarRutina()</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">getRutinaDeAlumno()</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Panel de Rutinas (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/rutinas/page.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Para Administradores:</strong> Listado de todas las rutinas con filtros por objetivo (*Todos, Hipertrofia, Fuerza, Definición*), vista desplegable de días y ejercicios, botón <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">+ Nueva Rutina</code> (con modal para ingresar nombre, objetivo y días) y botón <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Asignar a Alumno</code> (con modal selector de alumnos).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Para Alumnos (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200"><VistaMiRutinaAlumno /></code>):</strong> Vista limpia y enfocada donde el alumno ve solo su plan actual, los días de entrenamiento, series, repeticiones y consejos de su profesor.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Ficha del Alumno (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/[id]/page.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se reemplazó el cartel provisional de "Próximamente" por el visor interactivo de la rutina real asignada a ese alumno, mostrando cada día con sus ejercicios, series y pausas.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>: Modelos <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Ejercicio</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">DiaRutina</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Rutina</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code>: Datos iniciales de rutinas y ejercicios.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>: Estado global de rutinas y acciones de asignación.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/rutinas/page.tsx</code>: Pantalla completa de gestión de rutinas y vista del alumno.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/[id]/page.tsx</code>: Visualizador de rutina activa en la ficha del alumno.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">9. Módulo Completo de Videoteca: Biomecánica, Tutoriales y Filtros Musculares</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden y Consulta del Usuario (Lucas):</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"habría que idear la lógica de un home para alumnos y la videoteca debe poder verla"</em>”</div>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Con qué crees que sería apropiado seguir? después vamos puliendo detalles"</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Lógica de Negocio y Experiencia de Usuario (UX):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En un gimnasio de pesas o entrenamiento funcional, muchos alumnos (sobre todo principiantes o intermedios) sienten vergüenza o inseguridad al no recordar exactamente cómo se ejecuta un ejercicio indicado en su rutina.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Para solucionar esto sin depender de APIs externas pagas o complejas, se construyó una <strong>Videoteca interna integrada en ATLAS</strong>:</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Para el Alumno:</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Puede consultar en cualquier momento la técnica de los ejercicios divididos por grupo muscular (*Pecho, Espalda, Piernas, Hombros, Brazos, Core*).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Puede buscar por nombre de ejercicio o concepto clave (ej: *"remo"*, *"sentadilla"*, *"escapular"*).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Al tocar una tarjeta de video, se abre un <strong>reproductor modal interactivo</strong> con el video embebido, descripción anatómica y una lista de <strong>tips clave de ejecución</strong> (ej: alineación, respiración, posición de espalda) para entrenar con técnica estricta y sin riesgo de lesión.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Para el Administrador / Entrenador:</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Cuenta con el botón <strong><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">+ Nuevo Video</code></strong> para incorporar tutoriales propios o de YouTube/Vimeo indicando el ejercicio, grupo muscular, nivel, duración estimada y puntos clave.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Puede eliminar videos obsoletos con confirmación de seguridad.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se hizo a nivel de código?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Tipos y Modelo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>):</strong> Creación de la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">VideoTecnica</code> con atributos de título, grupo muscular, nivel, duración, URL y consejos biomecánicos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Datos Iniciales y Store (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Lista <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">VIDEOS_TECNICA_MOCK</code> con 6 ejercicios fundamentales (Press banca, Sentadillas, Remo barra, Press militar, Curl martillo, Plancha isométrica).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Estado <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">videosTecnica</code> y funciones de acción <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarVideoTecnica</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">eliminarVideoTecnica</code> en el contexto global.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Página de Videoteca (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Interfaz con estética oficial del gimnasio (fondo oscuro slate-950, acentos azul eléctrico, tipografía audaz).</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Filtros por píldoras de grupo muscular y buscador en vivo.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Modal de reproducción con visor de YouTube y lista de verificación biomecánica.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Modal administrativo para alta de nuevos tutoriales.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Navegación y Enlaces (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>):</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se aseguró la ruta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/videoteca</code> en el menú lateral de ambos roles.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se enlazó el carrusel de videos del Home del alumno con la videoteca.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>: Definición de la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">VideoTecnica</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code>: Mock de videos con tips y enlaces de técnica.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>: Manejo del estado global de videos y métodos <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarVideoTecnica</code> / <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">eliminarVideoTecnica</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code>: Pantalla completa de la Videoteca y modal reproductor.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>: Enlaces directos a la videoteca y a las rutinas.</li>
+
+
+  <!-- Footer final -->
+  <div class="mt-12 pt-6 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-medium">
+    <span>ATLAS Gym Frontend · Registro de Desarrollo</span>
+    <span>Septiembre 2026</span>
+  </div>
+</body>
+</html>

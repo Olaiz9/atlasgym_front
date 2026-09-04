@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Users, UserCheck, AlertCircle, Plus, X, Search, Trash2, ChevronRight } from "lucide-react";
+import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras } from "@/lib/validators";
@@ -13,13 +13,23 @@ import {
   ESTADO_CUENTA_STYLES,
 } from "@/lib/types";
 
+function formatDiasIngreso(fecha: string) {
+  const diffMs = Date.now() - new Date(fecha).getTime();
+  const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDias === 0) return "Hoy";
+  if (diffDias === 1) return "Ayer";
+  if (diffDias <= 7) return `Hace ${diffDias} días`;
+  return new Date(fecha).toLocaleDateString("es-AR");
+}
+
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno } =
     useAppData();
 
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<EstadoCuenta | "TODOS">("TODOS");
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [alumnoAEditar, setAlumnoAEditar] = useState<Alumno | null>(null);
   const [alumnoAEliminar, setAlumnoAEliminar] = useState<Alumno | null>(null);
 
   const alumnosConEstado = useMemo(
@@ -30,7 +40,8 @@ export default function AlumnosPage() {
   const metrica = useMemo(() => {
     const alDia = alumnosConEstado.filter((a) => a.estadoCuenta === "AL_DIA").length;
     const morosos = alumnosConEstado.filter((a) => a.estadoCuenta === "MOROSO").length;
-    return { total: alumnosConEstado.length, alDia, morosos };
+    const inactivos = alumnosConEstado.filter((a) => a.estadoCuenta === "INACTIVO").length;
+    return { total: alumnosConEstado.length, alDia, morosos, inactivos };
   }, [alumnosConEstado]);
 
   const alumnosFiltrados = useMemo(() => {
@@ -57,6 +68,7 @@ export default function AlumnosPage() {
     { label: "Al día", value: "AL_DIA" },
     { label: "Pendientes", value: "PENDIENTE" },
     { label: "Morosos", value: "MOROSO" },
+    { label: "Inactivos (+60d)", value: "INACTIVO" },
   ];
 
   return (
@@ -66,7 +78,7 @@ export default function AlumnosPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Alumnos</h1>
           <p className="text-sm text-slate-400 mt-1">
-            El estado de cuenta se calcula automáticamente en base a los pagos en Finanzas.
+            El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
         <button
@@ -79,7 +91,7 @@ export default function AlumnosPage() {
       </div>
 
       {/* Tarjetas de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           icon={<Users className="size-6" />}
           label="Total de alumnos"
@@ -97,6 +109,12 @@ export default function AlumnosPage() {
           label="Morosos"
           value={`${metrica.morosos}`}
           tint={{ bg: "bg-rose-50", text: "text-rose-500", bar: "bg-rose-500" }}
+        />
+        <MetricCard
+          icon={<UserX className="size-6" />}
+          label="Inactivos"
+          value={`${metrica.inactivos}`}
+          tint={{ bg: "bg-slate-100", text: "text-slate-500", bar: "bg-slate-400" }}
         />
       </div>
 
@@ -135,7 +153,8 @@ export default function AlumnosPage() {
               <tr className="text-left text-slate-500 border-b border-slate-100">
                 <th className="font-bold px-6 py-3.5">Alumno</th>
                 <th className="font-bold px-6 py-3.5">Plan</th>
-                <th className="font-bold px-6 py-3.5">Alta</th>
+                <th className="font-bold px-6 py-3.5">Rutina</th>
+                <th className="font-bold px-6 py-3.5">Último ingreso</th>
                 <th className="font-bold px-6 py-3.5">Estado de cuenta</th>
                 <th className="font-bold px-6 py-3.5 text-right">Acciones</th>
               </tr>
@@ -156,8 +175,27 @@ export default function AlumnosPage() {
                     </Link>
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">{alumno.plan}</td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">
-                    {new Date(alumno.fechaAlta).toLocaleDateString("es-AR")}
+                  <td className="px-6 py-4">
+                    {alumno.tieneRutina ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        <Dumbbell className="w-3 h-3" />
+                        Asignada
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-400">
+                        Sin rutina
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 font-medium">
+                    {alumno.ultimaAsistencia ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {formatDiasIngreso(alumno.ultimaAsistencia)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-xs italic">Sin registros</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span
@@ -166,7 +204,14 @@ export default function AlumnosPage() {
                       {ESTADO_CUENTA_LABEL[alumno.estadoCuenta]}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => setAlumnoAEditar(alumno)}
+                      aria-label={`Editar a ${alumno.nombre}`}
+                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 active:scale-90"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => setAlumnoAEliminar(alumno)}
                       aria-label={`Eliminar a ${alumno.nombre}`}
@@ -179,7 +224,7 @@ export default function AlumnosPage() {
               ))}
               {alumnosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
                     {alumnos.length === 0
                       ? "Todavía no hay alumnos cargados. Arrancá agregando el primero."
                       : "No se encontraron alumnos con ese criterio."}
@@ -193,6 +238,17 @@ export default function AlumnosPage() {
 
       {modalAbierto && (
         <ModalNuevoAlumno onClose={() => setModalAbierto(false)} onSubmit={handleNuevoAlumno} />
+      )}
+
+      {alumnoAEditar && (
+        <ModalEditarAlumno
+          alumno={alumnoAEditar}
+          onClose={() => setAlumnoAEditar(null)}
+          onSubmit={(cambios) => {
+            actualizarAlumno(alumnoAEditar.id, cambios);
+            setAlumnoAEditar(null);
+          }}
+        />
       )}
 
       {alumnoAEliminar && (
@@ -390,5 +446,139 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-xs font-medium text-slate-500 mb-1.5 block">{label}</span>
       {children}
     </label>
+  );
+}
+
+// ---------- Modal: editar alumno ----------
+function ModalEditarAlumno({
+  alumno,
+  onClose,
+  onSubmit,
+}: {
+  alumno: Alumno;
+  onClose: () => void;
+  onSubmit: (cambios: Partial<Omit<Alumno, "id">>) => void;
+}) {
+  const [form, setForm] = useState({
+    nombre: alumno.nombre,
+    email: alumno.email || "",
+    celular: alumno.celular || "",
+    plan: alumno.plan,
+    activo: alumno.activo,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nombre.trim()) return;
+    onSubmit(form);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-sm text-slate-900 border border-slate-200 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-semibold">Editar alumno</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Modificá los datos de {alumno.nombre}.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Nombre y apellido">
+            <input
+              value={form.nombre}
+              onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
+              maxLength={60}
+              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Nombre y apellido"
+              required
+              autoFocus
+            />
+          </Field>
+
+          <Field label="Plan">
+            <input
+              value={form.plan}
+              onChange={(e) => setForm({ ...form, plan: e.target.value })}
+              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Ej: Musculación"
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Email">
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="nombre@mail.com"
+              />
+            </Field>
+            <Field label="Celular">
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.celular}
+                onChange={(e) =>
+                  setForm({ ...form, celular: e.target.value.replace(/[^0-9]/g, "").slice(0, 13) })
+                }
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="2611234567"
+              />
+            </Field>
+          </div>
+
+          <Field label="Estado">
+            <div className="flex gap-3 mt-1">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, activo: true })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                  form.activo
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                Activo
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, activo: false })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                  !form.activo
+                    ? "bg-rose-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                Inactivo
+              </button>
+            </div>
+          </Field>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all duration-300 active:scale-95"
+            >
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
