@@ -20,8 +20,16 @@ function formatDiasIngreso(fecha: string) {
   if (diffDias === 0) return "Hoy";
   if (diffDias === 1) return "Ayer";
   if (diffDias <= 7) return `Hace ${diffDias} días`;
-  return new Date(fecha).toLocaleDateString("es-AR");
+  return new Date(fecha).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
+
+const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
+  { label: "Todos", value: "TODOS" },
+  { label: "Al día", value: "AL_DIA" },
+  { label: "Pendientes", value: "PENDIENTE" },
+  { label: "Morosos", value: "MOROSO" },
+  { label: "Inactivos (+60d)", value: "INACTIVO" },
+];
 
 export default function AlumnosPage() {
   const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes } =
@@ -63,14 +71,6 @@ export default function AlumnosPage() {
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
   };
-
-  const FILTROS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
-    { label: "Todos", value: "TODOS" },
-    { label: "Al día", value: "AL_DIA" },
-    { label: "Pendientes", value: "PENDIENTE" },
-    { label: "Morosos", value: "MOROSO" },
-    { label: "Inactivos (+60d)", value: "INACTIVO" },
-  ];
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
@@ -123,7 +123,7 @@ export default function AlumnosPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-100 bg-slate-50/60">
           <div className="flex gap-2 flex-wrap">
-            {FILTROS.map((f) => (
+            {FILTROS_ALUMNOS.map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFiltro(f.value)}

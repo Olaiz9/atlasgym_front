@@ -31,6 +31,12 @@ const ESTADO_STYLES: Record<EstadoPago, string> = {
   VENCIDO: "bg-red-50 text-red-700 border border-red-200",
 };
 
+function formatFechaAR(fecha: string) {
+  return new Date(fecha).toLocaleDateString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
+
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -244,7 +250,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
                     ${pago.monto.toLocaleString("es-AR")}
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">
-                    {new Date(pago.fecha).toLocaleDateString("es-AR")}
+                    {formatFechaAR(pago.fecha)}
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
                   <td className="px-6 py-4">
@@ -484,7 +490,7 @@ export default function FinanzasPage() {
                       ${pago.monto.toLocaleString("es-AR")}
                     </td>
                     <td className="px-6 py-4 text-slate-500 font-medium">
-                      {new Date(pago.fecha).toLocaleDateString("es-AR")}
+                      {formatFechaAR(pago.fecha)}
                     </td>
                     <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
                     <td className="px-6 py-4">

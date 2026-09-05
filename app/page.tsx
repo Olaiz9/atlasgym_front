@@ -20,6 +20,30 @@ const routines = [
   { name: 'Acondicionamiento', student: 'Diego Silva', progress: 32, tone: 'bg-blue-400' },
 ]
 
+const VIDEOS_DESTACADOS = [
+  {
+    titulo: 'Press de Banca con Mancuernas',
+    categoria: 'Pecho',
+    duracion: '01:45',
+    nivel: 'Técnica estricta',
+    thumbnail: 'bg-gradient-to-br from-blue-900/60 to-slate-900',
+  },
+  {
+    titulo: 'Sentadilla Profunda y Postura',
+    categoria: 'Piernas',
+    duracion: '02:10',
+    nivel: 'Biomecánica',
+    thumbnail: 'bg-gradient-to-br from-indigo-900/60 to-slate-900',
+  },
+  {
+    titulo: 'Remo con Barra Agarre Prono',
+    categoria: 'Espalda',
+    duracion: '01:30',
+    nivel: 'Activación dorsal',
+    thumbnail: 'bg-gradient-to-br from-cyan-900/60 to-slate-900',
+  },
+]
+
 function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -53,30 +77,6 @@ function HomeAlumno({
     return texto.charAt(0).toUpperCase() + texto.slice(1)
   }
 
-  const videosDestacados = [
-    {
-      titulo: 'Press de Banca con Mancuernas',
-      categoria: 'Pecho',
-      duracion: '01:45',
-      nivel: 'Técnica estricta',
-      thumbnail: 'bg-gradient-to-br from-blue-900/60 to-slate-900',
-    },
-    {
-      titulo: 'Sentadilla Profunda y Postura',
-      categoria: 'Piernas',
-      duracion: '02:10',
-      nivel: 'Biomecánica',
-      thumbnail: 'bg-gradient-to-br from-indigo-900/60 to-slate-900',
-    },
-    {
-      titulo: 'Remo con Barra Agarre Prono',
-      categoria: 'Espalda',
-      duracion: '01:30',
-      nivel: 'Activación dorsal',
-      thumbnail: 'bg-gradient-to-br from-cyan-900/60 to-slate-900',
-    },
-  ]
-
   return (
     <>
       {/* Header Superior */}
@@ -94,7 +94,12 @@ function HomeAlumno({
           <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
             {fechaHoy
               ? capitalizar(
-                  fechaHoy.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                  fechaHoy.toLocaleDateString('es-AR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                  })
                 )
               : 'Cargando fecha...'}
             <br />
@@ -222,7 +227,7 @@ function HomeAlumno({
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {videosDestacados.map((v) => (
+            {VIDEOS_DESTACADOS.map((v) => (
               <Link
                 key={v.titulo}
                 href="/videoteca"
@@ -381,7 +386,12 @@ useEffect(() => {
           <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
             {fechaHoy
               ? capitalizar(
-                  fechaHoy.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
+                  fechaHoy.toLocaleDateString("es-AR", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    timeZone: "America/Argentina/Buenos_Aires",
+                  })
                 )
               : "Cargando fecha..."}
             <br />
