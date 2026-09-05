@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo } from 'react'
 import { useAppData } from '@/lib/store'
@@ -282,8 +282,8 @@ export default function VideotecaPage() {
                     Puntos clave para una ejecución perfecta
                   </h4>
                   <ul className="space-y-2">
-                    {videoSeleccionado.consejosClave.map((tip, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-300">
+                    {videoSeleccionado.consejosClave.map((tip) => (
+                      <li key={tip} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-300">
                         <span className="size-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
                         <span>{tip}</span>
                       </li>

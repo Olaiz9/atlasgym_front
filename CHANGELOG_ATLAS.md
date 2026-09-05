@@ -287,3 +287,27 @@ Este documento registra cada modificación realizada en el sistema, el motivo de
 * **¿Dónde se hizo?**
   * 📁 `components/sidebar.tsx`: Inclusión del estado `mostrarAyuda`, renderizado del modal flotante con diseño oscuro, iconos vectoriales y enlaces directos en el orden establecido.
 
+---
+
+### 12. Auditoría Integral y Blindaje de Buenas Prácticas de React (`react-doctor`)
+* **Diagnóstico Ejecutado por Lucas:**
+  > Ejecución de `npx react-doctor@latest` que arrojó diagnóstico crítico (violaciones a las Reglas Sagradas de Hooks y efectos impuros en el estado).
+
+* **Lógica Técnica y Corrección de Arquitectura:**
+  1. **Regla Sagrada de Hooks (`rules-of-hooks`):**
+     * En `app/finanzas/page.tsx` y `app/rutinas/page.tsx`, existían hooks (`useState`, `useMemo`) declarados *después* de un `return` condicional (`if (usuarioActual.rol === "ALUMNO") return ...`).
+     * React exige incondicionalidad en la ejecución de hooks en cada render. Se reorganizó el código elevando todos los estados y cálculos memorizados al inicio del componente, garantizando consistencia absoluta del ciclo de vida.
+  2. **Funciones Actualizadoras Puras en el Store (`no-impure-state-updater`):**
+     * En `lib/store.tsx`, las mutaciones de `setPlanes(...)` contenían llamadas directas a `localStorage.setItem(...)` dentro de la función de callback.
+     * Se refactorizó aislando la sincronización con almacenamiento local dentro de un `useEffect(() => ..., [planes])`, manteniendo a los setters 100% puros y deterministas.
+  3. **Reconciliación y Keys en Listas (`no-array-index-as-key`):**
+     * En `app/page.tsx`, se reemplazó el índice de arreglo `idx` por `p.id` como key única en la lista de últimos pagos.
+     * En `app/videoteca/page.tsx`, se reemplazó el índice de renderizado en los puntos clave de técnica biomecánica por strings únicos estables.
+
+* **¿Dónde se hizo?**
+  * 📁 `app/finanzas/page.tsx`: Reubicación incondicional de hooks previa al renderizado de vista de alumno.
+  * 📁 `app/rutinas/page.tsx`: Elevación de `useMemo` de rutinas filtradas.
+  * 📁 `lib/store.tsx`: Extracción de side effects a `useEffect` dedicado.
+  * 📁 `app/page.tsx` y `app/videoteca/page.tsx`: Keys únicas estables en mapeos de JSX.
+
+

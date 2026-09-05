@@ -305,9 +305,34 @@
   <li class="text-sm text-slate-700 my-1.5 leading-relaxed">3. <strong>Instagram Oficial:</strong> Enlace externo a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">https://www.instagram.com/atlasgymoficial_/</code> (@atlasgymoficial_).</li>
 </ul>
 
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>: Integración de estado <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">mostrarAyuda</code>, ventana modal con backdrop oscuro, iconos vectoriales y accesos directos.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">12</span>
+  Auditoría Integral y Blindaje de Buenas Prácticas de React (react-doctor)
+</h3>
+
+<div class="my-3 p-3.5 bg-blue-50/60 border-l-4 border-blue-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-1">Diagnóstico Ejecutado por Lucas:</p>
+  <p class="text-sm italic text-slate-700">Ejecución de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">npx react-doctor@latest</code> que arrojó diagnóstico crítico (violaciones a las Reglas Sagradas de Hooks y efectos impuros en el estado).</p>
+</div>
+
+<p class="text-sm text-slate-700 my-2 leading-relaxed font-semibold">Lógica Técnica y Corrección de Arquitectura:</p>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">1. <strong>Regla Sagrada de Hooks (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">rules-of-hooks</code>):</strong> En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/finanzas/page.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/rutinas/page.tsx</code> se eliminaron las llamadas condicionales reubicando todos los hooks en el nivel superior incondicional del componente.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">2. <strong>Funciones Actualizadoras Puras en el Store (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">no-impure-state-updater</code>):</strong> En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code> se extrajo la persistencia en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">localStorage</code> a un <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">useEffect</code> sincronizado, manteniendo funciones puras.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">3. <strong>Keys Únicas en Listas (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">no-array-index-as-key</code>):</strong> En el Dashboard (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>) y en Videoteca (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code>) se reemplazaron los índices de arreglo por identificadores únicos y estables.</li>
+</ul>
+
 <p class="text-sm text-slate-700 my-2 leading-relaxed"><strong>¿Dónde se hizo?</strong></p>
 <ul class="list-disc pl-5 my-2 space-y-1">
-  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>: Integración de estado <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">mostrarAyuda</code>, ventana modal con backdrop oscuro, iconos vectoriales y accesos directos.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/finanzas/page.tsx</code></li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/rutinas/page.tsx</code></li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code></li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code></li>
 </ul>
 
 

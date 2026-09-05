@@ -168,6 +168,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return nuevoVideo;
   };
 
+  // Persistir planes en localStorage cuando cambian (sin efectos secundarios en el updater)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("atlas_planes", JSON.stringify(planes));
+    }
+  }, [planes]);
+
   const eliminarVideoTecnica = (id: string) => {
     setVideosTecnica((prev) => prev.filter((v) => v.id !== id));
   };
@@ -177,34 +184,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       ...nuevoPlanData,
       id: "p" + (planes.length + 1) + "_" + Date.now().toString(36),
     };
-    setPlanes((prev) => {
-      const actualizados = [...prev, nuevo];
-      if (typeof window !== "undefined") {
-        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
-      }
-      return actualizados;
-    });
+    setPlanes((prev) => [...prev, nuevo]);
     return nuevo;
   };
 
   const actualizarPlan = (id: string, cambios: Partial<Omit<Plan, "id">>) => {
-    setPlanes((prev) => {
-      const actualizados = prev.map((p) => (p.id === id ? { ...p, ...cambios } : p));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
-      }
-      return actualizados;
-    });
+    setPlanes((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
   };
 
   const eliminarPlan = (id: string) => {
-    setPlanes((prev) => {
-      const actualizados = prev.filter((p) => p.id !== id);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
-      }
-      return actualizados;
-    });
+    setPlanes((prev) => prev.filter((p) => p.id !== id));
   };
 
   const value = useMemo<AppDataContextValue>(

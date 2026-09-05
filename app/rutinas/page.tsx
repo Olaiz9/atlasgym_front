@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -33,12 +33,6 @@ export default function RutinasPage() {
   const [rutinaAAsignar, setRutinaAAsignar] = useState<Rutina | null>(null)
   const [diaExpandido, setDiaExpandido] = useState<Record<string, boolean>>({})
 
-  // Si es ALUMNO, le mostramos directamente su rutina asignada
-  if (usuarioActual.rol === 'ALUMNO') {
-    const miRutina = getRutinaDeAlumno(usuarioActual.alumnoId || 'a1') || rutinas[0]
-    return <VistaMiRutinaAlumno rutina={miRutina} usuario={usuarioActual} />
-  }
-
   // Filtrado de rutinas para el admin
   const rutinasFiltradas = useMemo(() => {
     return rutinas.filter((r) => {
@@ -49,6 +43,12 @@ export default function RutinasPage() {
       return matchObj && matchBusqueda
     })
   }, [rutinas, filtroObjetivo, busqueda])
+
+  // Si es ALUMNO, le mostramos directamente su rutina asignada
+  if (usuarioActual.rol === 'ALUMNO') {
+    const miRutina = getRutinaDeAlumno(usuarioActual.alumnoId || 'a1') || rutinas[0]
+    return <VistaMiRutinaAlumno rutina={miRutina} usuario={usuarioActual} />
+  }
 
   const toggleDia = (diaId: string) => {
     setDiaExpandido((prev) => ({ ...prev, [diaId]: !prev[diaId] }))

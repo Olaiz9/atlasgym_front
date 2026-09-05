@@ -288,6 +288,7 @@ export default function Page() {
     .map((p) => {
       const al = alumnos.find((a) => a.id === p.alumnoId)
       return {
+        id: p.id,
         name: al ? al.nombre : 'Alumno Atlas',
         plan: p.plan,
         amount: `$${p.monto.toLocaleString('es-AR')}`,
@@ -438,8 +439,8 @@ useEffect(() => {
               {ultimosPagos.length === 0 ? (
                 <p className="py-6 text-sm text-slate-400 text-center font-medium">No hay pagos registrados aún.</p>
               ) : (
-                ultimosPagos.map((p, idx) => (
-                  <div key={idx} className="group flex items-center gap-4 border-b border-slate-100 py-4 last:border-0 hover:bg-slate-50 -mx-4 px-4 rounded-xl transition-colors">
+                ultimosPagos.map((p) => (
+                  <div key={p.id} className="group flex items-center gap-4 border-b border-slate-100 py-4 last:border-0 hover:bg-slate-50 -mx-4 px-4 rounded-xl transition-colors">
                     <span className="flex size-11 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-blue-600 transition-colors group-hover:bg-blue-100">{p.initials}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-base font-bold text-slate-900">{p.name}</p>

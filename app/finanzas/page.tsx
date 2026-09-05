@@ -278,12 +278,7 @@ export default function FinanzasPage() {
   const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
     useAppData();
 
-  // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
-  if (usuarioActual.rol === "ALUMNO") {
-    return <VistaCuotasAlumno usuario={usuarioActual} />;
-  }
-
-  const [mes, setMes] = useState<string>(mesActualISO());
+  const [mes, setMes] = useState<string>(() => mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
   const [filtro, setFiltro] = useState<EstadoPago | "TODOS">("TODOS");
   const [busqueda, setBusqueda] = useState("");
@@ -323,6 +318,11 @@ export default function FinanzasPage() {
       return coincideFiltro && coincideBusqueda;
     });
   }, [pagosDelMes, filtro, busqueda, getAlumno]);
+
+  // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
+  if (usuarioActual.rol === "ALUMNO") {
+    return <VistaCuotasAlumno usuario={usuarioActual} />;
+  }
 
   const handleNuevoPago = (nuevo: Omit<Pago, "id">) => {
     agregarPago(nuevo);
