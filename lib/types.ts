@@ -62,6 +62,15 @@ export interface VideoTecnica {
   consejosClave?: string[];
 }
 
+export interface Plan {
+  id: string;
+  nombre: string;
+  precio: number;
+  descripcion?: string;
+  diasPorSemana?: string; // ej: "Libre", "3 días", "5 días"
+  activo: boolean;
+}
+
 export interface Pago {
   id: string;
   alumnoId: string;

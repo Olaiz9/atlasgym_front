@@ -20,12 +20,12 @@ const routines = [
   { name: 'Acondicionamiento', student: 'Diego Silva', progress: 32, tone: 'bg-blue-400' },
 ]
 
-function SectionHeader({ title, action }: { title: string; action?: string }) {
+function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h2 className="text-base font-bold text-slate-900">{title}</h2>
       {action && (
-        <Link href="/finanzas" className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+        <Link href={href || "/finanzas"} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
           {action}<ChevronRight className="size-3" />
         </Link>
       )}
@@ -43,9 +43,11 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, getEstadoCuenta } = useAppData()
+  const { alumnos, getEstadoCuenta, getRutinaDeAlumno } = useAppData()
   const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0]
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
+  const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
+  const diaUno = rutina?.dias[0]
 
   function capitalizar(texto: string) {
     return texto.charAt(0).toUpperCase() + texto.slice(1)
@@ -129,9 +131,15 @@ function HomeAlumno({
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
-                <p className="mt-2 text-2xl font-black text-slate-900">Hipertrofia Nivel 2</p>
-                <p className="mt-1 text-sm font-semibold text-blue-600">Pecho, Hombros y Tríceps</p>
-                <p className="mt-4 text-xs font-medium text-slate-500">5 ejercicios asignados</p>
+                <p className="mt-2 text-2xl font-black text-slate-900">
+                  {rutina ? rutina.nombre : 'Sin rutina asignada'}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-blue-600">
+                  {diaUno ? diaUno.nombre : (rutina ? 'Rutina activa' : 'Consultá a tu profesor')}
+                </p>
+                <p className="mt-4 text-xs font-medium text-slate-500">
+                  {diaUno ? `${diaUno.ejercicios.length} ejercicios para hoy` : (rutina ? `${rutina.dias.length} días de plan` : 'Pedí tu rutina en recepción')}
+                </p>
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
                 <Dumbbell className="size-7" />
@@ -141,7 +149,7 @@ function HomeAlumno({
               href="/rutinas"
               className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
             >
-              Ver ejercicios y series <ChevronRight className="size-3.5" />
+              {rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'} <ChevronRight className="size-3.5" />
             </Link>
             <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-600" />
           </div>
@@ -263,12 +271,34 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual } = useAppData()
+  const { usuarioActual, agregarAlumno, alumnos, pagos, rutinas, planes } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
 
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
+
+  // Cálculos dinámicos en base a los datos reales del Store
+  const alumnosActivos = alumnos.filter((a) => a.activo).length
+  const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
+  const totalPendiente = pagosPendientes.reduce((acc, p) => acc + p.monto, 0)
+  const ultimosPagos = [...pagos]
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    .slice(0, 3)
+    .map((p) => {
+      const al = alumnos.find((a) => a.id === p.alumnoId)
+      return {
+        name: al ? al.nombre : 'Alumno Atlas',
+        plan: p.plan,
+        amount: `$${p.monto.toLocaleString('es-AR')}`,
+        time: p.fecha,
+        initials: (al ? al.nombre : 'AT')
+          .split(' ')
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join(''),
+      }
+    })
 
   const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
@@ -379,8 +409,8 @@ useEffect(() => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Alumnos activos</p>
-                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">128</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600"><ArrowUpRight className="size-4" />12.5% <span className="font-medium text-slate-400">vs. mes anterior</span></p>
+                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">{alumnosActivos}</p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600"><ArrowUpRight className="size-4" />{alumnos.length} registrados <span className="font-medium text-slate-400">en total</span></p>
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110 group-hover:bg-blue-100"><Users className="size-7" /></div>
             </div>
@@ -391,8 +421,8 @@ useEffect(() => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Cuotas pendientes</p>
-                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">$186.400</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500"><ArrowUpRight className="size-4" />8 pendientes <span className="font-medium text-slate-400">requieren atención</span></p>
+                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">${totalPendiente.toLocaleString('es-AR')}</p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500"><ArrowUpRight className="size-4" />{pagosPendientes.length} pendientes <span className="font-medium text-slate-400">requieren atención</span></p>
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-transform duration-300 group-hover:scale-110 group-hover:bg-rose-100"><WalletCards className="size-7" /></div>
             </div>
@@ -405,21 +435,25 @@ useEffect(() => {
           <div className="rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-lg text-slate-900 border border-slate-200">
             <SectionHeader title="Pagos recientes" action="Ver finanzas" />
             <div className="mt-2 flex flex-col">
-              {payments.map((p) => (
-                <div key={p.name} className="group flex items-center gap-4 border-b border-slate-100 py-4 last:border-0 hover:bg-slate-50 -mx-4 px-4 rounded-xl transition-colors">
-                  <span className="flex size-11 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-blue-600 transition-colors group-hover:bg-blue-100">{p.initials}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-bold text-slate-900">{p.name}</p>
-                    <p className="text-sm font-medium text-slate-500">{p.plan} · {p.time}</p>
+              {ultimosPagos.length === 0 ? (
+                <p className="py-6 text-sm text-slate-400 text-center font-medium">No hay pagos registrados aún.</p>
+              ) : (
+                ultimosPagos.map((p, idx) => (
+                  <div key={idx} className="group flex items-center gap-4 border-b border-slate-100 py-4 last:border-0 hover:bg-slate-50 -mx-4 px-4 rounded-xl transition-colors">
+                    <span className="flex size-11 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-blue-600 transition-colors group-hover:bg-blue-100">{p.initials}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-bold text-slate-900">{p.name}</p>
+                      <p className="text-sm font-medium text-slate-500">{p.plan} · {p.time}</p>
+                    </div>
+                    <p className="text-base font-black text-slate-900">{p.amount}</p>
                   </div>
-                  <p className="text-base font-black text-slate-900">{p.amount}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="rounded-2xl bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-lg text-slate-900 border border-slate-200">
-            <SectionHeader title="Rutinas activas" action="Ver todas" />
+            <SectionHeader title="Rutinas activas" action="Ver todas" href="/rutinas" />
             <div className="mt-4 flex flex-col gap-6">
               {routines.map((r) => (
                 <div key={r.name} className="group">
@@ -462,6 +496,14 @@ useEffect(() => {
               onSubmit={(e) => {
                 e.preventDefault()
                 if (!validarAlumno()) return
+                agregarAlumno({
+                  nombre: formAlumno.nombre,
+                  email: formAlumno.email,
+                  celular: formAlumno.celular,
+                  plan: formAlumno.plan,
+                  fechaAlta: new Date().toISOString().split('T')[0],
+                  activo: true,
+                })
                 cerrarModalAlumno()
               }}
               className="mt-6 flex flex-col gap-5"
@@ -534,9 +576,11 @@ useEffect(() => {
                     <SelectValue placeholder="Seleccioná un plan" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-200 bg-white shadow-xl">
-                    <SelectItem value="mensual" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Mensual — $30.000</SelectItem>
-                    <SelectItem value="premium" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Premium — $45.000</SelectItem>
-                    <SelectItem value="trimestral" className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">Plan Trimestral — $80.000</SelectItem>
+                    {planes.map((p) => (
+                      <SelectItem key={p.id} value={p.nombre} className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">
+                        {p.nombre} — ${p.precio.toLocaleString('es-AR')}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.plan}</span>}

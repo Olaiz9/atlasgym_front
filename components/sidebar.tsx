@@ -11,7 +11,7 @@ const navItemsAdmin = [
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
-  { label: 'Catálogo', href: '/catalogo', icon: Package },
+  { label: 'Planes', href: '/planes', icon: Package },
 ]
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -51,7 +51,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       </button>
 
       <div className={`flex h-20 items-center border-b border-slate-800/50 ${collapsed ? 'justify-center px-2' : 'px-7'}`}>
-        <Link href={esAlumno ? '/finanzas' : '/'} className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-3 group">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-base font-black text-white shadow-lg shadow-blue-600/20 transition-transform group-hover:scale-105">A</span>
           {!collapsed && <span className="text-2xl font-black tracking-[0.2em] text-white">ATLAS</span>}
         </Link>

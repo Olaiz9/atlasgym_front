@@ -1,7 +1,7 @@
 // lib/mock-data.ts
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
-import { Alumno, Pago, Rutina, VideoTecnica } from "./types";
+import { Alumno, Pago, Rutina, VideoTecnica, Plan } from "./types";
 
 export const ALUMNOS_MOCK: Alumno[] = [
   { id: "a1", nombre: "Lucía Fernández", email: "lucia.fernandez@mail.com", celular: "2611234567", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
@@ -199,3 +199,29 @@ export const VIDEOS_TECNICA_MOCK: VideoTecnica[] = [
   },
 ];
 
+export const PLANES_MOCK: Plan[] = [
+  {
+    id: "p1",
+    nombre: "Musculación",
+    precio: 15000,
+    descripcion: "Acceso libre e ilimitado al sector de pesas, máquinas y cardio.",
+    diasPorSemana: "Libre",
+    activo: true,
+  },
+  {
+    id: "p2",
+    nombre: "Full Access",
+    precio: 22000,
+    descripcion: "Acceso a musculación + clases guiadas + seguimiento personalizado.",
+    diasPorSemana: "Libre",
+    activo: true,
+  },
+  {
+    id: "p3",
+    nombre: "Funcional",
+    precio: 18000,
+    descripcion: "Entrenamiento funcional en circuito y acondicionamiento metabólico.",
+    diasPorSemana: "3 días por semana",
+    activo: true,
+  },
+];

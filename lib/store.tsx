@@ -11,8 +11,8 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, useEffect, ReactNode } from "react";
-import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica } from "./types";
-import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK } from "./mock-data";
+import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan } from "./types";
+import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK } from "./mock-data";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   id: "u1",
@@ -26,6 +26,7 @@ interface AppDataContextValue {
   pagos: Pago[];
   rutinas: Rutina[];
   videosTecnica: VideoTecnica[];
+  planes: Plan[];
   usuarioActual: UsuarioSesion;
   iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
   cerrarSesion: () => void;
@@ -41,6 +42,9 @@ interface AppDataContextValue {
   getRutinaDeAlumno: (alumnoId: string) => Rutina | undefined;
   agregarVideoTecnica: (video: Omit<VideoTecnica, "id">) => VideoTecnica;
   eliminarVideoTecnica: (id: string) => void;
+  agregarPlan: (plan: Omit<Plan, "id">) => Plan;
+  actualizarPlan: (id: string, cambios: Partial<Omit<Plan, "id">>) => void;
+  eliminarPlan: (id: string) => void;
   getAlumno: (id: string) => Alumno | undefined;
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   getPagosDeAlumno: (alumnoId: string) => Pago[];
@@ -53,6 +57,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
   const [rutinas, setRutinas] = useState<Rutina[]>(RUTINAS_MOCK);
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(VIDEOS_TECNICA_MOCK);
+  const [planes, setPlanes] = useState<Plan[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_planes");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return PLANES_MOCK;
+  });
   const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion>(() => {
     if (typeof window !== "undefined") {
       const guardado = localStorage.getItem("atlas_sesion");
@@ -157,12 +172,48 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setVideosTecnica((prev) => prev.filter((v) => v.id !== id));
   };
 
+  const agregarPlan = (nuevoPlanData: Omit<Plan, "id">) => {
+    const nuevo: Plan = {
+      ...nuevoPlanData,
+      id: "p" + (planes.length + 1) + "_" + Date.now().toString(36),
+    };
+    setPlanes((prev) => {
+      const actualizados = [...prev, nuevo];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
+      }
+      return actualizados;
+    });
+    return nuevo;
+  };
+
+  const actualizarPlan = (id: string, cambios: Partial<Omit<Plan, "id">>) => {
+    setPlanes((prev) => {
+      const actualizados = prev.map((p) => (p.id === id ? { ...p, ...cambios } : p));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
+      }
+      return actualizados;
+    });
+  };
+
+  const eliminarPlan = (id: string) => {
+    setPlanes((prev) => {
+      const actualizados = prev.filter((p) => p.id !== id);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("atlas_planes", JSON.stringify(actualizados));
+      }
+      return actualizados;
+    });
+  };
+
   const value = useMemo<AppDataContextValue>(
     () => ({
       alumnos,
       pagos,
       rutinas,
       videosTecnica,
+      planes,
       usuarioActual,
       iniciarSesion,
       cerrarSesion,
@@ -178,6 +229,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       getRutinaDeAlumno,
       agregarVideoTecnica,
       eliminarVideoTecnica,
+      agregarPlan,
+      actualizarPlan,
+      eliminarPlan,
       getAlumno: (id) => alumnos.find((a) => a.id === id),
       getEstadoCuenta: (alumnoId) => {
         const alumno = alumnos.find((a) => a.id === alumnoId);
@@ -188,7 +242,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           .filter((p) => p.alumnoId === alumnoId)
           .sort((a, b) => b.fecha.localeCompare(a.fecha)),
     }),
-    [alumnos, pagos, rutinas, videosTecnica, usuarioActual]
+    [alumnos, pagos, rutinas, videosTecnica, planes, usuarioActual]
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

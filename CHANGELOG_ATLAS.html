@@ -11,18 +11,10 @@
       background-color: #ffffff;
       color: #0f172a;
       -webkit-print-color-adjust: exact;
-    }
-    @page {
-      margin: 12mm 15mm 12mm 15mm;
-      size: A4;
-    }
-    footer, .footer {
-      page-break-after: avoid;
-    }
       print-color-adjust: exact;
     }
     @page {
-      margin: 15mm 15mm 15mm 15mm;
+      margin: 12mm 15mm 12mm 15mm;
       size: A4;
     }
     h1, h2, h3 {
@@ -36,7 +28,6 @@
   </style>
 </head>
 <body class="p-8 max-w-4xl mx-auto">
-  <!-- Header decorativo Atlas Gym -->
   <div class="flex items-center justify-between border-b-2 border-slate-900 pb-5 mb-8">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-md">
@@ -254,9 +245,46 @@
 <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>: Manejo del estado global de videos y métodos <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarVideoTecnica</code> / <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">eliminarVideoTecnica</code>.</li>
 <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code>: Pantalla completa de la Videoteca y modal reproductor.</li>
 <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>: Enlaces directos a la videoteca y a las rutinas.</li>
+<hr class="my-6 border-slate-200" />
+<h3 class="text-xl font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">10. Correcciones Generales de Front y Módulo de Planes Dinámicos (Propuesta de Bruno)</h3>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Consulta y Requerimiento de Bruno:</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Habría que hacer una opción en configuración para que él pueda poner los planes, porque eventualmente van a cambiar los precios o cualquier cosa, que lo haga él directamente, no sé si es muy difícil."</em>”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Orden de Lucas:</strong></li>
+<div class="bg-blue-50/80 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">“<em>"Solucioná todo eso primero"</em> (refiriéndose a los errores del front detectados: modal de alumno que no guardaba, 404 de catálogo, links erróneos, métricas fijas y planes hardcodeados).”</div>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Lógica de Negocio Adoptada:</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Planes dinámicos y editables:</strong> En un contexto inflacionario o de cambios de propuesta comercial, el dueño del gimnasio necesita ajustar precios, agregar pases promocionales o pausar planes viejos sin depender de desarrolladores ni tocar código.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Integración total en formularios:</strong> Los planes dejan de estar escritos "a mano" en los selectores. Al crearse o editarse un plan en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/planes</code>, se actualiza automáticamente en el modal de alta de alumnos del Home y en el panel de Alumnos.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Qué se corrigió y qué se agregó?</strong></li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">1. <strong>Módulo de Planes (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/planes</code>):</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Nueva interfaz en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/planes/page.tsx</code> con listado de membresías, precios por mes, frecuencia semanal y estado activo/pausado.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Modal interactivo para crear nuevos planes o modificar precios existentes con impacto inmediato.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Reemplazo en el menú lateral de la ruta fantasma <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/catalogo</code> (que daba 404) por la nueva ruta oficial <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/planes</code>.</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">2. <strong>Persistencia y Store (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>):</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Definición de la entidad <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Plan</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Métodos en el store: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarPlan()</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">actualizarPlan()</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">eliminarPlan()</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Sincronización automática de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">planes</code> en almacenamiento local (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">localStorage</code>).</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">3. <strong>Arreglo del Modal "+ Nuevo Alumno" en Home (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>):</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se conectó <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">agregarAlumno(...)</code> en el evento <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">onSubmit</code>. Ahora los alumnos cargados desde el botón principal del Home se guardan efectivamente en la lista general.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">Se reemplazaron las opciones fijas del selector de planes por las opciones reales y dinámicas leídas del store.</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">4. <strong>Corrección de Enlaces y Navegación:</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>, el logotipo de ATLAS ahora dirige a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/</code> (Home) para todos los roles, permitiendo que el alumno regrese a su panel sin ser forzado a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/finanzas</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">En <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>, el botón "Ver todas" de la tarjeta "Rutinas activas" ahora dirige correctamente a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/rutinas</code> en lugar de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/finanzas</code>.</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">5. <strong>Métricas Reales en el Home del Administrador:</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">"Alumnos activos" ahora calcula la cantidad real de alumnos con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">activo: true</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">"Cuotas pendientes" ahora totaliza en tiempo real la suma de cuotas con estado pendiente o vencido.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">"Pagos recientes" renderiza los últimos cobros registrados cronológicamente en Finanzas.</li>
+<p class="text-sm text-slate-700 my-2 leading-relaxed">6. <strong>Rutina Asignada Real en el Home del Alumno:</strong></p>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">La tarjeta "Mi Rutina de hoy" consulta <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">getRutinaDeAlumno(usuario.alumnoId)</code> y muestra el nombre y ejercicios del plan que el profesor le asignó realmente a ese alumno.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>¿Dónde se hizo?</strong></li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/types.ts</code>: Definición de la interfaz <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Plan</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/mock-data.ts</code>: Lista inicial <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">PLANES_MOCK</code>.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/store.tsx</code>: Métodos de gestión de planes en el contexto global.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">components/sidebar.tsx</code>: Cambio de ruta de catálogo a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/planes</code> y corrección de enlace raíz en el logo.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/planes/page.tsx</code>: Nueva pantalla de gestión de planes y tarifas.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code>: Corrección del guardado en el modal, métricas dinámicas, enlace a rutinas y rutina real del alumno.</li>
+<li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/page.tsx</code>: Selectores de planes dinámicos en los modales de creación y edición.</li>
 
 
-  <!-- Footer final -->
   <div class="mt-12 pt-6 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-medium">
     <span>ATLAS Gym Frontend · Registro de Desarrollo</span>
     <span>Septiembre 2026</span>

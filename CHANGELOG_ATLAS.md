@@ -226,3 +226,46 @@ Este documento registra cada modificación realizada en el sistema, el motivo de
   * 📁 `lib/store.tsx`: Manejo del estado global de videos y métodos `agregarVideoTecnica` / `eliminarVideoTecnica`.
   * 📁 `app/videoteca/page.tsx`: Pantalla completa de la Videoteca y modal reproductor.
   * 📁 `components/sidebar.tsx` y `app/page.tsx`: Enlaces directos a la videoteca y a las rutinas.
+
+---
+
+### 10. Correcciones Generales de Front y Módulo de Planes Dinámicos (Propuesta de Bruno)
+* **Consulta y Requerimiento de Bruno:**
+  > *"Habría que hacer una opción en configuración para que él pueda poner los planes, porque eventualmente van a cambiar los precios o cualquier cosa, que lo haga él directamente, no sé si es muy difícil."*
+* **Orden de Lucas:**
+  > *"Solucioná todo eso primero"* (refiriéndose a los errores del front detectados: modal de alumno que no guardaba, 404 de catálogo, links erróneos, métricas fijas y planes hardcodeados).
+
+* **Lógica de Negocio Adoptada:**
+  * **Planes dinámicos y editables:** En un contexto inflacionario o de cambios de propuesta comercial, el dueño del gimnasio necesita ajustar precios, agregar pases promocionales o pausar planes viejos sin depender de desarrolladores ni tocar código.
+  * **Integración total en formularios:** Los planes dejan de estar escritos "a mano" en los selectores. Al crearse o editarse un plan en `/planes`, se actualiza automáticamente en el modal de alta de alumnos del Home y en el panel de Alumnos.
+
+* **¿Qué se corrigió y qué se agregó?**
+  1. **Módulo de Planes (`/planes`):**
+     * Nueva interfaz en `app/planes/page.tsx` con listado de membresías, precios por mes, frecuencia semanal y estado activo/pausado.
+     * Modal interactivo para crear nuevos planes o modificar precios existentes con impacto inmediato.
+     * Reemplazo en el menú lateral de la ruta fantasma `/catalogo` (que daba 404) por la nueva ruta oficial `/planes`.
+  2. **Persistencia y Store (`lib/types.ts` y `lib/store.tsx`):**
+     * Definición de la entidad `Plan`.
+     * Métodos en el store: `agregarPlan()`, `actualizarPlan()` y `eliminarPlan()`.
+     * Sincronización automática de `planes` en almacenamiento local (`localStorage`).
+  3. **Arreglo del Modal "+ Nuevo Alumno" en Home (`app/page.tsx`):**
+     * Se conectó `agregarAlumno(...)` en el evento `onSubmit`. Ahora los alumnos cargados desde el botón principal del Home se guardan efectivamente en la lista general.
+     * Se reemplazaron las opciones fijas del selector de planes por las opciones reales y dinámicas leídas del store.
+  4. **Corrección de Enlaces y Navegación:**
+     * En `components/sidebar.tsx`, el logotipo de ATLAS ahora dirige a `/` (Home) para todos los roles, permitiendo que el alumno regrese a su panel sin ser forzado a `/finanzas`.
+     * En `app/page.tsx`, el botón "Ver todas" de la tarjeta "Rutinas activas" ahora dirige correctamente a `/rutinas` en lugar de `/finanzas`.
+  5. **Métricas Reales en el Home del Administrador:**
+     * "Alumnos activos" ahora calcula la cantidad real de alumnos con `activo: true`.
+     * "Cuotas pendientes" ahora totaliza en tiempo real la suma de cuotas con estado pendiente o vencido.
+     * "Pagos recientes" renderiza los últimos cobros registrados cronológicamente en Finanzas.
+  6. **Rutina Asignada Real en el Home del Alumno:**
+     * La tarjeta "Mi Rutina de hoy" consulta `getRutinaDeAlumno(usuario.alumnoId)` y muestra el nombre y ejercicios del plan que el profesor le asignó realmente a ese alumno.
+
+* **¿Dónde se hizo?**
+  * 📁 `lib/types.ts`: Definición de la interfaz `Plan`.
+  * 📁 `lib/mock-data.ts`: Lista inicial `PLANES_MOCK`.
+  * 📁 `lib/store.tsx`: Métodos de gestión de planes en el contexto global.
+  * 📁 `components/sidebar.tsx`: Cambio de ruta de catálogo a `/planes` y corrección de enlace raíz en el logo.
+  * 📁 `app/planes/page.tsx`: Nueva pantalla de gestión de planes y tarifas.
+  * 📁 `app/page.tsx`: Corrección del guardado en el modal, métricas dinámicas, enlace a rutinas y rutina real del alumno.
+  * 📁 `app/alumnos/page.tsx`: Selectores de planes dinámicos en los modales de creación y edición.

@@ -11,6 +11,7 @@ import {
   EstadoCuenta,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
+  Plan,
 } from "@/lib/types";
 
 function formatDiasIngreso(fecha: string) {
@@ -23,7 +24,7 @@ function formatDiasIngreso(fecha: string) {
 }
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes } =
     useAppData();
 
   const [busqueda, setBusqueda] = useState("");
@@ -237,12 +238,17 @@ export default function AlumnosPage() {
       </div>
 
       {modalAbierto && (
-        <ModalNuevoAlumno onClose={() => setModalAbierto(false)} onSubmit={handleNuevoAlumno} />
+        <ModalNuevoAlumno
+          planes={planes}
+          onClose={() => setModalAbierto(false)}
+          onSubmit={handleNuevoAlumno}
+        />
       )}
 
       {alumnoAEditar && (
         <ModalEditarAlumno
           alumno={alumnoAEditar}
+          planes={planes}
           onClose={() => setAlumnoAEditar(null)}
           onSubmit={(cambios) => {
             actualizarAlumno(alumnoAEditar.id, cambios);
@@ -340,9 +346,11 @@ function ModalConfirmarEliminar({
 
 // ---------- Modal: nuevo alumno ----------
 function ModalNuevoAlumno({
+  planes,
   onClose,
   onSubmit,
 }: {
+  planes: Plan[];
   onClose: () => void;
   onSubmit: (alumno: Omit<Alumno, "id">) => void;
 }) {
@@ -386,13 +394,20 @@ function ModalNuevoAlumno({
             />
           </Field>
 
-          <Field label="Plan">
-            <input
+          <Field label="Plan asignado">
+            <select
               value={form.plan}
               onChange={(e) => setForm({ ...form, plan: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Ej: Musculación"
-            />
+              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+              required
+            >
+              <option value="">Seleccionar un plan...</option>
+              {planes.map((p) => (
+                <option key={p.id} value={p.nombre}>
+                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -452,10 +467,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ---------- Modal: editar alumno ----------
 function ModalEditarAlumno({
   alumno,
+  planes,
   onClose,
   onSubmit,
 }: {
   alumno: Alumno;
+  planes: Plan[];
   onClose: () => void;
   onSubmit: (cambios: Partial<Omit<Alumno, "id">>) => void;
 }) {
@@ -502,13 +519,19 @@ function ModalEditarAlumno({
             />
           </Field>
 
-          <Field label="Plan">
-            <input
+          <Field label="Plan asignado">
+            <select
               value={form.plan}
               onChange={(e) => setForm({ ...form, plan: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Ej: Musculación"
-            />
+              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+              required
+            >
+              {planes.map((p) => (
+                <option key={p.id} value={p.nombre}>
+                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
