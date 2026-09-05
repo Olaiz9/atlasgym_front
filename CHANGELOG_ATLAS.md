@@ -265,7 +265,25 @@ Este documento registra cada modificación realizada en el sistema, el motivo de
   * 📁 `lib/types.ts`: Definición de la interfaz `Plan`.
   * 📁 `lib/mock-data.ts`: Lista inicial `PLANES_MOCK`.
   * 📁 `lib/store.tsx`: Métodos de gestión de planes en el contexto global.
-  * 📁 `components/sidebar.tsx`: Cambio de ruta de catálogo a `/planes` y corrección de enlace raíz en el logo.
   * 📁 `app/planes/page.tsx`: Nueva pantalla de gestión de planes y tarifas.
   * 📁 `app/page.tsx`: Corrección del guardado en el modal, métricas dinámicas, enlace a rutinas y rutina real del alumno.
   * 📁 `app/alumnos/page.tsx`: Selectores de planes dinámicos en los modales de creación y edición.
+
+---
+
+### 11. Modal Interactivo de Centro de Ayuda con Canales Oficiales
+* **Orden de Lucas:**
+  > *"Aca te paso esto para que agreguemos algo en lo que dice centro de ayuda, antes de sacarlo. en orden : Gmail , telefono e instagram"*
+  > *(Datos aportados: `gonzalo5jesus@gmail.com`, `2615665067`, `@atlasgymoficial_`)*
+
+* **Lógica de Negocio y Experiencia de Usuario (UX):**
+  * La opción "Centro de ayuda" ubicada en la parte inferior del menú lateral era un botón inerte sin funcionalidad.
+  * En lugar de eliminarlo, se transformó en un **punto de contacto directo y profesional** para que tanto el Administrador/Dueño como los Alumnos puedan comunicarse de forma inmediata con los canales oficiales del gimnasio.
+  * Al hacer clic en el botón se despliega un modal estilizado que presenta los canales en el orden estricto solicitado:
+    1. **Gmail / Correo Oficial:** Acceso directo vía `mailto:gonzalo5jesus@gmail.com`.
+    2. **Teléfono / WhatsApp Oficial:** Enlace directo con protocolo web `https://wa.me/5492615665067` (+54 9 261 566-5067).
+    3. **Instagram Oficial:** Enlace externo a `https://www.instagram.com/atlasgymoficial_/` (`@atlasgymoficial_`).
+
+* **¿Dónde se hizo?**
+  * 📁 `components/sidebar.tsx`: Inclusión del estado `mostrarAyuda`, renderizado del modal flotante con diseño oscuro, iconos vectoriales y enlaces directos en el orden establecido.
+
