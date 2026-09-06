@@ -31,6 +31,7 @@ export default function RutinasPage() {
   const [busqueda, setBusqueda] = useState('')
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false)
   const [rutinaAAsignar, setRutinaAAsignar] = useState<Rutina | null>(null)
+  const [rutinaAEliminar, setRutinaAEliminar] = useState<Rutina | null>(null)
   const [diaExpandido, setDiaExpandido] = useState<Record<string, boolean>>({})
 
   // Filtrado de rutinas para el admin
@@ -125,7 +126,7 @@ export default function RutinasPage() {
                     {rutina.objetivo}
                   </span>
                   <button
-                    onClick={() => eliminarRutina(rutina.id)}
+                    onClick={() => setRutinaAEliminar(rutina)}
                     title="Eliminar rutina"
                     aria-label="Eliminar rutina"
                     className="text-slate-500 hover:text-rose-400 transition-colors p-1"
@@ -252,6 +253,18 @@ export default function RutinasPage() {
         />
       )}
 
+      {/* Modal: Confirmar Eliminar Rutina */}
+      {rutinaAEliminar && (
+        <ModalConfirmarEliminarRutina
+          rutina={rutinaAEliminar}
+          onCancel={() => setRutinaAEliminar(null)}
+          onConfirm={() => {
+            eliminarRutina(rutinaAEliminar.id)
+            setRutinaAEliminar(null)
+          }}
+        />
+      )}
+
       {/* Modal: Crear Nueva Rutina */}
       {modalNuevaAbierto && (
         <ModalNuevaRutina
@@ -262,6 +275,44 @@ export default function RutinasPage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+// ---------- Modal: Confirmar Eliminar Rutina ----------
+function ModalConfirmarEliminarRutina({
+  rutina,
+  onCancel,
+  onConfirm,
+}: {
+  rutina: Rutina
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
+        <h3 className="text-lg font-bold text-white">¿Eliminar {rutina.nombre}?</h3>
+        <p className="mt-2 text-sm text-slate-400">
+          Esta acción no se puede deshacer. Los alumnos que tengan esta rutina asignada perderán el acceso a su contenido.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 rounded-xl border border-slate-700 px-4 text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors active:scale-95"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-10 rounded-xl bg-rose-600 px-4 text-xs font-bold text-white hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20 active:scale-95"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

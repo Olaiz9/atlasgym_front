@@ -23,11 +23,7 @@ export default function LoginPage() {
 
     setTimeout(() => {
       setCargando(false)
-      if (rol === 'ADMIN') {
-        router.push('/')
-      } else {
-        router.push('/finanzas')
-      }
+      router.push('/')
     }, 500)
   }
 

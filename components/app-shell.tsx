@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar'
+import { MobileNav } from '@/components/mobile-nav'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -17,11 +18,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30 pb-20 md:pb-0">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <main className={`transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
         {children}
       </main>
+      <MobileNav />
     </div>
   )
 }

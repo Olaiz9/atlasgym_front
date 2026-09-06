@@ -38,30 +38,33 @@ function SidebarUserCard({
     .slice(0, 2)
     .join('')
 
-  const rolLabel = usuario.rol === 'ALUMNO' ? 'Alumna' : 'Coach / Admin'
+  const rolLabel = usuario.rol === 'ALUMNO' ? 'Alumno/a' : 'Coach / Admin'
 
   return (
-    <Link
-      href="/login"
-      onClick={onCerrarSesion}
-      title={collapsed ? "Cerrar sesión" : undefined}
-      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/50 p-3 border border-slate-800/50 transition-[background-color,border-color] duration-200 hover:bg-slate-900 hover:border-slate-700 group cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+    <div
+      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/60 p-2.5 border border-slate-800/60 ${collapsed ? 'justify-center' : ''}`}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-sm font-bold text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400">
           {iniciales}
         </span>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-slate-200">{usuario.nombre}</p>
-            <p className="text-xs font-medium text-slate-500">{rolLabel} · Salir</p>
+            <p className="truncate text-xs font-bold text-slate-200">{usuario.nombre}</p>
+            <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
           </div>
         )}
       </div>
-      {!collapsed && (
-        <LogOut className="size-4 text-slate-500 group-hover:text-rose-400 transition-colors shrink-0 ml-2" />
-      )}
-    </Link>
+      <Link
+        href="/login"
+        onClick={onCerrarSesion}
+        title="Cerrar sesión"
+        aria-label="Cerrar sesión"
+        className={`flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90 ${collapsed ? 'mt-2' : 'ml-1'}`}
+      >
+        <LogOut className="size-4 shrink-0" />
+      </Link>
+    </div>
   )
 }
 
@@ -104,7 +107,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               </p>
             )}
             {navItems.map(({ label, href, icon: Icon }) => {
-              const active = pathname === href
+              const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
               return (
                 <Link
                   key={label}
