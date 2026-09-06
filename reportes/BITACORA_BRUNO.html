@@ -134,6 +134,77 @@
     </div>
   </div>
 
+  <hr class="my-6 border-slate-200" />
+
+  <!-- Hito 2 -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        2. Organización y Centralización de Reportes y Bitácoras
+      </h3>
+      <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
+        06 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento:</em> Agrupar todos los archivos de Bitácora, Reporte, Changelog, etc. en una sola carpeta dedicada para evitar que queden sueltos por las ramas.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">¿Qué se hizo?</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+        <li>Se creó el directorio centralizado <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">reportes/</code> en la raíz del repositorio.</li>
+        <li>Se migraron mediante <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">git mv</code> todos los archivos de bitácoras previas de Lucas (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">CHANGELOG_ATLAS.*</code>) y de Bruno (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">BITACORA_BRUNO.*</code>).</li>
+        <li>Se ajustaron los scripts y procesos de generación para mantener la compilación en caliente del PDF dentro del nuevo directorio.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">¿Por qué se hizo?</p>
+      <p class="text-sm text-slate-700 leading-relaxed">
+        Evita la contaminación del directorio raíz, mantiene un árbol de archivos pulcro y profesional, y facilita la trazabilidad de la documentación al momento de realizar merges entre las ramas del equipo.
+      </p>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos agrupados en <code class="text-blue-700">reportes/</code>:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>reportes/CHANGELOG_ATLAS.md, .html, .pdf</li>
+        <li>reportes/BITACORA_BRUNO.md, .html, .pdf</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 2 passed (2)</p>
+          <p>• <strong>Tests individuales:</strong> 10 passed (10)</p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">lib/utils.test.ts</code> & <code class="font-mono">components/ui/button.test.tsx</code></p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🩺 React Doctor Audit</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">SCORE 100 / 100</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Archivos analizados:</strong> 32 archivos escaneados</p>
+          <p>• <strong>Reglas de Hooks:</strong> 100% conformes</p>
+          <p>• <strong>Pureza en Store:</strong> Verificada sin efectos impuros</p>
+          <p>• <strong>Diagnóstico:</strong> No issues found! (0 advertencias)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>

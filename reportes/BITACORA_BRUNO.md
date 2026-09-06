@@ -51,3 +51,40 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Archivos escaneados: `32 archivos`
     - Score de salud: **100 / 100 (Great)**
     - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
+
+---
+
+### Hito 2: Organización y Centralización de Reportes y Bitácoras
+* **Fecha:** 06 de Septiembre de 2026
+* **Solicitud de Bruno:**
+  > *"Todos los archivos que veas que son de 'Bitácora', 'Reporte', 'Changelog', etc.. Necesito que los agrupes en una sola carpeta que quede como archivos de reportes para evitar que estén sueltos por las ramas."*
+
+* **¿Qué se hizo?**
+  1. Se creó el directorio dedicado 📁 `reportes/` en la raíz del repositorio.
+  2. Se reubicaron mediante `git mv` todos los documentos de bitácoras, changelogs y reportes PDF/HTML de todo el proyecto:
+     - `CHANGELOG_ATLAS.md`, `CHANGELOG_ATLAS.html`, `CHANGELOG_ATLAS.pdf`
+     - `BITACORA_BRUNO.md`, `BITACORA_BRUNO.html`, `BITACORA_BRUNO.pdf`
+  3. Se actualizaron las referencias relativas internas para mantener la compilación autónoma de PDFs en la nueva carpeta.
+
+* **¿Por qué se hizo?**
+  - Para evitar la polución de archivos sueltos en el directorio raíz del proyecto.
+  - Para mantener una estructura limpia, escalable y ordenada que facilite la revisión tanto para Bruno como para el resto del equipo en futuros merges.
+
+* **Archivos afectados / movidos:**
+  - 📁 `reportes/CHANGELOG_ATLAS.md` (reubicado)
+  - 📁 `reportes/CHANGELOG_ATLAS.html` (reubicado)
+  - 📁 `reportes/CHANGELOG_ATLAS.pdf` (reubicado)
+  - 📁 `reportes/BITACORA_BRUNO.md` (reubicado y actualizado)
+  - 📁 `reportes/BITACORA_BRUNO.html` (reubicado y actualizado)
+  - 📁 `reportes/BITACORA_BRUNO.pdf` (reubicado y recompilado)
+
+* **Resultados de Verificación y Calidad:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `2 passed (2)`
+    - Tests ejecutados: `10 passed (10)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **React Doctor (`npx react-doctor`):**
+    - Archivos escaneados: `32 archivos`
+    - Score de salud: **100 / 100 (Great)**
+    - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
+
