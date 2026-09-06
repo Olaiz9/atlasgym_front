@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { EstadoPago, Pago } from "@/lib/types";
+import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -30,6 +30,12 @@ const ESTADO_STYLES: Record<EstadoPago, string> = {
   PENDIENTE: "bg-amber-50 text-amber-700 border border-amber-200",
   VENCIDO: "bg-red-50 text-red-700 border border-red-200",
 };
+
+function formatFechaAR(fecha: string) {
+  return new Date(fecha).toLocaleDateString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
 
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -57,6 +63,7 @@ function SelectorMes({
     >
       <select
         disabled={disabled}
+        aria-label="Seleccionar mes"
         value={Number(mesStr) - 1}
         onChange={(e) =>
           onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
@@ -70,6 +77,7 @@ function SelectorMes({
       <div className="h-5 w-px bg-slate-200 shrink-0" />
       <select
         disabled={disabled}
+        aria-label="Seleccionar año"
         value={anioStr}
         onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
         className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
@@ -97,12 +105,188 @@ function mesActualISO() {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// ---------- Vista dedicada para el Alumno (Mis Cuotas) ----------
+function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
+  const { alumnos, getPagosDeAlumno, getEstadoCuenta } = useAppData();
+  const [copiado, setCopiado] = useState(false);
+
+  const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0];
+  const misPagos = alumno ? getPagosDeAlumno(alumno.id) : [];
+  const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : "AL_DIA";
+
+  const ultimoPago = misPagos[0];
+  const planMonto = ultimoPago ? ultimoPago.monto : 15000;
+
+  const copiarAlias = () => {
+    navigator.clipboard.writeText("ATLAS.GYM.MP");
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-5 py-8 md:px-10 md:py-10 space-y-8">
+      {/* Header Alumno */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
+          Portal del Alumno
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          Mis Cuotas y Pagos
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Hola, <strong className="text-white">{usuario.nombre}</strong>. Revisá el estado de tu suscripción en Atlas Gym y consultá los datos para abonar.
+        </p>
+      </div>
+
+      {/* Tarjetas de Resumen */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Estado de Cuenta */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado de mi cuota</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-black ${
+                ESTADO_CUENTA_STYLES[estadoCuenta]
+              }`}
+            >
+              {ESTADO_CUENTA_LABEL[estadoCuenta]}
+            </span>
+          </div>
+          <p className="mt-3 text-xs text-slate-500 font-medium leading-relaxed">
+            {estadoCuenta === "AL_DIA"
+              ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
+              : estadoCuenta === "PENDIENTE"
+              ? "Tenés una cuota en proceso de pago para este mes."
+              : "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."}
+          </p>
+        </div>
+
+        {/* Plan Actual */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mi Plan actual</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">{alumno?.plan || "Musculación"}</p>
+          <p className="mt-1 text-sm font-bold text-blue-600">
+            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-400 font-medium">/ mes</span>
+          </p>
+        </div>
+
+        {/* Próximo Vencimiento */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Próximo vencimiento</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">10 de Septiembre</p>
+          <p className="mt-1 text-xs text-slate-400 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
+        </div>
+      </div>
+
+      {/* Datos para pagar / Transferencia */}
+      <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 md:p-8 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
+              💳 Datos para abonar tu cuota
+            </span>
+            <h2 className="text-xl font-black">Transferencia Bancaria o Mercado Pago</h2>
+            <p className="text-sm text-slate-400 mt-1 max-w-xl">
+              Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400 font-semibold">Alias:</span>
+                <span className="text-sm font-mono font-black text-blue-400">ATLAS.GYM.MP</span>
+                <button
+                  type="button"
+                  onClick={copiarAlias}
+                  className="ml-2 text-xs text-slate-300 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg font-bold active:scale-95"
+                >
+                  {copiado ? "¡Copiado! ✓" : "Copiar"}
+                </button>
+              </div>
+              <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
+                <span className="text-slate-400">Titular:</span> <strong>Atlas Gimnasio SRL</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <a
+              href={`https://wa.me/5492611234567?text=${encodeURIComponent(
+                `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Enviar comprobante por WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Historial de mis pagos */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-slate-900 shadow-sm">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold">Historial de mis cuotas</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Registro histórico de tus pagos</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b border-slate-100 bg-slate-50/50">
+                <th className="font-bold px-6 py-3.5">Plan / Concepto</th>
+                <th className="font-bold px-6 py-3.5">Monto</th>
+                <th className="font-bold px-6 py-3.5">Fecha</th>
+                <th className="font-bold px-6 py-3.5">Medio de pago</th>
+                <th className="font-bold px-6 py-3.5">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {misPagos.map((pago) => (
+                <tr key={pago.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-900">{pago.plan}</td>
+                  <td className="px-6 py-4 font-black text-slate-900">
+                    ${pago.monto.toLocaleString("es-AR")}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 font-medium">
+                    {formatFechaAR(pago.fecha)}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        ESTADO_STYLES[pago.estado]
+                      }`}
+                    >
+                      {pago.estado}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {misPagos.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
+                    No tenés pagos registrados en el sistema todavía.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Componente principal ----------
 export default function FinanzasPage() {
-  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno } =
+  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
     useAppData();
 
-  const [mes, setMes] = useState<string>(mesActualISO());
+  const [mes, setMes] = useState<string>(() => mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
   const [filtro, setFiltro] = useState<EstadoPago | "TODOS">("TODOS");
   const [busqueda, setBusqueda] = useState("");
@@ -143,6 +327,11 @@ export default function FinanzasPage() {
     });
   }, [pagosDelMes, filtro, busqueda, getAlumno]);
 
+  // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
+  if (usuarioActual.rol === "ALUMNO") {
+    return <VistaCuotasAlumno usuario={usuarioActual} />;
+  }
+
   const handleNuevoPago = (nuevo: Omit<Pago, "id">) => {
     agregarPago(nuevo);
     setModalAbierto(false);
@@ -169,7 +358,7 @@ export default function FinanzasPage() {
           </div>
           <button
             onClick={() => setModalAbierto(true)}
-            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Registrar pago
@@ -191,14 +380,14 @@ export default function FinanzasPage() {
               setMes(mesActualISO());
               setVerTodos(false);
             }}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Mes actual
           </button>
           <button
             type="button"
             onClick={() => setVerTodos((v) => !v)}
-            className={`h-11 px-4 rounded-full text-sm font-bold transition-all duration-300 active:scale-95 ${
+            className={`h-11 px-4 rounded-full text-sm font-bold transition-[color,background-color] duration-200 active:scale-95 ${
               verTodos
                 ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                 : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -247,7 +436,7 @@ export default function FinanzasPage() {
               <button
                 key={f.value}
                 onClick={() => setFiltro(f.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   filtro === f.value
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
@@ -260,10 +449,12 @@ export default function FinanzasPage() {
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
+              id="buscar-finanzas"
+              aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-all focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -303,12 +494,13 @@ export default function FinanzasPage() {
                       ${pago.monto.toLocaleString("es-AR")}
                     </td>
                     <td className="px-6 py-4 text-slate-500 font-medium">
-                      {new Date(pago.fecha).toLocaleDateString("es-AR")}
+                      {formatFechaAR(pago.fecha)}
                     </td>
                     <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
                     <td className="px-6 py-4">
                       <div className="relative inline-block">
                         <select
+                          aria-label="Cambiar estado del pago"
                           value={pago.estado}
                           onChange={(e) =>
                             actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
@@ -326,7 +518,7 @@ export default function FinanzasPage() {
                       <button
                         onClick={() => setPagoAEliminar(pago)}
                         aria-label={`Eliminar pago de ${alumno?.nombre ?? "alumno"}`}
-                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 active:scale-90"
+                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -383,7 +575,7 @@ function MetricCard({
   tint: { bg: string; text: string; bar: string };
 }) {
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
+    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-bold text-slate-500">{label}</p>
@@ -425,13 +617,13 @@ function ModalConfirmarEliminar({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
           >
             Eliminar
           </button>
@@ -517,6 +709,7 @@ function ModalRegistrarPago({
           <h2 className="text-lg font-semibold">Registrar pago</h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
@@ -539,6 +732,7 @@ function ModalRegistrarPago({
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field label="Alumno">
               <select
+                aria-label="Alumno"
                 value={form.alumnoId}
                 onChange={(e) => setForm({ ...form, alumnoId: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -552,6 +746,7 @@ function ModalRegistrarPago({
 
             <Field label="Plan">
               <input
+                aria-label="Plan"
                 value={form.plan}
                 onChange={(e) => setForm({ ...form, plan: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -562,6 +757,7 @@ function ModalRegistrarPago({
             <div className="grid grid-cols-2 gap-4">
               <Field label="Monto">
                 <input
+                  aria-label="Monto"
                   type="number"
                   value={form.monto}
                   onChange={(e) => setForm({ ...form, monto: e.target.value })}
@@ -572,6 +768,7 @@ function ModalRegistrarPago({
               </Field>
               <Field label="Fecha">
                 <input
+                  aria-label="Fecha"
                   type="date"
                   value={form.fecha}
                   onChange={(e) => setForm({ ...form, fecha: e.target.value })}
@@ -609,7 +806,7 @@ function ModalRegistrarPago({
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-[color,background-color] duration-200 active:scale-95"
             >
               Guardar pago
             </button>
@@ -623,6 +820,7 @@ function ModalRegistrarPago({
 
               <Field label="Celular del alumno">
                 <input
+                  aria-label="Celular del alumno"
                   type="tel"
                   inputMode="numeric"
                   value={celular}
@@ -637,7 +835,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={() => setTipoMensaje("pago")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
                     tipoMensaje === "pago"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -648,7 +846,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={() => setTipoMensaje("bienvenida")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
                     tipoMensaje === "bienvenida"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -662,6 +860,7 @@ function ModalRegistrarPago({
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Usuario">
                     <input
+                      aria-label="Usuario"
                       value={usuarioApp}
                       onChange={(e) => setUsuarioApp(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -671,6 +870,7 @@ function ModalRegistrarPago({
                   <Field label="Contraseña">
                     <div className="flex gap-1.5">
                       <input
+                        aria-label="Contraseña"
                         value={passwordApp}
                         onChange={(e) => setPasswordApp(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -690,6 +890,7 @@ function ModalRegistrarPago({
 
               <Field label="Mensaje">
                 <textarea
+                  aria-label="Mensaje"
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   rows={4}
@@ -702,7 +903,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={generarMensaje}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all duration-300 active:scale-95"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-[color,background-color] duration-200 active:scale-95"
                 >
                   Generar mensaje
                 </button>
@@ -710,7 +911,7 @@ function ModalRegistrarPago({
                   type="button"
                   onClick={enviarWhatsapp}
                   disabled={!puedeEnviar}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Enviar por WhatsApp

@@ -10,19 +10,41 @@
 // useAppData() no deberían necesitar cambios.
 "use client";
 
-import { createContext, useContext, useMemo, useState, ReactNode } from "react";
-import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno } from "./types";
-import { ALUMNOS_MOCK, PAGOS_MOCK } from "./mock-data";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, ReactNode } from "react";
+import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan } from "./types";
+import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK } from "./mock-data";
+
+const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
+  id: "u1",
+  nombre: "Julián Pérez",
+  email: "admin@atlasgym.com",
+  rol: "ADMIN",
+};
 
 interface AppDataContextValue {
   alumnos: Alumno[];
   pagos: Pago[];
+  rutinas: Rutina[];
+  videosTecnica: VideoTecnica[];
+  planes: Plan[];
+  usuarioActual: UsuarioSesion;
+  iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
+  cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
   agregarPago: (pago: Omit<Pago, "id">) => void;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   eliminarPago: (id: string) => void;
+  agregarRutina: (rutina: Omit<Rutina, "id">) => Rutina;
+  asignarRutinaAAlumno: (rutinaId: string, alumnoId: string) => void;
+  eliminarRutina: (id: string) => void;
+  getRutinaDeAlumno: (alumnoId: string) => Rutina | undefined;
+  agregarVideoTecnica: (video: Omit<VideoTecnica, "id">) => VideoTecnica;
+  eliminarVideoTecnica: (id: string) => void;
+  agregarPlan: (plan: Omit<Plan, "id">) => Plan;
+  actualizarPlan: (id: string, cambios: Partial<Omit<Plan, "id">>) => void;
+  eliminarPlan: (id: string) => void;
   getAlumno: (id: string) => Alumno | undefined;
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   getPagosDeAlumno: (alumnoId: string) => Pago[];
@@ -33,54 +55,217 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [alumnos, setAlumnos] = useState<Alumno[]>(ALUMNOS_MOCK);
   const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
+  const [rutinas, setRutinas] = useState<Rutina[]>(RUTINAS_MOCK);
+  const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(VIDEOS_TECNICA_MOCK);
+  const [planes, setPlanes] = useState<Plan[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_planes_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return PLANES_MOCK;
+  });
+  const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_sesion_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return USUARIO_ADMIN_DEFAULT;
+  });
 
-  const agregarAlumno = (alumno: Omit<Alumno, "id">) => {
+  const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO") => {
+    let nuevoUsuario: UsuarioSesion;
+    if (rol === "ADMIN") {
+      nuevoUsuario = USUARIO_ADMIN_DEFAULT;
+    } else {
+      const alumno = alumnos.find((a) => a.activo) || alumnos[0];
+      nuevoUsuario = {
+        id: "u_alumno_1",
+        nombre: alumno ? alumno.nombre : "Lucía Fernández",
+        email: alumno?.email || "lucia.fernandez@mail.com",
+        rol: "ALUMNO",
+        alumnoId: alumno ? alumno.id : "a1",
+      };
+    }
+    setUsuarioActual(nuevoUsuario);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
+    }
+  }, [alumnos]);
+
+  const cerrarSesion = useCallback(() => {
+    setUsuarioActual(USUARIO_ADMIN_DEFAULT);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("atlas_sesion_v1");
+    }
+  }, []);
+
+  const agregarAlumno = useCallback((alumno: Omit<Alumno, "id">) => {
     const nuevo: Alumno = { ...alumno, id: crypto.randomUUID() };
     setAlumnos((prev) => [nuevo, ...prev]);
     return nuevo;
-  };
+  }, []);
 
-  const actualizarAlumno = (id: string, cambios: Partial<Omit<Alumno, "id">>) => {
+  const actualizarAlumno = useCallback((id: string, cambios: Partial<Omit<Alumno, "id">>) => {
     setAlumnos((prev) => prev.map((a) => (a.id === id ? { ...a, ...cambios } : a)));
-  };
+  }, []);
 
-  const eliminarAlumno = (id: string) => {
-    // Nota: no borramos los pagos históricos del alumno, para no perder
-    // el registro contable. El día del backend, esto probablemente se
-    // resuelva con una baja lógica (activo: false) en vez de un delete real.
+  const eliminarAlumno = useCallback((id: string) => {
     setAlumnos((prev) => prev.filter((a) => a.id !== id));
-  };
+  }, []);
 
-  const agregarPago = (pago: Omit<Pago, "id">) => {
+  const agregarPago = useCallback((pago: Omit<Pago, "id">) => {
     setPagos((prev) => [{ ...pago, id: crypto.randomUUID() }, ...prev]);
-  };
+  }, []);
 
-  const actualizarEstadoPago = (id: string, estado: EstadoPago) => {
+  const actualizarEstadoPago = useCallback((id: string, estado: EstadoPago) => {
     setPagos((prev) => prev.map((p) => (p.id === id ? { ...p, estado } : p)));
-  };
+  }, []);
 
-  const eliminarPago = (id: string) => {
+  const eliminarPago = useCallback((id: string) => {
     setPagos((prev) => prev.filter((p) => p.id !== id));
-  };
+  }, []);
+
+  const agregarRutina = useCallback((rutina: Omit<Rutina, "id">) => {
+    const nueva: Rutina = { ...rutina, id: crypto.randomUUID() };
+    setRutinas((prev) => [nueva, ...prev]);
+    return nueva;
+  }, []);
+
+  const asignarRutinaAAlumno = useCallback((rutinaId: string, alumnoId: string) => {
+    setAlumnos((prev) =>
+      prev.map((a) => (a.id === alumnoId ? { ...a, tieneRutina: true, rutinaId } : a))
+    );
+  }, []);
+
+  const eliminarRutina = useCallback((id: string) => {
+    setRutinas((prev) => prev.filter((r) => r.id !== id));
+    setAlumnos((prev) =>
+      prev.map((a) => (a.rutinaId === id ? { ...a, tieneRutina: false, rutinaId: undefined } : a))
+    );
+  }, []);
+
+  const getRutinaDeAlumno = useCallback((alumnoId: string) => {
+    const alumno = alumnos.find((a) => a.id === alumnoId);
+    if (!alumno || !alumno.rutinaId) return undefined;
+    return rutinas.find((r) => r.id === alumno.rutinaId);
+  }, [alumnos, rutinas]);
+
+  const agregarVideoTecnica = useCallback((videoData: Omit<VideoTecnica, "id">) => {
+    const nuevoVideo: VideoTecnica = {
+      ...videoData,
+      id: "v" + Date.now().toString(36),
+    };
+    setVideosTecnica((prev) => [nuevoVideo, ...prev]);
+    return nuevoVideo;
+  }, []);
+
+  // Persistir planes en localStorage cuando cambian (sin efectos secundarios en el updater)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("atlas_planes_v1", JSON.stringify(planes));
+    }
+  }, [planes]);
+
+  const eliminarVideoTecnica = useCallback((id: string) => {
+    setVideosTecnica((prev) => prev.filter((v) => v.id !== id));
+  }, []);
+
+  const agregarPlan = useCallback((nuevoPlanData: Omit<Plan, "id">) => {
+    const nuevo: Plan = {
+      ...nuevoPlanData,
+      id: "p" + Date.now().toString(36),
+    };
+    setPlanes((prev) => [...prev, nuevo]);
+    return nuevo;
+  }, []);
+
+  const actualizarPlan = useCallback((id: string, cambios: Partial<Omit<Plan, "id">>) => {
+    setPlanes((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+  }, []);
+
+  const eliminarPlan = useCallback((id: string) => {
+    setPlanes((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const getAlumno = useCallback((id: string) => alumnos.find((a) => a.id === id), [alumnos]);
+
+  const getEstadoCuenta = useCallback((alumnoId: string) => {
+    const alumno = alumnos.find((a) => a.id === alumnoId);
+    return estadoCuentaDeAlumno(alumnoId, pagos, alumno?.fechaAlta);
+  }, [alumnos, pagos]);
+
+  const getPagosDeAlumno = useCallback((alumnoId: string) =>
+    pagos
+      .filter((p) => p.alumnoId === alumnoId)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha)),
+    [pagos]
+  );
 
   const value = useMemo<AppDataContextValue>(
     () => ({
       alumnos,
       pagos,
+      rutinas,
+      videosTecnica,
+      planes,
+      usuarioActual,
+      iniciarSesion,
+      cerrarSesion,
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
       agregarPago,
       actualizarEstadoPago,
       eliminarPago,
-      getAlumno: (id) => alumnos.find((a) => a.id === id),
-      getEstadoCuenta: (alumnoId) => estadoCuentaDeAlumno(alumnoId, pagos),
-      getPagosDeAlumno: (alumnoId) =>
-        pagos
-          .filter((p) => p.alumnoId === alumnoId)
-          .sort((a, b) => b.fecha.localeCompare(a.fecha)),
+      agregarRutina,
+      asignarRutinaAAlumno,
+      eliminarRutina,
+      getRutinaDeAlumno,
+      agregarVideoTecnica,
+      eliminarVideoTecnica,
+      agregarPlan,
+      actualizarPlan,
+      eliminarPlan,
+      getAlumno,
+      getEstadoCuenta,
+      getPagosDeAlumno,
     }),
-    [alumnos, pagos]
+    [
+      alumnos,
+      pagos,
+      rutinas,
+      videosTecnica,
+      planes,
+      usuarioActual,
+      iniciarSesion,
+      cerrarSesion,
+      agregarAlumno,
+      actualizarAlumno,
+      eliminarAlumno,
+      agregarPago,
+      actualizarEstadoPago,
+      eliminarPago,
+      agregarRutina,
+      asignarRutinaAAlumno,
+      eliminarRutina,
+      getRutinaDeAlumno,
+      agregarVideoTecnica,
+      eliminarVideoTecnica,
+      agregarPlan,
+      actualizarPlan,
+      eliminarPlan,
+      getAlumno,
+      getEstadoCuenta,
+      getPagosDeAlumno,
+    ]
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

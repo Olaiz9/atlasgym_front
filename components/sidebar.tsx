@@ -1,96 +1,152 @@
-// components/sidebar.tsx
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft } from 'lucide-react'
+import { useAppData } from '@/lib/store'
+import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video } from 'lucide-react'
+import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
 
-const navItems = [
+const navItemsAdmin = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
   { label: 'Alumnos', href: '/alumnos', icon: Users },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
-  { label: 'Catálogo', href: '/catalogo', icon: Package },
+  { label: 'Videoteca', href: '/videoteca', icon: Video },
+  { label: 'Planes', href: '/planes', icon: Package },
 ]
+
+const navItemsAlumno = [
+  { label: 'Inicio', href: '/', icon: LayoutDashboard },
+  { label: 'Mi Rutina', href: '/rutinas', icon: Dumbbell },
+  { label: 'Mis Cuotas', href: '/finanzas', icon: WalletCards },
+  { label: 'Videoteca', href: '/videoteca', icon: Video },
+]
+
+function SidebarUserCard({
+  usuario,
+  collapsed,
+  onCerrarSesion,
+}: {
+  usuario: { nombre: string; rol: string }
+  collapsed: boolean
+  onCerrarSesion: () => void
+}) {
+  const iniciales = usuario.nombre
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+
+  const rolLabel = usuario.rol === 'ALUMNO' ? 'Alumna' : 'Coach / Admin'
+
+  return (
+    <Link
+      href="/login"
+      onClick={onCerrarSesion}
+      title={collapsed ? "Cerrar sesión" : undefined}
+      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/50 p-3 border border-slate-800/50 transition-[background-color,border-color] duration-200 hover:bg-slate-900 hover:border-slate-700 group cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-sm font-bold text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          {iniciales}
+        </span>
+        {!collapsed && (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-200">{usuario.nombre}</p>
+            <p className="text-xs font-medium text-slate-500">{rolLabel} · Salir</p>
+          </div>
+        )}
+      </div>
+      {!collapsed && (
+        <LogOut className="size-4 text-slate-500 group-hover:text-rose-400 transition-colors shrink-0 ml-2" />
+      )}
+    </Link>
+  )
+}
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname()
+  const { usuarioActual, cerrarSesion } = useAppData()
+
+  const esAlumno = usuarioActual.rol === 'ALUMNO'
+  const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
+  const [mostrarAyuda, setMostrarAyuda] = useState(false)
 
   return (
-    <aside
-      className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-all duration-300 ${
-        collapsed ? 'w-20' : 'w-64'
-      }`}
-    >
-      {/* Botón de colapso */}
-      <button
-        onClick={onToggle}
-        aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-        className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-all duration-300 hover:text-white hover:border-blue-600 active:scale-90"
+    <>
+      <aside
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-300 ${
+          collapsed ? 'w-20' : 'w-64'
+        }`}
       >
-        <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
-      </button>
+        {/* Botón de colapso */}
+        <button
+          onClick={onToggle}
+          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-[color,border-color,transform] duration-200 hover:text-white hover:border-blue-600 active:scale-90"
+        >
+          <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
+        </button>
 
-      <div className={`flex h-20 items-center border-b border-slate-800/50 ${collapsed ? 'justify-center px-2' : 'px-7'}`}>
-        <Link href="/" className="flex items-center gap-3 group">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-base font-black text-white shadow-lg shadow-blue-600/20 transition-transform group-hover:scale-105">A</span>
-          {!collapsed && <span className="text-2xl font-black tracking-[0.2em] text-white">ATLAS</span>}
-        </Link>
-      </div>
+        <div className={`flex h-20 items-center border-b border-slate-800/50 ${collapsed ? 'justify-center px-2' : 'px-7'}`}>
+          <Link href="/" className="flex items-center gap-3 group">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-base font-black text-white shadow-lg shadow-blue-600/20 transition-transform group-hover:scale-105">A</span>
+            {!collapsed && <span className="text-2xl font-black tracking-[0.2em] text-white">ATLAS</span>}
+          </Link>
+        </div>
 
-      <div className="flex flex-1 flex-col justify-between px-4 py-6">
-        <nav className="flex flex-col gap-1.5" aria-label="Navegación principal">
-          {!collapsed && (
-            <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Panel principal</p>
-          )}
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href
-            return (
-              <Link
-                key={label}
-                href={href}
-                title={collapsed ? label : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all duration-300 ${
-                  collapsed ? 'justify-center' : ''
-                } ${
-                  active
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
-                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1'
-                }`}
-              >
-                <Icon className="size-5 shrink-0" />
-                {!collapsed && label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="flex flex-col gap-1.5 border-t border-slate-800/50 pt-5">
-          <button
-            title={collapsed ? 'Configuración' : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
-          >
-            <Settings className="size-5 shrink-0" />
-            {!collapsed && 'Configuración'}
-          </button>
-          <button
-            title={collapsed ? 'Centro de ayuda' : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
-          >
-            <HelpCircle className="size-5 shrink-0" />
-            {!collapsed && 'Centro de ayuda'}
-          </button>
-          <div className={`mt-4 flex items-center gap-3 rounded-xl bg-slate-900/50 p-3 border border-slate-800/50 transition-colors hover:bg-slate-800/50 cursor-pointer ${collapsed ? 'justify-center' : ''}`}>
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-sm font-bold text-blue-400">JP</span>
+        <div className="flex flex-1 flex-col justify-between px-4 py-6">
+          <nav className="flex flex-col gap-1.5" aria-label="Navegación principal">
             {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-slate-200">Julián Pérez</p>
-                <p className="text-xs font-medium text-slate-500">Coach principal</p>
-              </div>
+              <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                {esAlumno ? 'Portal del Alumno' : 'Panel principal'}
+              </p>
             )}
+            {navItems.map(({ label, href, icon: Icon }) => {
+              const active = pathname === href
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  title={collapsed ? label : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
+                    collapsed ? 'justify-center' : ''
+                  } ${
+                    active
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
+                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1'
+                  }`}
+                >
+                  <Icon className="size-5 shrink-0" />
+                  {!collapsed && label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="flex flex-col gap-1.5 border-t border-slate-800/50 pt-5">
+            <button
+              onClick={() => setMostrarAyuda(true)}
+              title={collapsed ? 'Centro de ayuda' : undefined}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
+            >
+              <HelpCircle className="size-5 shrink-0 text-amber-500" />
+              {!collapsed && 'Centro de ayuda'}
+            </button>
+            <SidebarUserCard
+              usuario={usuarioActual}
+              collapsed={collapsed}
+              onCerrarSesion={cerrarSesion}
+            />
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+
+      <ModalCentroAyuda
+        abierto={mostrarAyuda}
+        onCerrar={() => setMostrarAyuda(false)}
+      />
+    </>
   )
 }
