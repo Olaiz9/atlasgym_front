@@ -68,7 +68,7 @@ export default function RutinasPage() {
         </div>
         <button
           onClick={() => setModalNuevaAbierto(true)}
-          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Nueva Rutina
@@ -82,7 +82,7 @@ export default function RutinasPage() {
             <button
               key={obj}
               onClick={() => setFiltroObjetivo(obj)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 active:scale-95 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[color,background-color,box-shadow] duration-200 active:scale-95 ${
                 filtroObjetivo === obj
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
                   : 'bg-slate-900/80 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
@@ -96,10 +96,12 @@ export default function RutinasPage() {
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
+            id="buscar-rutina"
+            aria-label="Buscar rutina"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar rutina..."
-            className="pl-9 pr-4 h-10 text-sm bg-slate-900 border border-slate-800 text-white rounded-full outline-none transition-all focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64 placeholder:text-slate-500"
+            className="pl-9 pr-4 h-10 text-sm bg-slate-900 border border-slate-800 text-white rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64 placeholder:text-slate-500"
           />
         </div>
       </div>
@@ -113,7 +115,7 @@ export default function RutinasPage() {
           return (
             <div
               key={rutina.id}
-              className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-slate-700"
+              className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl backdrop-blur-sm transition-[border-color,box-shadow] duration-300 hover:border-slate-700"
             >
               <div>
                 {/* Cabecera de la Tarjeta */}
@@ -125,6 +127,7 @@ export default function RutinasPage() {
                   <button
                     onClick={() => eliminarRutina(rutina.id)}
                     title="Eliminar rutina"
+                    aria-label="Eliminar rutina"
                     className="text-slate-500 hover:text-rose-400 transition-colors p-1"
                   >
                     <Trash2 className="size-4" />
@@ -219,7 +222,7 @@ export default function RutinasPage() {
                 <button
                   type="button"
                   onClick={() => setRutinaAAsignar(rutina)}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-blue-600 hover:text-white py-2.5 text-xs font-bold text-slate-200 transition-all duration-300 active:scale-95"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-blue-600 hover:text-white py-2.5 text-xs font-bold text-slate-200 transition-[color,background-color] duration-200 active:scale-95"
                 >
                   <UserPlus className="size-4" />
                   Asignar a Alumno
@@ -293,7 +296,7 @@ function ModalAsignarRutina({
             <h2 className="text-lg font-bold">Asignar Rutina</h2>
             <p className="text-xs text-slate-500 mt-0.5">Asignar plan a un alumno del gimnasio</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+          <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -306,10 +309,11 @@ function ModalAsignarRutina({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label htmlFor="alumno-asignar-select" className="block text-xs font-bold text-slate-700 mb-1.5">
               Elegir Alumno:
             </label>
             <select
+              id="alumno-asignar-select"
               value={alumnoSeleccionado}
               onChange={(e) => setAlumnoSeleccionado(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium text-slate-900 cursor-pointer"
@@ -335,13 +339,13 @@ function ModalAsignarRutina({
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-xl border border-slate-200 px-5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300"
+              className="h-10 rounded-xl border border-slate-200 px-5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all duration-300 active:scale-95"
+              className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95"
             >
               Confirmar asignación
             </button>
@@ -451,7 +455,7 @@ function ModalNuevaRutina({
             <h2 className="text-xl font-bold">Crear Nueva Rutina</h2>
             <p className="text-xs text-slate-500 mt-0.5">Definí el nombre general, los días y sus ejercicios</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+          <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -459,8 +463,9 @@ function ModalNuevaRutina({
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Nombre de la Rutina</label>
+              <label htmlFor="rutina-nombre" className="block text-xs font-bold text-slate-700 mb-1.5">Nombre de la Rutina</label>
               <input
+                id="rutina-nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej: Hipertrofia 4 Días"
@@ -470,8 +475,9 @@ function ModalNuevaRutina({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Objetivo</label>
+              <label htmlFor="rutina-objetivo" className="block text-xs font-bold text-slate-700 mb-1.5">Objetivo</label>
               <select
+                id="rutina-objetivo"
                 value={objetivo}
                 onChange={(e) => setObjetivo(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -486,8 +492,9 @@ function ModalNuevaRutina({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">Descripción (opcional)</label>
+            <label htmlFor="rutina-desc" className="block text-xs font-bold text-slate-700 mb-1.5">Descripción (opcional)</label>
             <input
+              id="rutina-desc"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Ej: Rutina de 4 días enfocada en sobrecarga progresiva"
@@ -533,6 +540,7 @@ function ModalNuevaRutina({
                     {dia.ejercicios.map((ej) => (
                       <div key={ej.id} className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
                         <input
+                          aria-label="Nombre del ejercicio"
                           value={ej.nombre}
                           onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'nombre', e.target.value)}
                           placeholder="Nombre del ejercicio"
@@ -542,9 +550,10 @@ function ModalNuevaRutina({
                           <input
                             type="number"
                             value={ej.series}
-                            onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'series', Number(e.target.value))}
+                            onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'series', Math.max(1, parseInt(e.target.value, 10) || 1))}
                             className="w-12 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
                             title="Series"
+                            aria-label="Series"
                           />
                           <span className="text-slate-400">x</span>
                           <input
@@ -553,10 +562,12 @@ function ModalNuevaRutina({
                             placeholder="Reps"
                             className="w-16 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
                             title="Repeticiones"
+                            aria-label="Repeticiones"
                           />
                           <button
                             type="button"
                             onClick={() => eliminarEjercicio(dia.id, ej.id)}
+                            aria-label="Eliminar ejercicio"
                             className="text-slate-400 hover:text-rose-500 p-1 ml-1"
                           >
                             <Trash2 className="size-3.5" />
@@ -574,13 +585,13 @@ function ModalNuevaRutina({
             <button
               type="button"
               onClick={onClose}
-              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300"
+              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all duration-300 active:scale-95"
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95"
             >
               Guardar Rutina
             </button>
@@ -616,7 +627,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
           <button
             key={d.id}
             onClick={() => setDiaActivo(index)}
-            className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all duration-300 active:scale-95 shrink-0 ${
+            className={`px-5 py-3 rounded-2xl text-sm font-bold transition-[color,background-color,box-shadow] duration-200 active:scale-95 shrink-0 ${
               diaActivo === index
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
@@ -641,7 +652,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             {dia.ejercicios.map((ej, i) => (
               <div
                 key={ej.id}
-                className="rounded-2xl border border-slate-800 bg-slate-950 p-5 flex flex-col justify-between transition-all hover:border-slate-700"
+                className="rounded-2xl border border-slate-800 bg-slate-950 p-5 flex flex-col justify-between transition-[border-color] duration-200 hover:border-slate-700"
               >
                 <div>
                   <div className="flex items-start justify-between">

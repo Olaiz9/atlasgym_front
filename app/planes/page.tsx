@@ -1,66 +1,104 @@
-﻿'use client'
+'use client'
 
-import { useState } from 'react'
+import { useReducer } from 'react'
 import { useAppData } from '@/lib/store'
 import { Plan } from '@/lib/types'
 import { Package, Plus, Pencil, Trash2, X, Check, DollarSign, Calendar, Sparkles, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+interface EstadoModalPlan {
+  modalAbierto: boolean
+  planAEditar: Plan | null
+  nombre: string
+  precio: string
+  descripcion: string
+  diasPorSemana: string
+  activo: boolean
+}
+
+type AccionModalPlan =
+  | { type: 'ABRIR_CREAR' }
+  | { type: 'ABRIR_EDITAR'; plan: Plan }
+  | { type: 'CERRAR_MODAL' }
+  | { type: 'SET_CAMPO'; campo: 'nombre' | 'precio' | 'descripcion' | 'diasPorSemana' | 'activo'; valor: any }
+
+const ESTADO_INICIAL_MODAL: EstadoModalPlan = {
+  modalAbierto: false,
+  planAEditar: null,
+  nombre: '',
+  precio: '',
+  descripcion: '',
+  diasPorSemana: 'Libre',
+  activo: true,
+}
+
+function reductorModalPlan(estado: EstadoModalPlan, accion: AccionModalPlan): EstadoModalPlan {
+  switch (accion.type) {
+    case 'ABRIR_CREAR':
+      return {
+        ...ESTADO_INICIAL_MODAL,
+        modalAbierto: true,
+      }
+    case 'ABRIR_EDITAR':
+      return {
+        modalAbierto: true,
+        planAEditar: accion.plan,
+        nombre: accion.plan.nombre,
+        precio: accion.plan.precio.toString(),
+        descripcion: accion.plan.descripcion || '',
+        diasPorSemana: accion.plan.diasPorSemana || 'Libre',
+        activo: accion.plan.activo,
+      }
+    case 'CERRAR_MODAL':
+      return {
+        ...estado,
+        modalAbierto: false,
+      }
+    case 'SET_CAMPO':
+      return {
+        ...estado,
+        [accion.campo]: accion.valor,
+      }
+    default:
+      return estado
+  }
+}
+
 export default function PlanesPage() {
   const { planes, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
-
-  const [modalAbierto, setModalAbierto] = useState(false)
-  const [planAEditar, setPlanAEditar] = useState<Plan | null>(null)
-
-  const [nombre, setNombre] = useState('')
-  const [precio, setPrecio] = useState('')
-  const [descripcion, setDescripcion] = useState('')
-  const [diasPorSemana, setDiasPorSemana] = useState('Libre')
-  const [activo, setActivo] = useState(true)
+  const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
 
   function abrirCrear() {
-    setPlanAEditar(null)
-    setNombre('')
-    setPrecio('')
-    setDescripcion('')
-    setDiasPorSemana('Libre')
-    setActivo(true)
-    setModalAbierto(true)
+    dispatch({ type: 'ABRIR_CREAR' })
   }
 
   function abrirEditar(plan: Plan) {
-    setPlanAEditar(plan)
-    setNombre(plan.nombre)
-    setPrecio(plan.precio.toString())
-    setDescripcion(plan.descripcion || '')
-    setDiasPorSemana(plan.diasPorSemana || 'Libre')
-    setActivo(plan.activo)
-    setModalAbierto(true)
+    dispatch({ type: 'ABRIR_EDITAR', plan })
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const precioNum = parseInt(precio, 10)
-    if (!nombre.trim() || isNaN(precioNum) || precioNum <= 0) return
+    const precioNum = parseInt(form.precio, 10)
+    if (!form.nombre.trim() || isNaN(precioNum) || precioNum <= 0) return
 
-    if (planAEditar) {
-      actualizarPlan(planAEditar.id, {
-        nombre: nombre.trim(),
+    if (form.planAEditar) {
+      actualizarPlan(form.planAEditar.id, {
+        nombre: form.nombre.trim(),
         precio: precioNum,
-        descripcion: descripcion.trim(),
-        diasPorSemana,
-        activo,
+        descripcion: form.descripcion.trim(),
+        diasPorSemana: form.diasPorSemana,
+        activo: form.activo,
       })
     } else {
       agregarPlan({
-        nombre: nombre.trim(),
+        nombre: form.nombre.trim(),
         precio: precioNum,
-        descripcion: descripcion.trim(),
-        diasPorSemana,
-        activo,
+        descripcion: form.descripcion.trim(),
+        diasPorSemana: form.diasPorSemana,
+        activo: form.activo,
       })
     }
-    setModalAbierto(false)
+    dispatch({ type: 'CERRAR_MODAL' })
   }
 
   return (
@@ -83,7 +121,7 @@ export default function PlanesPage() {
         {usuarioActual.rol === 'ADMIN' && (
           <Button
             onClick={abrirCrear}
-            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
+            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
             Nuevo Plan
@@ -96,7 +134,7 @@ export default function PlanesPage() {
         {planes.map((plan) => (
           <div
             key={plan.id}
-            className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${
+            className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[transform,box-shadow,border-color] duration-300 ${
               plan.activo
                 ? 'border-slate-800 bg-slate-900/50 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/30'
                 : 'border-slate-800/40 bg-slate-950/40 opacity-70'
@@ -175,26 +213,27 @@ export default function PlanesPage() {
       </div>
 
       {/* MODAL CREAR / EDITAR PLAN */}
-      {modalAbierto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
+      {form.modalAbierto && (
+        <dialog
+          open
+          className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/80 p-4 backdrop-blur-sm backdrop:bg-transparent"
+          aria-labelledby="modal-plan-title"
         >
           <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-7 text-slate-100 shadow-2xl">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-black text-white">
-                  {planAEditar ? 'Modificar Plan' : 'Nuevo Plan de Gimnasio'}
+                <h2 id="modal-plan-title" className="text-2xl font-black text-white">
+                  {form.planAEditar ? 'Modificar Plan' : 'Nuevo Plan de Gimnasio'}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
-                  {planAEditar
+                  {form.planAEditar
                     ? 'Actualizá el importe o los detalles para los nuevos cobros.'
                     : 'Agregá una nueva opción de cuota a la lista.'}
                 </p>
               </div>
               <button
-                onClick={() => setModalAbierto(false)}
+                onClick={() => dispatch({ type: 'CERRAR_MODAL' })}
+                aria-label="Cerrar"
                 className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
               >
                 <X className="size-5" />
@@ -202,36 +241,39 @@ export default function PlanesPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+              <label htmlFor="plan-nombre" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
                 Nombre del Plan
                 <input
+                  id="plan-nombre"
                   required
                   placeholder="Ej: Pase Libre Musculación"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
+                  value={form.nombre}
+                  onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'nombre', valor: e.target.value })}
                   className="h-11 rounded-xl border border-slate-700 bg-slate-800/80 px-4 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+                <label htmlFor="plan-precio" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
                   Precio mensual ($)
                   <input
+                    id="plan-precio"
                     required
                     type="number"
                     min={1}
                     placeholder="Ej: 20000"
-                    value={precio}
-                    onChange={(e) => setPrecio(e.target.value)}
+                    value={form.precio}
+                    onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'precio', valor: e.target.value })}
                     className="h-11 rounded-xl border border-slate-700 bg-slate-800/80 px-4 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                   />
                 </label>
 
-                <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+                <label htmlFor="plan-dias" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
                   Frecuencia / Días
                   <select
-                    value={diasPorSemana}
-                    onChange={(e) => setDiasPorSemana(e.target.value)}
+                    id="plan-dias"
+                    value={form.diasPorSemana}
+                    onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'diasPorSemana', valor: e.target.value })}
                     className="h-11 rounded-xl border border-slate-700 bg-slate-800/80 px-3 text-sm text-white outline-none focus:border-blue-500"
                   >
                     <option value="Libre">Libre (Lunes a Sábado)</option>
@@ -242,22 +284,24 @@ export default function PlanesPage() {
                 </label>
               </div>
 
-              <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+              <label htmlFor="plan-desc" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
                 Descripción para el alumno
                 <textarea
+                  id="plan-desc"
                   rows={2}
                   placeholder="Qué incluye este plan..."
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
+                  value={form.descripcion}
+                  onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'descripcion', valor: e.target.value })}
                   className="rounded-xl border border-slate-700 bg-slate-800/80 p-3 text-sm text-white outline-none focus:border-blue-500 resize-none"
                 />
               </label>
 
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-300 mt-1 cursor-pointer">
+              <label htmlFor="plan-activo" className="flex items-center gap-2 text-xs font-bold text-slate-300 mt-1 cursor-pointer">
                 <input
+                  id="plan-activo"
                   type="checkbox"
-                  checked={activo}
-                  onChange={(e) => setActivo(e.target.checked)}
+                  checked={form.activo}
+                  onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'activo', valor: e.target.checked })}
                   className="size-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500"
                 />
                 Plan activo (disponible para nuevas inscripciones)
@@ -267,21 +311,21 @@ export default function PlanesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setModalAbierto(false)}
+                  onClick={() => dispatch({ type: 'CERRAR_MODAL' })}
                   className="h-11 rounded-xl border-slate-700 text-slate-300 hover:bg-slate-800"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
-                  className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all"
+                  className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200"
                 >
-                  {planAEditar ? 'Guardar cambios' : 'Crear plan'}
+                  {form.planAEditar ? 'Guardar cambios' : 'Crear plan'}
                 </Button>
               </div>
             </form>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   )

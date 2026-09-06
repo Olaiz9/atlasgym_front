@@ -84,7 +84,7 @@ export default function AlumnosPage() {
         </div>
         <button
           onClick={() => setModalAbierto(true)}
-          className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+          className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Agregar alumno
@@ -127,7 +127,7 @@ export default function AlumnosPage() {
               <button
                 key={f.value}
                 onClick={() => setFiltro(f.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   filtro === f.value
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
@@ -140,10 +140,12 @@ export default function AlumnosPage() {
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
+              id="buscar-alumnos"
+              aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-all focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -209,14 +211,14 @@ export default function AlumnosPage() {
                     <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150 active:scale-90"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setAlumnoAEliminar(alumno)}
                       aria-label={`Eliminar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -282,7 +284,7 @@ function MetricCard({
   tint: { bg: string; text: string; bar: string };
 }) {
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
+    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-bold text-slate-500">{label}</p>
@@ -328,13 +330,13 @@ function ModalConfirmarEliminar({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
           >
             Eliminar
           </button>
@@ -375,6 +377,7 @@ function ModalNuevoAlumno({
           <h2 className="text-lg font-semibold">Agregar alumno</h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
@@ -384,18 +387,19 @@ function ModalNuevoAlumno({
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Nombre y apellido">
             <input
+              aria-label="Nombre y apellido"
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
               maxLength={60}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               placeholder="Nombre y apellido"
               required
-              autoFocus
             />
           </Field>
 
           <Field label="Plan asignado">
             <select
+              aria-label="Plan asignado"
               value={form.plan}
               onChange={(e) => setForm({ ...form, plan: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
@@ -413,6 +417,7 @@ function ModalNuevoAlumno({
           <div className="grid grid-cols-2 gap-4">
             <Field label="Email">
               <input
+                aria-label="Email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -422,6 +427,7 @@ function ModalNuevoAlumno({
             </Field>
             <Field label="Celular">
               <input
+                aria-label="Celular"
                 type="tel"
                 inputMode="numeric"
                 value={form.celular}
@@ -436,6 +442,7 @@ function ModalNuevoAlumno({
 
           <Field label="Fecha de alta">
             <input
+              aria-label="Fecha de alta"
               type="date"
               value={form.fechaAlta}
               onChange={(e) => setForm({ ...form, fechaAlta: e.target.value })}
@@ -445,7 +452,7 @@ function ModalNuevoAlumno({
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-[color,background-color] duration-200 active:scale-95"
           >
             Guardar alumno
           </button>
@@ -500,6 +507,7 @@ function ModalEditarAlumno({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
@@ -509,18 +517,19 @@ function ModalEditarAlumno({
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Nombre y apellido">
             <input
+              aria-label="Nombre y apellido"
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
               maxLength={60}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               placeholder="Nombre y apellido"
               required
-              autoFocus
             />
           </Field>
 
           <Field label="Plan asignado">
             <select
+              aria-label="Plan asignado"
               value={form.plan}
               onChange={(e) => setForm({ ...form, plan: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
@@ -537,6 +546,7 @@ function ModalEditarAlumno({
           <div className="grid grid-cols-2 gap-4">
             <Field label="Email">
               <input
+                aria-label="Email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -546,6 +556,7 @@ function ModalEditarAlumno({
             </Field>
             <Field label="Celular">
               <input
+                aria-label="Celular"
                 type="tel"
                 inputMode="numeric"
                 value={form.celular}
@@ -563,7 +574,7 @@ function ModalEditarAlumno({
               <button
                 type="button"
                 onClick={() => setForm({ ...form, activo: true })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   form.activo
                     ? "bg-emerald-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -574,7 +585,7 @@ function ModalEditarAlumno({
               <button
                 type="button"
                 onClick={() => setForm({ ...form, activo: false })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   !form.activo
                     ? "bg-rose-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -589,13 +600,13 @@ function ModalEditarAlumno({
             <button
               type="button"
               onClick={onClose}
-              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all duration-300 active:scale-95"
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color] duration-200 active:scale-95"
             >
               Guardar cambios
             </button>

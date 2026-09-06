@@ -63,6 +63,7 @@ function SelectorMes({
     >
       <select
         disabled={disabled}
+        aria-label="Seleccionar mes"
         value={Number(mesStr) - 1}
         onChange={(e) =>
           onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
@@ -76,6 +77,7 @@ function SelectorMes({
       <div className="h-5 w-px bg-slate-200 shrink-0" />
       <select
         disabled={disabled}
+        aria-label="Seleccionar año"
         value={anioStr}
         onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
         className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
@@ -213,7 +215,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
             >
               <MessageCircle className="w-5 h-5" />
               Enviar comprobante por WhatsApp
@@ -356,7 +358,7 @@ export default function FinanzasPage() {
           </div>
           <button
             onClick={() => setModalAbierto(true)}
-            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Registrar pago
@@ -378,14 +380,14 @@ export default function FinanzasPage() {
               setMes(mesActualISO());
               setVerTodos(false);
             }}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Mes actual
           </button>
           <button
             type="button"
             onClick={() => setVerTodos((v) => !v)}
-            className={`h-11 px-4 rounded-full text-sm font-bold transition-all duration-300 active:scale-95 ${
+            className={`h-11 px-4 rounded-full text-sm font-bold transition-[color,background-color] duration-200 active:scale-95 ${
               verTodos
                 ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                 : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -434,7 +436,7 @@ export default function FinanzasPage() {
               <button
                 key={f.value}
                 onClick={() => setFiltro(f.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 active:scale-95 ${
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   filtro === f.value
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
@@ -447,10 +449,12 @@ export default function FinanzasPage() {
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
+              id="buscar-finanzas"
+              aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-all focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -496,6 +500,7 @@ export default function FinanzasPage() {
                     <td className="px-6 py-4">
                       <div className="relative inline-block">
                         <select
+                          aria-label="Cambiar estado del pago"
                           value={pago.estado}
                           onChange={(e) =>
                             actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
@@ -513,7 +518,7 @@ export default function FinanzasPage() {
                       <button
                         onClick={() => setPagoAEliminar(pago)}
                         aria-label={`Eliminar pago de ${alumno?.nombre ?? "alumno"}`}
-                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 active:scale-90"
+                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -570,7 +575,7 @@ function MetricCard({
   tint: { bg: string; text: string; bar: string };
 }) {
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
+    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-bold text-slate-500">{label}</p>
@@ -612,13 +617,13 @@ function ModalConfirmarEliminar({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all duration-300 active:scale-95"
+            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
           >
             Eliminar
           </button>
@@ -704,6 +709,7 @@ function ModalRegistrarPago({
           <h2 className="text-lg font-semibold">Registrar pago</h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
@@ -726,6 +732,7 @@ function ModalRegistrarPago({
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field label="Alumno">
               <select
+                aria-label="Alumno"
                 value={form.alumnoId}
                 onChange={(e) => setForm({ ...form, alumnoId: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -739,6 +746,7 @@ function ModalRegistrarPago({
 
             <Field label="Plan">
               <input
+                aria-label="Plan"
                 value={form.plan}
                 onChange={(e) => setForm({ ...form, plan: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -749,6 +757,7 @@ function ModalRegistrarPago({
             <div className="grid grid-cols-2 gap-4">
               <Field label="Monto">
                 <input
+                  aria-label="Monto"
                   type="number"
                   value={form.monto}
                   onChange={(e) => setForm({ ...form, monto: e.target.value })}
@@ -759,6 +768,7 @@ function ModalRegistrarPago({
               </Field>
               <Field label="Fecha">
                 <input
+                  aria-label="Fecha"
                   type="date"
                   value={form.fecha}
                   onChange={(e) => setForm({ ...form, fecha: e.target.value })}
@@ -796,7 +806,7 @@ function ModalRegistrarPago({
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-all duration-300 active:scale-95"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-[color,background-color] duration-200 active:scale-95"
             >
               Guardar pago
             </button>
@@ -810,6 +820,7 @@ function ModalRegistrarPago({
 
               <Field label="Celular del alumno">
                 <input
+                  aria-label="Celular del alumno"
                   type="tel"
                   inputMode="numeric"
                   value={celular}
@@ -824,7 +835,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={() => setTipoMensaje("pago")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
                     tipoMensaje === "pago"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -835,7 +846,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={() => setTipoMensaje("bienvenida")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
                     tipoMensaje === "bienvenida"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -849,6 +860,7 @@ function ModalRegistrarPago({
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Usuario">
                     <input
+                      aria-label="Usuario"
                       value={usuarioApp}
                       onChange={(e) => setUsuarioApp(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -858,6 +870,7 @@ function ModalRegistrarPago({
                   <Field label="Contraseña">
                     <div className="flex gap-1.5">
                       <input
+                        aria-label="Contraseña"
                         value={passwordApp}
                         onChange={(e) => setPasswordApp(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -877,6 +890,7 @@ function ModalRegistrarPago({
 
               <Field label="Mensaje">
                 <textarea
+                  aria-label="Mensaje"
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   rows={4}
@@ -889,7 +903,7 @@ function ModalRegistrarPago({
                 <button
                   type="button"
                   onClick={generarMensaje}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all duration-300 active:scale-95"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-[color,background-color] duration-200 active:scale-95"
                 >
                   Generar mensaje
                 </button>
@@ -897,7 +911,7 @@ function ModalRegistrarPago({
                   type="button"
                   onClick={enviarWhatsapp}
                   disabled={!puedeEnviar}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Enviar por WhatsApp

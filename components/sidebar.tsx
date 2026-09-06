@@ -45,7 +45,7 @@ function SidebarUserCard({
       href="/login"
       onClick={onCerrarSesion}
       title={collapsed ? "Cerrar sesión" : undefined}
-      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/50 p-3 border border-slate-800/50 transition-all hover:bg-slate-900 hover:border-slate-700 group cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/50 p-3 border border-slate-800/50 transition-[background-color,border-color] duration-200 hover:bg-slate-900 hover:border-slate-700 group cursor-pointer ${collapsed ? 'justify-center' : ''}`}
     >
       <div className="flex items-center gap-3 min-w-0">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-sm font-bold text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -76,7 +76,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-all duration-300 ${
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-300 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -84,7 +84,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         <button
           onClick={onToggle}
           aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-all duration-300 hover:text-white hover:border-blue-600 active:scale-90"
+          className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-[color,border-color,transform] duration-200 hover:text-white hover:border-blue-600 active:scale-90"
         >
           <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
@@ -110,7 +110,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                   key={label}
                   href={href}
                   title={collapsed ? label : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all duration-300 ${
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
                     collapsed ? 'justify-center' : ''
                   } ${
                     active
@@ -129,7 +129,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             <button
               onClick={() => setMostrarAyuda(true)}
               title={collapsed ? 'Centro de ayuda' : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
               {!collapsed && 'Centro de ayuda'}

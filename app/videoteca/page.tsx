@@ -80,7 +80,7 @@ export default function VideotecaPage() {
         {esAdmin && (
           <Button
             onClick={() => setModalNuevoAbierto(true)}
-            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
+            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
             Nuevo Video
@@ -93,16 +93,20 @@ export default function VideotecaPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
           <input
+            id="buscar-video"
             type="text"
+            aria-label="Buscar video"
             placeholder="Buscar por ejercicio, músculo o técnica..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-800 bg-slate-900/60 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10 transition-all"
+            className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-800 bg-slate-900/60 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10 transition-[border-color,box-shadow] duration-200"
           />
           {busqueda && (
             <button
+              type="button"
+              aria-label="Limpiar búsqueda"
               onClick={() => setBusqueda('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -116,7 +120,7 @@ export default function VideotecaPage() {
               <button
                 key={grupo}
                 onClick={() => setFiltroGrupo(grupo)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-[color,background-color,box-shadow] duration-200 shrink-0 cursor-pointer ${
                   activo
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30'
                     : 'bg-slate-900/80 text-slate-400 border border-slate-800/80 hover:bg-slate-800 hover:text-slate-200'
@@ -147,15 +151,17 @@ export default function VideotecaPage() {
           {videosFiltrados.map((video) => (
             <div
               key={video.id}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/40"
+              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/40"
             >
-              <div
+              <button
+                type="button"
                 onClick={() => setVideoSeleccionado(video)}
-                className="relative h-48 w-full bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950/50 flex items-center justify-center cursor-pointer overflow-hidden border-b border-slate-800/60"
+                aria-label={`Reproducir video: ${video.titulo}`}
+                className="relative h-48 w-full bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950/50 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer"
               >
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all duration-300 group-hover:scale-115 group-hover:bg-blue-500">
+                <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[transform,background-color] duration-300 group-hover:scale-110 group-hover:bg-blue-500">
                   <Play className="size-6 fill-white ml-0.5" />
                 </div>
 
@@ -169,7 +175,7 @@ export default function VideotecaPage() {
                     {video.grupoMuscular}
                   </span>
                 </div>
-              </div>
+              </button>
 
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
@@ -181,6 +187,7 @@ export default function VideotecaPage() {
 
                     {esAdmin && (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation()
                           if (confirm(`¿Eliminar el video "${video.titulo}"?`)) {
@@ -189,17 +196,21 @@ export default function VideotecaPage() {
                         }}
                         className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
                         title="Eliminar video"
+                        aria-label={`Eliminar video ${video.titulo}`}
                       >
                         <Trash2 className="size-4" />
                       </button>
                     )}
                   </div>
 
-                  <h3
-                    onClick={() => setVideoSeleccionado(video)}
-                    className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer leading-snug"
-                  >
-                    {video.titulo}
+                  <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors leading-snug">
+                    <button
+                      type="button"
+                      onClick={() => setVideoSeleccionado(video)}
+                      className="text-left hover:text-blue-400 transition-colors cursor-pointer"
+                    >
+                      {video.titulo}
+                    </button>
                   </h3>
 
                   {video.descripcion && (
@@ -230,10 +241,10 @@ export default function VideotecaPage() {
 
       {/* MODAL REPRODUCTOR DE VIDEO Y CONSEJOS */}
       {videoSeleccionado && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md transition-all animate-in fade-in"
-          role="dialog"
-          aria-modal="true"
+        <dialog
+          open
+          className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/85 p-4 backdrop-blur-md backdrop:bg-transparent transition-opacity duration-200 animate-in fade-in"
+          aria-labelledby="modal-player-title"
         >
           <div className="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 text-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-800 p-5 bg-slate-950/60">
@@ -241,11 +252,13 @@ export default function VideotecaPage() {
                 <span className="px-2.5 py-1 rounded-md bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-bold">
                   {videoSeleccionado.grupoMuscular}
                 </span>
-                <h2 className="text-base md:text-lg font-bold text-white truncate max-w-md">
+                <h2 id="modal-player-title" className="text-base md:text-lg font-bold text-white truncate max-w-md">
                   {videoSeleccionado.titulo}
                 </h2>
               </div>
               <button
+                type="button"
+                aria-label="Cerrar reproductor"
                 onClick={() => setVideoSeleccionado(null)}
                 className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
               >
@@ -298,7 +311,7 @@ export default function VideotecaPage() {
               </div>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {/* MODAL NUEVO VIDEO (ADMIN) */}
@@ -351,21 +364,23 @@ function ModalNuevoVideo({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      open
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/80 p-4 backdrop-blur-sm backdrop:bg-transparent"
+      aria-labelledby="modal-video-title"
     >
       <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-7 text-slate-100 shadow-2xl">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-black text-white">Nuevo Video de Técnica</h2>
+            <h2 id="modal-video-title" className="text-2xl font-black text-white">Nuevo Video de Técnica</h2>
             <p className="mt-1 text-sm text-slate-400">
               Carga un tutorial de YouTube o video para la videoteca de tus alumnos.
             </p>
           </div>
           <button
+            type="button"
             onClick={onCerrar}
+            aria-label="Cerrar"
             className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
           >
             <X className="size-5" />
@@ -456,13 +471,13 @@ function ModalNuevoVideo({
             </Button>
             <Button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all"
+              className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow] duration-200"
             >
               Guardar video
             </Button>
           </div>
         </form>
       </div>
-    </div>
+    </dialog>
   )
 }

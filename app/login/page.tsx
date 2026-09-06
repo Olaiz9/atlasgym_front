@@ -67,7 +67,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setRol('ADMIN')}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-300 ${
+              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-[color,background-color,box-shadow] duration-200 ${
                 rol === 'ADMIN'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                   : 'text-slate-400 hover:text-white'
@@ -79,7 +79,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setRol('ALUMNO')}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-300 ${
+              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-[color,background-color,box-shadow] duration-200 ${
                 rol === 'ALUMNO'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                   : 'text-slate-400 hover:text-white'
@@ -93,18 +93,19 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Input Email */}
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
                 Correo electrónico
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                 <input
+                  id="login-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'tu.email@ejemplo.com'}
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-all focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
             </div>
@@ -112,27 +113,25 @@ export default function LoginPage() {
             {/* Input Password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-300">Contraseña</label>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    alert('Contactá al administrador para restablecer tu clave.')
-                  }}
+                <label htmlFor="login-password" className="text-xs font-bold text-slate-300">Contraseña</label>
+                <button
+                  type="button"
+                  onClick={() => alert('Contactá al administrador para restablecer tu clave.')}
                   className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   ¿Olvidaste tu contraseña?
-                </a>
+                </button>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-all focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
                 <button
                   type="button"
@@ -163,7 +162,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={cargando}
-              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
             >
               {cargando ? (
                 <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -186,7 +185,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleQuickDemo('ADMIN')}
-                className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-all hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left"
+                className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-[color,background-color,border-color] duration-200 hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left"
               >
                 👑 <strong>Admin</strong>
                 <span className="block text-[10px] text-slate-500 font-normal">admin@atlasgym</span>
@@ -194,7 +193,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleQuickDemo('ALUMNO')}
-                className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-all hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left"
+                className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-[color,background-color,border-color] duration-200 hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left"
               >
                 🏋️ <strong>Alumno</strong>
                 <span className="block text-[10px] text-slate-500 font-normal">lucia@mail.com</span>

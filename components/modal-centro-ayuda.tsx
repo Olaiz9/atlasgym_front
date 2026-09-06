@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { HelpCircle, X, Mail, Phone, ExternalLink } from 'lucide-react'
 
@@ -35,7 +35,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
         <div className="mt-5 flex flex-col gap-3">
           <a
             href="mailto:gonzalo5jesus@gmail.com"
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all hover:border-blue-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-blue-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
               <div className="flex size-10 items-center justify-center rounded-lg bg-red-500/10 text-red-400 group-hover:scale-105 transition-transform">
@@ -55,7 +55,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             href="https://wa.me/5492615665067"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all hover:border-emerald-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-emerald-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
               <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform">
@@ -75,7 +75,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             href="https://www.instagram.com/atlasgymoficial_/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all hover:border-pink-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-pink-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
               <div className="flex size-10 items-center justify-center rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-105 transition-transform">
