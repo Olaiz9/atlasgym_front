@@ -6,6 +6,7 @@ import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search,
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras } from "@/lib/validators";
+import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import {
   Alumno,
   EstadoCuenta,
@@ -239,13 +240,10 @@ export default function AlumnosPage() {
         </div>
       </div>
 
-      {modalAbierto && (
-        <ModalNuevoAlumno
-          planes={planes}
-          onClose={() => setModalAbierto(false)}
-          onSubmit={handleNuevoAlumno}
-        />
-      )}
+      <ModalNuevoAlumno
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+      />
 
       {alumnoAEditar && (
         <ModalEditarAlumno
@@ -341,122 +339,6 @@ function ModalConfirmarEliminar({
             Eliminar
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------- Modal: nuevo alumno ----------
-function ModalNuevoAlumno({
-  planes,
-  onClose,
-  onSubmit,
-}: {
-  planes: Plan[];
-  onClose: () => void;
-  onSubmit: (alumno: Omit<Alumno, "id">) => void;
-}) {
-  const [form, setForm] = useState({
-    nombre: "",
-    email: "",
-    celular: "",
-    plan: "",
-    fechaAlta: new Date().toISOString().slice(0, 10),
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.nombre.trim()) return;
-    onSubmit({ ...form, activo: true });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-sm text-slate-900 border border-slate-200 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold">Agregar alumno</h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Nombre y apellido">
-            <input
-              aria-label="Nombre y apellido"
-              value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
-              maxLength={60}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Nombre y apellido"
-              required
-            />
-          </Field>
-
-          <Field label="Plan asignado">
-            <select
-              aria-label="Plan asignado"
-              value={form.plan}
-              onChange={(e) => setForm({ ...form, plan: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-              required
-            >
-              <option value="">Seleccionar un plan...</option>
-              {planes.map((p) => (
-                <option key={p.id} value={p.nombre}>
-                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Email">
-              <input
-                aria-label="Email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="nombre@mail.com"
-              />
-            </Field>
-            <Field label="Celular">
-              <input
-                aria-label="Celular"
-                type="tel"
-                inputMode="numeric"
-                value={form.celular}
-                onChange={(e) =>
-                  setForm({ ...form, celular: e.target.value.replace(/[^0-9]/g, "").slice(0, 13) })
-                }
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="2611234567"
-              />
-            </Field>
-          </div>
-
-          <Field label="Fecha de alta">
-            <input
-              aria-label="Fecha de alta"
-              type="date"
-              value={form.fechaAlta}
-              onChange={(e) => setForm({ ...form, fechaAlta: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </Field>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-[color,background-color] duration-200 active:scale-95"
-          >
-            Guardar alumno
-          </button>
-        </form>
       </div>
     </div>
   );

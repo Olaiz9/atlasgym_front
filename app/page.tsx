@@ -2,10 +2,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar } from 'lucide-react'
 import { useAppData } from '@/lib/store'
+import { ESTADO_CUENTA_LABEL } from '@/lib/types'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 
@@ -121,7 +122,7 @@ function HomeAlumno({
             </p>
           </div>
           <Link
-            href={`/alumnos/${usuario.alumnoId || 'a1'}`}
+            href="/rutinas"
             className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95 text-sm"
           >
             <Dumbbell className="size-4" />
@@ -166,7 +167,7 @@ function HomeAlumno({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado de mi cuota</span>
                 <div className="mt-2 flex items-center gap-2">
                   <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {estadoCuenta === 'AL_DIA' ? 'Al día' : estadoCuenta}
+                    {ESTADO_CUENTA_LABEL[estadoCuenta] || estadoCuenta}
                   </span>
                 </div>
                 <p className="mt-3 text-sm font-bold text-slate-900">{alumno?.plan || 'Plan Musculación'}</p>
@@ -284,24 +285,33 @@ export default function Page() {
   const alumnosActivos = alumnos.filter((a) => a.activo).length
   const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
   const totalPendiente = pagosPendientes.reduce((acc, p) => acc + p.monto, 0)
-  const ultimosPagos = [...pagos]
-    .sort((a, b) => b.fecha.localeCompare(a.fecha))
-    .slice(0, 3)
-    .map((p) => {
-      const al = alumnos.find((a) => a.id === p.alumnoId)
-      return {
-        id: p.id,
-        name: al ? al.nombre : 'Alumno Atlas',
-        plan: p.plan,
-        amount: `$${p.monto.toLocaleString('es-AR')}`,
-        time: p.fecha,
-        initials: (al ? al.nombre : 'AT')
-          .split(' ')
-          .map((n) => n[0])
-          .slice(0, 2)
-          .join(''),
+  const ultimosPagos = useMemo(() => {
+    const alumnosMap = new Map(alumnos.map((a) => [a.id, a]))
+    const ordenados = [...pagos].sort((a, b) => b.fecha.localeCompare(a.fecha))
+    const res = []
+    const q = query.trim().toLowerCase()
+
+    for (const p of ordenados) {
+      if (res.length >= 5) break
+      const al = alumnosMap.get(p.alumnoId)
+      const nombre = al ? al.nombre : 'Alumno Atlas'
+      if (!q || nombre.toLowerCase().includes(q) || p.plan.toLowerCase().includes(q)) {
+        res.push({
+          id: p.id,
+          name: nombre,
+          plan: p.plan,
+          amount: `$${p.monto.toLocaleString('es-AR')}`,
+          time: p.fecha,
+          initials: (al ? al.nombre : 'AT')
+            .split(' ')
+            .map((n) => n[0])
+            .slice(0, 2)
+            .join(''),
+        })
       }
-    })
+    }
+    return res
+  }, [pagos, alumnos, query])
 
   const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
@@ -352,16 +362,25 @@ export default function Page() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar alumnos, rutinas, pagos..."
-            aria-label="Buscar alumnos, rutinas o pagos"
+            placeholder="Buscar en pagos recientes..."
+            aria-label="Buscar en pagos recientes"
             className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
           />
         </div>
         <div className="ml-auto flex items-center gap-6">
-          <button className="relative text-slate-400 transition-[color,transform] duration-200 hover:text-white hover:scale-110" aria-label="Notificaciones">
+          <Link
+            href="/finanzas"
+            title={pagosPendientes.length > 0 ? `${pagosPendientes.length} pagos pendientes` : 'Sin notificaciones pendientes'}
+            className="relative text-slate-400 transition-[color,transform] duration-200 hover:text-white hover:scale-110"
+            aria-label={pagosPendientes.length > 0 ? `${pagosPendientes.length} pagos pendientes` : 'Notificaciones'}
+          >
             <Bell className="size-5" />
-            <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-slate-950 bg-blue-500" />
-          </button>
+            {pagosPendientes.length > 0 && (
+              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white border-2 border-slate-950">
+                {pagosPendientes.length}
+              </span>
+            )}
+          </Link>
           <div className="hidden h-8 w-px bg-slate-800 sm:block" />
           <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
             {fechaHoy
@@ -405,7 +424,10 @@ export default function Page() {
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110 group-hover:bg-blue-100"><Users className="size-7" /></div>
             </div>
-            <div className="absolute bottom-0 left-0 h-1.5 w-[72%] bg-blue-600 transition-[width] duration-500 group-hover:w-[75%]" />
+            <div
+              className="absolute bottom-0 left-0 h-1.5 bg-blue-600 transition-[width] duration-500"
+              style={{ width: `${alumnos.length > 0 ? Math.round((alumnosActivos / alumnos.length) * 100) : 0}%` }}
+            />
           </article>
 
           <article className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/10 text-slate-900 border border-slate-200 cursor-default">
@@ -417,7 +439,10 @@ export default function Page() {
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-transform duration-300 group-hover:scale-110 group-hover:bg-rose-100"><WalletCards className="size-7" /></div>
             </div>
-            <div className="absolute bottom-0 left-0 h-1.5 w-[34%] bg-rose-500 transition-[width] duration-500 group-hover:w-[36%]" />
+            <div
+              className="absolute bottom-0 left-0 h-1.5 bg-rose-500 transition-[width] duration-500"
+              style={{ width: `${pagos.length > 0 ? Math.round((pagosPendientes.length / pagos.length) * 100) : 0}%` }}
+            />
           </article>
         </section>
 
@@ -445,21 +470,29 @@ export default function Page() {
 
           <div className="rounded-2xl bg-white p-7 shadow-sm transition-shadow duration-300 hover:shadow-lg text-slate-900 border border-slate-200">
             <SectionHeader title="Rutinas activas" action="Ver todas" href="/rutinas" />
-            <div className="mt-4 flex flex-col gap-6">
-              {routines.map((r) => (
-                <div key={r.name} className="group">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-base font-bold text-slate-900">{r.name}</p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-500">{r.student}</p>
+            <div className="mt-4 flex flex-col gap-5">
+              {rutinas.slice(0, 3).map((r, idx) => {
+                const alumnosAsignados = alumnos.filter((a) => a.rutinaId === r.id);
+                const nombresAlumnos = alumnosAsignados.length > 0 
+                  ? alumnosAsignados.map(a => a.nombre).join(', ')
+                  : 'Sin alumnos asignados';
+                const colores = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400'];
+                const porcentajes = [85, 60, 40];
+                return (
+                  <div key={r.id} className="group">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-base font-bold text-slate-900">{r.nombre}</p>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500 truncate max-w-[240px]">{nombresAlumnos}</p>
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">{r.objetivo}</span>
                     </div>
-                    <span className="text-sm font-black text-blue-600">{r.progress}%</span>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className={`h-full rounded-full ${colores[idx % colores.length]} transition-[width] duration-1000 ease-out`} style={{ width: `${porcentajes[idx % porcentajes.length]}%` }} />
+                    </div>
                   </div>
-                  <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className={`h-full rounded-full ${r.tone} transition-[width] duration-1000 ease-out`} style={{ width: `${r.progress}%` }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

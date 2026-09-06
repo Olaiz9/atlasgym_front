@@ -98,7 +98,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
 
         <div className="mt-5 border-t border-slate-800/60 pt-3 text-center">
           <p className="text-xs text-slate-500">
-            Horario de atención: Lunes a Sábados 08:00 a 22:00 hs
+            Horario de atención: Lunes a Viernes 07:00 a 22:00 hs · Sábados 09:00 a 14:00 hs
           </p>
         </div>
       </div>
