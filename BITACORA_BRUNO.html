@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bitácora de Desarrollo - ATLAS GYM (Rama Bruno)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @page {
+      margin: 12mm 15mm 12mm 15mm;
+      size: A4;
+    }
+    h1, h2, h3 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    li, p, div {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  </style>
+</head>
+<body class="p-8 max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b-2 border-slate-900 pb-5 mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+        A
+      </div>
+      <div>
+        <span class="text-2xl font-black tracking-widest text-slate-900 block leading-tight">ATLAS GYM</span>
+        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Reporte Técnico de Desarrollo & Calidad</span>
+      </div>
+    </div>
+    <div class="text-right">
+      <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rama: <span class="text-blue-700 font-mono">ramaBruno</span></span>
+      <span class="text-xs font-semibold text-slate-700">Responsable: Bruno</span>
+    </div>
+  </div>
+
+  <h1 class="text-3xl font-black text-slate-900 border-b-2 border-blue-600 pb-3 mb-6">
+    📋 Bitácora de Desarrollo y Reportes de Tests
+  </h1>
+  <p class="text-sm text-slate-700 my-2 leading-relaxed">
+    Este documento registra cada modificación realizada en el sistema, la justificación de negocio/técnica de cada decisión, los archivos exactos afectados y la validación obligatoria con <strong class="text-slate-900">Vitest</strong> y <strong class="text-slate-900">React Doctor</strong>. Se actualiza en tiempo real y se exporta a PDF en cada avance.
+  </p>
+
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 my-6">
+    <h4 class="text-xs font-black uppercase tracking-wider text-blue-800 mb-2">Protocolo de Trabajo Establecido</h4>
+    <ul class="text-xs text-blue-900 space-y-1">
+      <li>✓ <strong>Aislamiento de Rama:</strong> Exclusivamente en <code class="bg-blue-100 px-1 py-0.5 rounded font-mono">ramaBruno</code>.</li>
+      <li>✓ <strong>Doble Verificación:</strong> Vitest (100% de tests pasando) + React Doctor (score 100/100).</li>
+      <li>✓ <strong>Reporte PDF Inmediato:</strong> Actualización viva del documento <code class="bg-blue-100 px-1 py-0.5 rounded font-mono">BITACORA_BRUNO.pdf</code>.</li>
+    </ul>
+  </div>
+
+  <hr class="my-6 border-slate-200" />
+
+  <!-- Hito 1 -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        1. Preparación de Entorno, Sincronización y Validación de Tests
+      </h3>
+      <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
+        06 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento:</em> Instalación de Vitest, aseguramiento de tests de React Doctor y Vitest para cada cambio, y armado de reporte vivo en PDF sobre <code>ramaBruno</code>.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">¿Qué se hizo?</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+        <li>Instalación completa de dependencias de desarrollo y producción vía <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">npm install</code>, dejando operativo <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Vitest v5.0.0</code> y el ecosistema Testing Library.</li>
+        <li>Sincronización mediante <em>fast-forward</em> limpio de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ramaBruno</code> con la base de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">origin/develop</code>, incorporando sin conflictos las últimas funciones (planes dinámicos, videoteca, rutinas y shell responsivo).</li>
+        <li>Ejecución y certificación de las dos herramientas de auditoría y prueba: Vitest y React Doctor.</li>
+        <li>Implementación del motor de generación de reportes en PDF (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">BITACORA_BRUNO.pdf</code>).</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">¿Por qué se hizo?</p>
+      <p class="text-sm text-slate-700 leading-relaxed">
+        Para mantener la paridad absoluta con los estándares de desarrollo del equipo, prevenir colisiones de versiones y garantizar que ningún cambio se suba sin estar respaldado por pruebas automatizadas aprobadas y reportes ejecutivos descargables.
+      </p>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados / creados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>BITACORA_BRUNO.md (Documento fuente Markdown)</li>
+        <li>BITACORA_BRUNO.html (Template de diseño y renderizado)</li>
+        <li>BITACORA_BRUNO.pdf (Reporte consolidado listo para compartir)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 2 passed (2)</p>
+          <p>• <strong>Tests individuales:</strong> 10 passed (10)</p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">lib/utils.test.ts</code> & <code class="font-mono">components/ui/button.test.tsx</code></p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🩺 React Doctor Audit</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">SCORE 100 / 100</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Archivos analizados:</strong> 32 archivos escaneados</p>
+          <p>• <strong>Reglas de Hooks:</strong> 100% conformes</p>
+          <p>• <strong>Pureza en Store:</strong> Verificada sin efectos impuros</p>
+          <p>• <strong>Diagnóstico:</strong> No issues found! (0 advertencias)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
+    ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
+  </div>
+</body>
+</html>
