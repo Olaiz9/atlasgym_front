@@ -651,7 +651,10 @@ function mensajeBienvenidaTemplate(nombre: string, usuario: string, password: st
 }
 
 function generarPassword() {
-  return Math.random().toString(36).slice(-8);
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }
 
 // ---------- Modal: registrar pago ----------
