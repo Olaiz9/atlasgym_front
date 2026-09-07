@@ -137,5 +137,25 @@ describe("Módulo de Avisos y Notificaciones (lib/avisos.test.ts)", () => {
       const leido2 = marcarLeido(leido1, userId);
       expect(leido2.leidoPor.length).toBe(1);
     });
+
+    it("el ADMIN por defecto (u1) debe iniciar con exactamente 2 notificaciones no leídas", () => {
+      const adminUserId = "u1";
+      const noLeidosAdmin = AVISOS_MOCK.filter(
+        (av) => !av.leidoPor.includes(adminUserId)
+      );
+      expect(noLeidosAdmin.length).toBe(2);
+    });
+
+    it("marcarTodosAvisosLeidos debe marcar todos los avisos como leídos para el usuario", () => {
+      const userId = "u1";
+      const todosLeidos = AVISOS_MOCK.map((av) => {
+        if (!av.leidoPor.includes(userId)) {
+          return { ...av, leidoPor: [...av.leidoPor, userId] };
+        }
+        return av;
+      });
+      const pendientes = todosLeidos.filter((av) => !av.leidoPor.includes(userId));
+      expect(pendientes.length).toBe(0);
+    });
   });
 });

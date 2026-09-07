@@ -9,6 +9,7 @@ import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL } from '@/lib/types'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
+import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
 
 const payments = [
   { name: 'María González', plan: 'Plan Premium', amount: '$45.000', time: 'Hoy, 09:42', initials: 'MG' },
@@ -67,25 +68,13 @@ function HeaderStatusSection({
   fechaHoy,
   ubicacion,
 }: {
-  cantNoLeidos: number
+  cantNoLeidos?: number
   fechaHoy: Date | null
   ubicacion: string
 }) {
   return (
     <div className="ml-auto flex items-center gap-6">
-      <Link
-        href="/avisos"
-        title={cantNoLeidos > 0 ? `${cantNoLeidos} avisos sin leer` : 'Avisos y Comunicados'}
-        className="relative text-slate-400 transition-[color,transform] duration-200 hover:text-white hover:scale-110"
-        aria-label={cantNoLeidos > 0 ? `${cantNoLeidos} avisos sin leer` : 'Avisos'}
-      >
-        <Bell className="size-5" />
-        {cantNoLeidos > 0 && (
-          <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white border-2 border-slate-950">
-            {cantNoLeidos}
-          </span>
-        )}
-      </Link>
+      <NotificacionesDropdown />
       <div className="hidden h-8 w-px bg-slate-800 sm:block" />
       <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
         {fechaHoy

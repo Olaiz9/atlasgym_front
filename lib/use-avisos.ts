@@ -1,11 +1,11 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Aviso, UsuarioSesion } from "./types";
 import { AVISOS_MOCK } from "./mock-data";
 
 export function useAvisosManager() {
   const [avisos, setAvisos] = useState<Aviso[]>(() => {
     if (typeof window !== "undefined") {
-      const guardado = localStorage.getItem("atlas_avisos_v1");
+      const guardado = localStorage.getItem("atlas_avisos_v2");
       if (guardado) {
         try {
           return JSON.parse(guardado);
@@ -18,7 +18,7 @@ export function useAvisosManager() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("atlas_avisos_v1", JSON.stringify(avisos));
+        localStorage.setItem("atlas_avisos_v2", JSON.stringify(avisos));
       } catch {}
     }
   }, [avisos]);
@@ -68,10 +68,22 @@ export function useAvisosManager() {
     [getAvisosParaUsuario]
   );
 
+  const marcarTodosAvisosLeidos = useCallback((usuarioId: string) => {
+    setAvisos((prev) =>
+      prev.map((av) => {
+        if (!av.leidoPor.includes(usuarioId)) {
+          return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
+        }
+        return av;
+      })
+    );
+  }, []);
+
   return {
     avisos,
     crearAviso,
     marcarAvisoLeido,
+    marcarTodosAvisosLeidos,
     eliminarAviso,
     getAvisosParaUsuario,
     getCantidadAvisosNoLeidos,

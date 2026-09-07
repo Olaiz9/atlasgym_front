@@ -49,6 +49,7 @@ interface AppDataContextValue {
   eliminarPlan: (id: string) => void;
   crearAviso: (aviso: Omit<Aviso, "id" | "leidoPor">) => Aviso;
   marcarAvisoLeido: (avisoId: string, usuarioId: string) => void;
+  marcarTodosAvisosLeidos: (usuarioId: string) => void;
   eliminarAviso: (avisoId: string) => void;
   getAvisosParaUsuario: (usuario: UsuarioSesion) => Aviso[];
   getCantidadAvisosNoLeidos: (usuario: UsuarioSesion) => number;
@@ -220,6 +221,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     avisos,
     crearAviso,
     marcarAvisoLeido,
+    marcarTodosAvisosLeidos,
     eliminarAviso,
     getAvisosParaUsuario,
     getCantidadAvisosNoLeidos,
@@ -253,6 +255,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       avisos,
       crearAviso,
       marcarAvisoLeido,
+      marcarTodosAvisosLeidos,
       eliminarAviso,
       getAvisosParaUsuario,
       getCantidadAvisosNoLeidos,
@@ -269,6 +272,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       avisos,
       crearAviso,
       marcarAvisoLeido,
+      marcarTodosAvisosLeidos,
       eliminarAviso,
       getAvisosParaUsuario,
       getCantidadAvisosNoLeidos,

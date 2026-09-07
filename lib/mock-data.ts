@@ -243,7 +243,7 @@ export const AVISOS_MOCK: Aviso[] = [
     categoria: "NOVEDAD",
     fecha: "2026-09-02",
     paraTodos: true,
-    leidoPor: ["u_alumno_1"],
+    leidoPor: ["u_alumno_1", "u1"],
   },
   {
     id: "av-3",
