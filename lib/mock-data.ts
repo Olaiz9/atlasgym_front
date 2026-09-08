@@ -1,7 +1,8 @@
 // lib/mock-data.ts
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
-import { Alumno, Pago, Rutina, VideoTecnica, Plan } from "./types";
+import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
+
 
 export const ALUMNOS_MOCK: Alumno[] = [
   { id: "a1", nombre: "Lucía Fernández", email: "lucia.fernandez@mail.com", celular: "2611234567", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
@@ -225,3 +226,35 @@ export const PLANES_MOCK: Plan[] = [
     activo: true,
   },
 ];
+
+export const AVISOS_MOCK: Aviso[] = [
+  {
+    id: "av-1",
+    titulo: "Feriado Nacional: Horario Especial",
+    mensaje: "Este próximo lunes feriado abrimos de 09:00 a 14:00 hs. Las clases de funcional de la tarde quedan suspendidas. ¡Los esperamos por la mañana!",
+    categoria: "HORARIO",
+    fecha: "2026-09-04",
+    paraTodos: true,
+    leidoPor: [],
+  },
+  {
+    id: "av-2",
+    titulo: "Nuevas Mancuernas en Sala de Musculación",
+    mensaje: "Incorporamos juegos de mancuernas de 12kg a 36kg de uretano de alta durabilidad y un banco declinado nuevo. ¡A cuidarlas y ordenarlas después de usarlas!",
+    categoria: "NOVEDAD",
+    fecha: "2026-09-02",
+    paraTodos: true,
+    leidoPor: ["u_alumno_1", "u1"],
+  },
+  {
+    id: "av-3",
+    titulo: "Recordatorio: Cuota de Septiembre",
+    mensaje: "Hola Lucía! Te recordamos que el vencimiento de tu cuota de Musculación es el día 10. Podés abonar en recepción o por transferencia.",
+    categoria: "IMPORTANTE",
+    fecha: "2026-09-01",
+    paraTodos: false,
+    alumnoId: "a1",
+    leidoPor: [],
+  },
+];
+

@@ -11,8 +11,9 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, useEffect, useCallback, ReactNode } from "react";
-import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan } from "./types";
+import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso } from "./types";
 import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK } from "./mock-data";
+import { useAvisosManager } from "./use-avisos";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   id: "u1",
@@ -27,6 +28,7 @@ interface AppDataContextValue {
   rutinas: Rutina[];
   videosTecnica: VideoTecnica[];
   planes: Plan[];
+  avisos: Aviso[];
   usuarioActual: UsuarioSesion;
   iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
   cerrarSesion: () => void;
@@ -45,6 +47,12 @@ interface AppDataContextValue {
   agregarPlan: (plan: Omit<Plan, "id">) => Plan;
   actualizarPlan: (id: string, cambios: Partial<Omit<Plan, "id">>) => void;
   eliminarPlan: (id: string) => void;
+  crearAviso: (aviso: Omit<Aviso, "id" | "leidoPor">) => Aviso;
+  marcarAvisoLeido: (avisoId: string, usuarioId: string) => void;
+  marcarTodosAvisosLeidos: (usuarioId: string) => void;
+  eliminarAviso: (avisoId: string) => void;
+  getAvisosParaUsuario: (usuario: UsuarioSesion) => Aviso[];
+  getCantidadAvisosNoLeidos: (usuario: UsuarioSesion) => number;
   getAlumno: (id: string) => Alumno | undefined;
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   getPagosDeAlumno: (alumnoId: string) => Pago[];
@@ -209,6 +217,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [pagos]
   );
 
+  const {
+    avisos,
+    crearAviso,
+    marcarAvisoLeido,
+    marcarTodosAvisosLeidos,
+    eliminarAviso,
+    getAvisosParaUsuario,
+    getCantidadAvisosNoLeidos,
+  } = useAvisosManager();
+
   const value = useMemo<AppDataContextValue>(
     () => ({
       alumnos,
@@ -234,6 +252,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       agregarPlan,
       actualizarPlan,
       eliminarPlan,
+      avisos,
+      crearAviso,
+      marcarAvisoLeido,
+      marcarTodosAvisosLeidos,
+      eliminarAviso,
+      getAvisosParaUsuario,
+      getCantidadAvisosNoLeidos,
       getAlumno,
       getEstadoCuenta,
       getPagosDeAlumno,
@@ -244,6 +269,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       rutinas,
       videosTecnica,
       planes,
+      avisos,
+      crearAviso,
+      marcarAvisoLeido,
+      marcarTodosAvisosLeidos,
+      eliminarAviso,
+      getAvisosParaUsuario,
+      getCantidadAvisosNoLeidos,
       usuarioActual,
       iniciarSesion,
       cerrarSesion,

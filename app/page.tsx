@@ -9,6 +9,7 @@ import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL } from '@/lib/types'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
+import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
 
 const payments = [
   { name: 'María González', plan: 'Plan Premium', amount: '$45.000', time: 'Hoy, 09:42', initials: 'MG' },
@@ -62,6 +63,152 @@ function capitalizar(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
+function HeaderStatusSection({
+  cantNoLeidos,
+  fechaHoy,
+  ubicacion,
+}: {
+  cantNoLeidos?: number
+  fechaHoy: Date | null
+  ubicacion: string
+}) {
+  return (
+    <div className="ml-auto flex items-center gap-6">
+      <NotificacionesDropdown />
+      <div className="hidden h-8 w-px bg-slate-800 sm:block" />
+      <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
+        {fechaHoy
+          ? capitalizar(
+              fechaHoy.toLocaleDateString('es-AR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                timeZone: 'America/Argentina/Buenos_Aires',
+              })
+            )
+          : 'Cargando fecha...'}
+        <br />
+        <span className="text-xs font-medium text-slate-500">{ubicacion}</span>
+      </p>
+    </div>
+  )
+}
+
+function AvisoBannerDestacado({ aviso }: { aviso: { fecha: string; titulo: string } }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-500/30 bg-blue-950/40 p-4 backdrop-blur-md">
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400">
+          <Bell className="size-5" />
+        </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+              Aviso del Gimnasio
+            </span>
+            <span className="text-xs text-slate-400 font-medium">{aviso.fecha}</span>
+          </div>
+          <p className="text-sm font-bold text-white mt-0.5">{aviso.titulo}</p>
+        </div>
+      </div>
+      <Link
+        href="/avisos"
+        className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
+      >
+        Leer aviso completo <ChevronRight className="size-3.5" />
+      </Link>
+    </div>
+  )
+}
+
+function AlumnoCardsSection({
+  alumno,
+  estadoCuenta,
+  rutina,
+}: {
+  alumno: any
+  estadoCuenta: string
+  rutina: any
+}) {
+  const diaUno = rutina?.dias[0]
+  const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
+  const subtituloRutina = diaUno ? diaUno.nombre : (rutina ? 'Rutina activa' : 'Consultá a tu profesor')
+  const detalleRutina = diaUno
+    ? `${diaUno.ejercicios.length} ejercicios para hoy`
+    : (rutina ? `${rutina.dias.length} días de plan` : 'Pedí tu rutina en recepción')
+
+  return (
+    <div className="grid gap-6 md:grid-cols-3">
+      {/* Tarjeta 1: Mi Rutina */}
+      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
+            <p className="mt-2 text-2xl font-black text-slate-900">{nombreRutina}</p>
+            <p className="mt-1 text-sm font-semibold text-blue-600">{subtituloRutina}</p>
+            <p className="mt-4 text-xs font-medium text-slate-500">{detalleRutina}</p>
+          </div>
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+            <Dumbbell className="size-7" />
+          </div>
+        </div>
+        <Link
+          href="/rutinas"
+          className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+        >
+          {rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'} <ChevronRight className="size-3.5" />
+        </Link>
+        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-600" />
+      </div>
+
+      {/* Tarjeta 2: Mi Cuota */}
+      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado de mi cuota</span>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {ESTADO_CUENTA_LABEL[estadoCuenta as keyof typeof ESTADO_CUENTA_LABEL] || estadoCuenta}
+              </span>
+            </div>
+            <p className="mt-3 text-sm font-bold text-slate-900">{alumno?.plan || 'Plan Musculación'}</p>
+            <p className="mt-1 text-xs text-slate-500 font-medium">Vence el 10 de Septiembre</p>
+          </div>
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+            <WalletCards className="size-7" />
+          </div>
+        </div>
+        <Link
+          href="/finanzas"
+          className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+        >
+          Ver mis pagos y datos de cuota <ChevronRight className="size-3.5" />
+        </Link>
+        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
+      </div>
+
+      {/* Tarjeta 3: Mi Asistencia */}
+      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Constancia</span>
+            <p className="mt-2 text-2xl font-black text-slate-900">12 entrenos</p>
+            <p className="mt-1 text-sm font-semibold text-slate-600">registrados este mes</p>
+            <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
+          </div>
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform duration-300 group-hover:scale-110">
+            <Sparkles className="size-7" />
+          </div>
+        </div>
+        <div className="mt-5 text-xs font-bold text-slate-500">
+          ¡Mantené el ritmo esta semana! 🔥
+        </div>
+        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
+      </div>
+    </div>
+  )
+}
+
 // ---------- Home personalizado para el Alumno ----------
 function HomeAlumno({
   usuario,
@@ -72,11 +219,14 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, getEstadoCuenta, getRutinaDeAlumno } = useAppData()
+  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario } = useAppData()
   const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0]
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
-  const diaUno = rutina?.dias[0]
+
+  const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuario)
+  const avisosAlumno = getAvisosParaUsuario(usuario)
+  const ultimoAvisoNoLeido = avisosAlumno.find((av) => !av.leidoPor.includes(usuario.id))
 
   return (
     <>
@@ -91,25 +241,17 @@ function HomeAlumno({
             Portal del Alumno
           </span>
         </div>
-        <div className="ml-auto flex items-center gap-6">
-          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
-            {fechaHoy
-              ? capitalizar(
-                  fechaHoy.toLocaleDateString('es-AR', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    timeZone: 'America/Argentina/Buenos_Aires',
-                  })
-                )
-              : 'Cargando fecha...'}
-            <br />
-            <span className="text-xs font-medium text-slate-500">{ubicacion}</span>
-          </p>
-        </div>
+        <HeaderStatusSection
+          cantNoLeidos={cantAvisosNoLeidos}
+          fechaHoy={fechaHoy}
+          ubicacion={ubicacion}
+        />
       </header>
 
-      <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-10">
+      <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-8">
+        {/* Banner de Aviso no leído si existe */}
+        {ultimoAvisoNoLeido && <AvisoBannerDestacado aviso={ultimoAvisoNoLeido} />}
+
         {/* Bienvenida Alumno */}
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
@@ -131,80 +273,11 @@ function HomeAlumno({
         </div>
 
         {/* 3 Tarjetas de Impacto */}
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Tarjeta 1: Mi Rutina */}
-          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
-                <p className="mt-2 text-2xl font-black text-slate-900">
-                  {rutina ? rutina.nombre : 'Sin rutina asignada'}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-blue-600">
-                  {diaUno ? diaUno.nombre : (rutina ? 'Rutina activa' : 'Consultá a tu profesor')}
-                </p>
-                <p className="mt-4 text-xs font-medium text-slate-500">
-                  {diaUno ? `${diaUno.ejercicios.length} ejercicios para hoy` : (rutina ? `${rutina.dias.length} días de plan` : 'Pedí tu rutina en recepción')}
-                </p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
-                <Dumbbell className="size-7" />
-              </div>
-            </div>
-            <Link
-              href="/rutinas"
-              className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              {rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'} <ChevronRight className="size-3.5" />
-            </Link>
-            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-600" />
-          </div>
-
-          {/* Tarjeta 2: Mi Cuota */}
-          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado de mi cuota</span>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {ESTADO_CUENTA_LABEL[estadoCuenta] || estadoCuenta}
-                  </span>
-                </div>
-                <p className="mt-3 text-sm font-bold text-slate-900">{alumno?.plan || 'Plan Musculación'}</p>
-                <p className="mt-1 text-xs text-slate-500 font-medium">Vence el 10 de Septiembre</p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
-                <WalletCards className="size-7" />
-              </div>
-            </div>
-            <Link
-              href="/finanzas"
-              className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
-            >
-              Ver mis pagos y datos de cuota <ChevronRight className="size-3.5" />
-            </Link>
-            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
-          </div>
-
-          {/* Tarjeta 3: Mi Asistencia */}
-          <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Constancia</span>
-                <p className="mt-2 text-2xl font-black text-slate-900">12 entrenos</p>
-                <p className="mt-1 text-sm font-semibold text-slate-600">registrados este mes</p>
-                <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform duration-300 group-hover:scale-110">
-                <Sparkles className="size-7" />
-              </div>
-            </div>
-            <div className="mt-5 text-xs font-bold text-slate-500">
-              ¡Mantené el ritmo esta semana! 🔥
-            </div>
-            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
-          </div>
-        </div>
+        <AlumnoCardsSection
+          alumno={alumno}
+          estadoCuenta={estadoCuenta}
+          rutina={rutina}
+        />
 
         {/* Sección: Videoteca Destacada */}
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8 backdrop-blur-xl">
@@ -277,9 +350,10 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual, alumnos, pagos, rutinas } = useAppData()
+  const { usuarioActual, alumnos, pagos, rutinas, getCantidadAvisosNoLeidos } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
+  const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   // Cálculos dinámicos en base a los datos reales del Store
   const alumnosActivos = alumnos.filter((a) => a.activo).length
@@ -367,36 +441,11 @@ export default function Page() {
             className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
           />
         </div>
-        <div className="ml-auto flex items-center gap-6">
-          <Link
-            href="/finanzas"
-            title={pagosPendientes.length > 0 ? `${pagosPendientes.length} pagos pendientes` : 'Sin notificaciones pendientes'}
-            className="relative text-slate-400 transition-[color,transform] duration-200 hover:text-white hover:scale-110"
-            aria-label={pagosPendientes.length > 0 ? `${pagosPendientes.length} pagos pendientes` : 'Notificaciones'}
-          >
-            <Bell className="size-5" />
-            {pagosPendientes.length > 0 && (
-              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white border-2 border-slate-950">
-                {pagosPendientes.length}
-              </span>
-            )}
-          </Link>
-          <div className="hidden h-8 w-px bg-slate-800 sm:block" />
-          <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
-            {fechaHoy
-              ? capitalizar(
-                  fechaHoy.toLocaleDateString("es-AR", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    timeZone: "America/Argentina/Buenos_Aires",
-                  })
-                )
-              : "Cargando fecha..."}
-            <br />
-            <span className="text-xs font-medium text-slate-500">{ubicacion}</span>
-          </p>
-        </div>
+        <HeaderStatusSection
+          cantNoLeidos={cantAvisosNoLeidos}
+          fechaHoy={fechaHoy}
+          ubicacion={ubicacion}
+        />
       </header>
 
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10">

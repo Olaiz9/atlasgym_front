@@ -51,6 +51,34 @@ export interface Rutina {
   alumnoIdAsignado?: string;
 }
 
+// ── Historial de Entrenamiento ──────────────────────────────────────────────
+// Permite al alumno registrar pesos y repeticiones por cada serie y recuperar
+// su sesión previa la próxima vez que haga esa rutina.
+
+/** Una serie individual registrada: número, peso, reps y si fue completada. */
+export interface RegistroSerie {
+  serieNumero: number;   // 1-based: 1, 2, 3…
+  kg: number;            // Peso utilizado en kg
+  reps: number;          // Repeticiones realizadas
+  completada: boolean;   // true cuando el alumno marcó la serie como hecha
+}
+
+/** Registro de todas las series de un ejercicio dentro de una sesión. */
+export interface SesionEjercicio {
+  ejercicioId: string;
+  series: RegistroSerie[];
+}
+
+/** Sesión completa de un día de entrenamiento de un alumno. */
+export interface SesionEntrenamiento {
+  id: string;
+  alumnoId: string;
+  rutinaId: string;
+  diaId: string;
+  fecha: string; // "YYYY-MM-DD" — permite comparar la sesión de hoy vs sesiones previas
+  ejercicios: SesionEjercicio[];
+}
+
 export interface VideoTecnica {
   id: string;
   titulo: string;
@@ -132,3 +160,45 @@ export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {
   MOROSO: "bg-red-50 text-red-700 border border-red-200",
   INACTIVO: "bg-slate-100 text-slate-500 border border-slate-200",
 };
+
+export type CategoriaAviso = "IMPORTANTE" | "NOVEDAD" | "HORARIO";
+
+export interface Aviso {
+  id: string;
+  titulo: string;
+  mensaje: string;
+  categoria: CategoriaAviso;
+  fecha: string; // "YYYY-MM-DD"
+  paraTodos: boolean;
+  alumnoId?: string; // Si es privado para un alumno
+  leidoPor: string[]; // IDs de usuarios que ya marcaron el aviso como leído
+}
+
+export const CATEGORIA_AVISO_LABEL: Record<CategoriaAviso, string> = {
+  IMPORTANTE: "Importante",
+  NOVEDAD: "Novedad",
+  HORARIO: "Horarios",
+};
+
+export const CATEGORIA_AVISO_STYLES: Record<
+  CategoriaAviso,
+  { label: string; badge: string; border: string }
+> = {
+  IMPORTANTE: {
+    label: "Importante",
+    badge: "bg-rose-50 text-rose-700 border-rose-200",
+    border: "border-rose-500",
+  },
+  NOVEDAD: {
+    label: "Novedad",
+    badge: "bg-blue-50 text-blue-700 border-blue-200",
+    border: "border-blue-500",
+  },
+  HORARIO: {
+    label: "Horarios",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    border: "border-emerald-500",
+  },
+};
+
+

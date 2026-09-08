@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video } from 'lucide-react'
+import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell } from 'lucide-react'
 import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
 
 const navItemsAdmin = [
@@ -12,6 +12,7 @@ const navItemsAdmin = [
   { label: 'Alumnos', href: '/alumnos', icon: Users },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
+  { label: 'Avisos', href: '/avisos', icon: Bell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
   { label: 'Planes', href: '/planes', icon: Package },
 ]
@@ -20,6 +21,7 @@ const navItemsAlumno = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
   { label: 'Mi Rutina', href: '/rutinas', icon: Dumbbell },
   { label: 'Mis Cuotas', href: '/finanzas', icon: WalletCards },
+  { label: 'Avisos', href: '/avisos', icon: Bell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
 ]
 
@@ -70,11 +72,12 @@ function SidebarUserCard({
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname()
-  const { usuarioActual, cerrarSesion } = useAppData()
+  const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
 
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const cantNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   return (
     <>
@@ -108,11 +111,12 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             )}
             {navItems.map(({ label, href, icon: Icon }) => {
               const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+              const esAvisos = href === '/avisos'
               return (
                 <Link
                   key={label}
                   href={href}
-                  title={collapsed ? label : undefined}
+                  title={collapsed ? (esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label) : undefined}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
                     collapsed ? 'justify-center' : ''
                   } ${
@@ -121,8 +125,22 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                       : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1'
                   }`}
                 >
-                  <Icon className="size-5 shrink-0" />
-                  {!collapsed && label}
+                  <div className="relative">
+                    <Icon className="size-5 shrink-0" />
+                    {esAvisos && cantNoLeidos > 0 && collapsed && (
+                      <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-rose-500 border border-slate-950" />
+                    )}
+                  </div>
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1">{label}</span>
+                      {esAvisos && cantNoLeidos > 0 && (
+                        <span className="flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white">
+                          {cantNoLeidos}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </Link>
               )
             })}
