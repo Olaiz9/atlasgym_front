@@ -274,6 +274,72 @@
     </div>
   </div>
 
+  <hr class="my-6 border-slate-200" />
+
+  <!-- Hito 4 -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        4. Optimización UI con Acordeón en Cortinas y Guardado Parcial con Confirmación
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        08 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento:</em> Reemplazar el layout de cuadrícula por tarjetas desplegables tipo cortinas en acordeón vertical para maximizar el ahorro de espacio en pantalla, e implementar manejo de guardado parcial con confirmación amigable cuando el alumno no completó todas las series.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Acordeón Desplegable en Cortinas):</strong> Sustitución de la cuadrícula por una lista vertical en acordeón (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">flex flex-col gap-3.5</code>). Cabecera compacta con número, nombre, badge dinámico (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">✓ Completado</code> o <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">X/Y series</code>), descanso (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">⏱ 90s</code>) y chevron animado. Modularización en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">BadgeEstadoEjercicio</code> y <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">TablaSeries</code> para mantener complejidad de control baja.</li>
+        <li><strong>Fase 2 (Guardado Parcial e Incompleto):</strong> Creación del componente <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ModalConfirmarIncompleto</code> que se activa si quedan ejercicios o series pendientes, permitiendo elegir entre <em>"Seguir entrenando"</em> o <em>"Guardar progreso parcial"</em> para no perder los pesos y repeticiones realizados hoy.</li>
+        <li><strong>Fase 3 (Calidad y Verificación):</strong> Auditoría React Doctor Score 100/100, suite Vitest 28/28 aprobada, actualización de bitácoras y recompilación a PDF.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos creados y modificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>app/rutinas/page.tsx (TarjetaEjercicioAlumno, TablaSeries, BadgeEstadoEjercicio, ModalConfirmarIncompleto)</li>
+        <li>reportes/BITACORA_BRUNO.md (actualizado)</li>
+        <li>reportes/BITACORA_BRUNO.html (actualizado)</li>
+        <li>reportes/BITACORA_BRUNO.pdf (regenerado)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 4 passed (4)</p>
+          <p>• <strong>Tests individuales:</strong> 28 passed (28)</p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">rutina-utils.test.ts</code>, <code class="font-mono">avisos.test.ts</code>, <code class="font-mono">button.test.tsx</code>, <code class="font-mono">utils.test.ts</code></p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos (2.63s)</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🩺 React Doctor Audit</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">SCORE 100 / 100</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Archivos analizados:</strong> 40 archivos escaneados</p>
+          <p>• <strong>Control-flow Complexity:</strong> Optimizada sin funciones complejas</p>
+          <p>• <strong>Keys en listas:</strong> Estables y únicas verificadas</p>
+          <p>• <strong>Diagnóstico:</strong> No issues found! (0 advertencias)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>

@@ -136,3 +136,43 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Score de salud: **100 / 100 (Great)**
     - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
 
+---
+
+### Hito 4: Optimización UI con Acordeón en Cortinas y Guardado Parcial con Confirmación
+* **Fecha:** 08 de Septiembre de 2026
+* **Solicitud de Bruno:**
+  > *"- Qué pasa si no termino todo y le doy a guardar?
+  - Me gustaría que las cartas de los ejercicios me fueran saliendo en un tipo desplegable de cortinas y no estén una al lado de la otra así ahorramos espacio."*
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Acordeón Desplegable en Cortinas para Ejercicios:**
+     - Reemplazo de la cuadrícula horizontal de dos columnas por una lista vertical en acordeón (`flex flex-col gap-3.5`) que optimiza drásticamente el espacio en pantalla y en dispositivos móviles.
+     - Cabecera compacta clickeable con número identificador, nombre del ejercicio, badge dinámico de estado (`✓ Completado`, `X/Y series` o total de series), descanso (`⏱ 90s`) y flecha chevron animada.
+     - Despliegue suave al tocar cualquier ejercicio mostrando notas técnicas, tabla completa de series y acceso al video biomecánico.
+     - Modularización de la tarjeta en `BadgeEstadoEjercicio`, `TablaSeries` y `TarjetaEjercicioAlumno` para mantener una complejidad de control baja y arquitectura limpia.
+  2. **Fase 2 — Manejo de Guardado Parcial / Incompleto:**
+     - Detección en tiempo real de ejercicios y series completadas al presionar "Guardar Entreno".
+     - Creación de `ModalConfirmarIncompleto` con alerta amigable detallando exactamente cuántos ejercicios/series faltan completar.
+     - Opciones claras: **"Seguir entrenando"** para volver a la rutina o **"Guardar progreso parcial"** para persistir en `localStorage` únicamente las series efectivamente realizadas sin perder el trabajo del día.
+     - Estados visuales en el botón de acción: *"Guardar Entreno"*, *"Finalizar y Guardar Entreno"*, *"¡Entrenamiento completado! 🎉"* y *"¡Progreso parcial guardado!"*.
+  3. **Fase 3 — Calidad, Tests y Documentación:**
+     - Auditoría y validación estricta de React Doctor (Score 100/100).
+     - Validación completa de la suite Vitest (28 tests aprobados).
+     - Actualización de bitácoras Markdown/HTML y recompilación del PDF.
+
+* **Archivos afectados / creados:**
+  - 📁 `app/rutinas/page.tsx`: Componentes `BadgeEstadoEjercicio`, `TablaSeries`, `ModalConfirmarIncompleto`, `TarjetaEjercicioAlumno` y vista `VistaMiRutinaAlumno`.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Registro del hito en Markdown.
+  - 📁 `reportes/BITACORA_BRUNO.html`: Template visual corporativo actualizado.
+  - 📁 `reportes/BITACORA_BRUNO.pdf`: Reporte en PDF regenerado.
+
+* **Resultados de Verificación y Calidad:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `4 passed (4)`
+    - Tests ejecutados: `28 passed (28)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **React Doctor (`npx react-doctor`):**
+    - Archivos escaneados: `40 archivos`
+    - Score de salud: **100 / 100 (Great)**
+    - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
+

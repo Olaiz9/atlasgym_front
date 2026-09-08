@@ -716,7 +716,120 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
   )
 }
 
-// ── Tarjeta de Ejercicio con Registro de Series ─────────────────────────────
+// ── Subcomponentes de Tarjeta Desplegable ─────────────────────────────────
+function BadgeEstadoEjercicio({
+  todasCompletas,
+  seriesCompletas,
+  totalSeries,
+}: {
+  todasCompletas: boolean
+  seriesCompletas: number
+  totalSeries: number
+}) {
+  if (todasCompletas) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+        <Check className="size-3 text-emerald-400" strokeWidth={3} />
+        Completado
+      </span>
+    )
+  }
+  if (seriesCompletas > 0) {
+    return (
+      <span className="text-[11px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">
+        {seriesCompletas}/{totalSeries} series
+      </span>
+    )
+  }
+  return (
+    <span className="text-[11px] font-medium text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+      {totalSeries} series
+    </span>
+  )
+}
+
+function TablaSeries({
+  seriesData,
+  sesionPrevia,
+  onCambioSerie,
+  onToggleCompletada,
+}: {
+  seriesData: RegistroSerie[]
+  sesionPrevia: SesionEjercicio | undefined
+  onCambioSerie: (numSerie: number, campo: 'kg' | 'reps', valor: number) => void
+  onToggleCompletada: (numSerie: number) => void
+}) {
+  return (
+    <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/80">
+      {/* Header de tabla */}
+      <div className="grid grid-cols-[36px_1fr_70px_60px_40px] gap-1 px-3 py-2 bg-slate-900 border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span className="text-center">Serie</span>
+        <span>Previa</span>
+        <span className="text-center">KG</span>
+        <span className="text-center">REPS</span>
+        <span className="text-center">✓</span>
+      </div>
+
+      {/* Filas de series */}
+      {seriesData.map((serie) => {
+        const previaData = sesionPrevia?.series.find((s) => s.serieNumero === serie.serieNumero)
+        return (
+          <div
+            key={serie.serieNumero}
+            className={`grid grid-cols-[36px_1fr_70px_60px_40px] gap-1 items-center px-3 py-2.5 border-b border-slate-800/50 last:border-0 transition-colors duration-150 ${
+              serie.completada ? 'bg-blue-600/10' : ''
+            }`}
+          >
+            {/* Número de serie */}
+            <span className={`text-sm font-black text-center ${serie.completada ? 'text-blue-400' : 'text-slate-400'}`}>
+              {serie.serieNumero}
+            </span>
+
+            {/* Previa */}
+            <span className="text-xs text-slate-500 truncate">{formatPrevia(previaData)}</span>
+
+            {/* Input KG */}
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              value={serie.kg || ''}
+              onChange={(e) => onCambioSerie(serie.serieNumero, 'kg', parseFloat(e.target.value) || 0)}
+              aria-label={`KG serie ${serie.serieNumero}`}
+              className="w-full text-center bg-slate-800/90 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+
+            {/* Input REPS */}
+            <input
+              type="number"
+              min={0}
+              value={serie.reps || ''}
+              onChange={(e) => onCambioSerie(serie.serieNumero, 'reps', parseInt(e.target.value, 10) || 0)}
+              aria-label={`Reps serie ${serie.serieNumero}`}
+              className="w-full text-center bg-slate-800/90 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+
+            {/* Checkbox de completado */}
+            <button
+              type="button"
+              onClick={() => onToggleCompletada(serie.serieNumero)}
+              aria-label={serie.completada ? 'Marcar como pendiente' : 'Marcar como completada'}
+              className={`size-7 rounded-full flex items-center justify-center mx-auto transition-[background-color,border-color] duration-150 border-2 ${
+                serie.completada
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/40'
+                  : 'bg-transparent border-slate-600 hover:border-slate-400 text-transparent'
+              }`}
+            >
+              {serie.completada && <Check className="size-3.5" strokeWidth={3} />}
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Tarjeta de Ejercicio Desplegable (Acordeón / Cortina) ───────────────────
 function TarjetaEjercicioAlumno({
   ejercicio,
   index,
@@ -732,11 +845,12 @@ function TarjetaEjercicioAlumno({
   videos: VideoTecnica[]
   onChange: (series: RegistroSerie[]) => void
 }) {
+  const [expandido, setExpandido] = useState(index === 0)
   const [videoAbierto, setVideoAbierto] = useState(false)
   const videoMatch = useMemo(() => buscarVideoParaEjercicio(ejercicio.nombre, videos), [ejercicio.nombre, videos])
 
   const seriesCompletas = seriesData.filter((s) => s.completada).length
-  const todasCompletas = seriesCompletas === ejercicio.series
+  const todasCompletas = seriesCompletas === ejercicio.series && ejercicio.series > 0
 
   const handleCambioSerie = useCallback(
     (numSerie: number, campo: 'kg' | 'reps', valor: number) => {
@@ -758,112 +872,103 @@ function TarjetaEjercicioAlumno({
     [seriesData, onChange]
   )
 
+  const contenedorClass = todasCompletas
+    ? 'border-emerald-500/40 bg-slate-950/90'
+    : expandido
+    ? 'border-blue-600/50 bg-slate-950'
+    : 'border-slate-800 hover:border-slate-700 bg-slate-950/60'
+
+  const numeroClass = todasCompletas
+    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+    : expandido
+    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+    : 'bg-blue-600/15 text-blue-400 border border-blue-600/20'
+
   return (
     <>
-      <div
-        className={`rounded-2xl border bg-slate-950 p-5 flex flex-col gap-4 transition-[border-color] duration-200 ${
-          todasCompletas ? 'border-blue-600/50' : 'border-slate-800 hover:border-slate-700'
-        }`}
-      >
-        {/* Header del ejercicio */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <span className={`size-7 rounded-lg font-mono font-black text-xs flex items-center justify-center shrink-0 ${
-              todasCompletas ? 'bg-blue-600 text-white' : 'bg-blue-600/20 text-blue-400'
-            }`}>
+      <div className={`rounded-2xl border bg-slate-950 transition-[border-color,background-color] duration-200 overflow-hidden ${contenedorClass}`}>
+        {/* Cabecera clickeable (Interruptor de Cortina) */}
+        <button
+          type="button"
+          onClick={() => setExpandido((prev) => !prev)}
+          aria-expanded={expandido}
+          className="w-full p-4 md:p-5 flex items-center justify-between gap-3 text-left transition-[background-color] duration-150 hover:bg-slate-900/40 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl"
+        >
+          <div className="flex items-center gap-3.5 flex-1 min-w-0">
+            {/* Número del ejercicio */}
+            <span className={`size-8 rounded-xl font-mono font-black text-xs flex items-center justify-center shrink-0 transition-colors duration-200 ${numeroClass}`}>
               {String(index + 1).padStart(2, '0')}
             </span>
+
+            {/* Nombre y Badges de estado */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-white leading-tight truncate">{ejercicio.nombre}</h3>
-              {ejercicio.notas && (
-                <p className="mt-0.5 text-xs text-slate-400 italic">💡 {ejercicio.notas}</p>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-bold text-white truncate">{ejercicio.nombre}</h3>
+                <BadgeEstadoEjercicio
+                  todasCompletas={todasCompletas}
+                  seriesCompletas={seriesCompletas}
+                  totalSeries={ejercicio.series}
+                />
+              </div>
             </div>
           </div>
-          {ejercicio.descansoSegundos && (
-            <span className="shrink-0 flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
-              <Clock className="size-3" />
-              {ejercicio.descansoSegundos}s
-            </span>
-          )}
-        </div>
 
-        {/* Tabla de series */}
-        <div className="rounded-xl overflow-hidden border border-slate-800">
-          {/* Header de tabla */}
-          <div className="grid grid-cols-[32px_1fr_64px_56px_36px] gap-1 px-3 py-2 bg-slate-900 border-b border-slate-800">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Serie</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Previa</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">KG</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">REPS</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">✓</span>
+          {/* Lateral derecho: Descanso y Chevron */}
+          <div className="flex items-center gap-3 shrink-0">
+            {ejercicio.descansoSegundos && (
+              <span className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                <Clock className="size-3 text-slate-400" />
+                {ejercicio.descansoSegundos}s
+              </span>
+            )}
+            <div
+              className={`size-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-transform duration-200 ${
+                expandido ? 'rotate-180 text-blue-400 border-blue-500/30' : ''
+              }`}
+            >
+              <ChevronDown className="size-4" />
+            </div>
           </div>
+        </button>
 
-          {/* Filas de series */}
-          {seriesData.map((serie) => {
-            const previaData = sesionPrevia?.series.find((s) => s.serieNumero === serie.serieNumero)
-            return (
-              <div
-                key={serie.serieNumero}
-                className={`grid grid-cols-[32px_1fr_64px_56px_36px] gap-1 items-center px-3 py-2.5 border-b border-slate-800/50 last:border-0 transition-colors duration-150 ${
-                  serie.completada ? 'bg-blue-600/10' : ''
-                }`}
-              >
-                {/* Número de serie */}
-                <span className={`text-sm font-black text-center ${serie.completada ? 'text-blue-400' : 'text-slate-400'}`}>
-                  {serie.serieNumero}
+        {/* Contenido desplegable (Cuerpo de la Cortina) */}
+        {expandido && (
+          <div className="p-4 md:p-5 pt-0 space-y-4 border-t border-slate-800/50 mt-1 animate-in fade-in duration-200">
+            {/* Notas y descanso mobile */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3">
+              {ejercicio.notas ? (
+                <p className="text-xs text-slate-400 italic">💡 {ejercicio.notas}</p>
+              ) : (
+                <span />
+              )}
+              {ejercicio.descansoSegundos && (
+                <span className="sm:hidden flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800 w-fit">
+                  <Clock className="size-3 text-slate-400" />
+                  Descanso: {ejercicio.descansoSegundos}s
                 </span>
+              )}
+            </div>
 
-                {/* Previa */}
-                <span className="text-xs text-slate-500 truncate">{formatPrevia(previaData)}</span>
+            {/* Tabla de series */}
+            <TablaSeries
+              seriesData={seriesData}
+              sesionPrevia={sesionPrevia}
+              onCambioSerie={handleCambioSerie}
+              onToggleCompletada={toggleCompletada}
+            />
 
-                {/* Input KG */}
-                <input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  value={serie.kg || ''}
-                  onChange={(e) => handleCambioSerie(serie.serieNumero, 'kg', parseFloat(e.target.value) || 0)}
-                  aria-label={`KG serie ${serie.serieNumero}`}
-                  className="w-full text-center bg-slate-800 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-
-                {/* Input REPS */}
-                <input
-                  type="number"
-                  min={0}
-                  value={serie.reps || ''}
-                  onChange={(e) => handleCambioSerie(serie.serieNumero, 'reps', parseInt(e.target.value, 10) || 0)}
-                  aria-label={`Reps serie ${serie.serieNumero}`}
-                  className="w-full text-center bg-slate-800 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-
-                {/* Checkbox de completado */}
-                <button
-                  onClick={() => toggleCompletada(serie.serieNumero)}
-                  aria-label={serie.completada ? 'Marcar como pendiente' : 'Marcar como completada'}
-                  className={`size-7 rounded-full flex items-center justify-center mx-auto transition-[background-color,border-color] duration-150 border-2 ${
-                    serie.completada
-                      ? 'bg-blue-600 border-blue-600'
-                      : 'bg-transparent border-slate-600 hover:border-slate-400'
-                  }`}
-                >
-                  {serie.completada && <Check className="size-3.5 text-white" strokeWidth={3} />}
-                </button>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Botón ver técnica */}
-        {videoMatch && (
-          <button
-            onClick={() => setVideoAbierto(true)}
-            className="flex items-center justify-center gap-2 w-full py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:border-blue-600/50 hover:text-blue-400 hover:bg-blue-600/5 transition-[color,background-color,border-color] duration-200 text-xs font-bold"
-          >
-            <PlayCircle className="size-4" />
-            Ver técnica del ejercicio
-          </button>
+            {/* Botón ver técnica */}
+            {videoMatch && (
+              <button
+                type="button"
+                onClick={() => setVideoAbierto(true)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 hover:border-blue-600/50 hover:text-blue-400 hover:bg-blue-600/5 transition-[color,background-color,border-color] duration-200 text-xs font-bold"
+              >
+                <PlayCircle className="size-4" />
+                Ver técnica del ejercicio
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -874,11 +979,76 @@ function TarjetaEjercicioAlumno({
   )
 }
 
+// ── Modal de Confirmación de Entreno Incompleto ──────────────────────────────
+function ModalConfirmarIncompleto({
+  completados,
+  totalEjercicios,
+  seriesCompletadas,
+  totalSeries,
+  onConfirmar,
+  onClose,
+}: {
+  completados: number
+  totalEjercicios: number
+  seriesCompletadas: number
+  totalSeries: number
+  onConfirmar: () => void
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3.5">
+          <div className="size-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+            <AlertCircle className="size-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-white">¿Guardar entrenamiento incompleto?</h3>
+            <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+              Completaste <strong className="text-amber-300 font-bold">{completados} de {totalEjercicios}</strong> ejercicios ({seriesCompletadas} de {totalSeries} series).
+            </p>
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              Se guardará el registro de las series que ya realizaste para que la próxima vez figuren en tu columna de <strong className="text-slate-200">Previa</strong> y no pierdas tu avance de hoy.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 px-4 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-[color,background-color] duration-150"
+          >
+            Seguir entrenando
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onConfirmar()
+              onClose()
+            }}
+            className="h-10 px-5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition-[color,background-color,box-shadow,transform] duration-150 active:scale-95"
+          >
+            Guardar progreso parcial
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Vista dedicada para el Alumno en Rutinas ────────────────────────────────
 function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any }) {
   const { guardarSesion, getUltimaSesion, videosTecnica } = useAppData()
   const [diaActivo, setDiaActivo] = useState(0)
   const [guardado, setGuardado] = useState(false)
+  const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
 
   const dia = rutina.dias[diaActivo] ?? rutina.dias[0]
 
@@ -932,7 +1102,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     setGuardado(false)
   }, [])
 
-  // Progreso del día
+  // Progreso de ejercicios del día
   const { completados, total } = useMemo(() => {
     if (!dia) return { completados: 0, total: 0 }
     let completados = 0
@@ -943,7 +1113,20 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     return { completados, total: dia.ejercicios.length }
   }, [dia, seriesPorEjercicio])
 
-  const handleGuardar = useCallback(() => {
+  // Conteo total de series completadas vs totales
+  const seriesTotales = useMemo(() => {
+    if (!dia) return { completadas: 0, total: 0 }
+    let completadas = 0
+    let totalSeries = 0
+    dia.ejercicios.forEach((ej) => {
+      totalSeries += ej.series
+      const series = seriesPorEjercicio[ej.id] ?? []
+      completadas += series.filter((s) => s.completada).length
+    })
+    return { completadas, total: totalSeries }
+  }, [dia, seriesPorEjercicio])
+
+  const ejecutarGuardado = useCallback(() => {
     if (!dia) return
     const ejerciciosSesion: SesionEjercicio[] = dia.ejercicios.map((ej) => ({
       ejercicioId: ej.id,
@@ -958,6 +1141,16 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     })
     setGuardado(true)
   }, [dia, seriesPorEjercicio, guardarSesion, usuario.alumnoId, rutina.id])
+
+  const handleGuardar = useCallback(() => {
+    if (!dia) return
+    const incompleto = completados < total
+    if (incompleto) {
+      setModalIncompletoAbierto(true)
+    } else {
+      ejecutarGuardado()
+    }
+  }, [dia, completados, total, ejecutarGuardado])
 
   return (
     <div className="mx-auto max-w-[1200px] px-5 py-8 md:px-10 md:py-10 space-y-8">
@@ -1017,8 +1210,8 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             </div>
           )}
 
-          {/* Tarjetas de ejercicios */}
-          <div className="grid gap-5 sm:grid-cols-2">
+          {/* Lista de ejercicios desplegables (cortinas) */}
+          <div className="flex flex-col gap-3.5">
             {dia.ejercicios.map((ej, i) => (
               <TarjetaEjercicioAlumno
                 key={ej.id}
@@ -1045,17 +1238,33 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
               {guardado ? (
                 <>
                   <CheckCircle2 className="size-4" />
-                  ¡Entreno guardado!
+                  {completados === total && total > 0
+                    ? '¡Entrenamiento completado! 🎉'
+                    : '¡Progreso parcial guardado!'}
                 </>
               ) : (
                 <>
                   <Save className="size-4" />
-                  Guardar Entreno
+                  {completados === total && total > 0
+                    ? 'Finalizar y Guardar Entreno'
+                    : 'Guardar Entreno'}
                 </>
               )}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Modal de confirmación para guardado parcial / incompleto */}
+      {modalIncompletoAbierto && dia && (
+        <ModalConfirmarIncompleto
+          completados={completados}
+          totalEjercicios={total}
+          seriesCompletadas={seriesTotales.completadas}
+          totalSeries={seriesTotales.total}
+          onConfirmar={ejecutarGuardado}
+          onClose={() => setModalIncompletoAbierto(false)}
+        />
       )}
     </div>
   )
