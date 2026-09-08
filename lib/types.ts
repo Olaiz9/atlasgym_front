@@ -51,6 +51,34 @@ export interface Rutina {
   alumnoIdAsignado?: string;
 }
 
+// ── Historial de Entrenamiento ──────────────────────────────────────────────
+// Permite al alumno registrar pesos y repeticiones por cada serie y recuperar
+// su sesión previa la próxima vez que haga esa rutina.
+
+/** Una serie individual registrada: número, peso, reps y si fue completada. */
+export interface RegistroSerie {
+  serieNumero: number;   // 1-based: 1, 2, 3…
+  kg: number;            // Peso utilizado en kg
+  reps: number;          // Repeticiones realizadas
+  completada: boolean;   // true cuando el alumno marcó la serie como hecha
+}
+
+/** Registro de todas las series de un ejercicio dentro de una sesión. */
+export interface SesionEjercicio {
+  ejercicioId: string;
+  series: RegistroSerie[];
+}
+
+/** Sesión completa de un día de entrenamiento de un alumno. */
+export interface SesionEntrenamiento {
+  id: string;
+  alumnoId: string;
+  rutinaId: string;
+  diaId: string;
+  fecha: string; // "YYYY-MM-DD" — permite comparar la sesión de hoy vs sesiones previas
+  ejercicios: SesionEjercicio[];
+}
+
 export interface VideoTecnica {
   id: string;
   titulo: string;

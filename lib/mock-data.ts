@@ -1,7 +1,8 @@
 // lib/mock-data.ts
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
-import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso } from "./types";
+import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
+
 
 export const ALUMNOS_MOCK: Alumno[] = [
   { id: "a1", nombre: "Lucía Fernández", email: "lucia.fernandez@mail.com", celular: "2611234567", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
