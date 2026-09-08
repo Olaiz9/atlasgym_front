@@ -11,8 +11,8 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, useEffect, useCallback, ReactNode } from "react";
-import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso } from "./types";
-import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK } from "./mock-data";
+import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
+import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK, SESIONES_MOCK } from "./mock-data";
 import { useAvisosManager } from "./use-avisos";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
@@ -56,6 +56,10 @@ interface AppDataContextValue {
   getAlumno: (id: string) => Alumno | undefined;
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   getPagosDeAlumno: (alumnoId: string) => Pago[];
+  // Historial de entrenamiento
+  sesionesEntrenamiento: SesionEntrenamiento[];
+  guardarSesion: (sesion: Omit<SesionEntrenamiento, "id">) => void;
+  getUltimaSesion: (alumnoId: string, rutinaId: string, diaId: string) => SesionEntrenamiento | undefined;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -86,6 +90,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
     }
     return USUARIO_ADMIN_DEFAULT;
+  });
+
+  // Historial de entrenamiento: se hidrata desde localStorage o desde el mock inicial
+  const [sesionesEntrenamiento, setSesionesEntrenamiento] = useState<SesionEntrenamiento[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_historial_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return SESIONES_MOCK;
   });
 
   const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO") => {
@@ -203,6 +220,41 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setPlanes((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  // Persistir historial de entrenamiento en localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("atlas_historial_v1", JSON.stringify(sesionesEntrenamiento));
+    }
+  }, [sesionesEntrenamiento]);
+
+  // Guarda o reemplaza la sesión del día para ese alumno/rutina/día
+  const guardarSesion = useCallback((sesion: Omit<SesionEntrenamiento, "id">) => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    setSesionesEntrenamiento((prev) => {
+      // Reemplaza si ya existe una sesión del mismo alumno/rutina/día/fecha de hoy
+      const existeHoy = prev.findIndex(
+        (s) => s.alumnoId === sesion.alumnoId && s.rutinaId === sesion.rutinaId && s.diaId === sesion.diaId && s.fecha === hoy
+      );
+      const nueva: SesionEntrenamiento = { ...sesion, id: crypto.randomUUID(), fecha: hoy };
+      if (existeHoy !== -1) {
+        return prev.map((s, i) => (i === existeHoy ? nueva : s));
+      }
+      return [...prev, nueva];
+    });
+  }, []);
+
+  // Devuelve la sesión más reciente que NO sea del día de hoy (la "previa")
+  const getUltimaSesion = useCallback(
+    (alumnoId: string, rutinaId: string, diaId: string): SesionEntrenamiento | undefined => {
+      const hoy = new Date().toISOString().slice(0, 10);
+      const previas = sesionesEntrenamiento
+        .filter((s) => s.alumnoId === alumnoId && s.rutinaId === rutinaId && s.diaId === diaId && s.fecha < hoy)
+        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+      return previas[0];
+    },
+    [sesionesEntrenamiento]
+  );
+
   const getAlumno = useCallback((id: string) => alumnos.find((a) => a.id === id), [alumnos]);
 
   const getEstadoCuenta = useCallback((alumnoId: string) => {
@@ -262,6 +314,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       getAlumno,
       getEstadoCuenta,
       getPagosDeAlumno,
+      // Historial de entrenamiento
+      sesionesEntrenamiento,
+      guardarSesion,
+      getUltimaSesion,
     }),
     [
       alumnos,
@@ -297,6 +353,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       getAlumno,
       getEstadoCuenta,
       getPagosDeAlumno,
+      sesionesEntrenamiento,
+      guardarSesion,
+      getUltimaSesion,
     ]
   );
 

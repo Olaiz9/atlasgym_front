@@ -258,3 +258,112 @@ export const AVISOS_MOCK: Aviso[] = [
   },
 ];
 
+// ── Historial de Entrenamiento Mock ────────────────────────────────────────
+// Sesiones previas de Lucía (a1) sobre la rutina r1 para poblar la columna
+// "Previa" desde el primer momento de prueba sin depender de datos reales.
+export const SESIONES_MOCK: SesionEntrenamiento[] = [
+  {
+    id: "ses-1",
+    alumnoId: "a1",
+    rutinaId: "r1",
+    diaId: "d1",
+    fecha: "2026-09-01",
+    ejercicios: [
+      {
+        ejercicioId: "e1",
+        series: [
+          { serieNumero: 1, kg: 80, reps: 10, completada: true },
+          { serieNumero: 2, kg: 80, reps: 9,  completada: true },
+          { serieNumero: 3, kg: 75, reps: 10, completada: true },
+          { serieNumero: 4, kg: 75, reps: 8,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e2",
+        series: [
+          { serieNumero: 1, kg: 22, reps: 12, completada: true },
+          { serieNumero: 2, kg: 22, reps: 11, completada: true },
+          { serieNumero: 3, kg: 20, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e3",
+        series: [
+          { serieNumero: 1, kg: 40, reps: 15, completada: true },
+          { serieNumero: 2, kg: 40, reps: 13, completada: true },
+          { serieNumero: 3, kg: 40, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e4",
+        series: [
+          { serieNumero: 1, kg: 8, reps: 15, completada: true },
+          { serieNumero: 2, kg: 8, reps: 14, completada: true },
+          { serieNumero: 3, kg: 8, reps: 12, completada: true },
+          { serieNumero: 4, kg: 6, reps: 15, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e5",
+        series: [
+          { serieNumero: 1, kg: 30, reps: 12, completada: true },
+          { serieNumero: 2, kg: 30, reps: 12, completada: true },
+          { serieNumero: 3, kg: 27, reps: 12, completada: true },
+          { serieNumero: 4, kg: 27, reps: 10, completada: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: "ses-2",
+    alumnoId: "a1",
+    rutinaId: "r1",
+    diaId: "d2",
+    fecha: "2026-09-03",
+    ejercicios: [
+      {
+        ejercicioId: "e6",
+        series: [
+          { serieNumero: 1, kg: 55, reps: 10, completada: true },
+          { serieNumero: 2, kg: 55, reps: 10, completada: true },
+          { serieNumero: 3, kg: 52, reps: 10, completada: true },
+          { serieNumero: 4, kg: 52, reps: 9,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e7",
+        series: [
+          { serieNumero: 1, kg: 60, reps: 10, completada: true },
+          { serieNumero: 2, kg: 60, reps: 9,  completada: true },
+          { serieNumero: 3, kg: 57, reps: 10, completada: true },
+          { serieNumero: 4, kg: 57, reps: 8,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e8",
+        series: [
+          { serieNumero: 1, kg: 24, reps: 10, completada: true },
+          { serieNumero: 2, kg: 24, reps: 10, completada: true },
+          { serieNumero: 3, kg: 22, reps: 10, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e9",
+        series: [
+          { serieNumero: 1, kg: 35, reps: 12, completada: true },
+          { serieNumero: 2, kg: 35, reps: 11, completada: true },
+          { serieNumero: 3, kg: 32, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e10",
+        series: [
+          { serieNumero: 1, kg: 14, reps: 12, completada: true },
+          { serieNumero: 2, kg: 14, reps: 12, completada: true },
+          { serieNumero: 3, kg: 12, reps: 12, completada: true },
+        ],
+      },
+    ],
+  },
+];
+

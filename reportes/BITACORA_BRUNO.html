@@ -205,6 +205,75 @@
     </div>
   </div>
 
+  <hr class="my-6 border-slate-200" />
+
+  <!-- Hito 3 -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        3. Registro de Entrenos (Pesos y Reps), Historial Previo y Visor de Técnica Inline
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        08 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento:</em> Registro interactivo de pesos y repeticiones por serie en la vista de rutinas del alumno, persistencia histórica para consultar el progreso anterior (columna Previa), y reproductor de video de técnica inline por ejercicio sin tener que salir a la videoteca.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Modelo de Datos):</strong> Se crearon las interfaces <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">RegistroSerie</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">SesionEjercicio</code> y <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">SesionEntrenamiento</code>. Se pobló el mock con sesiones previas y se integraron los métodos <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">guardarSesion()</code> y <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">getUltimaSesion()</code> en el store con persistencia en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">localStorage</code>.</li>
+        <li><strong>Fase 2 (UI Interactiva):</strong> Implementación de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">TarjetaEjercicioAlumno</code> con la tabla interactiva <em>Serie | Previa | KG | REPS | ✓</em>, inputs numéricos, checkbox circular, contador de completados y botón "Guardar Entreno".</li>
+        <li><strong>Fase 3 (Video Inline):</strong> Modularización de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">lib/rutina-utils.ts</code> con algoritmo de búsqueda inteligente por palabras clave, botón <em>"Ver técnica del ejercicio 🎥"</em> y modal flotante con video embebido de YouTube y tips biomecánicos.</li>
+        <li><strong>Fase 4 (Calidad y Verificación):</strong> Creación de suite unitaria dedicada <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">lib/rutina-utils.test.ts</code> (7 tests), auditoría con React Doctor 100/100 y compilación de PDF.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos creados y modificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>lib/types.ts (interfaces de historial)</li>
+        <li>lib/mock-data.ts (datos previos de Lucía)</li>
+        <li>lib/store.tsx (estado, acciones y persistencia)</li>
+        <li>lib/rutina-utils.ts [NUEVO] (utilidades de búsqueda y formateo)</li>
+        <li>lib/rutina-utils.test.ts [NUEVO] (suite de pruebas unitarias)</li>
+        <li>app/rutinas/page.tsx (interfaz interactiva del alumno y modal de video)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 4 passed (4)</p>
+          <p>• <strong>Tests individuales:</strong> 28 passed (28) <span class="text-emerald-700 font-semibold">(+7 nuevos)</span></p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">rutina-utils.test.ts</code>, <code class="font-mono">avisos.test.ts</code>, <code class="font-mono">button.test.tsx</code>, <code class="font-mono">utils.test.ts</code></p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos (2.76s)</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🩺 React Doctor Audit</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">SCORE 100 / 100</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Archivos analizados:</strong> 40 archivos escaneados</p>
+          <p>• <strong>Reglas de Hooks:</strong> 100% conformes</p>
+          <p>• <strong>Keys en listas:</strong> Estables y únicas verificadas</p>
+          <p>• <strong>Diagnóstico:</strong> No issues found! (0 advertencias)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>

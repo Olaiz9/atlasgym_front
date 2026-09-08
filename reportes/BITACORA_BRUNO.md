@@ -88,3 +88,51 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Score de salud: **100 / 100 (Great)**
     - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
 
+---
+
+### Hito 3: Registro de Entrenos (Pesos y Reps), Historial Previo y Visor de Técnica Inline
+* **Fecha:** 08 de Septiembre de 2026
+* **Solicitud de Bruno:**
+  > *"Se me ocurrió añadir una característica en la parte de rutinas en el portal de alumnos. La cual se basa en poder registrar los pesos y repeticiones que vas haciendo y marcarlas como finalizadas una vez que termines. A su vez, la idea es que esa información quede registrada para que el usuario la próxima vez que haga esa rutina, pueda recordar cómo le fue en progreso. El ejemplo sería como está en la imagen que te pasé, obviamente respetando la estética y color de nuestra app ATLAS. Y por último, necesitaría que por cada ejercicio en la rutina, se pueda visualizar el video/gif de la técnica de ese ejercicio sin tener que irnos a buscar en la videoteca."*
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Modelo de Datos y Persistencia de Sesiones:**
+     - Creación de las interfaces `RegistroSerie`, `SesionEjercicio` y `SesionEntrenamiento` en `lib/types.ts`.
+     - Carga de `SESIONES_MOCK` en `lib/mock-data.ts` con entrenamientos previos de Lucía (`a1`) para poblar la columna "Previa".
+     - Implementación en `lib/store.tsx` del estado `sesionesEntrenamiento` hidratado desde `localStorage` (`atlas_historial_v1`), con sincronización automática pura vía `useEffect` y las acciones `guardarSesion()` y `getUltimaSesion()`.
+  2. **Fase 2 — UI de Registro de Series en la Vista del Alumno:**
+     - Creación del componente `TarjetaEjercicioAlumno` con tabla interactiva: **Serie | Previa | KG | REPS | ✓**.
+     - Inputs editables con tipografía monospace y diseño adaptado a la estética ATLAS (`slate-950` con acentos `blue-600`).
+     - Botón circular de check (✓) con cambio de estado visual y resaltado de fila.
+     - Contador en tiempo real y barra animada de progreso del día (`transition-[width]`).
+     - Botón "Guardar Entreno" con feedback instantáneo (`¡Entreno guardado!`).
+  3. **Fase 3 — Visor de Video de Técnica Inline:**
+     - Creación de `lib/rutina-utils.ts` con la función `buscarVideoParaEjercicio()` para matching automático de ejercicios con la videoteca.
+     - Botón "Ver técnica del ejercicio 🎥" en cada tarjeta de ejercicio con tutorial disponible.
+     - Componente `ModalVideoTecnica` con reproductor YouTube (16:9) y listado de consejos biomecánicos clave.
+  4. **Fase 4 — Calidad, Tests y Documentación:**
+     - Creación de la suite de tests unitarios `lib/rutina-utils.test.ts` con 7 pruebas automáticas.
+     - Ejecución y aprobación de Vitest al 100% y React Doctor con Score 100/100.
+     - Compilación de la bitácora a PDF y publicación en `ramaBruno`.
+
+* **Archivos afectados / creados:**
+  - 📁 `lib/types.ts`: Nuevas interfaces de historial de entrenamiento.
+  - 📁 `lib/mock-data.ts`: Datos iniciales de sesiones previas en `SESIONES_MOCK`.
+  - 📁 `lib/store.tsx`: Estado, persistencia y métodos `guardarSesion` y `getUltimaSesion`.
+  - 📁 `lib/rutina-utils.ts` [NUEVO]: Lógica reutilizable de búsqueda y formateo.
+  - 📁 `lib/rutina-utils.test.ts` [NUEVO]: Tests unitarios para las funciones de rutina.
+  - 📁 `app/rutinas/page.tsx`: Componentes `TarjetaEjercicioAlumno`, `ModalVideoTecnica` y vista `VistaMiRutinaAlumno`.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Registro del hito en Markdown.
+  - 📁 `reportes/BITACORA_BRUNO.html`: Template visual actualizado.
+  - 📁 `reportes/BITACORA_BRUNO.pdf`: Reporte en PDF consolidado y regenerado.
+
+* **Resultados de Verificación y Calidad:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `4 passed (4)` — *+1 archivo nuevo de test*
+    - Tests ejecutados: `28 passed (28)` — *+7 tests nuevos aprobados*
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **React Doctor (`npx react-doctor`):**
+    - Archivos escaneados: `40 archivos`
+    - Score de salud: **100 / 100 (Great)**
+    - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
+

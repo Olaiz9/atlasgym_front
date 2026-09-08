@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica } from '@/lib/types'
+import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
 import {
   Dumbbell,
   Plus,
@@ -654,25 +655,6 @@ function ModalNuevaRutina({
       </div>
     </div>
   )
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Busca un video de técnica cuyo título contenga alguna palabra clave del ejercicio. */
-function buscarVideoParaEjercicio(nombre: string, videos: VideoTecnica[]): VideoTecnica | undefined {
-  const palabras = nombre
-    .toLowerCase()
-    .split(/[\s,\-–—/]+/)
-    .filter((w) => w.length > 3)
-  return videos.find((v) =>
-    palabras.some((p) => v.titulo.toLowerCase().includes(p))
-  )
-}
-
-/** Formatea el resultado de una serie previa: "80 kg × 10" */
-function formatPrevia(serie: RegistroSerie | undefined): string {
-  if (!serie) return '—'
-  return `${serie.kg} kg × ${serie.reps}`
 }
 
 // ── Modal de Video de Técnica ───────────────────────────────────────────────
