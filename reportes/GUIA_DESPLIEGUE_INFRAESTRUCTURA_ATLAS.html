@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ATLAS GYM — Guía de Arquitectura, Despliegue en la Nube y Seguridad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 18mm 18mm 18mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-800 text-sm leading-relaxed antialiased">
+
+  <!-- Portada / Cabecera Principal -->
+  <div class="border-b-2 border-slate-900 pb-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-600 text-white font-black text-xl px-3 py-1.5 rounded-lg tracking-wider">
+          ATLAS
+        </div>
+        <div>
+          <h1 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Guía de Infraestructura y Despliegue</h1>
+          <p class="text-xs text-slate-500 font-medium tracking-wide">Documento Técnico Oficial — Producción y Seguridad</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="inline-block bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-3 py-1 rounded-full mb-1">
+          Exclusivo Atlas Gym
+        </span>
+        <p class="text-xs text-slate-500 font-mono">Versión 1.0.0 · Sep 2026</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen de Destinatarios y Estado -->
+  <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+    <div>
+      <span class="text-slate-500 block uppercase font-bold">Destino:</span>
+      <span class="font-bold text-slate-900">Atlas Gym</span>
+    </div>
+    <div>
+      <span class="text-slate-500 block uppercase font-bold">Equipo de Dev:</span>
+      <span class="font-bold text-slate-900">Bruno, Lucas & Augusto</span>
+    </div>
+    <div>
+      <span class="text-slate-500 block uppercase font-bold">Modelo:</span>
+      <span class="font-bold text-blue-700">Instancia Dedicada Privada</span>
+    </div>
+    <div>
+      <span class="text-slate-500 block uppercase font-bold">Disponibilidad:</span>
+      <span class="font-bold text-emerald-700">Cloud 24/7/365 (Sin servidor local)</span>
+    </div>
+  </div>
+
+  <!-- 1. Visión y Propósito -->
+  <div class="mb-6">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">1</span>
+      Propósito y Enfoque del Proyecto
+    </h2>
+    <p class="text-slate-700 text-xs leading-relaxed mb-3">
+      La plataforma digital de <strong>ATLAS GYM</strong> ha sido concebida como un <strong>sistema exclusivo y a medida</strong> para el establecimiento. A diferencia de las soluciones genéricas del mercado que mezclan múltiples empresas en una misma base de datos, este desarrollo cuenta con recursos de computación y almacenamiento dedicados en su totalidad a Atlas Gym.
+    </p>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs">
+        <strong class="text-emerald-900 block mb-1">⚡ Rendimiento y Cero Demoras</strong>
+        <p class="text-emerald-800">Al no compartir memoria ni procesamiento con otros negocios, la velocidad de consulta de rutinas y cuotas es instantánea tanto en recepción como en los móviles de los alumnos.</p>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
+        <strong class="text-blue-900 block mb-1">🔒 Aislamiento y Privacidad Total</strong>
+        <p class="text-blue-800">Los datos sensibles de facturación, ingresos de caja y teléfonos de socios están almacenados en una base de datos propia e impenetrable para terceros.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Arquitectura Tecnológica -->
+  <div class="mb-6">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">2</span>
+      Arquitectura Tecnológica Tripartita
+    </h2>
+    <div class="grid grid-cols-3 gap-3 text-xs">
+      <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/50">
+        <span class="text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Capa 1: Frontend</span>
+        <h3 class="font-bold text-slate-900 mt-2 text-sm">Next.js 16 + React 19</h3>
+        <ul class="mt-2 space-y-1 text-slate-600 list-disc list-inside">
+          <li>Tailwind CSS v4 & Lucide Icons</li>
+          <li>Portal Administrador y Portal Alumno</li>
+          <li>Tarjetas en cortinas desplegables</li>
+          <li>Auditoría React Doctor 100/100</li>
+          <li>Suite de tests Vitest (28 tests)</li>
+        </ul>
+      </div>
+
+      <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/50">
+        <span class="text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">Capa 2: Backend</span>
+        <h3 class="font-bold text-slate-900 mt-2 text-sm">Java con Spring Boot</h3>
+        <ul class="mt-2 space-y-1 text-slate-600 list-disc list-inside">
+          <li>Spring Data JPA (Hibernate)</li>
+          <li>Spring Security con JWT y BCrypt</li>
+          <li>API REST modular y tipada</li>
+          <li>Control de morosidad automático</li>
+          <li>Cron Jobs (<code class="text-slate-800 font-bold">@Scheduled</code>) el 1 de cada mes</li>
+        </ul>
+      </div>
+
+      <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/50">
+        <span class="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Capa 3: Datos</span>
+        <h3 class="font-bold text-slate-900 mt-2 text-sm">MySQL Dedicado</h3>
+        <ul class="mt-2 space-y-1 text-slate-600 list-disc list-inside">
+          <li>Tablas relacionales sólidas</li>
+          <li>Alumnos cargados 1 sola vez</li>
+          <li>Historial de cuotas y entrenamientos</li>
+          <li>Consultas parametrizadas anti-SQLi</li>
+          <li>Backups automáticos programados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Alojamiento en la Nube -->
+  <div class="mb-6">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">3</span>
+      Cloud Hosting: Operación 24/7/365 Sin Servidor Local
+    </h2>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs mb-3 text-amber-950">
+      <strong>⚠️ Aclaración Operativa Importante:</strong> No se requiere tener ninguna computadora encendida en el gimnasio ni en el domicilio de los administradores. Los servidores residen en la nube de Vercel y Railway (con respaldo de Google Cloud y AWS) con generadores eléctricos industriales y conectividad redundante.
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="border border-slate-200 rounded-lg p-3">
+        <h4 class="font-bold text-slate-900 mb-1">Frontend en Vercel (Edge CDN)</h4>
+        <p class="text-slate-600">Se conecta al repositorio de GitHub. Cada cambio se compila y publica en 1 minuto. Provee certificado SSL automático y distribución global sin costos de mantenimiento.</p>
+      </div>
+      <div class="border border-slate-200 rounded-lg p-3">
+        <h4 class="font-bold text-slate-900 mb-1">Backend y BD en Railway / Render</h4>
+        <p class="text-slate-600">Ejecuta el archivo ejecutable de Spring Boot y el servidor de MySQL en una red privada aislada de ataques externos, con escalabilidad automática.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- 4. Dominio y Experiencia del Alumno -->
+  <div class="mb-6 pt-2">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">4</span>
+      Dominio Institucional y Acceso Móvil
+    </h2>
+    <div class="grid grid-cols-2 gap-4 text-xs">
+      <div class="space-y-3">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <span class="font-bold text-slate-900 block mb-1">🌐 Dominio Propio Oficial</span>
+          <p class="text-slate-600">Se adquiere el dominio <code class="text-blue-700 font-bold font-mono">atlasgym.com.ar</code> (en NIC.ar) o <code class="text-blue-700 font-bold font-mono">atlasgym.app</code>. Se configura para que apunte directamente al frontend en Vercel con candado de seguridad HTTPS bancario.</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <span class="font-bold text-slate-900 block mb-1">📱 Instalación como PWA (App Móvil)</span>
+          <p class="text-slate-600">El alumno accede desde el navegador y con un toque lo instala en la pantalla de inicio de su teléfono. Abre a pantalla completa con el ícono de Atlas Gym <strong>sin necesidad de pagar membresías anuales de Google Play ni App Store ($99 USD/año)</strong>.</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 text-white rounded-xl p-4 flex flex-col justify-between">
+        <div>
+          <span class="text-blue-400 font-bold uppercase tracking-wider text-[10px] block mb-1">Puesta en Marcha en el Gimnasio</span>
+          <h4 class="text-base font-bold text-white mb-2">Cartel y QR en Recepción</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Se coloca un soporte acrílico o banner en el mostrador con el logo de Atlas Gym y un código QR:
+          </p>
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 mt-3 text-center">
+            <span class="text-xs text-blue-400 font-mono font-bold">app.atlasgym.com.ar</span>
+            <p class="text-[11px] text-slate-400 mt-1">“Escaneá acá para ver tu rutina diaria, anotar tus pesos y consultar tus cuotas”</p>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-4 border-t border-slate-800 pt-2">
+          Elimina por completo el uso de papel impreso y reduce las consultas en recepción.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Seguridad y Privacidad -->
+  <div class="mb-6">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">5</span>
+      Protocolo de Seguridad y Resguardo de Datos
+    </h2>
+    <div class="border border-slate-200 rounded-xl overflow-hidden text-xs">
+      <table class="w-full text-left">
+        <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+          <tr>
+            <th class="p-2.5">Área</th>
+            <th class="p-2.5">Tecnología / Mecanismo</th>
+            <th class="p-2.5">Garantía para Atlas Gym</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 text-slate-700">
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Tráfico Web</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">HTTPS / TLS v1.3</td>
+            <td class="p-2.5">Comunicaciones 100% cifradas de extremo a extremo. Imposible de espiar en redes WiFi.</td>
+          </tr>
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Contraseñas</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">BCrypt Password Encoder</td>
+            <td class="p-2.5">Las claves nunca se guardan en texto legible. Hashing irreversible con salt dinámico.</td>
+          </tr>
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Sesiones</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">JWT (JSON Web Tokens)</td>
+            <td class="p-2.5">Tokens firmados criptográficamente con expiración y control de revocación.</td>
+          </tr>
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Control de Acceso</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">RBAC (Roles ADMIN / ALUMNO)</td>
+            <td class="p-2.5">Los alumnos solo acceden a sus propios datos; prohibido acceso a caja y balances.</td>
+          </tr>
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Base de Datos</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">Spring Data JPA / Hibernate</td>
+            <td class="p-2.5">Inmunidad total contra inyecciones SQL al utilizar queries parametrizadas.</td>
+          </tr>
+          <tr>
+            <td class="p-2.5 font-bold text-slate-900">Copias de Seguridad</td>
+            <td class="p-2.5 font-mono text-[11px] text-blue-700">Daily Automated Snapshots</td>
+            <td class="p-2.5">Respaldos diarios automáticos con capacidad de restauración ante cualquier eventualidad.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6. Operación y Soporte Técnico -->
+  <div class="mb-6">
+    <h2 class="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-1.5 mb-3">
+      <span class="size-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">6</span>
+      Soporte, Monitoreo y Capacidad de Intervención en Vivo
+    </h2>
+    <div class="grid grid-cols-3 gap-3 text-xs">
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <strong class="text-slate-900 block mb-1">📊 Logs en Tiempo Real</strong>
+        <p class="text-slate-600">Desde la consola web de Vercel y Railway se visualizan en vivo los errores, fecha, usuario y línea exacta de código para depuración inmediata.</p>
+      </div>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <strong class="text-slate-900 block mb-1">🔄 Reinicio en 5 Segundos</strong>
+        <p class="text-slate-600">Si el backend sufriera alguna saturación de hilos o memoria, un botón en el panel de control reinicia el servicio sin afectar los datos guardados.</p>
+      </div>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <strong class="text-slate-900 block mb-1">⏪ Rollback Instantáneo</strong>
+        <p class="text-slate-600">Si una nueva actualización presentara una falla imprevista, con un solo clic se vuelve en 10 segundos a la versión anterior estable.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Estimación de Costos -->
+  <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 text-xs">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-bold text-emerald-950 uppercase tracking-wide">7. Resumen Económico de Infraestructura</h3>
+      <span class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Ultra Económico</span>
+    </div>
+    <div class="grid grid-cols-3 gap-4 text-emerald-900">
+      <div>
+        <p class="font-bold">• Dominio Oficial (.com.ar):</p>
+        <span class="text-slate-600">~$10 USD / año (en NIC Argentina)</span>
+      </div>
+      <div>
+        <p class="font-bold">• Frontend (Vercel):</p>
+        <span class="text-slate-600">$0 USD / mes (Capa gratuita oficial)</span>
+      </div>
+      <div>
+        <p class="font-bold">• Backend & BD (Railway / Render):</p>
+        <span class="text-slate-600">~$5 a $7 USD / mes (Servidor dedicado)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Corporativo -->
+  <div class="text-center border-t border-slate-200 pt-4 text-xs text-slate-400">
+    ATLAS GYM — Documentación Confidencial de Arquitectura y Despliegue — Septiembre 2026
+  </div>
+
+</body>
+</html>
