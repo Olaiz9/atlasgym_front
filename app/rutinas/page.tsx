@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
-import { Rutina, DiaRutina, Ejercicio, Alumno } from '@/lib/types'
+import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica } from '@/lib/types'
 import {
   Dumbbell,
   Plus,
@@ -19,6 +19,9 @@ import {
   AlertCircle,
   Flame,
   Search,
+  PlayCircle,
+  Save,
+  CheckCircle2,
 } from 'lucide-react'
 
 const OBJETIVOS = ['TODOS', 'Hipertrofia', 'Fuerza', 'Adaptación', 'Funcional']
@@ -653,10 +656,326 @@ function ModalNuevaRutina({
   )
 }
 
-// ---------- Vista dedicada para el Alumno en Rutinas ----------
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/** Busca un video de técnica cuyo título contenga alguna palabra clave del ejercicio. */
+function buscarVideoParaEjercicio(nombre: string, videos: VideoTecnica[]): VideoTecnica | undefined {
+  const palabras = nombre
+    .toLowerCase()
+    .split(/[\s,\-–—/]+/)
+    .filter((w) => w.length > 3)
+  return videos.find((v) =>
+    palabras.some((p) => v.titulo.toLowerCase().includes(p))
+  )
+}
+
+/** Formatea el resultado de una serie previa: "80 kg × 10" */
+function formatPrevia(serie: RegistroSerie | undefined): string {
+  if (!serie) return '—'
+  return `${serie.kg} kg × ${serie.reps}`
+}
+
+// ── Modal de Video de Técnica ───────────────────────────────────────────────
+function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: () => void }) {
+  const embedUrl = video.videoUrl.includes('embed')
+    ? video.videoUrl
+    : video.videoUrl.replace('watch?v=', 'embed/')
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400">{video.grupoMuscular} · {video.nivel}</p>
+            <h3 className="text-base font-bold text-white mt-0.5">{video.titulo}</h3>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-white transition-colors p-1 shrink-0">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* iframe de YouTube */}
+        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src={embedUrl}
+            title={video.titulo}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        {/* Descripción y tips */}
+        <div className="px-5 py-4 space-y-3">
+          {video.descripcion && (
+            <p className="text-xs text-slate-400 leading-relaxed">{video.descripcion}</p>
+          )}
+          {video.consejosClave && video.consejosClave.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Tips de técnica</p>
+              <ul className="space-y-1.5">
+                {video.consejosClave.map((tip) => (
+                  <li key={tip.slice(0, 40)} className="flex items-start gap-2 text-xs text-slate-300">
+                    <Check className="size-3.5 text-blue-400 mt-0.5 shrink-0" />
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Tarjeta de Ejercicio con Registro de Series ─────────────────────────────
+function TarjetaEjercicioAlumno({
+  ejercicio,
+  index,
+  seriesData,
+  sesionPrevia,
+  videos,
+  onChange,
+}: {
+  ejercicio: Ejercicio
+  index: number
+  seriesData: RegistroSerie[]
+  sesionPrevia: SesionEjercicio | undefined
+  videos: VideoTecnica[]
+  onChange: (series: RegistroSerie[]) => void
+}) {
+  const [videoAbierto, setVideoAbierto] = useState(false)
+  const videoMatch = useMemo(() => buscarVideoParaEjercicio(ejercicio.nombre, videos), [ejercicio.nombre, videos])
+
+  const seriesCompletas = seriesData.filter((s) => s.completada).length
+  const todasCompletas = seriesCompletas === ejercicio.series
+
+  const handleCambioSerie = useCallback(
+    (numSerie: number, campo: 'kg' | 'reps', valor: number) => {
+      const actualizadas = seriesData.map((s) =>
+        s.serieNumero === numSerie ? { ...s, [campo]: valor } : s
+      )
+      onChange(actualizadas)
+    },
+    [seriesData, onChange]
+  )
+
+  const toggleCompletada = useCallback(
+    (numSerie: number) => {
+      const actualizadas = seriesData.map((s) =>
+        s.serieNumero === numSerie ? { ...s, completada: !s.completada } : s
+      )
+      onChange(actualizadas)
+    },
+    [seriesData, onChange]
+  )
+
+  return (
+    <>
+      <div
+        className={`rounded-2xl border bg-slate-950 p-5 flex flex-col gap-4 transition-[border-color] duration-200 ${
+          todasCompletas ? 'border-blue-600/50' : 'border-slate-800 hover:border-slate-700'
+        }`}
+      >
+        {/* Header del ejercicio */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <span className={`size-7 rounded-lg font-mono font-black text-xs flex items-center justify-center shrink-0 ${
+              todasCompletas ? 'bg-blue-600 text-white' : 'bg-blue-600/20 text-blue-400'
+            }`}>
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-white leading-tight truncate">{ejercicio.nombre}</h3>
+              {ejercicio.notas && (
+                <p className="mt-0.5 text-xs text-slate-400 italic">💡 {ejercicio.notas}</p>
+              )}
+            </div>
+          </div>
+          {ejercicio.descansoSegundos && (
+            <span className="shrink-0 flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+              <Clock className="size-3" />
+              {ejercicio.descansoSegundos}s
+            </span>
+          )}
+        </div>
+
+        {/* Tabla de series */}
+        <div className="rounded-xl overflow-hidden border border-slate-800">
+          {/* Header de tabla */}
+          <div className="grid grid-cols-[32px_1fr_64px_56px_36px] gap-1 px-3 py-2 bg-slate-900 border-b border-slate-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Serie</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Previa</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">KG</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">REPS</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">✓</span>
+          </div>
+
+          {/* Filas de series */}
+          {seriesData.map((serie) => {
+            const previaData = sesionPrevia?.series.find((s) => s.serieNumero === serie.serieNumero)
+            return (
+              <div
+                key={serie.serieNumero}
+                className={`grid grid-cols-[32px_1fr_64px_56px_36px] gap-1 items-center px-3 py-2.5 border-b border-slate-800/50 last:border-0 transition-colors duration-150 ${
+                  serie.completada ? 'bg-blue-600/10' : ''
+                }`}
+              >
+                {/* Número de serie */}
+                <span className={`text-sm font-black text-center ${serie.completada ? 'text-blue-400' : 'text-slate-400'}`}>
+                  {serie.serieNumero}
+                </span>
+
+                {/* Previa */}
+                <span className="text-xs text-slate-500 truncate">{formatPrevia(previaData)}</span>
+
+                {/* Input KG */}
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={serie.kg || ''}
+                  onChange={(e) => handleCambioSerie(serie.serieNumero, 'kg', parseFloat(e.target.value) || 0)}
+                  aria-label={`KG serie ${serie.serieNumero}`}
+                  className="w-full text-center bg-slate-800 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+
+                {/* Input REPS */}
+                <input
+                  type="number"
+                  min={0}
+                  value={serie.reps || ''}
+                  onChange={(e) => handleCambioSerie(serie.serieNumero, 'reps', parseInt(e.target.value, 10) || 0)}
+                  aria-label={`Reps serie ${serie.serieNumero}`}
+                  className="w-full text-center bg-slate-800 border border-slate-700 text-white font-mono font-bold text-sm rounded-lg px-1 py-1 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+
+                {/* Checkbox de completado */}
+                <button
+                  onClick={() => toggleCompletada(serie.serieNumero)}
+                  aria-label={serie.completada ? 'Marcar como pendiente' : 'Marcar como completada'}
+                  className={`size-7 rounded-full flex items-center justify-center mx-auto transition-[background-color,border-color] duration-150 border-2 ${
+                    serie.completada
+                      ? 'bg-blue-600 border-blue-600'
+                      : 'bg-transparent border-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  {serie.completada && <Check className="size-3.5 text-white" strokeWidth={3} />}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Botón ver técnica */}
+        {videoMatch && (
+          <button
+            onClick={() => setVideoAbierto(true)}
+            className="flex items-center justify-center gap-2 w-full py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:border-blue-600/50 hover:text-blue-400 hover:bg-blue-600/5 transition-[color,background-color,border-color] duration-200 text-xs font-bold"
+          >
+            <PlayCircle className="size-4" />
+            Ver técnica del ejercicio
+          </button>
+        )}
+      </div>
+
+      {videoAbierto && videoMatch && (
+        <ModalVideoTecnica video={videoMatch} onClose={() => setVideoAbierto(false)} />
+      )}
+    </>
+  )
+}
+
+// ── Vista dedicada para el Alumno en Rutinas ────────────────────────────────
 function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any }) {
+  const { guardarSesion, getUltimaSesion, videosTecnica } = useAppData()
   const [diaActivo, setDiaActivo] = useState(0)
-  const dia = rutina.dias[diaActivo] || rutina.dias[0]
+  const [guardado, setGuardado] = useState(false)
+
+  const dia = rutina.dias[diaActivo] ?? rutina.dias[0]
+
+  // Sesión previa para el día activo
+  const sesionPrevia = useMemo(
+    () => (dia ? getUltimaSesion(usuario.alumnoId || 'a1', rutina.id, dia.id) : undefined),
+    [dia, getUltimaSesion, usuario.alumnoId, rutina.id]
+  )
+
+  // Estado local de las series actuales del día
+  const [seriesPorEjercicio, setSeriesPorEjercicio] = useState<Record<string, RegistroSerie[]>>(() => {
+    if (!dia) return {}
+    const inicial: Record<string, RegistroSerie[]> = {}
+    dia.ejercicios.forEach((ej) => {
+      const prevEj = sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id)
+      inicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
+        serieNumero: i + 1,
+        kg: prevEj?.series[i]?.kg ?? 0,
+        reps: prevEj?.series[i]?.reps ?? 0,
+        completada: false,
+      }))
+    })
+    return inicial
+  })
+
+  // Reinicializar series cuando cambia el día activo
+  const handleCambioDia = useCallback(
+    (index: number) => {
+      setDiaActivo(index)
+      setGuardado(false)
+      const nuevoDia = rutina.dias[index]
+      if (!nuevoDia) return
+      const prevDia = getUltimaSesion(usuario.alumnoId || 'a1', rutina.id, nuevoDia.id)
+      const inicial: Record<string, RegistroSerie[]> = {}
+      nuevoDia.ejercicios.forEach((ej) => {
+        const prevEj = prevDia?.ejercicios.find((e) => e.ejercicioId === ej.id)
+        inicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
+          serieNumero: i + 1,
+          kg: prevEj?.series[i]?.kg ?? 0,
+          reps: prevEj?.series[i]?.reps ?? 0,
+          completada: false,
+        }))
+      })
+      setSeriesPorEjercicio(inicial)
+    },
+    [rutina, getUltimaSesion, usuario.alumnoId]
+  )
+
+  const handleChangeSeries = useCallback((ejercicioId: string, series: RegistroSerie[]) => {
+    setSeriesPorEjercicio((prev) => ({ ...prev, [ejercicioId]: series }))
+    setGuardado(false)
+  }, [])
+
+  // Progreso del día
+  const { completados, total } = useMemo(() => {
+    if (!dia) return { completados: 0, total: 0 }
+    let completados = 0
+    dia.ejercicios.forEach((ej) => {
+      const series = seriesPorEjercicio[ej.id] ?? []
+      if (series.length > 0 && series.every((s) => s.completada)) completados++
+    })
+    return { completados, total: dia.ejercicios.length }
+  }, [dia, seriesPorEjercicio])
+
+  const handleGuardar = useCallback(() => {
+    if (!dia) return
+    const ejerciciosSesion: SesionEjercicio[] = dia.ejercicios.map((ej) => ({
+      ejercicioId: ej.id,
+      series: seriesPorEjercicio[ej.id] ?? [],
+    }))
+    guardarSesion({
+      alumnoId: usuario.alumnoId || 'a1',
+      rutinaId: rutina.id,
+      diaId: dia.id,
+      fecha: new Date().toISOString().slice(0, 10),
+      ejercicios: ejerciciosSesion,
+    })
+    setGuardado(true)
+  }, [dia, seriesPorEjercicio, guardarSesion, usuario.alumnoId, rutina.id])
 
   return (
     <div className="mx-auto max-w-[1200px] px-5 py-8 md:px-10 md:py-10 space-y-8">
@@ -672,12 +991,12 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
         </p>
       </div>
 
-      {/* Selector de Días en Pestañas */}
+      {/* Selector de Días */}
       <div className="flex gap-2 overflow-x-auto pb-2">
         {rutina.dias.map((d, index) => (
           <button
             key={d.id}
-            onClick={() => setDiaActivo(index)}
+            onClick={() => handleCambioDia(index)}
             className={`px-5 py-3 rounded-2xl text-sm font-bold transition-[color,background-color,box-shadow] duration-200 active:scale-95 shrink-0 ${
               diaActivo === index
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -689,54 +1008,70 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
         ))}
       </div>
 
-      {/* Lista de Ejercicios del Día Activo */}
+      {/* Panel del día activo */}
       {dia && (
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 md:p-8 backdrop-blur-xl">
-          <div className="flex items-center justify-between pb-5 border-b border-slate-800 mb-6">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 md:p-8 backdrop-blur-xl space-y-6">
+          {/* Header con progreso */}
+          <div className="flex items-center justify-between pb-5 border-b border-slate-800">
             <div>
               <h2 className="text-xl font-black text-white">{dia.nombre}</h2>
               <p className="text-xs text-slate-400 mt-0.5">{dia.ejercicios.length} ejercicios para hoy</p>
             </div>
+            <div className="text-right">
+              <span className={`text-2xl font-black ${completados === total && total > 0 ? 'text-blue-400' : 'text-white'}`}>
+                {completados}/{total}
+              </span>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">completados</p>
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {dia.ejercicios.map((ej, i) => (
+          {/* Barra de progreso */}
+          {total > 0 && (
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <div
-                key={ej.id}
-                className="rounded-2xl border border-slate-800 bg-slate-950 p-5 flex flex-col justify-between transition-[border-color] duration-200 hover:border-slate-700"
-              >
-                <div>
-                  <div className="flex items-start justify-between">
-                    <span className="size-7 rounded-lg bg-blue-600/20 text-blue-400 font-mono font-black text-xs flex items-center justify-center">
-                      0{i + 1}
-                    </span>
-                    {ej.descansoSegundos && (
-                      <span className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
-                        <Clock className="size-3 text-slate-400" />
-                        {ej.descansoSegundos}s descanso
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-3 text-base font-bold text-white">{ej.nombre}</h3>
-                  {ej.notas && (
-                    <p className="mt-1 text-xs text-slate-400 italic">💡 {ej.notas}</p>
-                  )}
-                </div>
+                className="h-full bg-blue-600 rounded-full transition-[width] duration-500"
+                style={{ width: `${(completados / total) * 100}%` }}
+              />
+            </div>
+          )}
 
-                <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">Series</span>
-                      <span className="text-lg font-black text-white">{ej.series}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">Reps</span>
-                      <span className="text-lg font-black text-blue-400">{ej.repeticiones}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Tarjetas de ejercicios */}
+          <div className="grid gap-5 sm:grid-cols-2">
+            {dia.ejercicios.map((ej, i) => (
+              <TarjetaEjercicioAlumno
+                key={ej.id}
+                ejercicio={ej}
+                index={i}
+                seriesData={seriesPorEjercicio[ej.id] ?? []}
+                sesionPrevia={sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id)}
+                videos={videosTecnica}
+                onChange={(series) => handleChangeSeries(ej.id, series)}
+              />
             ))}
+          </div>
+
+          {/* Botón Guardar Entreno */}
+          <div className="pt-2 border-t border-slate-800 flex justify-end">
+            <button
+              onClick={handleGuardar}
+              className={`inline-flex items-center gap-2 h-11 px-6 rounded-xl text-sm font-bold transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95 ${
+                guardado
+                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 hover:-translate-y-0.5'
+              }`}
+            >
+              {guardado ? (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  ¡Entreno guardado!
+                </>
+              ) : (
+                <>
+                  <Save className="size-4" />
+                  Guardar Entreno
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
