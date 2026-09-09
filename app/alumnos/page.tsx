@@ -5,7 +5,8 @@ import { useState, useMemo } from "react";
 import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { soloLetras } from "@/lib/validators";
+import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
+import { formatDiasIngreso } from "@/lib/date-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
 import {
@@ -15,15 +16,6 @@ import {
   ESTADO_CUENTA_STYLES,
   Plan,
 } from "@/lib/types";
-
-function formatDiasIngreso(fecha: string) {
-  const diffMs = Date.now() - new Date(fecha).getTime();
-  const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDias === 0) return "Hoy";
-  if (diffDias === 1) return "Ayer";
-  if (diffDias <= 7) return `Hace ${diffDias} días`;
-  return new Date(fecha).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
-}
 
 const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -377,15 +369,21 @@ function ModalEditarAlumno({
 }) {
   const [form, setForm] = useState({
     nombre: alumno.nombre,
+    dni: alumno.dni || "",
     email: alumno.email || "",
     celular: alumno.celular || "",
     plan: alumno.plan,
     activo: alumno.activo,
   });
+  const [errores, setErrores] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nombre.trim()) return;
+    const nuevosErrores = validarDatosAlumno(form, false);
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
+    }
     onSubmit(form);
   };
 
@@ -411,12 +409,31 @@ function ModalEditarAlumno({
             <input
               aria-label="Nombre y apellido"
               value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
+              onChange={(e) => {
+                setForm({ ...form, nombre: soloLetras(e.target.value) });
+                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: "" }));
+              }}
               maxLength={60}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.nombre ? "border border-rose-400" : ""}`}
               placeholder="Nombre y apellido"
               required
             />
+            {errores.nombre && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.nombre}</span>}
+          </Field>
+
+          <Field label="DNI">
+            <input
+              aria-label="DNI"
+              value={form.dni}
+              onChange={(e) => {
+                setForm({ ...form, dni: soloNumeros(e.target.value).slice(0, 8) });
+                if (errores.dni) setErrores((prev) => ({ ...prev, dni: "" }));
+              }}
+              maxLength={8}
+              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.dni ? "border border-rose-400" : ""}`}
+              placeholder="Ej. 41234567"
+            />
+            {errores.dni && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.dni}</span>}
           </Field>
 
           <Field label="Plan asignado">

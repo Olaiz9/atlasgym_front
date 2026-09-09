@@ -12,29 +12,18 @@ import {
   ShieldCheck,
   Clock,
   Dumbbell,
+  CreditCard,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { AccesoRestringido } from "@/components/acceso-restringido";
+import { formatFechaAR, calcularDiasDesde } from "@/lib/date-utils";
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio, Pago, Alumno, EstadoCuenta } from "@/lib/types";
 
 const ESTADO_PAGO_STYLES = {
   PAGADO: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   PENDIENTE: "bg-amber-50 text-amber-700 border border-amber-200",
   VENCIDO: "bg-red-50 text-red-700 border border-red-200",
-} as const;
-
-function formatFechaAR(fecha: string) {
-  return new Date(fecha).toLocaleDateString("es-AR", {
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
-}
-
-function diasDesde(fecha: string) {
-  const hoy = new Date();
-  const desde = new Date(fecha);
-  const diffMs = hoy.getTime() - desde.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-}
+};
 
 function TarjetaRutina({ rutina }: { rutina: any }) {
   return (
@@ -172,7 +161,11 @@ function HeaderAlumno({ alumno, estadoCuenta }: { alumno: Alumno; estadoCuenta: 
         </span>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="flex items-center gap-2 text-slate-600">
+          <CreditCard className="w-4 h-4 text-slate-400" />
+          {alumno.dni ? `DNI: ${alumno.dni}` : "Sin DNI"}
+        </div>
         <div className="flex items-center gap-2 text-slate-600">
           <Mail className="w-4 h-4 text-slate-400" />
           {alumno.email || "Sin email"}

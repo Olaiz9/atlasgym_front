@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
+import { formatFechaAR } from "@/lib/date-utils";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -30,12 +31,6 @@ const ESTADO_STYLES: Record<EstadoPago, string> = {
   PENDIENTE: "bg-amber-50 text-amber-700 border border-amber-200",
   VENCIDO: "bg-red-50 text-red-700 border border-red-200",
 };
-
-function formatFechaAR(fecha: string) {
-  return new Date(fecha).toLocaleDateString("es-AR", {
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
-}
 
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -681,13 +676,27 @@ function ModalRegistrarPago({
   const [usuarioApp, setUsuarioApp] = useState("");
   const [passwordApp, setPasswordApp] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [errorValidacion, setErrorValidacion] = useState("");
 
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.alumnoId || !form.monto) return;
-    onSubmit({ ...form, monto: Number(form.monto) });
+    const montoNum = Number(form.monto);
+    if (!form.alumnoId) {
+      setErrorValidacion("Seleccioná un alumno");
+      return;
+    }
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setErrorValidacion("El monto debe ser un valor numérico mayor a 0");
+      return;
+    }
+    if (!form.fecha || !/^\d{4}-\d{2}-\d{2}$/.test(form.fecha)) {
+      setErrorValidacion("Ingresá una fecha válida (YYYY-MM-DD)");
+      return;
+    }
+    setErrorValidacion("");
+    onSubmit({ ...form, monto: montoNum });
   };
 
   const generarMensaje = () => {
@@ -806,6 +815,12 @@ function ModalRegistrarPago({
                 </select>
               </Field>
             </div>
+
+            {errorValidacion && (
+              <p className="text-xs font-semibold text-rose-500 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                {errorValidacion}
+              </p>
+            )}
 
             <button
               type="submit"

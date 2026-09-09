@@ -16,6 +16,7 @@ export interface UsuarioSesion {
 export interface Alumno {
   id: string;
   nombre: string;
+  dni?: string;
   email?: string;
   celular?: string;
   plan: string;

@@ -5,12 +5,12 @@ import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } 
 
 
 export const ALUMNOS_MOCK: Alumno[] = [
-  { id: "a1", nombre: "Lucía Fernández", email: "lucia.fernandez@mail.com", celular: "2611234567", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
-  { id: "a2", nombre: "Martín Torres", email: "martin.torres@mail.com", celular: "2612345678", plan: "Full Access", fechaAlta: "2026-01-08", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
-  { id: "a3", nombre: "Sofía Ramírez", email: "sofia.ramirez@mail.com", celular: "2613456789", plan: "Funcional", fechaAlta: "2026-05-22", activo: true, ultimaAsistencia: "2026-08-10", tieneRutina: false },
-  { id: "a4", nombre: "Diego Castro", email: "diego.castro@mail.com", celular: "2614567890", plan: "Musculación", fechaAlta: "2026-07-01", activo: true, ultimaAsistencia: "2026-08-27", tieneRutina: true, rutinaId: "r2" },
-  { id: "a5", nombre: "Valentina Ríos", email: "valentina.rios@mail.com", celular: "2615678901", plan: "Full Access", fechaAlta: "2026-06-15", activo: true, ultimaAsistencia: undefined, tieneRutina: false },
-  { id: "a6", nombre: "Esteban Morales", email: "esteban.m@mail.com", celular: "2619876543", plan: "Musculación", fechaAlta: "2026-02-10", activo: false, ultimaAsistencia: "2026-05-12", tieneRutina: false },
+  { id: "a1", nombre: "Lucía Fernández", dni: "41890123", email: "lucia.fernandez@mail.com", celular: "2611234567", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
+  { id: "a2", nombre: "Martín Torres", dni: "39456789", email: "martin.torres@mail.com", celular: "2612345678", plan: "Full Access", fechaAlta: "2026-01-08", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
+  { id: "a3", nombre: "Sofía Ramírez", dni: "42123456", email: "sofia.ramirez@mail.com", celular: "2613456789", plan: "Funcional", fechaAlta: "2026-05-22", activo: true, ultimaAsistencia: "2026-08-10", tieneRutina: false },
+  { id: "a4", nombre: "Diego Castro", dni: "38901234", email: "diego.castro@mail.com", celular: "2614567890", plan: "Musculación", fechaAlta: "2026-07-01", activo: true, ultimaAsistencia: "2026-08-27", tieneRutina: true, rutinaId: "r2" },
+  { id: "a5", nombre: "Valentina Ríos", dni: "43567890", email: "valentina.rios@mail.com", celular: "2615678901", plan: "Full Access", fechaAlta: "2026-06-15", activo: true, ultimaAsistencia: undefined, tieneRutina: false },
+  { id: "a6", nombre: "Esteban Morales", dni: "37890123", email: "esteban.m@mail.com", celular: "2619876543", plan: "Musculación", fechaAlta: "2026-02-10", activo: false, ultimaAsistencia: "2026-05-12", tieneRutina: false },
 ];
 
 export const PAGOS_MOCK: Pago[] = [
