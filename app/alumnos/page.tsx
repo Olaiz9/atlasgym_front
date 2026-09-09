@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras } from "@/lib/validators";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
+import { AccesoRestringido } from "@/components/acceso-restringido";
 import {
   Alumno,
   EstadoCuenta,
@@ -33,7 +34,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
 
   const [busqueda, setBusqueda] = useState("");
@@ -72,6 +73,15 @@ export default function AlumnosPage() {
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
   };
+
+  if (usuarioActual.rol === "ALUMNO") {
+    return (
+      <AccesoRestringido
+        titulo="Panel de Alumnos Restringido"
+        mensaje="La administración de fichas de alumnos, estados de cuenta y altas solo está disponible para entrenadores y administradores."
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">

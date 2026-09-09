@@ -14,6 +14,7 @@ import {
   Dumbbell,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
+import { AccesoRestringido } from "@/components/acceso-restringido";
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio, Pago, Alumno, EstadoCuenta } from "@/lib/types";
 
 const ESTADO_PAGO_STYLES = {
@@ -220,7 +221,16 @@ function AvisoAcceso({ estadoCuenta }: { estadoCuenta: EstadoCuenta }) {
 
 export default function FichaAlumnoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno } = useAppData();
+  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, usuarioActual } = useAppData();
+
+  if (usuarioActual.rol === "ALUMNO") {
+    return (
+      <AccesoRestringido
+        titulo="Ficha de Alumno Restringida"
+        mensaje="Las fichas individuales de alumnos, asistencias y pagos solo pueden ser consultadas por entrenadores y administradores."
+      />
+    );
+  }
 
   const alumno = getAlumno(id);
   const rutinaAsignada = alumno ? getRutinaDeAlumno(alumno.id) : undefined;
