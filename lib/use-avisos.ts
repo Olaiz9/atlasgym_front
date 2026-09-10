@@ -69,14 +69,16 @@ export function useAvisosManager() {
   );
 
   const marcarTodosAvisosLeidos = useCallback((usuarioId: string) => {
-    setAvisos((prev) =>
-      prev.map((av) => {
+    setAvisos((prev) => {
+      const hayNoLeidos = prev.some((av) => !av.leidoPor.includes(usuarioId));
+      if (!hayNoLeidos) return prev;
+      return prev.map((av) => {
         if (!av.leidoPor.includes(usuarioId)) {
           return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
         }
         return av;
-      })
-    );
+      });
+    });
   }, []);
 
   return {

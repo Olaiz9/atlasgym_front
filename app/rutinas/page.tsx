@@ -29,7 +29,7 @@ import {
 const OBJETIVOS = ['TODOS', 'Hipertrofia', 'Fuerza', 'Adaptación', 'Funcional']
 
 export default function RutinasPage() {
-  const { rutinas, alumnos, usuarioActual, agregarRutina, asignarRutinaAAlumno, eliminarRutina, getRutinaDeAlumno } =
+  const { rutinas, alumnos, videosTecnica, usuarioActual, agregarRutina, asignarRutinaAAlumno, eliminarRutina, getRutinaDeAlumno } =
     useAppData()
 
   const [filtroObjetivo, setFiltroObjetivo] = useState('TODOS')
@@ -299,6 +299,7 @@ export default function RutinasPage() {
       {/* Modal: Crear Nueva Rutina */}
       {modalNuevaAbierto && (
         <ModalNuevaRutina
+          videosTecnica={videosTecnica}
           onClose={() => setModalNuevaAbierto(false)}
           onSave={(nueva) => {
             agregarRutina(nueva)
@@ -440,9 +441,11 @@ function ModalAsignarRutina({
 
 // ---------- Modal: Crear Nueva Rutina ----------
 function ModalNuevaRutina({
+  videosTecnica,
   onClose,
   onSave,
 }: {
+  videosTecnica: VideoTecnica[]
   onClose: () => void
   onSave: (rutina: Omit<Rutina, 'id'>) => void
 }) {
@@ -459,6 +462,16 @@ function ModalNuevaRutina({
       ],
     },
   ])
+
+  const videosPorGrupo = useMemo(() => {
+    const grupos: Record<string, VideoTecnica[]> = {}
+    videosTecnica.forEach((v) => {
+      const grupo = v.grupoMuscular || 'Otros'
+      if (!grupos[grupo]) grupos[grupo] = []
+      grupos[grupo].push(v)
+    })
+    return grupos
+  }, [videosTecnica])
 
   const agregarDia = () => {
     const num = dias.length + 1
@@ -482,7 +495,32 @@ function ModalNuevaRutina({
               ...d,
               ejercicios: [
                 ...d.ejercicios,
-                { id: `e-${Date.now()}`, nombre: 'Nuevo ejercicio', series: 3, repeticiones: '12', descansoSegundos: 60 },
+                { id: `e-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, nombre: 'Nuevo ejercicio', series: 3, repeticiones: '12', descansoSegundos: 60 },
+              ],
+            }
+          : d
+      )
+    )
+  }
+
+  const agregarEjercicioDesdeVideoteca = (diaId: string, videoTitulo: string) => {
+    if (!videoTitulo) return
+    const video = videosTecnica.find((v) => v.titulo.toLowerCase() === videoTitulo.toLowerCase())
+    const nombreEj = video?.titulo || videoTitulo
+    setDias((prev) =>
+      prev.map((d) =>
+        d.id === diaId
+          ? {
+              ...d,
+              ejercicios: [
+                ...d.ejercicios,
+                {
+                  id: `e-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                  nombre: nombreEj,
+                  series: 3,
+                  repeticiones: '10-12',
+                  descansoSegundos: 60,
+                },
               ],
             }
           : d
@@ -601,64 +639,18 @@ function ModalNuevaRutina({
 
             <div className="space-y-4">
               {dias.map((dia, idx) => (
-                <div key={dia.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/80 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <input
-                      value={dia.nombre}
-                      onChange={(e) => actualizarNombreDia(dia.id, e.target.value)}
-                      placeholder={`Día ${idx + 1}`}
-                      className="font-bold text-sm bg-white px-3 py-1.5 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 flex-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => agregarEjercicioADia(dia.id)}
-                      className="text-xs font-semibold text-blue-600 hover:underline shrink-0"
-                    >
-                      + Ejercicio
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {dia.ejercicios.map((ej) => (
-                      <div key={ej.id} className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
-                        <input
-                          aria-label="Nombre del ejercicio"
-                          value={ej.nombre}
-                          onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'nombre', e.target.value)}
-                          placeholder="Nombre del ejercicio"
-                          className="flex-1 font-medium outline-none text-slate-800"
-                        />
-                        <div className="flex items-center gap-1 shrink-0">
-                          <input
-                            type="number"
-                            value={ej.series}
-                            onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'series', Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            className="w-12 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
-                            title="Series"
-                            aria-label="Series"
-                          />
-                          <span className="text-slate-400">x</span>
-                          <input
-                            value={ej.repeticiones}
-                            onChange={(e) => actualizarEjercicio(dia.id, ej.id, 'repeticiones', e.target.value)}
-                            placeholder="Reps"
-                            className="w-16 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
-                            title="Repeticiones"
-                            aria-label="Repeticiones"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => eliminarEjercicio(dia.id, ej.id)}
-                            aria-label="Eliminar ejercicio"
-                            className="text-slate-400 hover:text-rose-500 p-1 ml-1"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <TarjetaDiaRutina
+                  key={dia.id}
+                  dia={dia}
+                  idx={idx}
+                  videosTecnica={videosTecnica}
+                  videosPorGrupo={videosPorGrupo}
+                  onActualizarNombre={(nombre) => actualizarNombreDia(dia.id, nombre)}
+                  onAgregarDesdeVideoteca={(titulo) => agregarEjercicioDesdeVideoteca(dia.id, titulo)}
+                  onAgregarEjercicio={() => agregarEjercicioADia(dia.id)}
+                  onActualizarEjercicio={(ejId, campo, valor) => actualizarEjercicio(dia.id, ejId, campo, valor)}
+                  onEliminarEjercicio={(ejId) => eliminarEjercicio(dia.id, ejId)}
+                />
               ))}
             </div>
           </div>
@@ -678,7 +670,129 @@ function ModalNuevaRutina({
               Guardar Rutina
             </button>
           </div>
+          {videosTecnica.length > 0 && (
+            <datalist id="lista-ejercicios-videoteca">
+              {videosTecnica.map((v) => (
+                <option key={v.id} value={v.titulo}>
+                  {v.grupoMuscular} — {v.nivel}
+                </option>
+              ))}
+            </datalist>
+          )}
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ---------- Subcomponente: Tarjeta de Día y Ejercicios ----------
+function TarjetaDiaRutina({
+  dia,
+  idx,
+  videosTecnica,
+  videosPorGrupo,
+  onActualizarNombre,
+  onAgregarDesdeVideoteca,
+  onAgregarEjercicio,
+  onActualizarEjercicio,
+  onEliminarEjercicio,
+}: {
+  dia: DiaRutina
+  idx: number
+  videosTecnica: VideoTecnica[]
+  videosPorGrupo: Record<string, VideoTecnica[]>
+  onActualizarNombre: (nombre: string) => void
+  onAgregarDesdeVideoteca: (titulo: string) => void
+  onAgregarEjercicio: () => void
+  onActualizarEjercicio: (ejId: string, campo: string, valor: any) => void
+  onEliminarEjercicio: (ejId: string) => void
+}) {
+  return (
+    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/80 space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <input
+          value={dia.nombre}
+          onChange={(e) => onActualizarNombre(e.target.value)}
+          placeholder={`Día ${idx + 1}`}
+          className="font-bold text-sm bg-white px-3 py-1.5 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {videosTecnica.length > 0 && (
+            <select
+              aria-label={`Elegir ejercicio de videoteca para ${dia.nombre}`}
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  onAgregarDesdeVideoteca(e.target.value)
+                  e.target.value = ''
+                }
+              }}
+              className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              <option value="" disabled>
+                + Desde Videoteca...
+              </option>
+              {Object.entries(videosPorGrupo).map(([grupo, vids]) => (
+                <optgroup key={grupo} label={grupo}>
+                  {vids.map((v) => (
+                    <option key={v.id} value={v.titulo}>
+                      {v.titulo} ({v.nivel})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={onAgregarEjercicio}
+            className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+          >
+            + Manual
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {dia.ejercicios.map((ej) => (
+          <div key={ej.id} className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+            <input
+              aria-label="Nombre del ejercicio"
+              list="lista-ejercicios-videoteca"
+              value={ej.nombre}
+              onChange={(e) => onActualizarEjercicio(ej.id, 'nombre', e.target.value)}
+              placeholder="Nombre del ejercicio o videoteca..."
+              className="flex-1 font-medium outline-none text-slate-800"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <input
+                type="number"
+                value={ej.series}
+                onChange={(e) => onActualizarEjercicio(ej.id, 'series', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="w-12 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
+                title="Series"
+                aria-label="Series"
+              />
+              <span className="text-slate-400">x</span>
+              <input
+                value={ej.repeticiones}
+                onChange={(e) => onActualizarEjercicio(ej.id, 'repeticiones', e.target.value)}
+                placeholder="Reps"
+                className="w-16 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
+                title="Repeticiones"
+                aria-label="Repeticiones"
+              />
+              <button
+                type="button"
+                onClick={() => onEliminarEjercicio(ej.id)}
+                aria-label="Eliminar ejercicio"
+                className="text-slate-400 hover:text-rose-500 p-1 ml-1"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

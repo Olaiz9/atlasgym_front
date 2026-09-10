@@ -176,3 +176,52 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Score de salud: **100 / 100 (Great)**
     - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
 
+---
+
+### 5. Corrección Integral de Baches Funcionales y Experiencia de Usuario (Post-Merge con ramaLucas)
+* **Fecha:** 10 de Septiembre de 2026
+* **Contexto de Integración:** Luego de la incorporación de los cambios de `ramaLucas` mediante merge limpio en `ramaBruno`, se ejecutó una auditoría funcional integral y se subsanaron 5 requerimientos críticos de interacción y usabilidad del sistema:
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Corrección del Selector de Plan en Registro de Alumnos (`ModalNuevoAlumno`):**
+     - **Causa Raíz:** `@base-ui/react/select` renderizaba el menú desplegable en el `<body>` vía portal (`SelectPrimitive.Portal`). Al encontrarse dentro de una etiqueta nativa `<dialog>` abierta con `.showModal()`, la API *Top Layer* del navegador bloqueaba los eventos del puntero y foco en el menú portaleado.
+     - **Solución:** Reemplazo por un `<select>` nativo accesible y estilizado con la paleta oscura de ATLAS, con enlace reactivo a los planes activos de `useAppData()`.
+  2. **Fase 2 — Autocompletado de Plan, Monto y Celular en "Registrar Pago" (`ModalRegistrarPago`):**
+     - Inyección de la colección de `planes` en el formulario de cobro dentro de `app/finanzas/page.tsx`.
+     - Detección automática del plan asignado cruzando `planId` o el nombre del plan con la lista maestra de precios. Al seleccionar un alumno, se completan en tiempo real el plan, el monto oficial correspondiente y el teléfono de WhatsApp.
+     - Modularización de la sección de mensajería en el subcomponente `SeccionNotificarWhatsapp`.
+  3. **Fase 3 — Modales Estilizados de Confirmación Previa en Videoteca y Planes:**
+     - Erradicación de las ventanas emergentes nativas del navegador (`window.confirm()`) que mostraban el alert genérico de `localhost`.
+     - Implementación de `ModalConfirmarEliminarVideo` en `app/videoteca/page.tsx` y `ModalConfirmarEliminarPlan` en `app/planes/page.tsx`, con backdrop oscuro desenfocado (`backdrop-blur-sm`), tarjeta `bg-slate-900`, icono de alerta en `bg-rose-500/10` y confirmación destructiva.
+  4. **Fase 4 — Integración del Catálogo de Videoteca en Creador de Rutinas (`ModalNuevaRutina`):**
+     - Se vinculó `videosTecnica` a la interfaz de creación de rutinas en `app/rutinas/page.tsx`.
+     - Inclusión de un selector rápido `+ Desde Videoteca...` categorizado por grupos musculares (`Pecho`, `Espalda`, `Piernas`, `Hombros`, `Brazos`, `Core`) que inserta el ejercicio directamente con valores base (3 series, 10-12 reps, 60s descanso).
+     - Vinculación de un `<datalist id="lista-ejercicios-videoteca">` en cada fila de ejercicio para autocompletado en tiempo real mientras el profesor escribe.
+     - Desacople de la tarjeta de día en `TarjetaDiaRutina` para mantener la mantenibilidad óptima en React Doctor.
+  5. **Fase 5 — Descarte Automático de Badge de Notificaciones al Entrar a Avisos:**
+     - En `app/avisos/page.tsx`, adición de un `useEffect` que dispara `marcarTodosAvisosLeidos(usuarioActual.id)` al ingresar al módulo.
+     - Optimización en `lib/use-avisos.ts` con la guarda `hayNoLeidos`, previniendo escrituras redundantes en `localStorage` o re-renders innecesarios.
+     - El badge circular rojo con el conteo de no leídos desaparece instantáneamente del Sidebar, Mobile Nav y Header al acceder a la pantalla.
+
+* **Archivos afectados:**
+  - 📁 `components/modal-nuevo-alumno.tsx`: Selector nativo accesible de planes dentro de dialog.
+  - 📁 `app/finanzas/page.tsx`: Autocompletado de tarifa y plan en cobro; extracción de `SeccionNotificarWhatsapp`.
+  - 📁 `app/videoteca/page.tsx`: Componente `ModalConfirmarEliminarVideo`.
+  - 📁 `app/planes/page.tsx`: Componente `ModalConfirmarEliminarPlan`.
+  - 📁 `app/rutinas/page.tsx`: Selector y datalist de videoteca en rutina; subcomponente `TarjetaDiaRutina`.
+  - 📁 `app/avisos/page.tsx`: Efecto de lectura global de avisos al ingresar.
+  - 📁 `lib/use-avisos.ts`: Guarda reactiva `hayNoLeidos` en `marcarTodosAvisosLeidos`.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Documentación del Hito 5.
+  - 📁 `reportes/BITACORA_BRUNO.html`: Actualización visual de bitácora.
+  - 📁 `reportes/BITACORA_BRUNO.pdf`: Recompilación del informe ejecutivo en PDF.
+
+* **Resultados de Verificación y Calidad (Doble Suite):**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `9 passed (9)`
+    - Tests ejecutados: `66 passed (66)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **React Doctor (`npx react-doctor`):**
+    - Archivos escaneados: `48 archivos`
+    - Score de salud: **100 / 100 (Great)**
+    - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
+

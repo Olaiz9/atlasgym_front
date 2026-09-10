@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useReducer, useState } from 'react'
 import { useAppData } from '@/lib/store'
 import { Plan } from '@/lib/types'
 import { Package, Plus, Pencil, Trash2, X, Check, DollarSign, Calendar, Sparkles, AlertCircle } from 'lucide-react'
@@ -68,6 +68,7 @@ function reductorModalPlan(estado: EstadoModalPlan, accion: AccionModalPlan): Es
 export default function PlanesPage() {
   const { planes, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
   const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
+  const [planAEliminar, setPlanAEliminar] = useState<Plan | null>(null)
 
   if (usuarioActual.rol === 'ALUMNO') {
     return (
@@ -171,13 +172,11 @@ export default function PlanesPage() {
                   </button>
                   {planes.length > 1 && (
                     <button
-                      onClick={() => {
-                        if (confirm(`¿Seguro que querés eliminar el plan "${plan.nombre}"?`)) {
-                          eliminarPlan(plan.id)
-                        }
-                      }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                      type="button"
+                      onClick={() => setPlanAEliminar(plan)}
+                      className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Eliminar plan"
+                      aria-label={`Eliminar plan ${plan.nombre}`}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -336,7 +335,56 @@ export default function PlanesPage() {
             </form>
           </div>
         </dialog>
+      {planAEliminar && (
+        <ModalConfirmarEliminarPlan
+          plan={planAEliminar}
+          onCancel={() => setPlanAEliminar(null)}
+          onConfirm={() => {
+            eliminarPlan(planAEliminar.id)
+            setPlanAEliminar(null)
+          }}
+        />
       )}
+    </div>
+  )
+}
+
+function ModalConfirmarEliminarPlan({
+  plan,
+  onCancel,
+  onConfirm,
+}: {
+  plan: Plan
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 mb-4 border border-rose-500/20">
+          <Trash2 className="size-6" />
+        </div>
+        <h3 className="text-lg font-bold text-white">¿Eliminar plan?</h3>
+        <p className="mt-2 text-sm text-slate-400">
+          Vas a eliminar el plan <span className="font-semibold text-slate-200">"{plan.nombre}"</span> (${plan.precio.toLocaleString('es-AR')}). Esta opción ya no estará disponible para nuevas inscripciones.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 rounded-xl border border-slate-700 px-4 text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors active:scale-95"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-10 rounded-xl bg-rose-600 px-4 text-xs font-bold text-white hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20 active:scale-95"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

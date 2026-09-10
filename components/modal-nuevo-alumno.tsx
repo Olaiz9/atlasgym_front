@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
@@ -138,25 +137,31 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
 
           <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
             Plan asignado
-            <Select
+            <select
+              aria-label="Plan asignado"
               required
-              value={formAlumno.plan}
-              onValueChange={(v) => {
-                const planObj = planes.find((p) => p.nombre === v);
-                setFormAlumno((prev) => ({ ...prev, plan: v ?? '', planId: planObj?.id ?? '' }));
+              value={formAlumno.planId || formAlumno.plan}
+              onChange={(e) => {
+                const val = e.target.value
+                const planObj = planes.find((p) => p.id === val || p.nombre === val)
+                setFormAlumno((prev) => ({
+                  ...prev,
+                  plan: planObj?.nombre ?? val,
+                  planId: planObj?.id ?? val,
+                }))
+                if (erroresAlumno.plan) {
+                  setErroresAlumno((prev) => ({ ...prev, plan: '' }))
+                }
               }}
+              className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 cursor-pointer ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}
             >
-              <SelectTrigger className={`h-12 rounded-xl bg-slate-50 font-medium text-slate-900 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}>
-                <SelectValue placeholder="Seleccioná un plan activo" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 bg-white shadow-xl">
-                {planesActivos.map((p) => (
-                  <SelectItem key={p.id} value={p.nombre} className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">
-                    {p.nombre} — ${p.precio.toLocaleString('es-AR')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>Seleccioná un plan activo</option>
+              {planesActivos.map((p) => (
+                <option key={p.id} value={p.id} className="font-semibold py-2">
+                  {p.nombre} — ${p.precio.toLocaleString('es-AR')}
+                </option>
+              ))}
+            </select>
             {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.plan}</span>}
           </label>
 

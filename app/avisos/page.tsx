@@ -1,6 +1,6 @@
-﻿'use client'
+'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Bell,
   Plus,
@@ -348,9 +348,16 @@ export default function AvisosPage() {
     alumnos,
     getAvisosParaUsuario,
     marcarAvisoLeido,
+    marcarTodosAvisosLeidos,
     eliminarAviso,
     getCantidadAvisosNoLeidos,
   } = useAppData()
+
+  useEffect(() => {
+    if (usuarioActual?.id) {
+      marcarTodosAvisosLeidos(usuarioActual.id)
+    }
+  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')

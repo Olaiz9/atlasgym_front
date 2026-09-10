@@ -44,6 +44,7 @@ export default function VideotecaPage() {
   const [busqueda, setBusqueda] = useState('')
   const [videoSeleccionado, setVideoSeleccionado] = useState<VideoTecnica | null>(null)
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false)
+  const [videoAEliminar, setVideoAEliminar] = useState<VideoTecnica | null>(null)
 
   const esAdmin = usuarioActual.rol === 'ADMIN'
 
@@ -190,9 +191,7 @@ export default function VideotecaPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (confirm(`¿Eliminar el video "${video.titulo}"?`)) {
-                            eliminarVideoTecnica(video.id)
-                          }
+                          setVideoAEliminar(video)
                         }}
                         className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
                         title="Eliminar video"
@@ -321,6 +320,17 @@ export default function VideotecaPage() {
           onGuardar={(nuevo) => {
             agregarVideoTecnica(nuevo)
             setModalNuevoAbierto(false)
+          }}
+        />
+      )}
+
+      {videoAEliminar && (
+        <ModalConfirmarEliminarVideo
+          video={videoAEliminar}
+          onCancel={() => setVideoAEliminar(null)}
+          onConfirm={() => {
+            eliminarVideoTecnica(videoAEliminar.id)
+            setVideoAEliminar(null)
           }}
         />
       )}
@@ -479,5 +489,45 @@ function ModalNuevoVideo({
         </form>
       </div>
     </dialog>
+  )
+}
+
+function ModalConfirmarEliminarVideo({
+  video,
+  onCancel,
+  onConfirm,
+}: {
+  video: VideoTecnica
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 mb-4 border border-rose-500/20">
+          <Trash2 className="size-6" />
+        </div>
+        <h3 className="text-lg font-bold text-white">¿Eliminar video tutorial?</h3>
+        <p className="mt-2 text-sm text-slate-400">
+          Vas a eliminar <span className="font-semibold text-slate-200">"{video.titulo}"</span> de la videoteca. Esta acción no se puede deshacer y los alumnos ya no podrán visualizar esta técnica.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 rounded-xl border border-slate-700 px-4 text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors active:scale-95"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-10 rounded-xl bg-rose-600 px-4 text-xs font-bold text-white hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20 active:scale-95"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

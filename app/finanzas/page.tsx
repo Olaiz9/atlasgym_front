@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { formatFechaAR, calcularVencimientoCuota } from "@/lib/date-utils";
 import { CONTACTO_ATLAS } from "@/lib/constants";
-import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
+import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion, Alumno, Plan } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -281,7 +281,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
 // ---------- Componente principal ----------
 export default function FinanzasPage() {
-  const { alumnos, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
+  const { alumnos, planes, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
     useAppData();
 
   const [mes, setMes] = useState<string>(() => mesActualISO());
@@ -543,6 +543,7 @@ export default function FinanzasPage() {
       {modalAbierto && (
         <ModalRegistrarPago
           alumnos={alumnos}
+          planes={planes}
           onClose={() => setModalAbierto(false)}
           onSubmit={handleNuevoPago}
         />
@@ -660,30 +661,60 @@ function generarPassword() {
 // ---------- Modal: registrar pago ----------
 function ModalRegistrarPago({
   alumnos,
+  planes,
   onClose,
   onSubmit,
 }: {
-  alumnos: { id: string; nombre: string }[];
+  alumnos: Alumno[];
+  planes: Plan[];
   onClose: () => void;
   onSubmit: (pago: Omit<Pago, "id">) => void;
 }) {
+  const primerAlumno = alumnos[0];
+  const obtenerPlanYPrecio = (alumno?: Alumno) => {
+    if (!alumno) return { planNombre: "", planPrecio: "" };
+    const planObj = planes.find(
+      (p) =>
+        (alumno.planId && p.id === alumno.planId) ||
+        (alumno.plan && p.nombre.trim().toLowerCase() === alumno.plan.trim().toLowerCase())
+    );
+    return {
+      planNombre: planObj?.nombre ?? alumno.plan ?? "",
+      planPrecio: planObj ? String(planObj.precio) : "",
+    };
+  };
+
+  const inicial = obtenerPlanYPrecio(primerAlumno);
+
   const [form, setForm] = useState({
-    alumnoId: alumnos[0]?.id ?? "",
-    plan: "",
-    monto: "",
+    alumnoId: primerAlumno?.id ?? "",
+    plan: inicial.planNombre,
+    monto: inicial.planPrecio,
     fecha: new Date().toISOString().slice(0, 10),
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
 
-  const [celular, setCelular] = useState("");
-  const [tipoMensaje, setTipoMensaje] = useState<"pago" | "bienvenida">("pago");
-  const [usuarioApp, setUsuarioApp] = useState("");
-  const [passwordApp, setPasswordApp] = useState("");
-  const [mensaje, setMensaje] = useState("");
+  const [celular, setCelular] = useState(primerAlumno?.celular ?? "");
   const [errorValidacion, setErrorValidacion] = useState("");
 
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
+
+  const handleAlumnoChange = (nuevoId: string) => {
+    const alumno = alumnos.find((a) => a.id === nuevoId);
+    if (!alumno) {
+      setForm((prev) => ({ ...prev, alumnoId: nuevoId }));
+      return;
+    }
+    const infoPlan = obtenerPlanYPrecio(alumno);
+    setForm((prev) => ({
+      ...prev,
+      alumnoId: nuevoId,
+      plan: infoPlan.planNombre,
+      monto: infoPlan.planPrecio,
+    }));
+    setCelular(alumno.celular ?? "");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -701,22 +732,12 @@ function ModalRegistrarPago({
       return;
     }
     setErrorValidacion("");
-    onSubmit({ ...form, monto: montoNum });
-  };
-
-  const generarMensaje = () => {
-    const texto =
-      tipoMensaje === "pago"
-        ? mensajePagoTemplate(alumnoSeleccionado?.nombre ?? "", form.plan, form.monto)
-        : mensajeBienvenidaTemplate(alumnoSeleccionado?.nombre ?? "", usuarioApp, passwordApp);
-    setMensaje(texto);
-  };
-
-  const puedeEnviar = celular.replace(/\D/g, "").length >= 10 && mensaje.trim().length > 0;
-
-  const enviarWhatsapp = () => {
-    if (!puedeEnviar) return;
-    window.open(construirLinkWhatsapp(celular, mensaje), "_blank");
+    const planObj = planes.find(
+      (p) =>
+        (alumnoSeleccionado?.planId && p.id === alumnoSeleccionado.planId) ||
+        p.nombre.trim().toLowerCase() === form.plan.trim().toLowerCase()
+    );
+    onSubmit({ ...form, planId: planObj?.id ?? alumnoSeleccionado?.planId, monto: montoNum });
   };
 
   return (
@@ -751,7 +772,7 @@ function ModalRegistrarPago({
               <select
                 aria-label="Alumno"
                 value={form.alumnoId}
-                onChange={(e) => setForm({ ...form, alumnoId: e.target.value })}
+                onChange={(e) => handleAlumnoChange(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 required
               >
@@ -835,114 +856,159 @@ function ModalRegistrarPago({
             </button>
 
             {/* ---------- Notificación por WhatsApp ---------- */}
-            <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
-              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-600" />
-                Notificar por WhatsApp (opcional)
-              </p>
-
-              <Field label="Celular del alumno">
-                <input
-                  aria-label="Celular del alumno"
-                  type="tel"
-                  inputMode="numeric"
-                  value={celular}
-                  onChange={(e) => setCelular(soloNumerosLocal(e.target.value).slice(0, 13))}
-                  maxLength={13}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="Ej. 2611234567 o 5492611234567"
-                />
-              </Field>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTipoMensaje("pago")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
-                    tipoMensaje === "pago"
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  Confirmación de pago
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTipoMensaje("bienvenida")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
-                    tipoMensaje === "bienvenida"
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  Primera inscripción
-                </button>
-              </div>
-
-              {tipoMensaje === "bienvenida" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Usuario">
-                    <input
-                      aria-label="Usuario"
-                      value={usuarioApp}
-                      onChange={(e) => setUsuarioApp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Ej. lucia.fernandez"
-                    />
-                  </Field>
-                  <Field label="Contraseña">
-                    <div className="flex gap-1.5">
-                      <input
-                        aria-label="Contraseña"
-                        value={passwordApp}
-                        onChange={(e) => setPasswordApp(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder="Generala"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setPasswordApp(generarPassword())}
-                        className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
-                      >
-                        Generar
-                      </button>
-                    </div>
-                  </Field>
-                </div>
-              )}
-
-              <Field label="Mensaje">
-                <textarea
-                  aria-label="Mensaje"
-                  value={mensaje}
-                  onChange={(e) => setMensaje(e.target.value)}
-                  rows={4}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  placeholder="Generá el mensaje o escribí uno propio..."
-                />
-              </Field>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={generarMensaje}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-[color,background-color] duration-200 active:scale-95"
-                >
-                  Generar mensaje
-                </button>
-                <button
-                  type="button"
-                  onClick={enviarWhatsapp}
-                  disabled={!puedeEnviar}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Enviar por WhatsApp
-                </button>
-              </div>
-            </div>
+            <SeccionNotificarWhatsapp
+              alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
+              plan={form.plan}
+              monto={form.monto}
+              celular={celular}
+              onCelularChange={setCelular}
+            />
           </form>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Subcomponente: Notificación por WhatsApp ----------
+function SeccionNotificarWhatsapp({
+  alumnoNombre,
+  plan,
+  monto,
+  celular,
+  onCelularChange,
+}: {
+  alumnoNombre: string;
+  plan: string;
+  monto: string;
+  celular: string;
+  onCelularChange: (cel: string) => void;
+}) {
+  const [tipoMensaje, setTipoMensaje] = useState<"pago" | "bienvenida">("pago");
+  const [usuarioApp, setUsuarioApp] = useState("");
+  const [passwordApp, setPasswordApp] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  const generarMensaje = () => {
+    const texto =
+      tipoMensaje === "pago"
+        ? mensajePagoTemplate(alumnoNombre, plan, monto)
+        : mensajeBienvenidaTemplate(alumnoNombre, usuarioApp, passwordApp);
+    setMensaje(texto);
+  };
+
+  const puedeEnviar = celular.replace(/\D/g, "").length >= 10 && mensaje.trim().length > 0;
+
+  const enviarWhatsapp = () => {
+    if (!puedeEnviar) return;
+    window.open(construirLinkWhatsapp(celular, mensaje), "_blank");
+  };
+
+  return (
+    <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+      <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+        <MessageCircle className="w-4 h-4 text-emerald-600" />
+        Notificar por WhatsApp (opcional)
+      </p>
+
+      <Field label="Celular del alumno">
+        <input
+          aria-label="Celular del alumno"
+          type="tel"
+          inputMode="numeric"
+          value={celular}
+          onChange={(e) => onCelularChange(soloNumerosLocal(e.target.value).slice(0, 13))}
+          maxLength={13}
+          className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          placeholder="Ej. 2611234567 o 5492611234567"
+        />
+      </Field>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setTipoMensaje("pago")}
+          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
+            tipoMensaje === "pago"
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          Confirmación de pago
+        </button>
+        <button
+          type="button"
+          onClick={() => setTipoMensaje("bienvenida")}
+          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
+            tipoMensaje === "bienvenida"
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          Primera inscripción
+        </button>
+      </div>
+
+      {tipoMensaje === "bienvenida" && (
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Usuario">
+            <input
+              aria-label="Usuario"
+              value={usuarioApp}
+              onChange={(e) => setUsuarioApp(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Ej. lucia.fernandez"
+            />
+          </Field>
+          <Field label="Contraseña">
+            <div className="flex gap-1.5">
+              <input
+                aria-label="Contraseña"
+                value={passwordApp}
+                onChange={(e) => setPasswordApp(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Generala"
+              />
+              <button
+                type="button"
+                onClick={() => setPasswordApp(generarPassword())}
+                className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
+              >
+                Generar
+              </button>
+            </div>
+          </Field>
+        </div>
+      )}
+
+      <Field label="Mensaje">
+        <textarea
+          aria-label="Mensaje"
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          rows={4}
+          className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+          placeholder="Generá el mensaje o escribí uno propio..."
+        />
+      </Field>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={generarMensaje}
+          className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-[color,background-color] duration-200 active:scale-95"
+        >
+          Generar mensaje
+        </button>
+        <button
+          type="button"
+          onClick={enviarWhatsapp}
+          disabled={!puedeEnviar}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Enviar por WhatsApp
+        </button>
       </div>
     </div>
   );

@@ -340,6 +340,75 @@
     </div>
   </div>
 
+  <!-- HITO 5 -->
+  <div class="mb-8 pt-8 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        5. Corrección Integral de Baches Funcionales y Experiencia de Usuario (Post-Merge ramaLucas)
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        10 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento del cliente:</em> Subsanar 5 baches de usabilidad: habilitar el desplegable de planes en agregar alumno; autocompletar plan, monto y celular en registrar pago; sustituir confirmaciones nativas de localhost por modales estilizados en videoteca y planes; sugerir e insertar ejercicios de videoteca en creador de rutinas; y descartar automáticamente el badge rojo de avisos al entrar a la sección.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Selector de Plan en ModalNuevoAlumno):</strong> Eliminación de componentes portaleados de Base UI que colisionaban con el <em>Top Layer</em> de la etiqueta nativa <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">&lt;dialog&gt;</code>. Implementación de un <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">&lt;select&gt;</code> nativo accesible y reactivo a los planes de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">useAppData()</code>.</li>
+        <li><strong>Fase 2 (Autocompletado en Registrar Pago):</strong> Sincronización dinámica en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ModalRegistrarPago</code>. Al elegir un alumno, se completan de forma automática el plan asignado, el monto oficial del plan y el celular de WhatsApp. Modularización de la sección de mensajes en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">SeccionNotificarWhatsapp</code>.</li>
+        <li><strong>Fase 3 (Modales de Confirmación Previa):</strong> Reemplazo de los <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">window.confirm()</code> nativos por <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ModalConfirmarEliminarVideo</code> en Videoteca y <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ModalConfirmarEliminarPlan</code> en Planes, con backdrop difuminado, tarjeta oscura y aviso de impacto destructivo.</li>
+        <li><strong>Fase 4 (Ejercicios de Videoteca en Rutinas):</strong> Incorporación del selector rápido <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">+ Desde Videoteca...</code> agrupado por músculo y autocompletado con <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">&lt;datalist&gt;</code> en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ModalNuevaRutina</code>. Desacople del subcomponente <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">TarjetaDiaRutina</code>.</li>
+        <li><strong>Fase 5 (Descarte Automático de Badge de Avisos):</strong> Ejecución de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">marcarTodosAvisosLeidos(usuarioActual.id)</code> en el montaje de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">AvisosPage</code> con guarda reactiva <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">hayNoLeidos</code> en el gestor de avisos. Desaparición inmediata del badge rojo en Sidebar, Mobile Nav y Header.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados y verificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>components/modal-nuevo-alumno.tsx (select nativo accesible)</li>
+        <li>app/finanzas/page.tsx (autocompletado arancel + SeccionNotificarWhatsapp)</li>
+        <li>app/videoteca/page.tsx (ModalConfirmarEliminarVideo)</li>
+        <li>app/planes/page.tsx (ModalConfirmarEliminarPlan)</li>
+        <li>app/rutinas/page.tsx (selector videoteca + TarjetaDiaRutina)</li>
+        <li>app/avisos/page.tsx (marcar todos leídos on mount)</li>
+        <li>lib/use-avisos.ts (guarda de optimización hayNoLeidos)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 9 passed (9)</p>
+          <p>• <strong>Tests individuales:</strong> 66 passed (66)</p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">rutina-utils.test.ts</code>, <code class="font-mono">avisos.test.ts</code>, <code class="font-mono">finanzas.test.ts</code>, <code class="font-mono">navegacion-acceso.test.ts</code>, etc.</p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos (4.6s)</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🩺 React Doctor Audit</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">SCORE 100 / 100</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Archivos analizados:</strong> 48 archivos escaneados</p>
+          <p>• <strong>Component Size:</strong> Desacoplado y modularizado en subcomponentes</p>
+          <p>• <strong>Reglas de Hooks:</strong> Incondicionales y protegidas contra re-renders</p>
+          <p>• <strong>Diagnóstico:</strong> No issues found! (0 advertencias, 0 errores)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>
