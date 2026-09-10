@@ -335,6 +335,8 @@ export default function PlanesPage() {
             </form>
           </div>
         </dialog>
+      )}
+
       {planAEliminar && (
         <ModalConfirmarEliminarPlan
           plan={planAEliminar}
