@@ -368,7 +368,7 @@ export default function Page() {
     for (const p of ordenados) {
       if (res.length >= 5) break
       const al = alumnosMap.get(p.alumnoId)
-      const nombre = al ? al.nombre : 'Alumno Atlas'
+      const nombre = al ? al.nombre : (p.alumnoNombreHistorico || 'Alumno Atlas')
       if (!q || nombre.toLowerCase().includes(q) || p.plan.toLowerCase().includes(q)) {
         res.push({
           id: p.id,
@@ -376,7 +376,7 @@ export default function Page() {
           plan: p.plan,
           amount: `$${p.monto.toLocaleString('es-AR')}`,
           time: p.fecha,
-          initials: (al ? al.nombre : 'AT')
+          initials: (al ? al.nombre : (p.alumnoNombreHistorico || 'AT'))
             .split(' ')
             .map((n) => n[0])
             .slice(0, 2)

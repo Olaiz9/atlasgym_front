@@ -64,7 +64,7 @@ interface AppDataContextValue {
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
-export function AppDataProvider({ children }: { children: ReactNode }) {
+function useGymStore(): AppDataContextValue {
   const [alumnos, setAlumnos] = useState<Alumno[]>(ALUMNOS_MOCK);
   const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
   const [rutinas, setRutinas] = useState<Rutina[]>(RUTINAS_MOCK);
@@ -133,22 +133,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const agregarAlumno = useCallback((alumno: Omit<Alumno, "id">) => {
-    const nuevo: Alumno = { ...alumno, id: crypto.randomUUID() };
+    const planEncontrado = planes.find(
+      (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
+    );
+    const nuevo: Alumno = {
+      ...alumno,
+      id: crypto.randomUUID(),
+      planId: alumno.planId || planEncontrado?.id,
+      plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
+    };
     setAlumnos((prev) => [nuevo, ...prev]);
     return nuevo;
-  }, []);
+  }, [planes]);
 
   const actualizarAlumno = useCallback((id: string, cambios: Partial<Omit<Alumno, "id">>) => {
-    setAlumnos((prev) => prev.map((a) => (a.id === id ? { ...a, ...cambios } : a)));
-  }, []);
+    setAlumnos((prev) =>
+      prev.map((a) => {
+        if (a.id !== id) return a;
+        let planId = cambios.planId ?? a.planId;
+        let plan = cambios.plan ?? a.plan;
+        if (cambios.plan && !cambios.planId) {
+          const encontrado = planes.find((p) => p.nombre.toLowerCase() === cambios.plan!.toLowerCase());
+          if (encontrado) planId = encontrado.id;
+        } else if (cambios.planId && !cambios.plan) {
+          const encontrado = planes.find((p) => p.id === cambios.planId);
+          if (encontrado) plan = encontrado.nombre;
+        }
+        return { ...a, ...cambios, planId, plan };
+      })
+    );
+  }, [planes]);
 
   const eliminarAlumno = useCallback((id: string) => {
     setAlumnos((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
   const agregarPago = useCallback((pago: Omit<Pago, "id">) => {
-    setPagos((prev) => [{ ...pago, id: crypto.randomUUID() }, ...prev]);
-  }, []);
+    const alumno = alumnos.find((a) => a.id === pago.alumnoId);
+    const alumnoNombreHistorico = pago.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
+    const planId = pago.planId || alumno?.planId;
+    setPagos((prev) => [{ ...pago, alumnoNombreHistorico, planId, id: crypto.randomUUID() }, ...prev]);
+  }, [alumnos]);
 
   const actualizarEstadoPago = useCallback((id: string, estado: EstadoPago) => {
     setPagos((prev) => prev.map((p) => (p.id === id ? { ...p, estado } : p)));
@@ -214,6 +239,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const actualizarPlan = useCallback((id: string, cambios: Partial<Omit<Plan, "id">>) => {
     setPlanes((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+    if (cambios.nombre) {
+      setAlumnos((prev) =>
+        prev.map((a) => (a.planId === id ? { ...a, plan: cambios.nombre! } : a))
+      );
+    }
   }, []);
 
   const eliminarPlan = useCallback((id: string) => {
@@ -359,6 +389,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     ]
   );
 
+  return value;
+}
+
+export function AppDataProvider({ children }: { children: ReactNode }) {
+  const value = useGymStore();
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
 

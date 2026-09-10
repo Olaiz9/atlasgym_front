@@ -19,6 +19,7 @@ export interface Alumno {
   dni?: string;
   email?: string;
   celular?: string;
+  planId?: string;
   plan: string;
   fechaAlta: string; // "YYYY-MM-DD"
   activo: boolean;
@@ -103,6 +104,8 @@ export interface Plan {
 export interface Pago {
   id: string;
   alumnoId: string;
+  alumnoNombreHistorico?: string;
+  planId?: string;
   plan: string;
   monto: number;
   fecha: string; // "YYYY-MM-DD"

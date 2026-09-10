@@ -14,9 +14,11 @@ interface ModalNuevoAlumnoProps {
 
 export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const { agregarAlumno, planes } = useAppData()
-  const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+  const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
+
+  const planesActivos = planes.filter((p) => p.activo)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -35,7 +37,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }
 
   function handleCerrar() {
-    setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+    setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
     setErroresAlumno({})
     onClose()
   }
@@ -68,6 +70,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               dni: formAlumno.dni,
               email: formAlumno.email,
               celular: formAlumno.celular,
+              planId: formAlumno.planId || undefined,
               plan: formAlumno.plan,
               fechaAlta: new Date().toISOString().split('T')[0],
               activo: true,
@@ -138,13 +141,16 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             <Select
               required
               value={formAlumno.plan}
-              onValueChange={(v) => setFormAlumno((prev) => ({ ...prev, plan: v ?? '' }))}
+              onValueChange={(v) => {
+                const planObj = planes.find((p) => p.nombre === v);
+                setFormAlumno((prev) => ({ ...prev, plan: v ?? '', planId: planObj?.id ?? '' }));
+              }}
             >
               <SelectTrigger className={`h-12 rounded-xl bg-slate-50 font-medium text-slate-900 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}>
-                <SelectValue placeholder="Seleccioná un plan" />
+                <SelectValue placeholder="Seleccioná un plan activo" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 bg-white shadow-xl">
-                {planes.map((p) => (
+                {planesActivos.map((p) => (
                   <SelectItem key={p.id} value={p.nombre} className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">
                     {p.nombre} — ${p.precio.toLocaleString('es-AR')}
                   </SelectItem>

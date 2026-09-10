@@ -314,7 +314,7 @@ export default function FinanzasPage() {
   const pagosFiltrados = useMemo(() => {
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
-      const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? "";
+      const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? p.alumnoNombreHistorico ?? "";
       const coincideBusqueda = nombreAlumno
         .toLowerCase()
         .includes(busqueda.toLowerCase());
@@ -481,7 +481,9 @@ export default function FinanzasPage() {
                           {alumno.nombre}
                         </Link>
                       ) : (
-                        <span className="text-slate-400 italic font-medium">Alumno eliminado</span>
+                        <span className="text-slate-400 italic font-medium">
+                          {pago.alumnoNombreHistorico || "Alumno Atlas"} (Baja)
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-500 font-medium">{pago.plan}</td>
@@ -546,7 +548,7 @@ export default function FinanzasPage() {
       {pagoAEliminar && (
         <ModalConfirmarEliminar
           pago={pagoAEliminar}
-          nombreAlumno={getAlumno(pagoAEliminar.alumnoId)?.nombre ?? "este alumno"}
+          nombreAlumno={getAlumno(pagoAEliminar.alumnoId)?.nombre ?? pagoAEliminar.alumnoNombreHistorico ?? "este alumno"}
           onCancel={() => setPagoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />

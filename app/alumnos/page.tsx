@@ -372,10 +372,17 @@ function ModalEditarAlumno({
     dni: alumno.dni || "",
     email: alumno.email || "",
     celular: alumno.celular || "",
+    planId: alumno.planId || planes.find((p) => p.nombre === alumno.plan)?.id || "",
     plan: alumno.plan,
     activo: alumno.activo,
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
+
+  const planesDisponibles = useMemo(() => {
+    return planes.filter(
+      (p) => p.activo || p.id === alumno.planId || p.nombre === alumno.plan
+    );
+  }, [planes, alumno.planId, alumno.plan]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -439,14 +446,21 @@ function ModalEditarAlumno({
           <Field label="Plan asignado">
             <select
               aria-label="Plan asignado"
-              value={form.plan}
-              onChange={(e) => setForm({ ...form, plan: e.target.value })}
+              value={form.planId || form.plan}
+              onChange={(e) => {
+                const planObj = planes.find((p) => p.id === e.target.value || p.nombre === e.target.value);
+                setForm({
+                  ...form,
+                  planId: planObj?.id || e.target.value,
+                  plan: planObj?.nombre || e.target.value,
+                });
+              }}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
               required
             >
-              {planes.map((p) => (
-                <option key={p.id} value={p.nombre}>
-                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}
+              {planesDisponibles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}{!p.activo ? " (Pausado)" : ""}
                 </option>
               ))}
             </select>
