@@ -47,12 +47,14 @@ describe("Módulo de Avisos y Notificaciones (lib/avisos.test.ts)", () => {
     const usuarioAdmin: UsuarioSesion = {
       id: "u_admin",
       nombre: "Franco Admin",
+      email: "admin@atlasgym.com",
       rol: "ADMIN",
     };
 
     const usuarioAlumnoA1: UsuarioSesion = {
       id: "u_alumno_1",
       nombre: "Lucía Fernández",
+      email: "lucia@gmail.com",
       rol: "ALUMNO",
       alumnoId: "a1",
     };
@@ -60,6 +62,7 @@ describe("Módulo de Avisos y Notificaciones (lib/avisos.test.ts)", () => {
     const usuarioAlumnoA2: UsuarioSesion = {
       id: "u_alumno_2",
       nombre: "Carlos Gómez",
+      email: "carlos@gmail.com",
       rol: "ALUMNO",
       alumnoId: "a2",
     };
@@ -99,6 +102,7 @@ describe("Módulo de Avisos y Notificaciones (lib/avisos.test.ts)", () => {
     const usuarioAlumnoA1: UsuarioSesion = {
       id: "u_alumno_1",
       nombre: "Lucía Fernández",
+      email: "lucia@gmail.com",
       rol: "ALUMNO",
       alumnoId: "a1",
     };

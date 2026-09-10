@@ -259,7 +259,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
 
   const estadoCuenta = getEstadoCuenta(alumno.id);
   const pagos = getPagosDeAlumno(alumno.id);
-  const diasAusente = alumno.ultimaAsistencia ? diasDesde(alumno.ultimaAsistencia) : null;
+  const diasAusente = alumno.ultimaAsistencia ? calcularDiasDesde(alumno.ultimaAsistencia) : null;
 
   return (
     <div className="mx-auto max-w-[1100px] px-5 py-8 md:px-10 md:py-10 space-y-6">

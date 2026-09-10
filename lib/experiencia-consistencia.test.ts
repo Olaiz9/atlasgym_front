@@ -42,13 +42,12 @@ describe("Fase 5: Experiencia de Uso y Consistencia (lib/experiencia-consistenci
       nombre: "Fuerza e Hipertrofia",
       descripcion: "Rutina 3 días",
       objetivo: "Hipertrofia",
-      nivel: "Intermedio",
+      esGenerica: true,
       dias: [
         { id: "d-1", nombre: "Día 1: Pecho y Bíceps", ejercicios: [] },
         { id: "d-2", nombre: "Día 2: Espalda y Tríceps", ejercicios: [] },
         { id: "d-3", nombre: "Día 3: Piernas y Hombros", ejercicios: [] },
       ],
-      alumnosAsignados: [],
     };
 
     it("evalúa como colapsado por defecto cuando el estado no está inicializado", () => {

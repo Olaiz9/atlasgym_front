@@ -1,11 +1,11 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { Plan, Alumno, Pago } from "./types";
 
 describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", () => {
   const planesMock: Plan[] = [
-    { id: "p1", nombre: "Musculación Pase Libre", precio: 28000, activo: true, descripcion: "Acceso total", popular: true },
-    { id: "p2", nombre: "Crossfit", precio: 32000, activo: true, descripcion: "Entrenamiento funcional", popular: false },
-    { id: "p3", nombre: "Plan Antiguo Pausado", precio: 15000, activo: false, descripcion: "Plan discontinuado", popular: false },
+    { id: "p1", nombre: "Musculación Pase Libre", precio: 28000, activo: true, descripcion: "Acceso total" },
+    { id: "p2", nombre: "Crossfit", precio: 32000, activo: true, descripcion: "Entrenamiento funcional" },
+    { id: "p3", nombre: "Plan Antiguo Pausado", precio: 15000, activo: false, descripcion: "Plan discontinuado" },
   ];
 
   describe("Filtrado de planes activos vs pausados", () => {
@@ -106,7 +106,7 @@ describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", ()
         },
       ];
 
-      const getAlumno = (_id: string) => undefined;
+      const getAlumno = (_id: string): Alumno | undefined => undefined;
       const busqueda = "maría";
 
       const filtrados = pagos.filter((p) => {
