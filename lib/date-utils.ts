@@ -61,3 +61,29 @@ export function formatDiasIngreso(fechaStr: string): string {
   if (diffDias <= 7) return `Hace ${diffDias} días`;
   return formatFechaAR(fechaStr);
 }
+
+/**
+ * Calcula dinámicamente la fecha de vencimiento de la cuota (día 10 de cada mes según política de Atlas Gym).
+ * Si la cuenta está al día, el próximo vencimiento es el 10 del mes siguiente.
+ * Si está pendiente o morosa, vence el 10 del mes en curso.
+ */
+export function calcularVencimientoCuota(
+  estadoCuenta?: string,
+  fechaReferencia: Date = new Date()
+): string {
+  const anio = fechaReferencia.getFullYear();
+  const mesActual = fechaReferencia.getMonth();
+  const dia = fechaReferencia.getDate();
+
+  // Si está AL_DIA o si hoy ya pasó el día 10 y no debe nada, su próximo vencimiento es el mes siguiente
+  let mesObjetivo = mesActual;
+  if (estadoCuenta === "AL_DIA" || (dia > 10 && estadoCuenta !== "MOROSO" && estadoCuenta !== "PENDIENTE")) {
+    mesObjetivo = mesActual + 1;
+  }
+
+  const fechaVenc = new Date(anio, mesObjetivo, 10);
+  const nombreMes = fechaVenc.toLocaleDateString("es-AR", { month: "long" });
+  const nombreMesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+  return `10 de ${nombreMesCap}`;
+}
+

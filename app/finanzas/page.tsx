@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { formatFechaAR } from "@/lib/date-utils";
+import { formatFechaAR, calcularVencimientoCuota } from "@/lib/date-utils";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -152,7 +152,9 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
               : estadoCuenta === "PENDIENTE"
               ? "Tenés una cuota en proceso de pago para este mes."
-              : "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."}
+              : estadoCuenta === "MOROSO"
+              ? "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."
+              : "Tu membresía se encuentra inactiva. Acercate a recepción para regularizar tu cuenta."}
           </p>
         </div>
 
@@ -168,7 +170,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         {/* Próximo Vencimiento */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Próximo vencimiento</p>
-          <p className="mt-2 text-2xl font-black text-slate-900">10 de Septiembre</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">{calcularVencimientoCuota(estadoCuenta)}</p>
           <p className="mt-1 text-xs text-slate-400 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
         </div>
       </div>

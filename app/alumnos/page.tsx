@@ -22,7 +22,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
   { label: "Al día", value: "AL_DIA" },
   { label: "Pendientes", value: "PENDIENTE" },
   { label: "Morosos", value: "MOROSO" },
-  { label: "Inactivos (+60d)", value: "INACTIVO" },
+  { label: "Inactivos", value: "INACTIVO" },
 ];
 
 export default function AlumnosPage() {
@@ -41,9 +41,9 @@ export default function AlumnosPage() {
   );
 
   const metrica = useMemo(() => {
-    const alDia = alumnosConEstado.filter((a) => a.estadoCuenta === "AL_DIA").length;
-    const morosos = alumnosConEstado.filter((a) => a.estadoCuenta === "MOROSO").length;
-    const inactivos = alumnosConEstado.filter((a) => a.estadoCuenta === "INACTIVO").length;
+    const alDia = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "AL_DIA").length;
+    const morosos = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "MOROSO").length;
+    const inactivos = alumnosConEstado.filter((a) => !a.activo || a.estadoCuenta === "INACTIVO").length;
     return { total: alumnosConEstado.length, alDia, morosos, inactivos };
   }, [alumnosConEstado]);
 

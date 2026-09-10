@@ -209,6 +209,21 @@ function AvisoAcceso({ estadoCuenta }: { estadoCuenta: EstadoCuenta }) {
     );
   }
 
+  if (estadoCuenta === "INACTIVO") {
+    return (
+      <div className="flex items-start gap-3 bg-slate-100 border border-slate-300 rounded-2xl p-5 text-slate-800">
+        <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-slate-500" />
+        <div>
+          <p className="font-bold text-sm">Socio inactivo o dado de baja</p>
+          <p className="text-sm mt-0.5 text-slate-600">
+            Este alumno no cuenta con una membresía activa o lleva más de 60 días sin registrar pagos.
+            Regularizar su inscripción antes de habilitar el ingreso al gimnasio.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
 

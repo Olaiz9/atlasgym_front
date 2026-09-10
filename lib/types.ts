@@ -119,8 +119,14 @@ export type EstadoCuenta = "AL_DIA" | "PENDIENTE" | "MOROSO" | "INACTIVO";
 export function estadoCuentaDeAlumno(
   alumnoId: string,
   pagos: Pago[],
-  fechaAlta?: string
+  fechaAlta?: string,
+  socioActivo: boolean = true
 ): EstadoCuenta {
+  // 1. Si el socio fue dado de baja o marcado inactivo administrativamente:
+  if (!socioActivo) {
+    return "INACTIVO";
+  }
+
   const pagosDelAlumno = pagos.filter((p) => p.alumnoId === alumnoId);
 
   // Si no tiene pagos registrados
@@ -155,7 +161,7 @@ export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {
   AL_DIA: "Al día",
   PENDIENTE: "Pendiente",
   MOROSO: "Moroso",
-  INACTIVO: "Inactivo (+60d)",
+  INACTIVO: "Inactivo",
 };
 
 export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {

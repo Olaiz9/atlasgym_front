@@ -289,7 +289,7 @@ function useGymStore(): AppDataContextValue {
 
   const getEstadoCuenta = useCallback((alumnoId: string) => {
     const alumno = alumnos.find((a) => a.id === alumnoId);
-    return estadoCuentaDeAlumno(alumnoId, pagos, alumno?.fechaAlta);
+    return estadoCuentaDeAlumno(alumnoId, pagos, alumno?.fechaAlta, alumno ? alumno.activo : true);
   }, [alumnos, pagos]);
 
   const getPagosDeAlumno = useCallback((alumnoId: string) =>
