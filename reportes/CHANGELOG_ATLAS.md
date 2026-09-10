@@ -310,4 +310,96 @@ Este documento registra cada modificación realizada en el sistema, el motivo de
   * 📁 `lib/store.tsx`: Extracción de side effects a `useEffect` dedicado.
   * 📁 `app/page.tsx` y `app/videoteca/page.tsx`: Keys únicas estables en mapeos de JSX.
 
+---
+
+## 📌 Sprint 2: Auditoría Integral y Plan de Refactorización de 7 Fases
+
+A partir de la auditoría técnica profunda y el requerimiento de calidad y robustez para producción, se ejecutó un plan integral dividido en fases quirúrgicas, validando en cada etapa la suite de pruebas unitarias (`vitest`), auditoría de componentes (`react-doctor`) y compilación de producción con Next.js Turbopack.
+
+---
+
+### 13. Fase 0: Sincronización y Unificación de Ramas de Trabajo
+* **Objetivo:** Unificar el árbol de cambios entre los desarrolladores del equipo en las ramas de trabajo (`ramaLucas`, `ramaBruno`, `ramaAugusto`), preservando intactas las ramas protegidas `main` y `develop`.
+* **Acciones:**
+  * Sincronización en el commit base `c1e99c5`.
+  * Verificación de paridad de commits y estado limpio en el repositorio remoto.
+
+---
+
+### 14. Fase 1: Navegación y Control de Acceso por Roles
+* **Problema:** Un alumno podía acceder manualmente a rutas exclusivas del administrador (`/alumnos`, `/planes`). Además, en `/rutinas` si un alumno no tenía rutina asignada se producía un fallback ciego a la primera rutina del gimnasio (`rutinas[0]`), y la barra de navegación móvil carecía de botón para cerrar sesión.
+* **Solución:**
+  * Construcción del componente reutilizable `AccesoRestringido` para blindar `/alumnos` y `/planes`.
+  * Creación de la pantalla `EstadoSinRutina` en `app/rutinas/page.tsx` con contacto directo vía WhatsApp al coach oficial.
+  * Incorporación del botón de `Cerrar Sesión` con ícono `LogOut` en `components/mobile-nav.tsx`.
+* **Archivos afectados:** `components/acceso-restringido.tsx`, `app/alumnos/page.tsx`, `app/planes/page.tsx`, `app/rutinas/page.tsx`, `components/mobile-nav.tsx`.
+
+---
+
+### 15. Fase 2: Formularios, DNI y Fechas con Zona Horaria Local
+* **Problema:** El DNI se capturaba en la interfaz pero no se guardaba en el tipo `Alumno` ni se persistía en el store. No existía validación consistente de duplicados, los pagos permitían montos negativos o ceros, y `new Date("YYYY-MM-DD")` interpretaba las fechas en UTC, causando un desfase de -1 día en Argentina (GMT-3).
+* **Solución:**
+  * Persistencia del campo `dni?: string` en la interfaz `Alumno` y en el store.
+  * Creación del validador unificado `validarDatosAlumno()` en `lib/types.ts` con verificación de DNI numérico (7-8 dígitos) y unicidad.
+  * Creación de `lib/date-utils.ts` con `parsearFechaLocal()` y `formatFechaAR()`, eliminando por completo el desfase horario de fechas.
+  * Validación estricta en altas de pagos (monto > 0 y método válido).
+* **Archivos afectados:** `lib/types.ts`, `lib/store.tsx`, `lib/date-utils.ts`, `app/alumnos/page.tsx`, `app/finanzas/page.tsx`.
+
+---
+
+### 16. Fase 3: Ordenar Planes e Identidad Histórica Contable
+* **Problema:** Los alumnos guardaban el nombre del plan como texto plano sin clave foránea `planId`. Si se renombraba un plan, los alumnos quedaban desfasados. Los planes pausados se ofrecían a nuevos alumnos. Si un alumno era eliminado, sus registros de pago en Finanzas perdían el nombre de la persona.
+* **Solución:**
+  * Incorporación de `planId` en `Alumno` y actualización en cascada del nombre del plan al editar un plan en el catálogo.
+  * Exclusión de planes pausados (`activo === false`) en el selector de altas de nuevos alumnos, permitiendo su conservación solo en alumnos existentes.
+  * Retención de `alumnoNombreHistorico` en la interfaz `Pago` para conservar la trazabilidad contable inmutable aunque el alumno sea eliminado.
+  * Modularización del store extrayendo la lógica a `useGymStore` para cumplir la regla `no-giant-component` de React Doctor.
+* **Archivos afectados:** `lib/types.ts`, `lib/store.tsx`, `app/alumnos/page.tsx`, `app/finanzas/page.tsx`, `app/page.tsx`.
+
+---
+
+### 17. Fase 4: Cuotas y Separación de Estados de Negocio
+* **Problema:** Si un alumno era marcado como inactivo (`activo: false`), el sistema seguía evaluando sus pagos recientes y lo mostraba como "Al día" en verde. Las fechas de vencimiento de cuotas tenían texto estático fijo ("10 de Septiembre"). El Dashboard conservaba constantes huérfanas desincronizadas.
+* **Solución:**
+  * Separación conceptual del estado de socio: adición del parámetro `socioActivo: boolean` a `estadoCuentaDeAlumno()`. Si `socioActivo === false`, el estado se fuerza inmediatamente a `"INACTIVO"`.
+  * Creación de la función `calcularVencimientoCuota()` en `lib/date-utils.ts` para proyectar dinámicamente el vencimiento el día 10 del mes correspondiente.
+  * Limpieza de colecciones huérfanas en `app/page.tsx` y conexión reactiva con `videosTecnica` del store.
+* **Archivos afectados:** `lib/types.ts`, `lib/store.tsx`, `lib/date-utils.ts`, `app/page.tsx`, `app/finanzas/page.tsx`, `app/alumnos/page.tsx`, `app/alumnos/[id]/page.tsx`.
+
+---
+
+### 18. Fase 5: Experiencia de Uso y Consistencia
+* **Problema:** En Finanzas existía un número de teléfono de prueba falso (`wa.me/5492611234567`). En `ModalCentroAyuda` y en `EstadoSinRutina` los datos de contacto estaban dispersos. En Rutinas de administración, todos los días de todas las rutinas aparecían desplegados por defecto desbordando verticalmente la pantalla.
+* **Solución:**
+  * Unificación de todos los enlaces de contacto hacia `CONTACTO_ATLAS` en `lib/constants.ts` (+54 9 261 566-5067, `gonzalo5jesus@gmail.com`, `@atlasgymoficial_`).
+  * Modo compacto por defecto en el acordeón de días de rutinas.
+  * Implementación de la función `toggleTodosDias(rutina)` con botón contextual `Ver todos` / `Colapsar todos`.
+* **Archivos afectados:** `app/finanzas/page.tsx`, `components/modal-centro-ayuda.tsx`, `app/rutinas/page.tsx`.
+
+---
+
+### 19. Fase 6: Blindaje TypeScript y Eliminación de ignoreBuildErrors
+* **Problema:** Se utilizaba `typescript: { ignoreBuildErrors: true }` en `next.config.mjs`, lo que impedía que Next.js detectara errores de tipos en producción. Existía un error crítico en `app/alumnos/[id]/page.tsx:262` (`diasDesde` en lugar de `calcularDiasDesde`), fallas de tipado en aserciones de pruebas y propiedades no declaradas en contratos de interfaces.
+* **Solución:**
+  * Corrección de la llamada a `calcularDiasDesde()` en la ficha de alumno.
+  * Inyección de tipos oficiales de Vitest para Jest DOM (`@testing-library/jest-dom/vitest`).
+  * Completitud del campo obligatorio `email` en todos los mocks de `UsuarioSesion`.
+  * Saneamiento estricto de interfaces en contratos de prueba (`Rutina` y `Plan`).
+  * **Eliminación definitiva de `ignoreBuildErrors: true` en `next.config.mjs`**, activando la verificación nativa y estricta del compilador TypeScript en cada compilación de Next.js.
+* **Archivos afectados:** `app/alumnos/[id]/page.tsx`, `vitest.setup.ts`, `components/ui/button.test.tsx`, `lib/avisos.test.ts`, `lib/experiencia-consistencia.test.ts`, `lib/planes-historial.test.ts`, `next.config.mjs`.
+
+---
+
+### 📊 Matriz Consolidada de Calidad del Proyecto
+
+| Indicador | Antes del Plan | Estado Actual | Estado |
+| :--- | :---: | :---: | :---: |
+| **Pruebas Unitarias (Vitest)** | 35 tests | **66 tests pasados (100%)** | ✅ Excelente |
+| **React Doctor Score** | Violaciones de Hooks / Estado impuro | **100 / 100 Great (0 warnings, 0 issues)** | ✅ Perfecto |
+| **Verificación TypeScript** | Suprimido (`ignoreBuildErrors: true`) | **Estricto Nativo (0 errores en `tsc --noEmit`)** | ✅ Blindado |
+| **Compilación Next.js Turbopack** | build con advertencias | **Compilación limpia (10/10 rutas optimizadas)** | ✅ Producción |
+| **Transiciones CSS** | `transition-all` indiscriminado | **Propiedades específicas (`colors`, `transform`, etc.)** | ✅ Optimizado |
+| **Branch de Trabajo** | `ramaLucas` | **Actualizado y sincronizado en `origin/ramaLucas`** | ✅ Protegido |
+
+
 

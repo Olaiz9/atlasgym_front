@@ -335,6 +335,150 @@
   <li class="text-sm text-slate-700 my-1.5 leading-relaxed">📁 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/page.tsx</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/videoteca/page.tsx</code></li>
 </ul>
 
+<div class="my-8 border-b-2 border-slate-300"></div>
+
+<h2 class="text-xl font-black text-slate-900 mt-8 mb-4 pb-2 border-b border-slate-200 flex items-center gap-2">
+  <span class="px-2.5 py-0.5 rounded bg-blue-600 text-white text-xs font-bold uppercase tracking-wider">Sprint 2</span>
+  Auditoría Integral y Plan de Refactorización de 7 Fases
+</h2>
+
+<!-- 13. Fase 0 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">13</span>
+  Fase 0: Sincronización y Unificación de Ramas de Trabajo
+</h3>
+<div class="my-3 p-3.5 bg-blue-50/60 border-l-4 border-blue-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-1">Objetivo del Equipo:</p>
+  <p class="text-sm italic text-slate-700">Unificar el árbol de cambios entre los desarrolladores del equipo en las ramas de trabajo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ramaLucas</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ramaBruno</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ramaAugusto</code>), preservando intactas las ramas protegidas <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">main</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">develop</code>.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Sincronización en el commit base <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">c1e99c5</code>.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Verificación de paridad de commits y estado limpio en el repositorio remoto.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 14. Fase 1 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">14</span>
+  Fase 1: Navegación y Control de Acceso por Roles
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">Acceso manual indebido de alumnos a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/alumnos</code> y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">/planes</code>; fallback ciego a la primera rutina del gimnasio (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">rutinas[0]</code>); falta de botón de Logout en navegación móvil.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Construcción del componente reutilizable <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">AccesoRestringido</code> para blindar rutas administrativas.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Creación de la pantalla <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">EstadoSinRutina</code> con enlace de WhatsApp directo al coach oficial.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Botón de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Cerrar Sesión</code> con icono <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">LogOut</code> en navegación móvil.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 15. Fase 2 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">15</span>
+  Fase 2: Formularios, DNI y Fechas con Zona Horaria Local
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">DNI no persistido en el modelo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Alumno</code>; pagos con montos inválidos; desfase de -1 día en fechas por parseo UTC en lugar de hora local (GMT-3).</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Persistencia del campo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">dni?: string</code> en el tipo y en el store centralizado.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Creación del validador unificado <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">validarDatosAlumno()</code> con chequeo de formato (7-8 dígitos) y unicidad.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Módulo <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">lib/date-utils.ts</code> (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">parsearFechaLocal</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">formatFechaAR</code>) que elimina el desfase horario.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 16. Fase 3 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">16</span>
+  Fase 3: Ordenar Planes e Identidad Histórica Contable
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">Falta de clave foránea <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">planId</code> en alumnos; asignación indebida de planes pausados en altas; pérdida de identidad en recibos contables si el alumno era dado de baja.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Vinculación relacional <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">planId</code> y sincronización en cascada del nombre de plan en los alumnos.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Exclusión de planes pausados (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">activo === false</code>) en nuevos registros.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Inmutabilidad contable con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">alumnoNombreHistorico</code> en pagos para trazabilidad tras eliminaciones.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Modularización del store con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">useGymStore</code> para cumplir <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">no-giant-component</code> de React Doctor (100/100).</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 17. Fase 4 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">17</span>
+  Fase 4: Cuotas y Separación de Estados de Negocio
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">Alumnos dados de baja (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">activo: false</code>) figuraban erróneamente "Al día" por pagos previos; fechas de vencimiento con texto estático ("10 de Septiembre"); constantes huérfanas en Dashboard.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Separación de membresía y cuotas: el parámetro <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">socioActivo: boolean</code> fuerza inmediatamente <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">INACTIVO</code>.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Cálculo dinámico de vencimiento el día 10 mediante <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">calcularVencimientoCuota()</code>.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Limpieza de colecciones huérfanas en Dashboard y vinculación dinámica de Videoteca.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 18. Fase 5 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">18</span>
+  Fase 5: Experiencia de Uso y Consistencia
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">Enlace de WhatsApp en Finanzas con teléfono dummy de prueba (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">5492611234567</code>); desborde vertical por acordeón de días abierto permanentemente en Rutinas.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Centralización total en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">CONTACTO_ATLAS</code> (+54 9 261 566-5067, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">gonzalo5jesus@gmail.com</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">@atlasgymoficial_</code>).</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Acordeón de días compacto por defecto y botón grupal <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">Ver todos / Colapsar todos</code> por tarjeta de rutina.</li>
+</ul>
+
+<div class="my-6 border-b border-slate-200"></div>
+
+<!-- 19. Fase 6 -->
+<h3 class="text-lg font-bold text-slate-900 mt-6 mb-3 flex items-center gap-2">
+  <span class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">19</span>
+  Fase 6: Blindaje TypeScript y Eliminación de ignoreBuildErrors
+</h3>
+<div class="my-3 p-3.5 bg-amber-50/60 border-l-4 border-amber-600 rounded-r-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Problema Detectado:</p>
+  <p class="text-sm italic text-slate-700">Supresión de errores con <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ignoreBuildErrors: true</code>; typo en llamada a <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">diasDesde</code> en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">app/alumnos/[id]</code>; tipos faltantes en tests.</p>
+</div>
+<ul class="list-disc pl-5 my-2 space-y-1">
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Corrección del bug de ejecución en ficha de alumno (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">calcularDiasDesde</code>).</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed">Tipado de matchers de Jest DOM en Vitest y completitud de campos requeridos en mocks.</li>
+  <li class="text-sm text-slate-700 my-1.5 leading-relaxed"><strong>Eliminación de <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">ignoreBuildErrors</code> en <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-blue-700 border border-slate-200">next.config.mjs</code></strong>, activando verificación estricta nativa de TypeScript con 0 errores en build.</li>
+</ul>
+
+<div class="my-8 p-4 rounded-xl bg-slate-900 text-white shadow-lg">
+  <p class="text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Matriz Consolidada de Calidad</p>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+    <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+      <p class="text-2xl font-black text-emerald-400">66 / 66</p>
+      <p class="text-[11px] text-slate-400 font-semibold">Tests Vitest (100%)</p>
+    </div>
+    <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+      <p class="text-2xl font-black text-blue-400">100 / 100</p>
+      <p class="text-[11px] text-slate-400 font-semibold">React Doctor Score</p>
+    </div>
+    <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+      <p class="text-2xl font-black text-emerald-400">0 Errores</p>
+      <p class="text-[11px] text-slate-400 font-semibold">TypeScript Estricto</p>
+    </div>
+    <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+      <p class="text-2xl font-black text-blue-400">Turbopack</p>
+      <p class="text-[11px] text-slate-400 font-semibold">10/10 Rutas Compiladas</p>
+    </div>
+  </div>
+</div>
 
   <div class="mt-12 pt-6 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-medium">
     <span>ATLAS Gym Frontend · Registro de Desarrollo</span>
