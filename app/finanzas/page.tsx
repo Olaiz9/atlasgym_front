@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { formatFechaAR, calcularVencimientoCuota } from "@/lib/date-utils";
+import { CONTACTO_ATLAS } from "@/lib/constants";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -207,7 +208,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
           <div className="shrink-0">
             <a
-              href={`https://wa.me/5492611234567?text=${encodeURIComponent(
+              href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
                 `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
               )}`}
               target="_blank"

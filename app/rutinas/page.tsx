@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
+import { CONTACTO_ATLAS } from '@/lib/constants'
 import {
   Dumbbell,
   Plus,
@@ -60,6 +61,17 @@ export default function RutinasPage() {
 
   const toggleDia = (diaId: string) => {
     setDiaExpandido((prev) => ({ ...prev, [diaId]: !prev[diaId] }))
+  }
+
+  const toggleTodosDias = (rutina: Rutina) => {
+    const estanTodosExpandidos = rutina.dias.every((d) => diaExpandido[d.id])
+    setDiaExpandido((prev) => {
+      const siguiente = { ...prev }
+      rutina.dias.forEach((d) => {
+        siguiente[d.id] = !estanTodosExpandidos
+      })
+      return siguiente
+    })
   }
 
   return (
@@ -159,11 +171,23 @@ export default function RutinasPage() {
 
                 {/* Días y Ejercicios (Desplegable) */}
                 <div className="mt-4 space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Estructura por Días:
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Estructura por Días ({rutina.dias.length}):
+                    </p>
+                    {rutina.dias.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleTodosDias(rutina)}
+                        aria-label={rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos los días' : 'Ver todos los días'}
+                        className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        {rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos' : 'Ver todos'}
+                      </button>
+                    )}
+                  </div>
                   {rutina.dias.map((dia) => {
-                    const expandido = diaExpandido[dia.id] !== false // Default abierto o cerrado
+                    const expandido = !!diaExpandido[dia.id] // Default compacto
                     return (
                       <div
                         key={dia.id}
@@ -1073,7 +1097,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
 
       <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
         <a
-          href={`https://wa.me/5492615665067?text=${mensajeWhatsapp}`}
+          href={`${CONTACTO_ATLAS.whatsappUrl}?text=${mensajeWhatsapp}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
