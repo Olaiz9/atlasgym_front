@@ -1,6 +1,7 @@
 'use client'
 
 import { HelpCircle, X, Mail, Phone, ExternalLink } from 'lucide-react'
+import { CONTACTO_ATLAS } from '@/lib/constants'
 
 interface ModalCentroAyudaProps {
   abierto: boolean
@@ -34,7 +35,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
 
         <div className="mt-5 flex flex-col gap-3">
           <a
-            href="mailto:gonzalo5jesus@gmail.com"
+            href={`mailto:${CONTACTO_ATLAS.email}`}
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-blue-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
@@ -44,7 +45,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail / Correo</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
-                  gonzalo5jesus@gmail.com
+                  {CONTACTO_ATLAS.email}
                 </p>
               </div>
             </div>
@@ -52,7 +53,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
           </a>
 
           <a
-            href="https://wa.me/5492615665067"
+            href={CONTACTO_ATLAS.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-emerald-500/50 hover:bg-slate-800/40 group"
@@ -64,7 +65,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teléfono / WhatsApp</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">
-                  +54 9 261 566-5067
+                  {CONTACTO_ATLAS.telefono}
                 </p>
               </div>
             </div>
@@ -72,7 +73,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
           </a>
 
           <a
-            href="https://www.instagram.com/atlasgymoficial_/"
+            href={CONTACTO_ATLAS.instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-pink-500/50 hover:bg-slate-800/40 group"
@@ -88,7 +89,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Instagram</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-pink-400 transition-colors">
-                  @atlasgymoficial_
+                  {CONTACTO_ATLAS.instagram}
                 </p>
               </div>
             </div>

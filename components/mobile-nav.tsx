@@ -24,7 +24,7 @@ const navItemsAlumno = [
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { usuarioActual, getCantidadAvisosNoLeidos } = useAppData()
+  const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
 
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
@@ -33,7 +33,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Navegación móvil"
-      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-800/80 bg-slate-950/95 px-2 backdrop-blur-lg md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-800/80 bg-slate-950/95 px-1 backdrop-blur-lg md:hidden"
     >
       {navItems.map(({ label, href, icon: Icon }) => {
         const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -43,7 +43,7 @@ export function MobileNav() {
             key={label}
             href={href}
             aria-label={esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-1 transition-colors ${
               active
                 ? 'text-blue-500 font-bold'
                 : 'text-slate-400 hover:text-slate-200'
@@ -61,6 +61,16 @@ export function MobileNav() {
           </Link>
         )
       })}
+      <Link
+        href="/login"
+        onClick={cerrarSesion}
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
+        className="flex flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-1 text-slate-400 hover:text-rose-400 transition-colors active:scale-95"
+      >
+        <LogOut className="size-5 stroke-2" />
+        <span className="text-[10px] tracking-tight">Salir</span>
+      </Link>
     </nav>
   )
 }

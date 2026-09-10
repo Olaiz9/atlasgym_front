@@ -5,6 +5,7 @@ import { useAppData } from '@/lib/store'
 import { Plan } from '@/lib/types'
 import { Package, Plus, Pencil, Trash2, X, Check, DollarSign, Calendar, Sparkles, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccesoRestringido } from '@/components/acceso-restringido'
 
 interface EstadoModalPlan {
   modalAbierto: boolean
@@ -67,6 +68,15 @@ function reductorModalPlan(estado: EstadoModalPlan, accion: AccionModalPlan): Es
 export default function PlanesPage() {
   const { planes, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
   const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
+
+  if (usuarioActual.rol === 'ALUMNO') {
+    return (
+      <AccesoRestringido
+        titulo="Gestión de Planes Restringida"
+        mensaje="La creación, edición y tarifas de los planes de membresía solo pueden ser gestionadas por administradores."
+      />
+    )
+  }
 
   function abrirCrear() {
     dispatch({ type: 'ABRIR_CREAR' })

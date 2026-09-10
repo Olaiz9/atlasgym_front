@@ -1,11 +1,11 @@
-﻿'use client'
+'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { soloLetras, soloNumeros, emailValido } from '@/lib/validators'
+import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
 
 interface ModalNuevoAlumnoProps {
   isOpen: boolean
@@ -14,9 +14,11 @@ interface ModalNuevoAlumnoProps {
 
 export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const { agregarAlumno, planes } = useAppData()
-  const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+  const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
+
+  const planesActivos = planes.filter((p) => p.activo)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -29,18 +31,13 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }, [isOpen])
 
   function validarAlumno() {
-    const errores: Record<string, string> = {}
-    if (formAlumno.nombre.trim().length < 3) errores.nombre = 'Ingresá el nombre completo'
-    if (!emailValido(formAlumno.email)) errores.email = 'Correo inválido'
-    if (formAlumno.dni.length < 7 || formAlumno.dni.length > 8) errores.dni = 'El DNI debe tener 7 u 8 dígitos'
-    if (formAlumno.celular.length < 8 || formAlumno.celular.length > 13) errores.celular = 'Celular inválido'
-    if (!formAlumno.plan) errores.plan = 'Seleccioná un plan'
+    const errores = validarDatosAlumno(formAlumno, true)
     setErroresAlumno(errores)
     return Object.keys(errores).length === 0
   }
 
   function handleCerrar() {
-    setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '' })
+    setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
     setErroresAlumno({})
     onClose()
   }
@@ -70,8 +67,10 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             if (!validarAlumno()) return
             agregarAlumno({
               nombre: formAlumno.nombre,
+              dni: formAlumno.dni,
               email: formAlumno.email,
               celular: formAlumno.celular,
+              planId: formAlumno.planId || undefined,
               plan: formAlumno.plan,
               fechaAlta: new Date().toISOString().split('T')[0],
               activo: true,
@@ -142,13 +141,16 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             <Select
               required
               value={formAlumno.plan}
-              onValueChange={(v) => setFormAlumno((prev) => ({ ...prev, plan: v ?? '' }))}
+              onValueChange={(v) => {
+                const planObj = planes.find((p) => p.nombre === v);
+                setFormAlumno((prev) => ({ ...prev, plan: v ?? '', planId: planObj?.id ?? '' }));
+              }}
             >
               <SelectTrigger className={`h-12 rounded-xl bg-slate-50 font-medium text-slate-900 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}>
-                <SelectValue placeholder="Seleccioná un plan" />
+                <SelectValue placeholder="Seleccioná un plan activo" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 bg-white shadow-xl">
-                {planes.map((p) => (
+                {planesActivos.map((p) => (
                   <SelectItem key={p.id} value={p.nombre} className="font-semibold focus:bg-blue-50 focus:text-blue-700 py-2.5">
                     {p.nombre} — ${p.precio.toLocaleString('es-AR')}
                   </SelectItem>

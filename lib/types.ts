@@ -16,8 +16,10 @@ export interface UsuarioSesion {
 export interface Alumno {
   id: string;
   nombre: string;
+  dni?: string;
   email?: string;
   celular?: string;
+  planId?: string;
   plan: string;
   fechaAlta: string; // "YYYY-MM-DD"
   activo: boolean;
@@ -102,6 +104,8 @@ export interface Plan {
 export interface Pago {
   id: string;
   alumnoId: string;
+  alumnoNombreHistorico?: string;
+  planId?: string;
   plan: string;
   monto: number;
   fecha: string; // "YYYY-MM-DD"
@@ -115,8 +119,14 @@ export type EstadoCuenta = "AL_DIA" | "PENDIENTE" | "MOROSO" | "INACTIVO";
 export function estadoCuentaDeAlumno(
   alumnoId: string,
   pagos: Pago[],
-  fechaAlta?: string
+  fechaAlta?: string,
+  socioActivo: boolean = true
 ): EstadoCuenta {
+  // 1. Si el socio fue dado de baja o marcado inactivo administrativamente:
+  if (!socioActivo) {
+    return "INACTIVO";
+  }
+
   const pagosDelAlumno = pagos.filter((p) => p.alumnoId === alumnoId);
 
   // Si no tiene pagos registrados
@@ -151,7 +161,7 @@ export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {
   AL_DIA: "Al día",
   PENDIENTE: "Pendiente",
   MOROSO: "Moroso",
-  INACTIVO: "Inactivo (+60d)",
+  INACTIVO: "Inactivo",
 };
 
 export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {

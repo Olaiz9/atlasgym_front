@@ -5,8 +5,10 @@ import { useState, useMemo } from "react";
 import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { soloLetras } from "@/lib/validators";
+import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
+import { formatDiasIngreso } from "@/lib/date-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
+import { AccesoRestringido } from "@/components/acceso-restringido";
 import {
   Alumno,
   EstadoCuenta,
@@ -15,25 +17,16 @@ import {
   Plan,
 } from "@/lib/types";
 
-function formatDiasIngreso(fecha: string) {
-  const diffMs = Date.now() - new Date(fecha).getTime();
-  const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDias === 0) return "Hoy";
-  if (diffDias === 1) return "Ayer";
-  if (diffDias <= 7) return `Hace ${diffDias} días`;
-  return new Date(fecha).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
-}
-
 const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
   { label: "Al día", value: "AL_DIA" },
   { label: "Pendientes", value: "PENDIENTE" },
   { label: "Morosos", value: "MOROSO" },
-  { label: "Inactivos (+60d)", value: "INACTIVO" },
+  { label: "Inactivos", value: "INACTIVO" },
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
 
   const [busqueda, setBusqueda] = useState("");
@@ -48,9 +41,9 @@ export default function AlumnosPage() {
   );
 
   const metrica = useMemo(() => {
-    const alDia = alumnosConEstado.filter((a) => a.estadoCuenta === "AL_DIA").length;
-    const morosos = alumnosConEstado.filter((a) => a.estadoCuenta === "MOROSO").length;
-    const inactivos = alumnosConEstado.filter((a) => a.estadoCuenta === "INACTIVO").length;
+    const alDia = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "AL_DIA").length;
+    const morosos = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "MOROSO").length;
+    const inactivos = alumnosConEstado.filter((a) => !a.activo || a.estadoCuenta === "INACTIVO").length;
     return { total: alumnosConEstado.length, alDia, morosos, inactivos };
   }, [alumnosConEstado]);
 
@@ -72,6 +65,15 @@ export default function AlumnosPage() {
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
   };
+
+  if (usuarioActual.rol === "ALUMNO") {
+    return (
+      <AccesoRestringido
+        titulo="Panel de Alumnos Restringido"
+        mensaje="La administración de fichas de alumnos, estados de cuenta y altas solo está disponible para entrenadores y administradores."
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
@@ -367,15 +369,28 @@ function ModalEditarAlumno({
 }) {
   const [form, setForm] = useState({
     nombre: alumno.nombre,
+    dni: alumno.dni || "",
     email: alumno.email || "",
     celular: alumno.celular || "",
+    planId: alumno.planId || planes.find((p) => p.nombre === alumno.plan)?.id || "",
     plan: alumno.plan,
     activo: alumno.activo,
   });
+  const [errores, setErrores] = useState<Record<string, string>>({});
+
+  const planesDisponibles = useMemo(() => {
+    return planes.filter(
+      (p) => p.activo || p.id === alumno.planId || p.nombre === alumno.plan
+    );
+  }, [planes, alumno.planId, alumno.plan]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nombre.trim()) return;
+    const nuevosErrores = validarDatosAlumno(form, false);
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
+    }
     onSubmit(form);
   };
 
@@ -401,25 +416,51 @@ function ModalEditarAlumno({
             <input
               aria-label="Nombre y apellido"
               value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: soloLetras(e.target.value) })}
+              onChange={(e) => {
+                setForm({ ...form, nombre: soloLetras(e.target.value) });
+                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: "" }));
+              }}
               maxLength={60}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.nombre ? "border border-rose-400" : ""}`}
               placeholder="Nombre y apellido"
               required
             />
+            {errores.nombre && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.nombre}</span>}
+          </Field>
+
+          <Field label="DNI">
+            <input
+              aria-label="DNI"
+              value={form.dni}
+              onChange={(e) => {
+                setForm({ ...form, dni: soloNumeros(e.target.value).slice(0, 8) });
+                if (errores.dni) setErrores((prev) => ({ ...prev, dni: "" }));
+              }}
+              maxLength={8}
+              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.dni ? "border border-rose-400" : ""}`}
+              placeholder="Ej. 41234567"
+            />
+            {errores.dni && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.dni}</span>}
           </Field>
 
           <Field label="Plan asignado">
             <select
               aria-label="Plan asignado"
-              value={form.plan}
-              onChange={(e) => setForm({ ...form, plan: e.target.value })}
+              value={form.planId || form.plan}
+              onChange={(e) => {
+                const planObj = planes.find((p) => p.id === e.target.value || p.nombre === e.target.value);
+                setForm({
+                  ...form,
+                  planId: planObj?.id || e.target.value,
+                  plan: planObj?.nombre || e.target.value,
+                });
+              }}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
               required
             >
-              {planes.map((p) => (
-                <option key={p.id} value={p.nombre}>
-                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}
+              {planesDisponibles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}{!p.activo ? " (Pausado)" : ""}
                 </option>
               ))}
             </select>

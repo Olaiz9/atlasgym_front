@@ -7,44 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL } from '@/lib/types'
+import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
-
-const payments = [
-  { name: 'María González', plan: 'Plan Premium', amount: '$45.000', time: 'Hoy, 09:42', initials: 'MG' },
-  { name: 'Carlos Ramírez', plan: 'Plan Mensual', amount: '$30.000', time: 'Hoy, 08:16', initials: 'CR' },
-  { name: 'Sofía Torres', plan: 'Plan Premium', amount: '$45.000', time: 'Ayer, 18:35', initials: 'ST' },
-]
-const routines = [
-  { name: 'Hipertrofia — Nivel 2', student: 'Lucas Fernández', progress: 78, tone: 'bg-blue-600' },
-  { name: 'Fuerza y potencia', student: 'Ana Martínez', progress: 54, tone: 'bg-blue-500' },
-  { name: 'Acondicionamiento', student: 'Diego Silva', progress: 32, tone: 'bg-blue-400' },
-]
-
-const VIDEOS_DESTACADOS = [
-  {
-    titulo: 'Press de Banca con Mancuernas',
-    categoria: 'Pecho',
-    duracion: '01:45',
-    nivel: 'Técnica estricta',
-    thumbnail: 'bg-gradient-to-br from-blue-900/60 to-slate-900',
-  },
-  {
-    titulo: 'Sentadilla Profunda y Postura',
-    categoria: 'Piernas',
-    duracion: '02:10',
-    nivel: 'Biomecánica',
-    thumbnail: 'bg-gradient-to-br from-indigo-900/60 to-slate-900',
-  },
-  {
-    titulo: 'Remo con Barra Agarre Prono',
-    categoria: 'Espalda',
-    duracion: '01:30',
-    nivel: 'Activación dorsal',
-    thumbnail: 'bg-gradient-to-br from-cyan-900/60 to-slate-900',
-  },
-]
 
 function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
   return (
@@ -125,10 +91,12 @@ function AlumnoCardsSection({
   alumno,
   estadoCuenta,
   rutina,
+  fechaHoy,
 }: {
   alumno: any
   estadoCuenta: string
   rutina: any
+  fechaHoy?: Date | null
 }) {
   const diaUno = rutina?.dias[0]
   const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
@@ -172,7 +140,9 @@ function AlumnoCardsSection({
               </span>
             </div>
             <p className="mt-3 text-sm font-bold text-slate-900">{alumno?.plan || 'Plan Musculación'}</p>
-            <p className="mt-1 text-xs text-slate-500 font-medium">Vence el 10 de Septiembre</p>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              Vence el {calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined)}
+            </p>
           </div>
           <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
             <WalletCards className="size-7" />
@@ -219,7 +189,7 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario } = useAppData()
+  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
   const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0]
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
@@ -227,6 +197,18 @@ function HomeAlumno({
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuario)
   const avisosAlumno = getAvisosParaUsuario(usuario)
   const ultimoAvisoNoLeido = avisosAlumno.find((av) => !av.leidoPor.includes(usuario.id))
+
+  const videosDestacados = useMemo(() => {
+    const gradients = [
+      'bg-gradient-to-br from-blue-900/60 to-slate-900',
+      'bg-gradient-to-br from-indigo-900/60 to-slate-900',
+      'bg-gradient-to-br from-cyan-900/60 to-slate-900',
+    ];
+    return videosTecnica.slice(0, 3).map((v, i) => ({
+      ...v,
+      thumbnail: gradients[i % gradients.length],
+    }));
+  }, [videosTecnica])
 
   return (
     <>
@@ -277,6 +259,7 @@ function HomeAlumno({
           alumno={alumno}
           estadoCuenta={estadoCuenta}
           rutina={rutina}
+          fechaHoy={fechaHoy}
         />
 
         {/* Sección: Videoteca Destacada */}
@@ -301,9 +284,9 @@ function HomeAlumno({
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {VIDEOS_DESTACADOS.map((v) => (
+            {videosDestacados.map((v) => (
               <Link
-                key={v.titulo}
+                key={v.id}
                 href="/videoteca"
                 className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/20"
               >
@@ -318,7 +301,7 @@ function HomeAlumno({
                 <div className="mt-4">
                   <div className="flex items-center gap-2">
                     <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-[10px] font-bold text-blue-400 border border-blue-500/20">
-                      {v.categoria}
+                      {v.grupoMuscular}
                     </span>
                     <span className="text-[10px] font-medium text-slate-500">{v.nivel}</span>
                   </div>
@@ -368,7 +351,7 @@ export default function Page() {
     for (const p of ordenados) {
       if (res.length >= 5) break
       const al = alumnosMap.get(p.alumnoId)
-      const nombre = al ? al.nombre : 'Alumno Atlas'
+      const nombre = al ? al.nombre : (p.alumnoNombreHistorico || 'Alumno Atlas')
       if (!q || nombre.toLowerCase().includes(q) || p.plan.toLowerCase().includes(q)) {
         res.push({
           id: p.id,
@@ -376,7 +359,7 @@ export default function Page() {
           plan: p.plan,
           amount: `$${p.monto.toLocaleString('es-AR')}`,
           time: p.fecha,
-          initials: (al ? al.nombre : 'AT')
+          initials: (al ? al.nombre : (p.alumnoNombreHistorico || 'AT'))
             .split(' ')
             .map((n) => n[0])
             .slice(0, 2)

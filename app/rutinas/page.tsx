@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
+import { CONTACTO_ATLAS } from '@/lib/constants'
 import {
   Dumbbell,
   Plus,
@@ -51,12 +52,26 @@ export default function RutinasPage() {
 
   // Si es ALUMNO, le mostramos directamente su rutina asignada
   if (usuarioActual.rol === 'ALUMNO') {
-    const miRutina = getRutinaDeAlumno(usuarioActual.alumnoId || 'a1') || rutinas[0]
+    const miRutina = usuarioActual.alumnoId ? getRutinaDeAlumno(usuarioActual.alumnoId) : undefined
+    if (!miRutina) {
+      return <EstadoSinRutina usuario={usuarioActual} />
+    }
     return <VistaMiRutinaAlumno rutina={miRutina} usuario={usuarioActual} />
   }
 
   const toggleDia = (diaId: string) => {
     setDiaExpandido((prev) => ({ ...prev, [diaId]: !prev[diaId] }))
+  }
+
+  const toggleTodosDias = (rutina: Rutina) => {
+    const estanTodosExpandidos = rutina.dias.every((d) => diaExpandido[d.id])
+    setDiaExpandido((prev) => {
+      const siguiente = { ...prev }
+      rutina.dias.forEach((d) => {
+        siguiente[d.id] = !estanTodosExpandidos
+      })
+      return siguiente
+    })
   }
 
   return (
@@ -156,11 +171,23 @@ export default function RutinasPage() {
 
                 {/* Días y Ejercicios (Desplegable) */}
                 <div className="mt-4 space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Estructura por Días:
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Estructura por Días ({rutina.dias.length}):
+                    </p>
+                    {rutina.dias.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleTodosDias(rutina)}
+                        aria-label={rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos los días' : 'Ver todos los días'}
+                        className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        {rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos' : 'Ver todos'}
+                      </button>
+                    )}
+                  </div>
                   {rutina.dias.map((dia) => {
-                    const expandido = diaExpandido[dia.id] !== false // Default abierto o cerrado
+                    const expandido = !!diaExpandido[dia.id] // Default compacto
                     return (
                       <div
                         key={dia.id}
@@ -1038,6 +1065,51 @@ function ModalConfirmarIncompleto({
             Guardar progreso parcial
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Estado cuando el Alumno no tiene Rutina Asignada ─────────────────────────
+function EstadoSinRutina({ usuario }: { usuario: any }) {
+  const nombre = usuario?.nombre ? usuario.nombre.split(' ')[0] : 'Alumno'
+  const mensajeWhatsapp = encodeURIComponent(
+    `Hola! Soy ${usuario?.nombre || 'alumno'} de ATLAS Gym. Quería consultar con un coach sobre la asignación de mi rutina de entrenamiento.`
+  )
+
+  return (
+    <div className="mx-auto flex min-h-[70vh] max-w-[650px] flex-col items-center justify-center px-5 py-12 text-center">
+      <div className="relative mb-6 flex size-20 items-center justify-center rounded-3xl border border-blue-500/20 bg-blue-600/10 text-blue-400 shadow-xl shadow-blue-950/20">
+        <Dumbbell className="size-10" />
+      </div>
+
+      <span className="mb-2 rounded-full border border-blue-500/30 bg-blue-950/40 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-400">
+        Portal del Alumno
+      </span>
+
+      <h1 className="text-2xl font-black text-white sm:text-3xl">
+        Aún no tenés una rutina asignada
+      </h1>
+
+      <p className="mt-2 text-sm text-slate-400 max-w-md leading-relaxed">
+        Hola, <strong className="text-white">{nombre}</strong>. Tu coach de ATLAS Gym está preparando tu plan personalizado acorde a tus objetivos y nivel.
+      </p>
+
+      <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+        <a
+          href={`${CONTACTO_ATLAS.whatsappUrl}?text=${mensajeWhatsapp}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+        >
+          Consultar a mi coach por WhatsApp
+        </a>
+        <Link
+          href="/videoteca"
+          className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 px-6 py-3 text-sm font-bold text-slate-200 transition-colors"
+        >
+          Explorar Videoteca
+        </Link>
       </div>
     </div>
   )
