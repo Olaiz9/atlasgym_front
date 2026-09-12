@@ -21,7 +21,8 @@ type AccionModalPlan =
   | { type: 'ABRIR_CREAR' }
   | { type: 'ABRIR_EDITAR'; plan: Plan }
   | { type: 'CERRAR_MODAL' }
-  | { type: 'SET_CAMPO'; campo: 'nombre' | 'precio' | 'descripcion' | 'diasPorSemana' | 'activo'; valor: any }
+  | { type: 'SET_CAMPO'; campo: 'nombre' | 'precio' | 'descripcion' | 'diasPorSemana'; valor: string }
+  | { type: 'SET_CAMPO'; campo: 'activo'; valor: boolean }
 
 const ESTADO_INICIAL_MODAL: EstadoModalPlan = {
   modalAbierto: false,
@@ -69,7 +70,7 @@ export default function PlanesPage() {
   const { planes, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
   const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
 
-  if (usuarioActual.rol === 'ALUMNO') {
+  if (!usuarioActual || usuarioActual.rol === 'ALUMNO') {
     return (
       <AccesoRestringido
         titulo="Gestión de Planes Restringida"
@@ -128,7 +129,7 @@ export default function PlanesPage() {
           </p>
         </div>
 
-        {usuarioActual.rol === 'ADMIN' && (
+        {usuarioActual?.rol === 'ADMIN' && (
           <Button
             onClick={abrirCrear}
             className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
@@ -173,7 +174,10 @@ export default function PlanesPage() {
                     <button
                       onClick={() => {
                         if (confirm(`¿Seguro que querés eliminar el plan "${plan.nombre}"?`)) {
-                          eliminarPlan(plan.id)
+                          const res = eliminarPlan(plan.id)
+                          if (!res.ok) {
+                            alert(res.motivo)
+                          }
                         }
                       }}
                       className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"

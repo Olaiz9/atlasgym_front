@@ -1,16 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { Plan, Alumno, Pago } from "./types";
+import { Plan, Alumno, Pago, Rutina } from "./types";
+import {
+  filtrarPlanesDisponibles,
+  sincronizarNombrePlanEnAlumnos,
+  puedeEliminarPlan,
+  ejecutarBajaAlumno,
+  resolverNombreParaMostrarPago,
+} from "./plan-utils";
 
-describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", () => {
+describe("Fase 3 & 5: Gestión de Planes e Integridad en Bajas (lib/planes-historial.test.ts)", () => {
   const planesMock: Plan[] = [
     { id: "p1", nombre: "Musculación Pase Libre", precio: 28000, activo: true, descripcion: "Acceso total" },
     { id: "p2", nombre: "Crossfit", precio: 32000, activo: true, descripcion: "Entrenamiento funcional" },
     { id: "p3", nombre: "Plan Antiguo Pausado", precio: 15000, activo: false, descripcion: "Plan discontinuado" },
   ];
 
-  describe("Filtrado de planes activos vs pausados", () => {
+  describe("Filtrado de planes activos vs pausados (filtrarPlanesDisponibles)", () => {
     it("excluye planes pausados (activo === false) para nuevas asignaciones", () => {
-      const planesDisponiblesAlta = planesMock.filter((p) => p.activo);
+      const planesDisponiblesAlta = filtrarPlanesDisponibles(planesMock);
       expect(planesDisponiblesAlta.length).toBe(2);
       expect(planesDisponiblesAlta.map((p) => p.id)).toEqual(["p1", "p2"]);
       expect(planesDisponiblesAlta.some((p) => p.id === "p3")).toBe(false);
@@ -26,8 +33,10 @@ describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", ()
         activo: true,
       };
 
-      const planesDisponiblesEdicion = planesMock.filter(
-        (p) => p.activo || p.id === alumnoConPlanPausado.planId || p.nombre === alumnoConPlanPausado.plan
+      const planesDisponiblesEdicion = filtrarPlanesDisponibles(
+        planesMock,
+        alumnoConPlanPausado.planId,
+        alumnoConPlanPausado.plan
       );
 
       expect(planesDisponiblesEdicion.length).toBe(3);
@@ -35,35 +44,44 @@ describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", ()
     });
   });
 
-  describe("Sincronización de nombre de plan por planId", () => {
+  describe("Sincronización de nombre de plan por planId (sincronizarNombrePlanEnAlumnos)", () => {
     it("sincroniza el nombre del plan en los alumnos cuando se renombra un plan", () => {
-      let alumnos: Alumno[] = [
+      const alumnosIniciales: Alumno[] = [
         { id: "a1", nombre: "Juan Pérez", planId: "p1", plan: "Musculación Pase Libre", fechaAlta: "2024-01-01", activo: true },
         { id: "a2", nombre: "Ana Gómez", planId: "p2", plan: "Crossfit", fechaAlta: "2024-01-01", activo: true },
       ];
 
-      const planIdModificado = "p1";
-      const nuevoNombre = "Musculación Premium Total";
+      const resultado = sincronizarNombrePlanEnAlumnos(alumnosIniciales, "p1", "Musculación Premium Total");
 
-      alumnos = alumnos.map((a) => (a.planId === planIdModificado ? { ...a, plan: nuevoNombre } : a));
-
-      expect(alumnos[0].plan).toBe("Musculación Premium Total");
-      expect(alumnos[1].plan).toBe("Crossfit");
-    });
-
-    it("resuelve planId a partir del catálogo de planes al asociar un alumno", () => {
-      const planEncontrado = planesMock.find(
-        (p) => p.id === "p1" || p.nombre.toLowerCase() === "musculación pase libre"
-      );
-      expect(planEncontrado).toBeDefined();
-      expect(planEncontrado?.id).toBe("p1");
+      expect(resultado[0].plan).toBe("Musculación Premium Total");
+      expect(resultado[1].plan).toBe("Crossfit");
     });
   });
 
-  describe("Preservación de identidad histórica en pagos (alumnoNombreHistorico)", () => {
-    it("preserva el nombre histórico en el pago aun si el alumno es eliminado del padrón activo", () => {
+  describe("Protección contra eliminación de planes en uso (puedeEliminarPlan)", () => {
+    it("bloquea la eliminación si existen alumnos asignados al plan", () => {
+      const alumnos = [
+        { id: "a1", planId: "p1" },
+        { id: "a2", planId: "p2" },
+      ];
+
+      const res = puedeEliminarPlan("p1", alumnos);
+      expect(res.ok).toBe(false);
+      expect(res.motivo).toContain("1 alumno(s) asignados");
+    });
+
+    it("permite la eliminación si ningún alumno tiene asignado el plan", () => {
+      const alumnos = [{ id: "a1", planId: "p1" }];
+
+      const res = puedeEliminarPlan("p2", alumnos);
+      expect(res.ok).toBe(true);
+    });
+  });
+
+  describe("Baja en cascada y auditoría de pagos (ejecutarBajaAlumno & resolverNombreParaMostrarPago)", () => {
+    it("elimina el alumno, preserva el nombre en pagos y desasigna rutinas", () => {
       const alumno: Alumno = {
-        id: "a-temp",
+        id: "a-10",
         nombre: "Agustín Alumno",
         planId: "p1",
         plan: "Musculación Pase Libre",
@@ -71,51 +89,40 @@ describe("Fase 3: Ordenar planes e historial (lib/planes-historial.test.ts)", ()
         activo: true,
       };
 
-      const nuevoPago: Pago = {
-        id: "pago-100",
-        alumnoId: alumno.id,
-        alumnoNombreHistorico: alumno.nombre,
-        planId: alumno.planId,
-        plan: alumno.plan,
-        monto: 28000,
-        fecha: "2024-03-01",
-        metodo: "Efectivo",
-        estado: "PAGADO",
-      };
-
-      const padronAlumnos: Alumno[] = [];
-      const alumnoEncontrado = padronAlumnos.find((a) => a.id === nuevoPago.alumnoId);
-
-      expect(alumnoEncontrado).toBeUndefined();
-
-      const nombreParaMostrar = alumnoEncontrado ? alumnoEncontrado.nombre : `${nuevoPago.alumnoNombreHistorico || "Alumno Atlas"} (Baja)`;
-      expect(nombreParaMostrar).toBe("Agustín Alumno (Baja)");
-    });
-
-    it("filtra pagos por búsqueda coincidiendo con el nombre histórico del alumno dado de baja", () => {
       const pagos: Pago[] = [
         {
-          id: "p-1",
-          alumnoId: "inexistente-1",
-          alumnoNombreHistorico: "María Elena Walsh",
-          plan: "Crossfit",
-          monto: 32000,
+          id: "pago-100",
+          alumnoId: "a-10",
+          plan: "Musculación Pase Libre",
+          monto: 28000,
           fecha: "2024-03-01",
-          metodo: "Transferencia",
+          metodo: "Efectivo",
           estado: "PAGADO",
         },
       ];
 
-      const getAlumno = (_id: string): Alumno | undefined => undefined;
-      const busqueda = "maría";
+      const rutinas: Rutina[] = [
+        {
+          id: "r-1",
+          nombre: "Rutina Fuerza",
+          objetivo: "Fuerza",
+          alumnoIdAsignado: "a-10",
+          esGenerica: false,
+          dias: [],
+        },
+      ];
 
-      const filtrados = pagos.filter((p) => {
-        const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? p.alumnoNombreHistorico ?? "";
-        return nombreAlumno.toLowerCase().includes(busqueda.toLowerCase());
-      });
+      const res = ejecutarBajaAlumno("a-10", [alumno], pagos, rutinas);
 
-      expect(filtrados.length).toBe(1);
-      expect(filtrados[0].alumnoNombreHistorico).toBe("María Elena Walsh");
+      // 1. Alumno eliminado
+      expect(res.alumnos.length).toBe(0);
+      // 2. Pago preserva nombre histórico
+      expect(res.pagos[0].alumnoNombreHistorico).toBe("Agustín Alumno");
+      // 3. Rutina desasignada
+      expect(res.rutinas[0].alumnoIdAsignado).toBeUndefined();
+      // 4. Formato de visualización con marca de baja
+      const label = resolverNombreParaMostrarPago(res.pagos[0]);
+      expect(label).toBe("Agustín Alumno (Baja)");
     });
   });
 });

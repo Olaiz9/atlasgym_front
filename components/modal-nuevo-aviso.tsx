@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Bell, Users, User, AlertCircle, Info, Clock } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { CategoriaAviso, CATEGORIA_AVISO_LABEL } from '@/lib/types'
+import { fechaLocalHoy } from '@/lib/date-utils'
 
 interface ModalNuevoAvisoProps {
   isOpen: boolean
@@ -64,7 +65,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
       titulo: titulo.trim(),
       mensaje: mensaje.trim(),
       categoria,
-      fecha: new Date().toISOString().split('T')[0],
+      fecha: fechaLocalHoy(),
       paraTodos,
       alumnoId: paraTodos ? undefined : alumnoId,
     })

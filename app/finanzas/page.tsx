@@ -16,9 +16,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { formatFechaAR, calcularVencimientoCuota } from "@/lib/date-utils";
+import { formatFechaAR, calcularVencimientoCuota, fechaLocalHoy, periodoMesActual } from "@/lib/date-utils";
 import { CONTACTO_ATLAS } from "@/lib/constants";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion } from "@/lib/types";
+import { construirLinkWhatsapp } from "@/lib/validators";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -97,21 +98,42 @@ function formatearMes(mesStr: string) {
 }
 
 function mesActualISO() {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+  return periodoMesActual();
 }
 
 // ---------- Vista dedicada para el Alumno (Mis Cuotas) ----------
 function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
-  const { alumnos, getPagosDeAlumno, getEstadoCuenta } = useAppData();
+  const { alumnos, getPagosDeAlumno, getEstadoCuenta, planes } = useAppData();
   const [copiado, setCopiado] = useState(false);
 
-  const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0];
-  const misPagos = alumno ? getPagosDeAlumno(alumno.id) : [];
-  const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : "AL_DIA";
+  const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined;
+
+  if (!alumno) {
+    return (
+      <div className="mx-auto max-w-[800px] px-5 py-16 text-center">
+        <div className="mx-auto size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
+          <AlertCircle className="size-8" />
+        </div>
+        <h1 className="text-2xl font-black text-white">Ficha de alumno no vinculada</h1>
+        <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">
+          Tu usuario ({usuario.email}) no tiene una ficha de socio activa asociada en el gimnasio.
+          Por favor consultá en recepción para que vinculen tu cuenta.
+        </p>
+        <Link href="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition-colors">
+          Volver al inicio
+        </Link>
+      </div>
+    );
+  }
+
+  const misPagos = getPagosDeAlumno(alumno.id);
+  const estadoCuenta = getEstadoCuenta(alumno.id);
 
   const ultimoPago = misPagos[0];
-  const planMonto = ultimoPago ? ultimoPago.monto : 15000;
+  const planEncontrado = planes.find(
+    (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
+  );
+  const planMonto = planEncontrado ? planEncontrado.precio : (ultimoPago ? ultimoPago.monto : 15000);
 
   const copiarAlias = () => {
     navigator.clipboard.writeText("ATLAS.GYM.MP");
@@ -171,7 +193,13 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         {/* Próximo Vencimiento */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Próximo vencimiento</p>
-          <p className="mt-2 text-2xl font-black text-slate-900">{calcularVencimientoCuota(estadoCuenta)}</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">
+            {calcularVencimientoCuota(
+              estadoCuenta,
+              new Date(),
+              ultimoPago?.periodoMes || ultimoPago?.fecha?.slice(0, 7)
+            )}
+          </p>
           <p className="mt-1 text-xs text-slate-400 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
         </div>
       </div>
@@ -324,6 +352,10 @@ export default function FinanzasPage() {
       return coincideFiltro && coincideBusqueda;
     });
   }, [pagosDelMes, filtro, busqueda, getAlumno]);
+
+  if (!usuarioActual) {
+    return null;
+  }
 
   // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
   if (usuarioActual.rol === "ALUMNO") {
@@ -634,13 +666,6 @@ function ModalConfirmarEliminar({
 }
 
 // ---------- Helpers de WhatsApp ----------
-function construirLinkWhatsapp(celular: string, mensaje: string) {
-  let numero = celular.replace(/\D/g, "");
-  // Heurística para celulares argentinos sin código de país (10 dígitos locales)
-  if (numero.length === 10) numero = `549${numero}`;
-  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
-}
-
 function mensajePagoTemplate(nombre: string, plan: string, monto: string) {
   const montoFmt = monto ? `$${Number(monto).toLocaleString("es-AR")}` : "$0";
   return `Hola ${nombre || "!"}! ✅ Registramos tu pago de ${montoFmt} correspondiente al plan ${plan || "tu plan"} en ATLAS. ¡Gracias por seguir entrenando con nosotros! 💪`;
@@ -671,7 +696,7 @@ function ModalRegistrarPago({
     alumnoId: alumnos[0]?.id ?? "",
     plan: "",
     monto: "",
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: fechaLocalHoy(),
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
@@ -701,7 +726,7 @@ function ModalRegistrarPago({
       return;
     }
     setErrorValidacion("");
-    onSubmit({ ...form, monto: montoNum });
+    onSubmit({ ...form, monto: montoNum, periodoMes: form.fecha.slice(0, 7) });
   };
 
   const generarMensaje = () => {

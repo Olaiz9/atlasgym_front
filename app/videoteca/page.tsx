@@ -45,7 +45,7 @@ export default function VideotecaPage() {
   const [videoSeleccionado, setVideoSeleccionado] = useState<VideoTecnica | null>(null)
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false)
 
-  const esAdmin = usuarioActual.rol === 'ADMIN'
+  const esAdmin = usuarioActual?.rol === 'ADMIN'
 
   const videosFiltrados = useMemo(() => {
     return videosTecnica.filter((v) => {
@@ -57,6 +57,10 @@ export default function VideotecaPage() {
       return matchGrupo && matchTexto
     })
   }, [videosTecnica, filtroGrupo, busqueda])
+
+  if (!usuarioActual) {
+    return null
+  }
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">

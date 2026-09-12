@@ -17,7 +17,12 @@ export interface FormularioAlumnoData {
   plan: string;
 }
 
-export function validarDatosAlumno(datos: FormularioAlumnoData, esNuevo = true): Record<string, string> {
+export function validarDatosAlumno(
+  datos: FormularioAlumnoData,
+  esNuevo = true,
+  alumnosExistentes?: { id: string; dni?: string }[],
+  alumnoIdEditando?: string
+): Record<string, string> {
   const errores: Record<string, string> = {};
 
   if (!datos.nombre || datos.nombre.trim().length < 3) {
@@ -35,6 +40,13 @@ export function validarDatosAlumno(datos: FormularioAlumnoData, esNuevo = true):
   if (datos.dni && datos.dni.trim().length > 0) {
     if (datos.dni.length < 7 || datos.dni.length > 8) {
       errores.dni = "El DNI debe tener 7 u 8 dígitos";
+    } else if (alumnosExistentes) {
+      const repetido = alumnosExistentes.some(
+        (a) => a.dni === datos.dni && a.id !== alumnoIdEditando
+      );
+      if (repetido) {
+        errores.dni = "Este DNI ya está registrado en el gimnasio";
+      }
     }
   } else if (esNuevo) {
     errores.dni = "El DNI es requerido";
@@ -52,3 +64,26 @@ export function validarDatosAlumno(datos: FormularioAlumnoData, esNuevo = true):
 
   return errores;
 }
+
+/**
+ * Normaliza números de celular argentinos para enlaces de WhatsApp (E.164 con prefijo 549).
+ * Maneja formatos habituales: 10 dígitos (261xxxxxxx), con 0 (0261xxxxxxx), con 54 (54261xxxxxxx), o 549.
+ */
+export function normalizarCelularArgentina(celular: string): string {
+  let numero = celular.replace(/\D/g, "");
+  if (numero.length === 10) {
+    numero = `549${numero}`;
+  } else if (numero.length === 11 && numero.startsWith("0")) {
+    numero = `549${numero.slice(1)}`;
+  } else if (numero.length === 12 && numero.startsWith("54")) {
+    numero = `549${numero.slice(2)}`;
+  } else if (numero.length === 13 && numero.startsWith("549")) {
+    numero = numero;
+  }
+  return numero;
+}
+
+export function construirLinkWhatsapp(celular: string, mensaje: string): string {
+  const numero = normalizarCelularArgentina(celular);
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}

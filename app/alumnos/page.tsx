@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
 import { formatDiasIngreso } from "@/lib/date-utils";
+import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
 import {
@@ -66,7 +67,7 @@ export default function AlumnosPage() {
     setAlumnoAEliminar(null);
   };
 
-  if (usuarioActual.rol === "ALUMNO") {
+  if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
       <AccesoRestringido
         titulo="Panel de Alumnos Restringido"
@@ -250,6 +251,7 @@ export default function AlumnosPage() {
       {alumnoAEditar && (
         <ModalEditarAlumno
           alumno={alumnoAEditar}
+          alumnos={alumnos}
           planes={planes}
           onClose={() => setAlumnoAEditar(null)}
           onSubmit={(cambios) => {
@@ -358,11 +360,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ---------- Modal: editar alumno ----------
 function ModalEditarAlumno({
   alumno,
+  alumnos,
   planes,
   onClose,
   onSubmit,
 }: {
   alumno: Alumno;
+  alumnos: Alumno[];
   planes: Plan[];
   onClose: () => void;
   onSubmit: (cambios: Partial<Omit<Alumno, "id">>) => void;
@@ -379,14 +383,12 @@ function ModalEditarAlumno({
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const planesDisponibles = useMemo(() => {
-    return planes.filter(
-      (p) => p.activo || p.id === alumno.planId || p.nombre === alumno.plan
-    );
+    return filtrarPlanesDisponibles(planes, alumno.planId, alumno.plan);
   }, [planes, alumno.planId, alumno.plan]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const nuevosErrores = validarDatosAlumno(form, false);
+    const nuevosErrores = validarDatosAlumno(form, false, alumnos, alumno.id);
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
       return;
@@ -454,6 +456,7 @@ function ModalEditarAlumno({
                   planId: planObj?.id || e.target.value,
                   plan: planObj?.nombre || e.target.value,
                 });
+                if (errores.plan) setErrores((prev) => ({ ...prev, plan: "" }));
               }}
               className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
               required
@@ -464,6 +467,7 @@ function ModalEditarAlumno({
                 </option>
               ))}
             </select>
+            {errores.plan && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.plan}</span>}
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -472,10 +476,14 @@ function ModalEditarAlumno({
                 aria-label="Email"
                 type="email"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                  if (errores.email) setErrores((prev) => ({ ...prev, email: "" }));
+                }}
+                className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.email ? "border border-rose-400" : ""}`}
                 placeholder="nombre@mail.com"
               />
+              {errores.email && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.email}</span>}
             </Field>
             <Field label="Celular">
               <input
@@ -483,12 +491,14 @@ function ModalEditarAlumno({
                 type="tel"
                 inputMode="numeric"
                 value={form.celular}
-                onChange={(e) =>
-                  setForm({ ...form, celular: e.target.value.replace(/[^0-9]/g, "").slice(0, 13) })
-                }
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                onChange={(e) => {
+                  setForm({ ...form, celular: e.target.value.replace(/[^0-9]/g, "").slice(0, 13) });
+                  if (errores.celular) setErrores((prev) => ({ ...prev, celular: "" }));
+                }}
+                className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.celular ? "border border-rose-400" : ""}`}
                 placeholder="2611234567"
               />
+              {errores.celular && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.celular}</span>}
             </Field>
           </div>
 

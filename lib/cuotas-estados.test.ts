@@ -1,6 +1,6 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { estadoCuentaDeAlumno, Pago, EstadoPago } from "./types";
-import { calcularVencimientoCuota } from "./date-utils";
+import { calcularVencimientoCuota, fechaLocalHoy } from "./date-utils";
 
 describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () => {
   const alumnoId = "a-test-1";
@@ -13,7 +13,7 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
           alumnoId,
           plan: "Musculación",
           monto: 28000,
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: fechaLocalHoy(),
           metodo: "Efectivo",
           estado: "PAGADO",
         },
@@ -48,7 +48,7 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
           alumnoId,
           plan: "Musculación",
           monto: 28000,
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: fechaLocalHoy(),
           metodo: "Transferencia",
           estado: "PENDIENTE",
         },
@@ -65,7 +65,7 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
           alumnoId,
           plan: "Musculación",
           monto: 28000,
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: fechaLocalHoy(),
           metodo: "Efectivo",
           estado: "PAGADO",
         },
@@ -82,7 +82,7 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
           alumnoId,
           plan: "Musculación",
           monto: 28000,
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: fechaLocalHoy(),
           metodo: "Efectivo",
           estado: "VENCIDO",
         },
@@ -113,6 +113,64 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
       const estado = estadoCuentaDeAlumno(alumnoId, pagosViejos, "2025-01-01", true);
       expect(estado).toBe("INACTIVO");
     });
+    it("clasifica como MOROSO si pagó agosto pero al 11 de septiembre aún no pagó septiembre", () => {
+      const pagosAgosto: Pago[] = [
+        {
+          id: "p-ago",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-08-05",
+          periodoMes: "2026-08",
+          metodo: "Efectivo",
+          estado: "PAGADO",
+        },
+      ];
+
+      // Al 11 de septiembre ya venció el plazo del día 10 para pagar septiembre
+      const fechaSept11 = new Date(2026, 8, 11);
+      const estado = estadoCuentaDeAlumno(alumnoId, pagosAgosto, "2026-01-01", true, fechaSept11);
+      expect(estado).toBe("MOROSO");
+    });
+
+    it("clasifica como PENDIENTE si pagó agosto y al 5 de septiembre está en período de gracia", () => {
+      const pagosAgosto: Pago[] = [
+        {
+          id: "p-ago",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-08-05",
+          periodoMes: "2026-08",
+          metodo: "Efectivo",
+          estado: "PAGADO",
+        },
+      ];
+
+      // Al 5 de septiembre aún no venció la cuota (vence el 10)
+      const fechaSept5 = new Date(2026, 8, 5);
+      const estado = estadoCuentaDeAlumno(alumnoId, pagosAgosto, "2026-01-01", true, fechaSept5);
+      expect(estado).toBe("PENDIENTE");
+    });
+
+    it("clasifica como AL_DIA si tiene la cuota del mes pagada", () => {
+      const pagosSeptiembre: Pago[] = [
+        {
+          id: "p-sep",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-09-02",
+          periodoMes: "2026-09",
+          metodo: "Transferencia",
+          estado: "PAGADO",
+        },
+      ];
+
+      const fechaSept15 = new Date(2026, 8, 15);
+      const estado = estadoCuentaDeAlumno(alumnoId, pagosSeptiembre, "2026-01-01", true, fechaSept15);
+      expect(estado).toBe("AL_DIA");
+    });
   });
 
   describe("Cálculo dinámico de vencimiento de cuota (calcularVencimientoCuota)", () => {
@@ -129,6 +187,16 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
 
       const vencMoroso = calcularVencimientoCuota("MOROSO", refDate);
       expect(vencMoroso.toLowerCase()).toContain("10 de septiembre");
+    });
+
+    it("calcula vencimiento exacto en base al período mensual cubierto", () => {
+      // Si pagó agosto (2026-08), su vencimiento es 10 de Septiembre
+      const vencSept = calcularVencimientoCuota("PENDIENTE", new Date(2026, 8, 5), "2026-08");
+      expect(vencSept.toLowerCase()).toContain("10 de septiembre");
+
+      // Si pagó septiembre (2026-09), su vencimiento es 10 de Octubre
+      const vencOct = calcularVencimientoCuota("AL_DIA", new Date(2026, 8, 5), "2026-09");
+      expect(vencOct.toLowerCase()).toContain("10 de octubre");
     });
   });
 });

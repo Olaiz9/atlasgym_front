@@ -2,30 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Rutina, UsuarioSesion } from "./types";
 import { RUTINAS_MOCK } from "./mock-data";
 
-/**
- * Lógica pura de autorización por rol para navegación de rutas
- */
-export function puedeAccederRuta(ruta: string, rol: "ADMIN" | "ALUMNO"): boolean {
-  const rutasExclusivasAdmin = ["/alumnos", "/planes"];
-  const esRutaAdmin = rutasExclusivasAdmin.some(
-    (prefix) => ruta === prefix || ruta.startsWith(`${prefix}/`)
-  );
-  if (esRutaAdmin && rol === "ALUMNO") {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Lógica pura de resolución de rutina para alumno (sin fallback ciego)
- */
-export function resolverRutinaAlumno(
-  alumno: { rutinaId?: string } | undefined,
-  rutinas: Rutina[]
-): Rutina | undefined {
-  if (!alumno?.rutinaId) return undefined;
-  return rutinas.find((r) => r.id === alumno.rutinaId);
-}
+import { puedeAccederRuta, resolverRutinaAlumno } from "./auth-utils";
 
 describe("Fase 1: Navegación y Control de Acceso (lib/navegacion-acceso.test.ts)", () => {
   describe("Control de Acceso por Rol (puedeAccederRuta)", () => {

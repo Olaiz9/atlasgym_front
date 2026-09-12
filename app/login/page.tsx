@@ -14,21 +14,34 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [recordarme, setRecordarme] = useState(true)
   const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setCargando(true)
+    setError('')
 
+    if (rol === 'ADMIN' && password !== 'admin123') {
+      setError('Contraseña incorrecta para Administrador (demo: admin123)')
+      return
+    }
+
+    if (rol === 'ALUMNO' && password !== 'alumno123') {
+      setError('Contraseña incorrecta para Alumno (demo: alumno123)')
+      return
+    }
+
+    setCargando(true)
     iniciarSesion(rol, email)
 
     setTimeout(() => {
       setCargando(false)
       router.push('/')
-    }, 500)
+    }, 400)
   }
 
   const handleQuickDemo = (demoRol: 'ADMIN' | 'ALUMNO') => {
     setRol(demoRol)
+    setError('')
     if (demoRol === 'ADMIN') {
       setEmail('admin@atlasgym.com')
       setPassword('admin123')
@@ -153,6 +166,13 @@ export default function LoginPage() {
                 Recordar mi sesión en este equipo
               </label>
             </div>
+
+            {/* Mensaje de error */}
+            {error && (
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs font-semibold text-rose-400">
+                {error}
+              </div>
+            )}
 
             {/* Botón Submit */}
             <button

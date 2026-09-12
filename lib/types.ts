@@ -111,6 +111,7 @@ export interface Pago {
   fecha: string; // "YYYY-MM-DD"
   metodo: string;
   estado: EstadoPago;
+  periodoMes?: string; // "YYYY-MM" — período mensual cubierto por la cuota
 }
 
 // Estado de cuenta de un alumno, DERIVADO de sus pagos y actividad (no se guarda a mano).
@@ -120,7 +121,8 @@ export function estadoCuentaDeAlumno(
   alumnoId: string,
   pagos: Pago[],
   fechaAlta?: string,
-  socioActivo: boolean = true
+  socioActivo: boolean = true,
+  fechaReferencia: Date = new Date()
 ): EstadoCuenta {
   // 1. Si el socio fue dado de baja o marcado inactivo administrativamente:
   if (!socioActivo) {
@@ -133,7 +135,7 @@ export function estadoCuentaDeAlumno(
   if (pagosDelAlumno.length === 0) {
     if (fechaAlta) {
       const diasDesdeAlta = Math.floor(
-        (Date.now() - new Date(fechaAlta).getTime()) / (1000 * 60 * 60 * 24)
+        (fechaReferencia.getTime() - new Date(fechaAlta).getTime()) / (1000 * 60 * 60 * 24)
       );
       if (diasDesdeAlta > 60) return "INACTIVO";
     }
@@ -144,7 +146,7 @@ export function estadoCuentaDeAlumno(
   const pagosOrdenados = [...pagosDelAlumno].sort((a, b) => b.fecha.localeCompare(a.fecha));
   const masReciente = pagosOrdenados[0];
   const diasDesdeUltimoPago = Math.floor(
-    (Date.now() - new Date(masReciente.fecha).getTime()) / (1000 * 60 * 60 * 24)
+    (fechaReferencia.getTime() - new Date(masReciente.fecha).getTime()) / (1000 * 60 * 60 * 24)
   );
 
   // Si pasaron más de 60 días desde el último pago registrado, pasa automáticamente a INACTIVO
@@ -153,8 +155,34 @@ export function estadoCuentaDeAlumno(
   }
 
   if (pagosDelAlumno.some((p) => p.estado === "VENCIDO")) return "MOROSO";
+
+  // Período actual en curso ("YYYY-MM") y día del mes
+  const anio = fechaReferencia.getFullYear();
+  const mes = (fechaReferencia.getMonth() + 1).toString().padStart(2, "0");
+  const periodoActual = `${anio}-${mes}`;
+  const dia = fechaReferencia.getDate();
+
+  // Buscar pagos correspondientes al mes en curso o adelantados
+  const pagosMesActual = pagosDelAlumno.filter(
+    (p) => (p.periodoMes || p.fecha.slice(0, 7)) >= periodoActual
+  );
+
+  if (pagosMesActual.length > 0) {
+    if (pagosMesActual.some((p) => p.estado === "PAGADO")) return "AL_DIA";
+    if (pagosMesActual.some((p) => p.estado === "PENDIENTE")) return "PENDIENTE";
+    if (pagosMesActual.some((p) => p.estado === "VENCIDO")) return "MOROSO";
+  }
+
+  // Si tiene cuotas pendientes de meses anteriores no vencidas
   if (pagosDelAlumno.some((p) => p.estado === "PENDIENTE")) return "PENDIENTE";
-  return "AL_DIA";
+
+  // Si no tiene cuota registrada para el mes en curso:
+  // Antes del día 10 está en período de gracia/pendiente; después del 10 se considera moroso
+  if (dia > 10) {
+    return "MOROSO";
+  }
+
+  return "PENDIENTE";
 }
 
 export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {

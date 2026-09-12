@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
+import { fechaLocalHoy } from '@/lib/date-utils'
 
 interface ModalNuevoAlumnoProps {
   isOpen: boolean
@@ -13,7 +14,7 @@ interface ModalNuevoAlumnoProps {
 }
 
 export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
-  const { agregarAlumno, planes } = useAppData()
+  const { agregarAlumno, planes, alumnos } = useAppData()
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -31,7 +32,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }, [isOpen])
 
   function validarAlumno() {
-    const errores = validarDatosAlumno(formAlumno, true)
+    const errores = validarDatosAlumno(formAlumno, true, alumnos)
     setErroresAlumno(errores)
     return Object.keys(errores).length === 0
   }
@@ -72,7 +73,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               celular: formAlumno.celular,
               planId: formAlumno.planId || undefined,
               plan: formAlumno.plan,
-              fechaAlta: new Date().toISOString().split('T')[0],
+              fechaAlta: fechaLocalHoy(),
               activo: true,
             })
             handleCerrar()
