@@ -157,22 +157,44 @@ export default function VideotecaPage() {
               <button
                 type="button"
                 onClick={() => setVideoSeleccionado(video)}
-                aria-label={`Reproducir video: ${video.titulo}`}
-                className="relative h-48 w-full bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950/50 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer"
+                aria-label={`Ver técnica: ${video.titulo}`}
+                className="relative h-48 w-full bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer group-hover:border-blue-500/30"
               >
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
+                {video.gifUrl || video.formato === 'GIF' ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={video.gifUrl || video.videoUrl}
+                      alt={video.titulo}
+                      className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 pointer-events-none" />
+                  </>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
+                    <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[transform,background-color] duration-300 group-hover:scale-110 group-hover:bg-blue-500">
+                      <Play className="size-6 fill-white ml-0.5" />
+                    </div>
+                  </>
+                )}
 
-                <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[transform,background-color] duration-300 group-hover:scale-110 group-hover:bg-blue-500">
-                  <Play className="size-6 fill-white ml-0.5" />
-                </div>
-
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800">
-                  <Clock className="size-3 text-slate-400" />
-                  {video.duracion}
+                <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
+                  {video.gifUrl || video.formato === 'GIF' ? (
+                    <span className="text-blue-400 font-extrabold flex items-center gap-1">
+                      ⚡ Loop GIF
+                    </span>
+                  ) : (
+                    <>
+                      <Clock className="size-3 text-slate-400" />
+                      {video.duracion}
+                    </>
+                  )}
                 </div>
 
                 <div className="absolute top-3 left-3">
-                  <span className="rounded-md bg-blue-600/20 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-blue-400 border border-blue-500/30">
+                  <span className="rounded-md bg-blue-600/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-blue-300 border border-blue-500/30">
                     {video.grupoMuscular}
                   </span>
                 </div>
@@ -265,15 +287,29 @@ export default function VideotecaPage() {
               </button>
             </div>
 
-            <div className="relative aspect-video w-full bg-black">
-              <iframe
-                src={getEmbedUrl(videoSeleccionado.videoUrl)}
-                title={videoSeleccionado.titulo}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
-            </div>
+            {videoSeleccionado.gifUrl || videoSeleccionado.formato === 'GIF' ? (
+              <div className="relative aspect-video w-full bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={videoSeleccionado.gifUrl || videoSeleccionado.videoUrl}
+                  alt={`Técnica de ${videoSeleccionado.titulo}`}
+                  className="max-h-full max-w-full object-contain mx-auto"
+                />
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
+                  ⚡ Loop continuo sin cortes
+                </div>
+              </div>
+            ) : (
+              <div className="relative aspect-video w-full bg-black">
+                <iframe
+                  src={getEmbedUrl(videoSeleccionado.videoUrl)}
+                  title={videoSeleccionado.titulo}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              </div>
+            )}
 
             <div className="p-6 overflow-y-auto space-y-4 bg-slate-900">
               {videoSeleccionado.descripcion && (
@@ -305,7 +341,7 @@ export default function VideotecaPage() {
               )}
 
               <div className="flex items-center justify-between pt-2 text-xs text-slate-500">
-                <span>Duración estimada: {videoSeleccionado.duracion}</span>
+                <span>{videoSeleccionado.equipo ? `Equipamiento: ${videoSeleccionado.equipo}` : `Duración: ${videoSeleccionado.duracion}`}</span>
                 <span>Nivel: {videoSeleccionado.nivel}</span>
               </div>
             </div>

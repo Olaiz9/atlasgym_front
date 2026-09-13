@@ -28,11 +28,14 @@ export interface Alumno {
   rutinaId?: string;
 }
 
+export type TipoSerieEjercicio = 'NORMAL' | 'BI_SERIE' | 'DROP_SET'
+
 export interface Ejercicio {
   id: string;
   nombre: string;
   series: number;
-  repeticiones: string; // ej: "10-12", "8", "Al fallo"
+  repeticiones: string; // ej: "10-12", "8", "Al fallo", "10 + 10", "8 + 8 + 8"
+  tipoSerie?: TipoSerieEjercicio;
   descansoSegundos?: number;
   notas?: string;
 }
@@ -85,9 +88,12 @@ export interface VideoTecnica {
   id: string;
   titulo: string;
   grupoMuscular: "Pecho" | "Espalda" | "Piernas" | "Hombros" | "Brazos" | "Core";
-  duracion: string; // ej: "01:45"
+  duracion: string; // ej: "01:45", "Loop GIF"
   nivel: string; // ej: "Técnica estricta", "Básico", "Avanzado"
   videoUrl: string; // URL de YouTube, Vimeo o embed
+  gifUrl?: string; // URL de animación GIF técnica en loop continuo
+  formato?: "GIF" | "VIDEO"; // Permite distinguir técnica en loop directo vs video completo
+  equipo?: string; // ej: "Barra", "Mancuerna", "Polea", "Máquina", "Peso corporal"
   descripcion?: string;
   consejosClave?: string[];
 }

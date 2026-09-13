@@ -2,6 +2,7 @@
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
 import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
+import { CATALOGO_EJERCICIOS_GIF } from "./catalogo-ejercicios";
 
 
 export const ALUMNOS_MOCK: Alumno[] = [
@@ -39,7 +40,7 @@ export const RUTINAS_MOCK: Rutina[] = [
           { id: "e1", nombre: "Press de Banca Plano", series: 4, repeticiones: "8-10", descansoSegundos: 90, notas: "Controlar la bajada, retracción escapular" },
           { id: "e2", nombre: "Press Inclinado con Mancuernas", series: 3, repeticiones: "10-12", descansoSegundos: 60, notas: "Inclinación a 30°" },
           { id: "e3", nombre: "Aperturas en Polea / Peck Deck", series: 3, repeticiones: "12-15", descansoSegundos: 45, notas: "Pico de contracción 1 seg" },
-          { id: "e4", nombre: "Elevaciones Laterales", series: 4, repeticiones: "12-15", descansoSegundos: 45, notas: "Codos semiflexionados" },
+          { id: "e4", nombre: "Elevaciones Laterales", series: 4, repeticiones: "12 + 10 + fallo", tipoSerie: "DROP_SET", descansoSegundos: 60, notas: "Drop set en última serie" },
           { id: "e5", nombre: "Extensiones de Tríceps en Polea", series: 4, repeticiones: "10-12", descansoSegundos: 60, notas: "Codos pegados al cuerpo" },
         ],
       },
@@ -50,8 +51,8 @@ export const RUTINAS_MOCK: Rutina[] = [
           { id: "e6", nombre: "Jalón al Pecho en Polea", series: 4, repeticiones: "10", descansoSegundos: 75, notas: "Llevar la barra al esternón" },
           { id: "e7", nombre: "Remo con Barra Agarre Prono", series: 4, repeticiones: "8-10", descansoSegundos: 90, notas: "Torso a 45 grados" },
           { id: "e8", nombre: "Remo Unilateral con Mancuerna", series: 3, repeticiones: "10 por lado", descansoSegundos: 60 },
-          { id: "e9", nombre: "Curl de Bíceps con Barra Z", series: 3, repeticiones: "10-12", descansoSegundos: 60 },
-          { id: "e10", nombre: "Curl Martillo con Mancuernas", series: 3, repeticiones: "12", descansoSegundos: 45, notas: "Énfasis en braquial" },
+          { id: "e9", nombre: "Curl de Bíceps con Barra Z", series: 3, repeticiones: "10 + 10", tipoSerie: "BI_SERIE", descansoSegundos: 60, notas: "Bi-serie con curl martillo" },
+          { id: "e10", nombre: "Curl Martillo con Mancuernas", series: 3, repeticiones: "12", tipoSerie: "BI_SERIE", descansoSegundos: 45, notas: "Énfasis en braquial" },
         ],
       },
       {
@@ -114,6 +115,7 @@ export const RUTINAS_MOCK: Rutina[] = [
 ];
 
 export const VIDEOS_TECNICA_MOCK: VideoTecnica[] = [
+  ...CATALOGO_EJERCICIOS_GIF,
   {
     id: "v1",
     titulo: "Press de Banca con Mancuernas",

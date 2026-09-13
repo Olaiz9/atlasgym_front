@@ -11,15 +11,50 @@ export function buscarVideoParaEjercicio(
 ): VideoTecnica | undefined {
   if (!nombreEjercicio || !videos || videos.length === 0) return undefined;
 
-  const palabras = nombreEjercicio
-    .toLowerCase()
-    .split(/[\s,\-–—/]+/)
-    .filter((w) => w.length > 3);
+  const normalizar = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
-  return videos.find((v) => {
-    const tituloLower = v.titulo.toLowerCase();
-    return palabras.some((palabra) => tituloLower.includes(palabra));
-  });
+  const nombreNorm = normalizar(nombreEjercicio).trim();
+
+  // 1. Coincidencia exacta
+  const exacta = videos.find((v) => normalizar(v.titulo) === nombreNorm);
+  if (exacta) return exacta;
+
+  const palabrasBuscadas = nombreNorm
+    .split(/[\s,\-–—/]+/)
+    .filter((w) => w.length > 2);
+
+  if (palabrasBuscadas.length === 0) return undefined;
+
+  // Palabras genéricas de equipamiento que suman menor puntaje
+  const equipamiento = new Set(['barra', 'mancuerna', 'mancuernas', 'polea', 'maquina', 'libre', 'plano', 'inclinado']);
+
+  let mejorVideo: VideoTecnica | undefined = undefined;
+  let mejorPuntaje = 0;
+
+  for (const v of videos) {
+    const tituloNorm = normalizar(v.titulo);
+    const palabrasTitulo = tituloNorm.split(/[\s,\-–—/]+/).filter((w) => w.length > 2);
+
+    let puntaje = 0;
+    for (const p of palabrasBuscadas) {
+      if (palabrasTitulo.includes(p)) {
+        puntaje += equipamiento.has(p) ? 2 : 10;
+      } else if (palabrasTitulo.some((pt) => pt.includes(p) || p.includes(pt))) {
+        puntaje += equipamiento.has(p) ? 1 : 5;
+      }
+    }
+
+    if (puntaje > mejorPuntaje) {
+      mejorPuntaje = puntaje;
+      mejorVideo = v;
+    }
+  }
+
+  return mejorPuntaje > 0 ? mejorVideo : undefined;
 }
 
 /**

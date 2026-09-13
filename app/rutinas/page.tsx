@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
-import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica } from '@/lib/types'
+import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import {
@@ -210,14 +210,34 @@ export default function RutinasPage() {
                             {dia.ejercicios.map((ej) => (
                               <div
                                 key={ej.id}
-                                className="flex items-center justify-between text-xs text-slate-400"
+                                className="flex items-center justify-between text-xs text-slate-400 gap-2"
                               >
-                                <span className="text-slate-300 font-medium truncate max-w-[200px]">
-                                  • {ej.nombre}
-                                </span>
-                                <span className="text-[11px] font-mono text-slate-500 shrink-0">
-                                  {ej.series}x{ej.repeticiones}
-                                </span>
+                                <div className="flex items-center gap-1.5 truncate max-w-[210px]">
+                                  <span className="text-slate-300 font-medium truncate">
+                                    • {ej.nombre}
+                                  </span>
+                                  {ej.tipoSerie === 'BI_SERIE' && (
+                                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                                      Bi-serie
+                                    </span>
+                                  )}
+                                  {ej.tipoSerie === 'DROP_SET' && (
+                                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                                      Drop Set
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {ej.descansoSegundos ? (
+                                    <span className="text-[10px] font-mono text-slate-500 flex items-center gap-0.5" title={`Descanso: ${ej.descansoSegundos} segundos`}>
+                                      <Clock className="size-2.5 text-blue-400" />
+                                      {ej.descansoSegundos}s
+                                    </span>
+                                  ) : null}
+                                  <span className="text-[11px] font-mono text-slate-400">
+                                    {ej.series}x{ej.repeticiones}
+                                  </span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -457,8 +477,8 @@ function ModalNuevaRutina({
       id: 'd-1',
       nombre: 'Día 1 — Pecho y Tríceps',
       ejercicios: [
-        { id: 'e-1', nombre: 'Press Banca Plano', series: 4, repeticiones: '10', descansoSegundos: 90 },
-        { id: 'e-2', nombre: 'Aperturas con Mancuernas', series: 3, repeticiones: '12', descansoSegundos: 60 },
+        { id: 'e-1', nombre: 'Press Banca Plano', series: 4, repeticiones: '10', tipoSerie: 'NORMAL', descansoSegundos: 90 },
+        { id: 'e-2', nombre: 'Aperturas con Mancuernas', series: 3, repeticiones: '12', tipoSerie: 'NORMAL', descansoSegundos: 60 },
       ],
     },
   ])
@@ -481,7 +501,7 @@ function ModalNuevaRutina({
         id: `d-${Date.now()}`,
         nombre: `Día ${num} — Nuevo Día`,
         ejercicios: [
-          { id: `e-${Date.now()}`, nombre: 'Ejercicio 1', series: 4, repeticiones: '10', descansoSegundos: 60 },
+          { id: `e-${Date.now()}`, nombre: 'Ejercicio 1', series: 4, repeticiones: '10', tipoSerie: 'NORMAL', descansoSegundos: 60 },
         ],
       },
     ])
@@ -495,7 +515,7 @@ function ModalNuevaRutina({
               ...d,
               ejercicios: [
                 ...d.ejercicios,
-                { id: `e-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, nombre: 'Nuevo ejercicio', series: 3, repeticiones: '12', descansoSegundos: 60 },
+                { id: `e-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, nombre: 'Nuevo ejercicio', series: 3, repeticiones: '12', tipoSerie: 'NORMAL', descansoSegundos: 60 },
               ],
             }
           : d
@@ -519,6 +539,7 @@ function ModalNuevaRutina({
                   nombre: nombreEj,
                   series: 3,
                   repeticiones: '10-12',
+                  tipoSerie: 'NORMAL',
                   descansoSegundos: 60,
                 },
               ],
@@ -753,43 +774,106 @@ function TarjetaDiaRutina({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {dia.ejercicios.map((ej) => (
-          <div key={ej.id} className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
-            <input
-              aria-label="Nombre del ejercicio"
-              list="lista-ejercicios-videoteca"
-              value={ej.nombre}
-              onChange={(e) => onActualizarEjercicio(ej.id, 'nombre', e.target.value)}
-              placeholder="Nombre del ejercicio o videoteca..."
-              className="flex-1 font-medium outline-none text-slate-800"
-            />
-            <div className="flex items-center gap-1 shrink-0">
+          <div key={ej.id} className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-2.5 shadow-sm">
+            {/* Fila superior: Nombre del ejercicio y botón eliminar */}
+            <div className="flex items-center gap-2">
               <input
-                type="number"
-                value={ej.series}
-                onChange={(e) => onActualizarEjercicio(ej.id, 'series', Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-12 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
-                title="Series"
-                aria-label="Series"
-              />
-              <span className="text-slate-400">x</span>
-              <input
-                value={ej.repeticiones}
-                onChange={(e) => onActualizarEjercicio(ej.id, 'repeticiones', e.target.value)}
-                placeholder="Reps"
-                className="w-16 text-center bg-slate-100 rounded px-1 py-1 font-mono font-bold"
-                title="Repeticiones"
-                aria-label="Repeticiones"
+                aria-label="Nombre del ejercicio"
+                list="lista-ejercicios-videoteca"
+                value={ej.nombre}
+                onChange={(e) => onActualizarEjercicio(ej.id, 'nombre', e.target.value)}
+                placeholder="Nombre del ejercicio o videoteca..."
+                className="flex-1 font-semibold outline-none text-slate-800 placeholder:text-slate-400 bg-slate-50/70 px-3 py-1.5 rounded-lg border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
               />
               <button
                 type="button"
                 onClick={() => onEliminarEjercicio(ej.id)}
                 aria-label="Eliminar ejercicio"
-                className="text-slate-400 hover:text-rose-500 p-1 ml-1"
+                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors shrink-0"
+                title="Eliminar este ejercicio"
               >
-                <Trash2 className="size-3.5" />
+                <Trash2 className="size-4" />
               </button>
+            </div>
+
+            {/* Fila inferior: Modalidad (Normal/Bi-serie/Drop set), Series, Reps, Descanso */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 text-slate-700">
+              {/* Modalidad de serie */}
+              <div className="flex items-center gap-1">
+                <select
+                  aria-label="Modalidad del ejercicio"
+                  value={ej.tipoSerie || 'NORMAL'}
+                  onChange={(e) => {
+                    const nuevoTipo = e.target.value as 'NORMAL' | 'BI_SERIE' | 'DROP_SET'
+                    onActualizarEjercicio(ej.id, 'tipoSerie', nuevoTipo)
+                    if (nuevoTipo === 'BI_SERIE' && (!ej.repeticiones || ej.repeticiones === '10' || ej.repeticiones === '12')) {
+                      onActualizarEjercicio(ej.id, 'repeticiones', '10 + 10')
+                    } else if (nuevoTipo === 'DROP_SET' && (!ej.repeticiones || ej.repeticiones === '10' || ej.repeticiones === '12')) {
+                      onActualizarEjercicio(ej.id, 'repeticiones', '8 + 8 + 8')
+                    }
+                  }}
+                  className={`text-[11px] font-bold px-2 py-1 rounded-lg border outline-none cursor-pointer transition-colors ${
+                    ej.tipoSerie === 'BI_SERIE'
+                      ? 'bg-purple-50 text-purple-700 border-purple-300'
+                      : ej.tipoSerie === 'DROP_SET'
+                      ? 'bg-amber-50 text-amber-700 border-amber-300'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="BI_SERIE">⚡ Bi-serie</option>
+                  <option value="DROP_SET">🔥 Drop Set</option>
+                </select>
+              </div>
+
+              {/* Series */}
+              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                <span className="text-[10px] uppercase font-bold text-slate-500">Series:</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={ej.series}
+                  onChange={(e) => onActualizarEjercicio(ej.id, 'series', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-9 text-center bg-white border border-slate-200 rounded py-0.5 font-mono font-bold text-slate-800"
+                  title="Series"
+                  aria-label="Series"
+                />
+              </div>
+
+              {/* Reps */}
+              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 flex-1 min-w-[110px]">
+                <span className="text-[10px] uppercase font-bold text-slate-500">Reps:</span>
+                <input
+                  value={ej.repeticiones}
+                  onChange={(e) => onActualizarEjercicio(ej.id, 'repeticiones', e.target.value)}
+                  placeholder={ej.tipoSerie === 'BI_SERIE' ? '10 + 10' : ej.tipoSerie === 'DROP_SET' ? '8 + 8 + 8' : '10-12'}
+                  className="w-full bg-white border border-slate-200 rounded px-1.5 py-0.5 font-mono font-bold text-slate-800 text-center"
+                  title="Repeticiones"
+                  aria-label="Repeticiones"
+                />
+              </div>
+
+              {/* Descanso */}
+              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 shrink-0" title="Tiempo de descanso entre series">
+                <Clock className="size-3 text-blue-500" />
+                <select
+                  aria-label="Tiempo de descanso"
+                  value={ej.descansoSegundos ?? 60}
+                  onChange={(e) => onActualizarEjercicio(ej.id, 'descansoSegundos', parseInt(e.target.value, 10))}
+                  className="text-[11px] font-mono font-bold text-slate-700 bg-transparent outline-none cursor-pointer"
+                >
+                  <option value={30}>30s</option>
+                  <option value={45}>45s</option>
+                  <option value={60}>60s (1m)</option>
+                  <option value={75}>75s</option>
+                  <option value={90}>90s (1.5m)</option>
+                  <option value={120}>120s (2m)</option>
+                  <option value={150}>150s (2.5m)</option>
+                  <option value={180}>180s (3m)</option>
+                </select>
+              </div>
             </div>
           </div>
         ))}
@@ -822,16 +906,31 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
           </button>
         </div>
 
-        {/* iframe de YouTube */}
-        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={embedUrl}
-            title={video.titulo}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
+        {/* Visualizador de técnica: GIF en loop continuo o iframe de YouTube */}
+        {video.gifUrl || video.formato === 'GIF' ? (
+          <div className="relative w-full aspect-video bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={video.gifUrl || video.videoUrl}
+              alt={`Técnica de ${video.titulo}`}
+              className="max-h-full max-w-full object-contain mx-auto"
+              loading="lazy"
+            />
+            <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
+              ⚡ Loop continuo
+            </div>
+          </div>
+        ) : (
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={embedUrl}
+              title={video.titulo}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
 
         {/* Descripción y tips */}
         <div className="px-5 py-4 space-y-3">
@@ -927,7 +1026,19 @@ function TablaSeries({
             </span>
 
             {/* Previa */}
-            <span className="text-xs text-slate-500 truncate">{formatPrevia(previaData)}</span>
+            <div className="truncate pr-1">
+              {previaData && typeof previaData.kg === 'number' && typeof previaData.reps === 'number' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700/80 text-xs font-mono font-bold text-slate-200 shadow-sm">
+                  <span className="text-blue-400 font-extrabold">{previaData.kg}</span>
+                  <span className="text-[10px] text-slate-400 font-sans font-normal">kg</span>
+                  <span className="text-slate-500 font-sans mx-0.5 font-bold">×</span>
+                  <span className="text-blue-400 font-extrabold">{previaData.reps}</span>
+                  <span className="text-[10px] text-slate-400 font-sans font-normal">reps</span>
+                </span>
+              ) : (
+                <span className="text-xs font-mono text-slate-600 px-2 font-bold select-none">—</span>
+              )}
+            </div>
 
             {/* Input KG */}
             <input
@@ -1045,6 +1156,16 @@ function TarjetaEjercicioAlumno({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-white truncate">{ejercicio.nombre}</h3>
+                {ejercicio.tipoSerie === 'BI_SERIE' && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm">
+                    ⚡ Bi-serie
+                  </span>
+                )}
+                {ejercicio.tipoSerie === 'DROP_SET' && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm">
+                    🔥 Drop Set
+                  </span>
+                )}
                 <BadgeEstadoEjercicio
                   todasCompletas={todasCompletas}
                   seriesCompletas={seriesCompletas}
@@ -1056,12 +1177,12 @@ function TarjetaEjercicioAlumno({
 
           {/* Lateral derecho: Descanso y Chevron */}
           <div className="flex items-center gap-3 shrink-0">
-            {ejercicio.descansoSegundos && (
-              <span className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
-                <Clock className="size-3 text-slate-400" />
-                {ejercicio.descansoSegundos}s
+            {ejercicio.descansoSegundos ? (
+              <span className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-slate-200 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 shadow-sm" title={`Descanso sugerido entre series: ${ejercicio.descansoSegundos} segundos`}>
+                <Clock className="size-3 text-blue-400" />
+                {ejercicio.descansoSegundos}s descanso
               </span>
-            )}
+            ) : null}
             <div
               className={`size-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-transform duration-200 ${
                 expandido ? 'rotate-180 text-blue-400 border-blue-500/30' : ''
@@ -1082,12 +1203,12 @@ function TarjetaEjercicioAlumno({
               ) : (
                 <span />
               )}
-              {ejercicio.descansoSegundos && (
-                <span className="sm:hidden flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800 w-fit">
-                  <Clock className="size-3 text-slate-400" />
+              {ejercicio.descansoSegundos ? (
+                <span className="sm:hidden flex items-center gap-1.5 text-[11px] font-bold text-slate-200 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/80 w-fit shadow-sm">
+                  <Clock className="size-3 text-blue-400" />
                   Descanso: {ejercicio.descansoSegundos}s
                 </span>
-              )}
+              ) : null}
             </div>
 
             {/* Tabla de series */}
