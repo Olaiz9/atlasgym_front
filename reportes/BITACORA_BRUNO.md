@@ -225,3 +225,89 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Score de salud: **100 / 100 (Great)**
     - Diagnóstico: **0 advertencias, 0 errores, No issues found!**
 
+---
+
+### 6. Incorporación de Mejoras Críticas Solicitadas por el Cliente
+* **Fecha:** 13 de Septiembre de 2026
+* **Contexto de Negocio:** Reunión presencial con el cliente y demostración operativa de la aplicación. Se acordó la implementación de 5 requerimientos de experiencia de usuario y metodología de entrenamiento:
+  1. Configuración de bi-series y drop sets en las rutinas por parte del profesor.
+  2. Asignación de tiempo de descanso entre series con contador dinámico.
+  3. Rediseño visual de "Serie Previa" en el portal del alumno para lectura nítida bajo luces de gimnasio (alto contraste).
+  4. Guía visual / tutorial interactivo en pantalla de Login para anclar la web app al inicio del celular (PWA para Android/Chrome e iOS/Safari).
+  5. Transformación de la videoteca de técnica hacia loops continuos en formato GIF en lugar de enlaces estáticos.
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Bi-Series, Drop Sets y Tiempo de Descanso en Rutinas:**
+     - Ampliación de modelos de datos en `lib/types.ts`: tipo `TipoSerieEjercicio = 'NORMAL' | 'BI_SERIE' | 'DROP_SET'`, atributos `tipoSerie` y `descansoSegundos` en la interfaz `Ejercicio`.
+     - Selector de modalidad en `ModalNuevaRutina` con preconfiguración inteligente de repeticiones (`10 + 10` para bi-series, `8 + 8 + 8` para drop sets) y badges visuales distintivos (violeta para bi-series, ámbar para drop sets).
+     - Selector de descanso (30s, 45s, 60s, 75s, 90s, 120s, 150s, 180s) que se refleja en la rutina del alumno con temporizador dinámico.
+  2. **Fase 2 — Serie Previa de Alto Contraste en Portal Alumno:**
+     - Rediseño de `TablaSeries` y optimización de `formatPrevia` en `app/rutinas/page.tsx`.
+     - Contenedor en `bg-slate-900`, tipografía monoespaciada blanca brillante y badges de alto contraste para visibilidad inmediata durante el entrenamiento.
+  3. **Fase 3 — Tutorial Visual de Instalación PWA en Login:**
+     - Creación de panel educativo interactivo en `app/login/page.tsx` con selector de plataforma (Android / Chrome e iOS / Safari).
+     - Instrucciones paso a paso ilustradas con íconos para guiar a los alumnos a agregar ATLAS a su pantalla de inicio sin depender de tiendas de aplicaciones.
+  4. **Fase 4 — Videoteca Biomecánica con Loops GIF:**
+     - Soporte para formato `GIF` y propiedad `gifUrl` en videos de técnica.
+     - Reproducción automática en bucle continuo con badge de "Loop continuo", optimizando la carga y comprensión técnica de cada movimiento.
+
+* **Archivos afectados:**
+  - 📁 `lib/types.ts`: Tipos `TipoSerieEjercicio`, `descansoSegundos` y `formato`.
+  - 📁 `lib/rutina-utils.ts`: Utilidad de formato de serie previa y búsqueda de videos.
+  - 📁 `app/rutinas/page.tsx`: Modalidad bi-serie/drop set, tiempos de descanso y visualización alumno.
+  - 📁 `app/login/page.tsx`: Tutorial interactivo PWA Android / iOS.
+  - 📁 `app/videoteca/page.tsx`: Visualizador en bucle continuo de técnica en GIF.
+  - 📁 `app/api/ejercicios/route.ts`: Endpoint dinámico de ejercicios por grupo muscular.
+
+* **Resultados de Verificación y Calidad:**
+  - 🧪 **Vitest:** 10 suites aprobadas, 70 tests pasados (100%).
+  - 🩺 **TypeScript:** 0 errores de compilación con `tsc --noEmit`.
+
+---
+
+### 7. Catálogo Masivo de 1.500+ Ejercicios y Buscador Interactivo con Lupa en Rutinas
+* **Fecha:** 13 de Septiembre de 2026
+* **Contexto de Negocio:** Segunda ronda de sugerencias del cliente tras la revisión de la videoteca:
+  1. La videoteca requería una base profunda (más de 1.000 ejercicios) para satisfacer las necesidades reales de una sala de musculación comercial completa.
+  2. En el creador de rutinas, el menú desplegable tradicional (`<select>`) resultaba engorroso; se solicitó una lupita interactiva donde el profesor pueda tipear el nombre del ejercicio y agregarlo directamente desde la biblioteca.
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Integración de Catálogo de 1.500+ Ejercicios con GIFs (`lib/data/exercises.json` y `lib/catalogo-ejercicios.ts`):**
+     - Descarga e integración de la base completa de ExerciseDB con 1.500 ejercicios técnicos y URLs directas a GIFs animados (`static.exercisedb.dev`).
+     - Mapeo automatizado de anatomía y equipamiento a los 6 grupos musculares en español del gimnasio: **Pecho**, **Espalda**, **Piernas**, **Hombros**, **Brazos**, y **Core**.
+     - Preservación prioritaria en las primeras posiciones de los ejercicios clásicos argentinos (Press Banca, Sentadilla con Barra, Peso Muerto, Dominadas, etc.).
+     - Actualización de la suite de pruebas unitarias (`lib/ejercicios-catalogo.test.ts`) certificando un catálogo de más de 1.000 ejercicios.
+  2. **Fase 2 — Buscador con Lupa Interactivo en Creación de Rutinas (`ModalBuscarEjercicioVideoteca`):**
+     - Erradicación total del menú desplegable (`<select>`) y del `<datalist>` nativo que ralentizaba la experiencia de usuario.
+     - Incorporación de botón con ícono de lupa `Search` (*"Buscar en Videoteca"*) en la cabecera de cada día de entrenamiento y en cada fila de ejercicio.
+     - Implementación del componente `ModalBuscarEjercicioVideoteca`:
+       - Campo de búsqueda instantánea con `autoFocus`, normalización de tildes y búsqueda insensible a mayúsculas/minúsculas.
+       - Filtros rápidos por chips de grupos musculares (`TODOS`, `Pecho`, `Espalda`, `Piernas`, `Hombros`, `Brazos`, `Core`).
+       - Previsualización visual de miniaturas GIF animadas de cada ejercicio.
+       - Botón "+ Agregar" con confirmación visual reactiva ("Agregado ✓" en verde) que permite al profesor sumar múltiples ejercicios para ese día de forma ágil sin cerrar el modal.
+       - Botón de finalización *"Listo, volver a la rutina"*.
+  3. **Fase 3 — Doble Validación, Compilación de Producción y Push a `ramaBruno`:**
+     - Vitest: **71/71 tests pasados (10/10 suites aprobadas)**.
+     - TypeScript: **0 errores con `tsc --noEmit`**.
+     - Next.js: **Build de producción exitoso (Turbopack)**.
+     - Sincronización remota: Commit `2325ea7` pusheado a `origin/ramaBruno`.
+
+* **Archivos afectados:**
+  - 📁 `lib/data/exercises.json`: Dataset estructurado de 1.500 ejercicios con GIFs.
+  - 📁 `lib/catalogo-ejercicios.ts`: Catálogo expandido y mapeo dinámico a grupos en español.
+  - 📁 `lib/ejercicios-catalogo.test.ts`: Pruebas de volumen y estructura del catálogo.
+  - 📁 `app/rutinas/page.tsx`: Componente `ModalBuscarEjercicioVideoteca`, botón de búsqueda con lupa, retiro de datalist y select.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Registro de los hitos 6 y 7.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `10 passed (10)`
+    - Tests ejecutados: `71 passed (71)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **TypeScript (`npx tsc --noEmit`):**
+    - Diagnóstico: **0 errores de compilación**
+  - 🚀 **Next.js Production Build (`npm run build`):**
+    - Rutas compiladas: **11/11 rutas estáticas y dinámicas optimizadas**
+    - Estado: **Listo para producción**
+
+

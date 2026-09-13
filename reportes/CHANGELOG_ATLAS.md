@@ -388,18 +388,51 @@ A partir de la auditoría técnica profunda y el requerimiento de calidad y robu
   * **Eliminación definitiva de `ignoreBuildErrors: true` en `next.config.mjs`**, activando la verificación nativa y estricta del compilador TypeScript en cada compilación de Next.js.
 * **Archivos afectados:** `app/alumnos/[id]/page.tsx`, `vitest.setup.ts`, `components/ui/button.test.tsx`, `lib/avisos.test.ts`, `lib/experiencia-consistencia.test.ts`, `lib/planes-historial.test.ts`, `next.config.mjs`.
 
+
+---
+
+## 📌 Sprint 4: Metodología de Entrenamiento, Experiencia PWA y Catálogo Masivo de Ejercicios
+
+---
+
+### 20. Bi-Series, Drop Sets, Descanso Cronometrado y Serie Previa de Alto Contraste
+* **Requerimiento del Cliente:**
+  * Permitir a los entrenadores configurar bi-series y drop sets en la creación de rutinas.
+  * Asignar tiempos de descanso entre series con contador/temporizador interactivo para el alumno.
+  * Mejorar la visibilidad de los datos de "Serie Previa" en la sala de musculación para no forzar la vista.
+* **Solución Técnica:**
+  * Modelado en `lib/types.ts` del tipo `TipoSerieEjercicio = 'NORMAL' | 'BI_SERIE' | 'DROP_SET'` y campos `tipoSerie` y `descansoSegundos` en `Ejercicio`.
+  * Selectores contextuales de modalidad y tiempo de descanso (30s a 180s) en `ModalNuevaRutina` con preconfiguración de repeticiones.
+  * Rediseño de `TablaSeries` con contenedor oscuro en alto contraste y texto blanco brillante.
+  * Implementación de panel interactivo en `app/login/page.tsx` con tutorial paso a paso para instalar la PWA en Android e iOS.
+  * Visualizador de técnica con bucles de GIF continuos en lugar de enlaces estáticos.
+* **Archivos afectados:** `lib/types.ts`, `lib/rutina-utils.ts`, `app/rutinas/page.tsx`, `app/login/page.tsx`, `app/videoteca/page.tsx`, `app/api/ejercicios/route.ts`.
+
+---
+
+### 21. Catálogo de 1.500+ Ejercicios y Buscador Interactivo con Lupa en Rutinas
+* **Requerimiento del Cliente:**
+  * Ampliar la videoteca a más de 1.000 ejercicios para cubrir todas las máquinas y variantes de un gimnasio comercial.
+  * Sustituir el menú desplegable en el creador de rutinas por una lupita interactiva donde tipear el nombre del ejercicio y sumar directamente desde la biblioteca.
+* **Solución Técnica:**
+  * Descarga e indexación de 1.500 ejercicios técnicos con GIFs continuos en `lib/data/exercises.json` y mapeo anatómico a español en `lib/catalogo-ejercicios.ts`.
+  * Erradicación del `<select>` y `<datalist>` nativos.
+  * Creación del componente `ModalBuscarEjercicioVideoteca` con buscador instantáneo, filtrado por chips de grupo muscular, previsualizaciones GIF y botón reactivo "+ Agregar" / "Agregado ✓".
+* **Archivos afectados:** `lib/data/exercises.json`, `lib/catalogo-ejercicios.ts`, `lib/ejercicios-catalogo.test.ts`, `app/rutinas/page.tsx`.
+
 ---
 
 ### 📊 Matriz Consolidada de Calidad del Proyecto
 
 | Indicador | Antes del Plan | Estado Actual | Estado |
 | :--- | :---: | :---: | :---: |
-| **Pruebas Unitarias (Vitest)** | 35 tests | **66 tests pasados (100%)** | ✅ Excelente |
+| **Pruebas Unitarias (Vitest)** | 35 tests | **71 tests pasados (100% en 10 suites)** | ✅ Excelente |
 | **React Doctor Score** | Violaciones de Hooks / Estado impuro | **100 / 100 Great (0 warnings, 0 issues)** | ✅ Perfecto |
 | **Verificación TypeScript** | Suprimido (`ignoreBuildErrors: true`) | **Estricto Nativo (0 errores en `tsc --noEmit`)** | ✅ Blindado |
-| **Compilación Next.js Turbopack** | build con advertencias | **Compilación limpia (10/10 rutas optimizadas)** | ✅ Producción |
-| **Transiciones CSS** | `transition-all` indiscriminado | **Propiedades específicas (`colors`, `transform`, etc.)** | ✅ Optimizado |
-| **Branch de Trabajo** | `ramaLucas` | **Actualizado y sincronizado en `origin/ramaLucas`** | ✅ Protegido |
+| **Compilación Next.js Turbopack** | build con advertencias | **Compilación limpia (11/11 rutas optimizadas)** | ✅ Producción |
+| **Catálogo de Ejercicios** | 20 ejercicios básicos | **+1.500 ejercicios con técnica GIF en bucle** | ✅ Completo |
+| **Branch de Trabajo** | `ramaLucas` | **Actualizado y sincronizado en `origin/ramaBruno`** | ✅ Protegido |
+
 
 
 

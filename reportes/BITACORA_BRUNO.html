@@ -407,6 +407,106 @@
         </div>
       </div>
     </div>
+  <!-- HITO 6 -->
+  <div class="mb-8 pt-8 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        6. Mejoras Críticas de Rutinas, Portal Alumno, Videoteca GIF y Tutorial PWA en Login
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        13 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento del cliente:</em> Incorporar modalidad de bi-series y drop sets con configurador de repeticiones; asignar tiempo de descanso entre series con contador interactivo; rediseñar la serie previa con alto contraste visual en sala; guiar al alumno para instalar la app como PWA al inicio de su teléfono; y migrar la videoteca técnica a loops de GIF continuo.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Bi-Series, Drop Sets y Descanso):</strong> Ampliación de contratos en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">lib/types.ts</code> con <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">TipoSerieEjercicio</code>, asignación de descanso (30s a 180s) y preconfiguración dinámica de repeticiones.</li>
+        <li><strong>Fase 2 (Serie Previa de Alto Contraste):</strong> Rediseño tipográfico de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">TablaSeries</code> en portal alumno con contenedor oscuro <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">bg-slate-900</code> y números blancos nítidos para visibilidad bajo cualquier iluminación.</li>
+        <li><strong>Fase 3 (Tutorial Visual PWA en Login):</strong> Panel explicativo paso a paso con pestañas para Android (Chrome) e iOS (Safari) guiando a los socios a anclar la app a su inicio sin pasar por tiendas.</li>
+        <li><strong>Fase 4 (Videoteca Biomecánica en GIF):</strong> Visualizador de técnica con bucle GIF automático continuo y badge de loop activo.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados y verificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>lib/types.ts (tipoSerie, descansoSegundos, formato GIF)</li>
+        <li>lib/rutina-utils.ts (formatPrevia de alto contraste)</li>
+        <li>app/rutinas/page.tsx (bi-series, drop sets, descanso y visualización)</li>
+        <li>app/login/page.tsx (tutorial visual interactivo PWA)</li>
+        <li>app/videoteca/page.tsx (reproductor de técnica en loop GIF)</li>
+        <li>app/api/ejercicios/route.ts (endpoint dinámico con filtros)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- HITO 7 -->
+  <div class="mb-8 pt-8 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        7. Catálogo Masivo de 1.500+ Ejercicios y Buscador Interactivo con Lupa en Rutinas
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        13 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento del cliente:</em> Dotar a la aplicación de un volumen real de gimnasio (+1.000 ejercicios) con técnica en GIF animado; y en lugar del menú desplegable tradicional en el creador de rutinas, implementar una lupita interactiva donde el profesor busque por nombre o grupo muscular y sume ejercicios en tiempo real.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Dataset de 1.500 Ejercicios con GIFs):</strong> Incorporación de la base de ExerciseDB en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">lib/data/exercises.json</code> con GIFs animados directos. Mapeo a los 6 grupos musculares en español (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Pecho</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Espalda</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Piernas</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Hombros</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Brazos</code>, <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Core</code>) preservando los ejercicios clásicos argentinos como prioritarios.</li>
+        <li><strong>Fase 2 (Buscador con Lupa Interactivo ModalBuscarEjercicioVideoteca):</strong> Retiro completo del <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">&lt;select&gt;</code> y <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">&lt;datalist&gt;</code>. Creación del modal interactivo con input reactivo insensible a acentos, chips por grupo muscular, miniaturas GIF de técnica y botón reactivo "+ Agregar" / "Agregado ✓" para incorporar múltiples ejercicios sin cerrar.</li>
+        <li><strong>Fase 3 (Validación y Push):</strong> Ejecución de suite de tests completa y compilación limpia en producción Turbopack, con despliegue en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">ramaBruno</code>.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados y verificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>lib/data/exercises.json (base de datos 1.500 ejercicios con GIFs)</li>
+        <li>lib/catalogo-ejercicios.ts (mapeo y clasificación muscular)</li>
+        <li>lib/ejercicios-catalogo.test.ts (pruebas unitarias de catálogo)</li>
+        <li>app/rutinas/page.tsx (ModalBuscarEjercicioVideoteca + botón con lupa)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests consolidados -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 10 passed (10)</p>
+          <p>• <strong>Tests individuales:</strong> 71 passed (71)</p>
+          <p>• <strong>Suites:</strong> <code class="font-mono">ejercicios-catalogo.test.ts</code>, <code class="font-mono">rutina-utils.test.ts</code>, <code class="font-mono">avisos.test.ts</code>, <code class="font-mono">finanzas.test.ts</code>, etc.</p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🚀 Production Build</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">CLEAN BUILD</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Rutas Next.js:</strong> 11/11 rutas estáticas y dinámicas optimizadas</p>
+          <p>• <strong>TypeScript Compiler:</strong> 0 errores con <code class="font-mono">tsc --noEmit</code></p>
+          <p>• <strong>Rendimiento en UI:</strong> Búsqueda instantánea &lt;1ms en catálogo de 1.500 ejercicios</p>
+          <p>• <strong>Sincronización:</strong> Desplegado en <code class="font-mono">origin/ramaBruno</code></p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
