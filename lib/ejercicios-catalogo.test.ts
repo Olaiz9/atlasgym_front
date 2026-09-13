@@ -5,6 +5,10 @@ import { buscarVideoParaEjercicio } from './rutina-utils'
 import { Ejercicio } from './types'
 
 describe('Catálogo de Ejercicios GIF y API', () => {
+  it('contiene una base masiva de más de 1.000 ejercicios', () => {
+    expect(CATALOGO_EJERCICIOS_GIF.length).toBeGreaterThanOrEqual(1000)
+  })
+
   it('contiene ejercicios para todos los grupos musculares principales', () => {
     const grupos = new Set(CATALOGO_EJERCICIOS_GIF.map((e) => e.grupoMuscular))
     expect(grupos.has('Pecho')).toBe(true)

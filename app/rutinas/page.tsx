@@ -472,6 +472,7 @@ function ModalNuevaRutina({
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [objetivo, setObjetivo] = useState('Hipertrofia')
+  const [diaParaBuscar, setDiaParaBuscar] = useState<string | null>(null)
   const [dias, setDias] = useState<DiaRutina[]>([
     {
       id: 'd-1',
@@ -483,15 +484,6 @@ function ModalNuevaRutina({
     },
   ])
 
-  const videosPorGrupo = useMemo(() => {
-    const grupos: Record<string, VideoTecnica[]> = {}
-    videosTecnica.forEach((v) => {
-      const grupo = v.grupoMuscular || 'Otros'
-      if (!grupos[grupo]) grupos[grupo] = []
-      grupos[grupo].push(v)
-    })
-    return grupos
-  }, [videosTecnica])
 
   const agregarDia = () => {
     const num = dias.length + 1
@@ -664,10 +656,8 @@ function ModalNuevaRutina({
                   key={dia.id}
                   dia={dia}
                   idx={idx}
-                  videosTecnica={videosTecnica}
-                  videosPorGrupo={videosPorGrupo}
+                  onAbrirBuscador={() => setDiaParaBuscar(dia.id)}
                   onActualizarNombre={(nombre) => actualizarNombreDia(dia.id, nombre)}
-                  onAgregarDesdeVideoteca={(titulo) => agregarEjercicioDesdeVideoteca(dia.id, titulo)}
                   onAgregarEjercicio={() => agregarEjercicioADia(dia.id)}
                   onActualizarEjercicio={(ejId, campo, valor) => actualizarEjercicio(dia.id, ejId, campo, valor)}
                   onEliminarEjercicio={(ejId) => eliminarEjercicio(dia.id, ejId)}
@@ -691,16 +681,18 @@ function ModalNuevaRutina({
               Guardar Rutina
             </button>
           </div>
-          {videosTecnica.length > 0 && (
-            <datalist id="lista-ejercicios-videoteca">
-              {videosTecnica.map((v) => (
-                <option key={v.id} value={v.titulo}>
-                  {v.grupoMuscular} — {v.nivel}
-                </option>
-              ))}
-            </datalist>
-          )}
         </form>
+
+        {diaParaBuscar && (
+          <ModalBuscarEjercicioVideoteca
+            diaNombre={dias.find((d) => d.id === diaParaBuscar)?.nombre}
+            videosTecnica={videosTecnica}
+            onSeleccionar={(video) => {
+              agregarEjercicioDesdeVideoteca(diaParaBuscar, video.titulo)
+            }}
+            onClose={() => setDiaParaBuscar(null)}
+          />
+        )}
       </div>
     </div>
   )
@@ -710,20 +702,16 @@ function ModalNuevaRutina({
 function TarjetaDiaRutina({
   dia,
   idx,
-  videosTecnica,
-  videosPorGrupo,
+  onAbrirBuscador,
   onActualizarNombre,
-  onAgregarDesdeVideoteca,
   onAgregarEjercicio,
   onActualizarEjercicio,
   onEliminarEjercicio,
 }: {
   dia: DiaRutina
   idx: number
-  videosTecnica: VideoTecnica[]
-  videosPorGrupo: Record<string, VideoTecnica[]>
+  onAbrirBuscador: () => void
   onActualizarNombre: (nombre: string) => void
-  onAgregarDesdeVideoteca: (titulo: string) => void
   onAgregarEjercicio: () => void
   onActualizarEjercicio: (ejId: string, campo: string, valor: any) => void
   onEliminarEjercicio: (ejId: string) => void
@@ -738,32 +726,15 @@ function TarjetaDiaRutina({
           className="font-bold text-sm bg-white px-3 py-1.5 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 flex-1"
         />
         <div className="flex items-center gap-1.5 shrink-0">
-          {videosTecnica.length > 0 && (
-            <select
-              aria-label={`Elegir ejercicio de videoteca para ${dia.nombre}`}
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value) {
-                  onAgregarDesdeVideoteca(e.target.value)
-                  e.target.value = ''
-                }
-              }}
-              className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 outline-none hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              <option value="" disabled>
-                + Desde Videoteca...
-              </option>
-              {Object.entries(videosPorGrupo).map(([grupo, vids]) => (
-                <optgroup key={grupo} label={grupo}>
-                  {vids.map((v) => (
-                    <option key={v.id} value={v.titulo}>
-                      {v.titulo} ({v.nivel})
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          )}
+          <button
+            type="button"
+            onClick={onAbrirBuscador}
+            className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+            title="Buscar en la videoteca de ejercicios"
+          >
+            <Search className="size-3.5 text-blue-600" />
+            <span>Buscar en Videoteca</span>
+          </button>
           <button
             type="button"
             onClick={onAgregarEjercicio}
@@ -781,12 +752,20 @@ function TarjetaDiaRutina({
             <div className="flex items-center gap-2">
               <input
                 aria-label="Nombre del ejercicio"
-                list="lista-ejercicios-videoteca"
                 value={ej.nombre}
                 onChange={(e) => onActualizarEjercicio(ej.id, 'nombre', e.target.value)}
-                placeholder="Nombre del ejercicio o videoteca..."
+                placeholder="Nombre del ejercicio..."
                 className="flex-1 font-semibold outline-none text-slate-800 placeholder:text-slate-400 bg-slate-50/70 px-3 py-1.5 rounded-lg border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
               />
+              <button
+                type="button"
+                onClick={onAbrirBuscador}
+                className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors shrink-0"
+                title="Buscar o sumar desde la videoteca"
+                aria-label="Buscar en videoteca"
+              >
+                <Search className="size-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => onEliminarEjercicio(ej.id)}
@@ -877,6 +856,257 @@ function TarjetaDiaRutina({
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Modal para Buscar y Seleccionar Ejercicios de la Videoteca ─────────────
+function ModalBuscarEjercicioVideoteca({
+  diaNombre,
+  videosTecnica,
+  onSeleccionar,
+  onClose,
+}: {
+  diaNombre?: string
+  videosTecnica: VideoTecnica[]
+  onSeleccionar: (video: VideoTecnica) => void
+  onClose: () => void
+}) {
+  const [busqueda, setBusqueda] = useState('')
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState('TODOS')
+  const [recientesAgregados, setRecientesAgregados] = useState<Record<string, boolean>>({})
+  const [contadorAgregados, setContadorAgregados] = useState(0)
+
+  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+
+  const normalizar = (texto: string) =>
+    texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+
+  const ejerciciosFiltrados = useMemo(() => {
+    const queryNorm = normalizar(busqueda.trim())
+    const palabras = queryNorm.split(/\s+/).filter(Boolean)
+
+    return videosTecnica.filter((v) => {
+      if (grupoSeleccionado !== 'TODOS' && v.grupoMuscular !== grupoSeleccionado) {
+        return false
+      }
+      if (palabras.length === 0) return true
+
+      const titNorm = normalizar(v.titulo)
+      const descNorm = normalizar(v.descripcion || '')
+      const gNorm = normalizar(v.grupoMuscular || '')
+
+      return palabras.every((p) => titNorm.includes(p) || descNorm.includes(p) || gNorm.includes(p))
+    })
+  }, [videosTecnica, busqueda, grupoSeleccionado])
+
+  const visibles = useMemo(() => ejerciciosFiltrados.slice(0, 50), [ejerciciosFiltrados])
+
+  const handleAgregar = (video: VideoTecnica) => {
+    onSeleccionar(video)
+    setContadorAgregados((prev) => prev + 1)
+    setRecientesAgregados((prev) => ({ ...prev, [video.id]: true }))
+    setTimeout(() => {
+      setRecientesAgregados((prev) => ({ ...prev, [video.id]: false }))
+    }, 1800)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-3 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Cabecera */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-black text-slate-900">Videoteca de Ejercicios</h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                {videosTecnica.length.toLocaleString('es-AR')} ejercicios
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {diaNombre ? `Agregando a: ${diaNombre}` : 'Buscá por nombre o grupo muscular para sumarlo a la rutina'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar buscador"
+            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Buscador y Filtros */}
+        <div className="p-4 bg-slate-50/70 border-b border-slate-200 space-y-3">
+          <div className="relative">
+            <Search className="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              autoFocus
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Escribí para buscar (ej: press banca, sentadilla, curl, dominadas, triceps)..."
+              className="w-full pl-10 pr-9 py-2.5 bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            />
+            {busqueda && (
+              <button
+                type="button"
+                onClick={() => setBusqueda('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                title="Limpiar búsqueda"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Chips de Grupo Muscular */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {GRUPOS.map((grupo) => {
+              const activo = grupoSeleccionado === grupo
+              return (
+                <button
+                  key={grupo}
+                  type="button"
+                  onClick={() => setGrupoSeleccionado(grupo)}
+                  className={`px-3 py-1 rounded-lg font-bold whitespace-nowrap transition-colors ${
+                    activo
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {grupo === 'TODOS' ? 'Todos los grupos' : grupo}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Resultados */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-slate-100">
+          {visibles.length === 0 ? (
+            <div className="text-center py-12 px-4 space-y-3">
+              <div className="size-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                <Search className="size-6" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">No encontramos ejercicios coincidentes</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Probá buscando con otra palabra clave o limpiando el filtro de grupo muscular.
+                </p>
+              </div>
+              {(busqueda || grupoSeleccionado !== 'TODOS') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBusqueda('')
+                    setGrupoSeleccionado('TODOS')
+                  }}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 underline"
+                >
+                  Restablecer filtros
+                </button>
+              )}
+            </div>
+          ) : (
+            visibles.map((ejercicio) => {
+              const agregado = recientesAgregados[ejercicio.id]
+              return (
+                <div
+                  key={ejercicio.id}
+                  className="pt-2 first:pt-0 flex items-center justify-between gap-3 hover:bg-blue-50/50 p-2 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={ejercicio.gifUrl || ejercicio.videoUrl}
+                      alt={ejercicio.titulo}
+                      className="size-14 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                      loading="lazy"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                          {ejercicio.grupoMuscular}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                          {ejercicio.nivel}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-1">
+                        {ejercicio.titulo}
+                      </h4>
+                      {ejercicio.descripcion && (
+                        <p className="text-[11px] text-slate-500 line-clamp-1">
+                          {ejercicio.descripcion}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAgregar(ejercicio)}
+                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[background-color,transform,color] active:scale-95 ${
+                      agregado
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                    }`}
+                  >
+                    {agregado ? (
+                      <>
+                        <Check className="size-3.5" />
+                        <span>Agregado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-3.5" />
+                        <span>Agregar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )
+            })
+          )}
+
+          {ejerciciosFiltrados.length > 50 && (
+            <div className="text-center py-3 text-xs text-slate-400 font-medium">
+              Mostrando los primeros 50 de {ejerciciosFiltrados.length} resultados. Escribí más letras para afinar la búsqueda.
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <span className="text-xs text-slate-600 font-medium">
+            {contadorAgregados > 0 ? (
+              <span className="text-emerald-700 font-bold">
+                ✓ {contadorAgregados} ejercicio{contadorAgregados > 1 ? 's' : ''} sumado{contadorAgregados > 1 ? 's' : ''}
+              </span>
+            ) : (
+              `${ejerciciosFiltrados.length} ejercicios disponibles`
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-colors"
+          >
+            Listo, volver a la rutina
+          </button>
+        </div>
       </div>
     </div>
   )

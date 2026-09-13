@@ -1,5 +1,6 @@
 // lib/catalogo-ejercicios.ts
 import { VideoTecnica } from './types'
+import rawExercises from './data/exercises.json'
 
 export interface EjercicioCatalogo extends VideoTecnica {
   exerciseId: string
@@ -10,8 +11,46 @@ export interface EjercicioCatalogo extends VideoTecnica {
   instruccionesPasoAPaso: string[]
 }
 
-export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
-  // ── PECHO ───────────────────────────────────────────────────────────
+const BODY_PART_MAP: Record<string, 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Core'> = {
+  chest: 'Pecho',
+  back: 'Espalda',
+  'upper legs': 'Piernas',
+  'lower legs': 'Piernas',
+  shoulders: 'Hombros',
+  neck: 'Hombros',
+  'upper arms': 'Brazos',
+  'lower arms': 'Brazos',
+  waist: 'Core',
+  cardio: 'Piernas',
+}
+
+const EQUIPMENT_MAP: Record<string, string> = {
+  barbell: 'Barra',
+  dumbbell: 'Mancuerna',
+  cable: 'Polea',
+  machine: 'Máquina',
+  'body weight': 'Peso corporal',
+  'body only': 'Peso corporal',
+  band: 'Banda elástica',
+  kettlebell: 'Pesa rusa',
+  leverage: 'Palanca / Máquina',
+  smith: 'Máquina Smith',
+  sled: 'Trineo',
+  ball: 'Balón',
+  roller: 'Rodillo',
+}
+
+function capitalizar(str: string): string {
+  if (!str) return ''
+  return str
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
+}
+
+// ── Ejercicios clásicos traducidos y destacados ────────────────────────────
+const CLASICOS_CURADOS: EjercicioCatalogo[] = [
+  // PECHO
   {
     id: 'cat-pecho-1',
     exerciseId: 'EIeI8Vf',
@@ -24,20 +63,19 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/EIeI8Vf.gif',
     gifUrl: 'https://static.exercisedb.dev/media/EIeI8Vf.gif',
-    descripcion: 'Ejercicio rey para desarrollo del pectoral mayor, tríceps y deltoides anterior con técnica de retracción escapular.',
+    descripcion: 'Ejercicio fundamental para pectoral mayor, deltoides anterior y tríceps.',
     musculosPrincipales: ['Pectoral mayor', 'Tríceps braquial'],
     musculosSecundarios: ['Deltoides anterior', 'Core'],
     consejosClave: [
-      'Mantené las escápulas retraídas y deprimidas apoyadas firmes en el banco.',
-      'Bajá la barra a la altura del esternón medio con los codos a 45°-60° del torso.',
-      'Empujá con los pies contra el suelo (leg drive) para estabilizar todo el cuerpo.',
+      'Retracción escapular firme contra el banco.',
+      'Bajá la barra a la altura del esternón con codos a 45°-60°.',
+      'Empujá con los pies contra el suelo (leg drive).',
     ],
     instruccionesPasoAPaso: [
-      'Acostate en el banco con los ojos alineados debajo de la barra.',
-      'Tomá la barra con un agarre ligeramente más ancho que los hombros.',
-      'Desenganchá la barra y posicionala directamente sobre el pecho.',
-      'Inhalá, descendé controladamente hasta rozar el esternón.',
-      'Empujá con potencia exhalando hasta extender los brazos sin bloquear agresivamente los codos.',
+      'Acostate en el banco con los ojos alineados con la barra.',
+      'Tomá la barra con agarre ligeramente más ancho que los hombros.',
+      'Descendé controladamente hasta rozar el esternón.',
+      'Empujá con potencia exhalando hasta extender los brazos.',
     ],
   },
   {
@@ -52,16 +90,16 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Mancuerna',
     videoUrl: 'https://static.exercisedb.dev/media/ns0SIbU.gif',
     gifUrl: 'https://static.exercisedb.dev/media/ns0SIbU.gif',
-    descripcion: 'Enfocado en el haz clavicular (pectoral superior) con mayor rango de movimiento y menor estrés articular.',
+    descripcion: 'Enfocado en el haz clavicular (pectoral superior) con gran rango de movimiento.',
     musculosPrincipales: ['Pectoral superior (clavicular)'],
     musculosSecundarios: ['Deltoides anterior', 'Tríceps'],
     consejosClave: [
-      'Ajustá el banco a una inclinación de entre 30° y 45° (mayor inclinación pasa el trabajo al hombro).',
-      'No choques las mancuernas arriba para mantener la tensión constante en el pectoral.',
+      'Ajustá el banco entre 30° y 45°.',
+      'No choques las mancuernas arriba para mantener tensión constante.',
     ],
     instruccionesPasoAPaso: [
-      'Sentate con las mancuernas en los muslos e impulsalas hacia el pecho al acostarte.',
-      'Mantené los codos en diagonal neutra y bajá sintiendo el estiramiento del pectoral superior.',
+      'Sentate con mancuernas en los muslos e impulsalas al acostarte.',
+      'Bajá sintiendo el estiramiento del pectoral superior.',
       'Empujá de forma convergente hacia arriba.',
     ],
   },
@@ -77,21 +115,14 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/WcHl7ru.gif',
     gifUrl: 'https://static.exercisedb.dev/media/WcHl7ru.gif',
-    descripcion: 'Variante de empuje que maximiza la activación en la porción esternal y la cabeza lateral del tríceps.',
+    descripcion: 'Empuje que focaliza la porción esternal y la cabeza lateral del tríceps.',
     musculosPrincipales: ['Pectoral medio', 'Tríceps'],
     musculosSecundarios: ['Hombros'],
-    consejosClave: [
-      'Agarre al ancho de hombros, no más cerrado para cuidar muñecas.',
-      'Codos pegados a los costados durante todo el recorrido.',
-    ],
-    instruccionesPasoAPaso: [
-      'Ubicá las manos al ancho de los hombros.',
-      'Descendé la barra hacia la parte baja del pecho manteniendo codos cerrados.',
-      'Empujá focalizando la fuerza en la extensión de tríceps y pecho.',
-    ],
+    consejosClave: ['Agarre al ancho de hombros, codos pegados al cuerpo.'],
+    instruccionesPasoAPaso: ['Descendé la barra hacia el pecho bajo y empujá con tríceps.'],
   },
 
-  // ── ESPALDA ─────────────────────────────────────────────────────────
+  // ESPALDA
   {
     id: 'cat-espalda-1',
     exerciseId: 'qdRxqCj',
@@ -104,19 +135,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Polea',
     videoUrl: 'https://static.exercisedb.dev/media/qdRxqCj.gif',
     gifUrl: 'https://static.exercisedb.dev/media/qdRxqCj.gif',
-    descripcion: 'Ejercicio fundamental para amplitud y desarrollo del dorsal ancho y redondo mayor.',
+    descripcion: 'Clásico para amplitud y densidad del dorsal ancho.',
     musculosPrincipales: ['Dorsal ancho', 'Redondo mayor'],
-    musculosSecundarios: ['Bíceps braquial', 'Trapecio medio'],
-    consejosClave: [
-      'Llevá la barra a la parte alta del esternón pensando en bajar con los codos, no tirando con las manos.',
-      'Mantené una leve inclinación del torso hacia atrás (10°-15°) sin balancearte con la inercia.',
-    ],
-    instruccionesPasoAPaso: [
-      'Ajustá el rodillo para fijar bien las piernas en el banco.',
-      'Tomá la barra con agarre prono abierto.',
-      'Iniciá deprimiendo las escápulas y flexioná los codos hacia abajo y atrás.',
-      'Pausa de 1 segundo abajo y controlá el retorno sintiendo el estiramiento dorsal.',
-    ],
+    musculosSecundarios: ['Bíceps braquial'],
+    consejosClave: ['Tirá pensando en llevar los codos hacia abajo y atrás.'],
+    instruccionesPasoAPaso: ['Llevá la barra a la parte alta del esternón y controlá el retorno.'],
   },
   {
     id: 'cat-espalda-2',
@@ -130,20 +153,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/ila4NZS.gif',
     gifUrl: 'https://static.exercisedb.dev/media/ila4NZS.gif',
-    descripcion: 'El levantamiento definitivo de cadena posterior: erectores espinales, dorsales, glúteos e isquiosurales.',
+    descripcion: 'Levantamiento definitivo de cadena posterior completa.',
     musculosPrincipales: ['Erectores espinales', 'Dorsales', 'Glúteos'],
-    musculosSecundarios: ['Isquiosurales', 'Trapecios', 'Antebrazos'],
-    consejosClave: [
-      'La barra debe subir y bajar pegada a las tibias y muslos en línea vertical recta.',
-      'Activá el dorsal pensando en doblar la barra contra tus piernas antes de levantar.',
-      'Columna neutra: no redondear la zona lumbar ni hiperextender el cuello.',
-    ],
-    instruccionesPasoAPaso: [
-      'Pies al ancho de cadera, barra sobre la mitad de los pies.',
-      'Bajá caderas empujando hacia atrás y tomá la barra justo por fuera de las rodillas.',
-      'Tensioná dorsales y abdomen con respiración diafragmática.',
-      'Empujá el suelo con las piernas y extendé cadera y rodillas al unísono.',
-    ],
+    musculosSecundarios: ['Isquiosurales', 'Trapecios'],
+    consejosClave: ['Barra pegada a las piernas, columna neutra en todo momento.'],
+    instruccionesPasoAPaso: ['Levantá empujando el piso con las piernas y extendé la cadera.'],
   },
   {
     id: 'cat-espalda-3',
@@ -157,22 +171,14 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/wQ2c4XD.gif',
     gifUrl: 'https://static.exercisedb.dev/media/wQ2c4XD.gif',
-    descripcion: 'Bisagra de cadera estricta que potencia isquios, glúteos y estabilidad lumbar.',
+    descripcion: 'Bisagra de cadera pura para isquiotibiales y glúteos.',
     musculosPrincipales: ['Isquiotibiales', 'Glúteo mayor'],
-    musculosSecundarios: ['Lumbares', 'Dorsales'],
-    consejosClave: [
-      'Empujá la cadera hacia la pared de atrás manteniendo rodillas semirrígidas.',
-      'Descendé sólo hasta donde tu flexibilidad mantenga la espalda perfectamente recta.',
-    ],
-    instruccionesPasoAPaso: [
-      'De pie con la barra sostenida a la altura de los muslos.',
-      'Iniciá el movimiento llevando las caderas hacia atrás.',
-      'Deslizá la barra rozando los muslos hasta justo debajo de las rodillas.',
-      'Apretá glúteos para volver a la posición erguida.',
-    ],
+    musculosSecundarios: ['Lumbares'],
+    consejosClave: ['Empujá la cadera hacia atrás con rodillas semirrígidas.'],
+    instruccionesPasoAPaso: ['Deslizá la barra por los muslos y apretá glúteos para subir.'],
   },
 
-  // ── PIERNAS ─────────────────────────────────────────────────────────
+  // PIERNAS
   {
     id: 'cat-piernas-1',
     exerciseId: 'DhMl549',
@@ -185,20 +191,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/DhMl549.gif',
     gifUrl: 'https://static.exercisedb.dev/media/DhMl549.gif',
-    descripcion: 'El ejercicio base de tren inferior para hipertrofia y fuerza funcional en cuádriceps y glúteos.',
+    descripcion: 'Ejercicio fundamental de tren inferior para cuádriceps y glúteos.',
     musculosPrincipales: ['Cuádriceps', 'Glúteo mayor'],
-    musculosSecundarios: ['Aductores', 'Core', 'Gemelos'],
-    consejosClave: [
-      'Inhalá profundo inflando el abdomen antes de descender (maniobra de Valsalva).',
-      'Dirigí las rodillas hacia afuera en la misma línea que la punta de tus pies.',
-      'Mantené el peso centrado sobre todo el trípode del pie.',
-    ],
-    instruccionesPasoAPaso: [
-      'Apoyá la barra sobre los trapecios o deltoides posterior.',
-      'Pies separados al ancho de hombros con puntas ligeramente abiertas.',
-      'Flexioná rodillas y cadera simultáneamente descendiendo con control.',
-      'Alcanzá profundidad paralela o profunda y subí empujando el suelo con fuerza.',
-    ],
+    musculosSecundarios: ['Core', 'Aductores'],
+    consejosClave: ['Rodillas en dirección de las puntas de los pies, profundidad paralela.'],
+    instruccionesPasoAPaso: ['Descendé flexionando rodillas y cadera, y subí empujando el suelo.'],
   },
   {
     id: 'cat-piernas-2',
@@ -212,19 +209,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Máquina',
     videoUrl: 'https://static.exercisedb.dev/media/yn2lLSI.gif',
     gifUrl: 'https://static.exercisedb.dev/media/yn2lLSI.gif',
-    descripcion: 'Sobrecarga masiva en cuádriceps y glúteos con soporte en la columna lumbar.',
+    descripcion: 'Sobrecarga en cuádriceps y glúteos con apoyo lumbar.',
     musculosPrincipales: ['Cuádriceps', 'Glúteos'],
     musculosSecundarios: ['Isquiosurales'],
-    consejosClave: [
-      'No despegues la zona lumbar ni el coxis del respaldo en el punto más profundo.',
-      'No bloquees las rodillas al extender para evitar estrés en la articulación.',
-    ],
-    instruccionesPasoAPaso: [
-      'Apoyá la espalda completa contra el respaldo y colocá los pies al centro de la plataforma.',
-      'Liberá los seguros laterales con control.',
-      'Descendé flexionando rodillas a 90° de manera pausada.',
-      'Empujá desde los talones y mediopié hasta volver sin trabar rodillas.',
-    ],
+    consejosClave: ['No despegues la zona lumbar del respaldo en el punto profundo.'],
+    instruccionesPasoAPaso: ['Flexioná rodillas a 90° y empujá desde los talones.'],
   },
   {
     id: 'cat-piernas-3',
@@ -238,46 +227,14 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Máquina',
     videoUrl: 'https://static.exercisedb.dev/media/17lJ1kr.gif',
     gifUrl: 'https://static.exercisedb.dev/media/17lJ1kr.gif',
-    descripcion: 'Aislamiento directo de la flexión de rodilla en isquiosurales (bíceps femoral, semitendinoso y semimembranoso).',
+    descripcion: 'Aislamiento de flexión de rodilla para isquiotibiales.',
     musculosPrincipales: ['Isquiotibiales'],
     musculosSecundarios: ['Gemelos'],
-    consejosClave: [
-      'Pegá la pelvis al banco: no arquees la zona lumbar al flexionar.',
-      'Controlá los 2 segundos de bajada para estimular la contracción excéntrica.',
-    ],
-    instruccionesPasoAPaso: [
-      'Ajustá la almohadilla detrás de los tobillos justo debajo de los gemelos.',
-      'Sujetá los mangos frontales para estabilizar el torso.',
-      'Flexioná las piernas llevando los talones hacia los glúteos.',
-      'Pausa en el pico de contracción y retorná lentamente.',
-    ],
-  },
-  {
-    id: 'cat-piernas-4',
-    exerciseId: 'VW88JNd',
-    titulo: 'Elevación de Talones para Gemelos',
-    nombreIngles: 'Calf Raise',
-    grupoMuscular: 'Piernas',
-    duracion: 'Loop GIF',
-    formato: 'GIF',
-    nivel: 'Aislamiento',
-    equipo: 'Mancuerna',
-    videoUrl: 'https://static.exercisedb.dev/media/VW88JNd.gif',
-    gifUrl: 'https://static.exercisedb.dev/media/VW88JNd.gif',
-    descripcion: 'Estiramiento y contracción completa para desarrollo de gemelos y sóleo.',
-    musculosPrincipales: ['Gastrocnemio (gemelos)', 'Sóleo'],
-    musculosSecundarios: ['Tobillo'],
-    consejosClave: [
-      'Hacé una pausa de 1 segundo abajo en máximo estiramiento para eliminar el rebote del tendón de Aquiles.',
-    ],
-    instruccionesPasoAPaso: [
-      'Apoyá la bola del pie sobre un escalón o tarima.',
-      'Elevate sobre la punta del pie contrayendo fuertemente el gemelo.',
-      'Descendé por debajo de la línea paralela sintiendo el estiramiento.',
-    ],
+    consejosClave: ['Pelvis pegada al banco, bajada controlada en 2 segundos.'],
+    instruccionesPasoAPaso: ['Flexioná piernas llevando talones hacia los glúteos.'],
   },
 
-  // ── HOMBROS ─────────────────────────────────────────────────────────
+  // HOMBROS
   {
     id: 'cat-hombros-1',
     exerciseId: 'DsgkuIt',
@@ -290,19 +247,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Mancuerna',
     videoUrl: 'https://static.exercisedb.dev/media/DsgkuIt.gif',
     gifUrl: 'https://static.exercisedb.dev/media/DsgkuIt.gif',
-    descripcion: 'El ejercicio clave para dar amplitud y forma redonda a la cabeza lateral del deltoides.',
+    descripcion: 'Aislamiento de la cabeza lateral del deltoides para dar amplitud.',
     musculosPrincipales: ['Deltoides lateral'],
     musculosSecundarios: ['Trapecios'],
-    consejosClave: [
-      'Incliná el torso 5°-10° hacia adelante y elevá en el plano escapular (30° hacia el frente).',
-      'Pensá en empujar las paredes hacia los lados con los codos, no en levantar con las muñecas.',
-    ],
-    instruccionesPasoAPaso: [
-      'De pie con una mancuerna en cada mano a los costados del cuerpo.',
-      'Codos semiflexionados de forma fija.',
-      'Elevá los brazos lateralmente hasta la altura de los hombros.',
-      'Descendé resistiendo la gravedad sin balancear el torso.',
-    ],
+    consejosClave: ['Elevá en el plano escapular con codos semiflexionados.'],
+    instruccionesPasoAPaso: ['Subí hasta la altura de los hombros y resistí la bajada.'],
   },
   {
     id: 'cat-hombros-2',
@@ -316,21 +265,14 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Mancuerna',
     videoUrl: 'https://static.exercisedb.dev/media/bBi35y3.gif',
     gifUrl: 'https://static.exercisedb.dev/media/bBi35y3.gif',
-    descripcion: 'Empuje vertical para masa global en hombros y tríceps con libertad de movimiento en las muñecas.',
+    descripcion: 'Empuje vertical para hombros completos y tríceps.',
     musculosPrincipales: ['Deltoides anterior', 'Deltoides lateral'],
-    musculosSecundarios: ['Tríceps', 'Trapecio superior'],
-    consejosClave: [
-      'No abras los codos a 90° en cruz: mantenelos ligeramente orientados hacia adelante a 60°.',
-      'Glúteos y core firmes para no arquear en exceso la zona lumbar.',
-    ],
-    instruccionesPasoAPaso: [
-      'Posicioná las mancuernas a la altura de las orejas.',
-      'Empujá hacia arriba verticalmente sin chocar las mancuernas en el punto más alto.',
-      'Descendé de forma controlada hasta el nivel de la barbilla.',
-    ],
+    musculosSecundarios: ['Tríceps'],
+    consejosClave: ['Codos ligeramente al frente a 60°, abdomen firme.'],
+    instruccionesPasoAPaso: ['Empujá hacia arriba verticalmente y controlá el descenso.'],
   },
 
-  // ── BRAZOS ──────────────────────────────────────────────────────────
+  // BRAZOS
   {
     id: 'cat-brazos-1',
     exerciseId: '6TG6x2w',
@@ -343,19 +285,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Barra',
     videoUrl: 'https://static.exercisedb.dev/media/6TG6x2w.gif',
     gifUrl: 'https://static.exercisedb.dev/media/6TG6x2w.gif',
-    descripcion: 'La barra Z permite un agarre semi-supino ergonómico que cuida los tendones de la muñeca.',
+    descripcion: 'Agarre ergonómico semi-supino para desarrollo de bíceps.',
     musculosPrincipales: ['Bíceps braquial'],
-    musculosSecundarios: ['Braquial anterior', 'Braquiorradial'],
-    consejosClave: [
-      'Codos pegados a las costillas y fijos en el espacio: no los lleves hacia adelante ni hacia atrás.',
-      'Apretá el bíceps arriba 1 segundo y bajá extendiendo casi por completo sin descolgar el hombro.',
-    ],
-    instruccionesPasoAPaso: [
-      'Tomá la barra EZ en las curvaturas internas con palmas hacia arriba.',
-      'Parate erguido con pies al ancho de caderas.',
-      'Flexioná los codos elevando la barra hacia el pecho sin impulsarte con la espalda.',
-      'Bajá controlando el descenso en 2 segundos.',
-    ],
+    musculosSecundarios: ['Braquial anterior'],
+    consejosClave: ['Codos pegados al cuerpo, sin balanceo de espalda.'],
+    instruccionesPasoAPaso: ['Flexioná los codos elevando la barra y apretá arriba 1 seg.'],
   },
   {
     id: 'cat-brazos-2',
@@ -369,17 +303,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Mancuerna',
     videoUrl: 'https://static.exercisedb.dev/media/GNhAeJ0.gif',
     gifUrl: 'https://static.exercisedb.dev/media/GNhAeJ0.gif',
-    descripcion: 'Agarre neutro con palmas enfrentadas para desarrollar el braquial y ganar grosor en el brazo y antebrazo.',
+    descripcion: 'Agarre neutro para braquial y antebrazos.',
     musculosPrincipales: ['Braquial', 'Braquiorradial'],
-    musculosSecundarios: ['Bíceps braquial'],
-    consejosClave: [
-      'Mantené las palmas mirándose entre sí durante todo el movimiento sin rotar las muñecas.',
-    ],
-    instruccionesPasoAPaso: [
-      'Sujetá un par de mancuernas con agarre neutro.',
-      'Flexioná los codos levantando las mancuernas como si usaras un martillo.',
-      'Contrae en el punto alto y descendé con control.',
-    ],
+    musculosSecundarios: ['Bíceps'],
+    consejosClave: ['Palmas enfrentadas durante todo el recorrido.'],
+    instruccionesPasoAPaso: ['Elevá las mancuernas manteniendo las palmas paralelas.'],
   },
   {
     id: 'cat-brazos-3',
@@ -393,22 +321,14 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Polea',
     videoUrl: 'https://static.exercisedb.dev/media/3ZflifB.gif',
     gifUrl: 'https://static.exercisedb.dev/media/3ZflifB.gif',
-    descripcion: 'Aislamiento directo y seguro de las cabezas lateral y medial del tríceps.',
+    descripcion: 'Aislamiento directo de tríceps en polea alta.',
     musculosPrincipales: ['Tríceps braquial'],
     musculosSecundarios: ['Antebrazos'],
-    consejosClave: [
-      'Codos bloqueados pegados a los costados: sólo el antebrazo se mueve.',
-      'Bloqueá la extensión completa abajo sintiendo la contracción profunda.',
-    ],
-    instruccionesPasoAPaso: [
-      'Tomá la barra recta o en V en polea alta.',
-      'Leve inclinación del torso al frente con codos fijos.',
-      'Empujá hacia abajo hasta la extensión total de los codos.',
-      'Regresá a 90° sin mover los brazos de lugar.',
-    ],
+    consejosClave: ['Codos fijos a los costados, extensión total abajo.'],
+    instruccionesPasoAPaso: ['Empujá hacia abajo hasta trabar la extensión de codos.'],
   },
 
-  // ── CORE ────────────────────────────────────────────────────────────
+  // CORE
   {
     id: 'cat-core-1',
     exerciseId: 'VBAWRPG',
@@ -421,18 +341,11 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Peso corporal',
     videoUrl: 'https://static.exercisedb.dev/media/VBAWRPG.gif',
     gifUrl: 'https://static.exercisedb.dev/media/VBAWRPG.gif',
-    descripcion: 'Pilar fundamental de estabilidad antiextensión para proteger la columna lumbar.',
-    musculosPrincipales: ['Recto abdominal', 'Transverso del abdomen'],
-    musculosSecundarios: ['Glúteos', 'Hombros'],
-    consejosClave: [
-      'Apretá glúteos y cuádriceps: el cuerpo debe formar una línea recta de la cabeza a los talones.',
-      'Empujá el suelo con los antebrazos para no hundir el pecho entre los omóplatos.',
-    ],
-    instruccionesPasoAPaso: [
-      'Apoyate sobre los antebrazos y las puntas de los pies.',
-      'Alineá los codos exactamente debajo de los hombros.',
-      'Mantené la contracción isométrica respirando de forma continua.',
-    ],
+    descripcion: 'Estabilidad antiextensión para todo el cinturón abdominal.',
+    musculosPrincipales: ['Recto abdominal', 'Transverso'],
+    musculosSecundarios: ['Glúteos'],
+    consejosClave: ['Cuerpo en línea recta de cabeza a talones, glúteos contraídos.'],
+    instruccionesPasoAPaso: ['Apoyate sobre antebrazos y puntas de pies manteniendo tensión.'],
   },
   {
     id: 'cat-core-2',
@@ -446,18 +359,53 @@ export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
     equipo: 'Peso corporal',
     videoUrl: 'https://static.exercisedb.dev/media/I3tsCnC.gif',
     gifUrl: 'https://static.exercisedb.dev/media/I3tsCnC.gif',
-    descripcion: 'Uno de los ejercicios más potentes para la porción inferior del recto abdominal y flexores de cadera.',
+    descripcion: 'Máxima activación para porción inferior del abdomen.',
     musculosPrincipales: ['Recto abdominal inferior'],
-    musculosSecundarios: ['Iliopsoas', 'Dorsales', 'Antebrazos'],
-    consejosClave: [
-      'No te limites a levantar las piernas: enrollá la pelvis hacia el pecho para que trabaje el abdomen.',
-      'Evitá el balanceo o péndulo del cuerpo usando la fuerza dorsal para frenar.',
-    ],
-    instruccionesPasoAPaso: [
-      'Colgate de una barra de dominadas con agarre prono firme.',
-      'Sin balancearte, elevá las piernas rectas o flexionadas hacia el pecho.',
-      'Pausa arriba contrayendo el abdomen.',
-      'Descendé lentamente hasta la posición inicial.',
-    ],
+    musculosSecundarios: ['Flexores de cadera'],
+    consejosClave: ['Enrollá la pelvis hacia el pecho, evitá el balanceo.'],
+    instruccionesPasoAPaso: ['Colgate de una barra y elevá las piernas contrayendo el abdomen.'],
   },
+]
+
+// Identificadores de los ya cargados para evitar duplicados
+const idsCurados = new Set(CLASICOS_CURADOS.map((c) => c.exerciseId))
+
+// ── Mapeo dinámico de los 1.500 ejercicios restantes ───────────────────────
+const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
+  .filter((raw) => !idsCurados.has(raw.exerciseId))
+  .map((raw) => {
+    const rawBody = (raw.bodyParts && raw.bodyParts[0]) ? String(raw.bodyParts[0]).toLowerCase() : 'chest'
+    const grupo = BODY_PART_MAP[rawBody] || 'Core'
+
+    const rawEquip = (raw.equipments && raw.equipments[0]) ? String(raw.equipments[0]).toLowerCase() : 'body weight'
+    const equipo = EQUIPMENT_MAP[rawEquip] || capitalizar(rawEquip)
+
+    const nombreFormateado = capitalizar(raw.name)
+
+    return {
+      id: `ex-${raw.exerciseId}`,
+      exerciseId: raw.exerciseId,
+      titulo: nombreFormateado,
+      nombreIngles: raw.name,
+      grupoMuscular: grupo,
+      duracion: 'Loop GIF',
+      formato: 'GIF',
+      nivel: 'Técnica estricta',
+      equipo: equipo,
+      videoUrl: raw.gifUrl,
+      gifUrl: raw.gifUrl,
+      descripcion: Array.isArray(raw.instructions) ? raw.instructions.slice(0, 2).join(' ') : 'Técnica guiada en bucle.',
+      musculosPrincipales: raw.targetMuscles || [grupo],
+      musculosSecundarios: raw.secondaryMuscles || [],
+      consejosClave: Array.isArray(raw.instructions) ? raw.instructions.slice(0, 3) : ['Ejecutar con rango completo de movimiento.'],
+      instruccionesPasoAPaso: Array.isArray(raw.instructions) ? raw.instructions : [],
+    }
+  })
+
+/**
+ * Catálogo completo unificado de más de 1.500 ejercicios con demostraciones en bucle (GIF).
+ */
+export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
+  ...CLASICOS_CURADOS,
+  ...EJERCICIOS_RESTANTES,
 ]
