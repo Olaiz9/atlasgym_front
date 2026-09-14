@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAppData } from '@/lib/store'
 import { VideoTecnica } from '@/lib/types'
 import {
@@ -48,6 +48,9 @@ export default function VideotecaPage() {
 
   const esAdmin = usuarioActual.rol === 'ADMIN'
 
+  const ELEMENTOS_POR_LOTE = 24
+  const [limiteVisible, setLimiteVisible] = useState(ELEMENTOS_POR_LOTE)
+
   const videosFiltrados = useMemo(() => {
     return videosTecnica.filter((v) => {
       const matchGrupo = filtroGrupo === 'TODOS' || v.grupoMuscular.toLowerCase() === filtroGrupo.toLowerCase()
@@ -58,6 +61,15 @@ export default function VideotecaPage() {
       return matchGrupo && matchTexto
     })
   }, [videosTecnica, filtroGrupo, busqueda])
+
+  // Resetear paginación al cambiar búsqueda o filtro de grupo muscular
+  useEffect(() => {
+    setLimiteVisible(ELEMENTOS_POR_LOTE)
+  }, [filtroGrupo, busqueda])
+
+  const videosVisibles = useMemo(() => {
+    return videosFiltrados.slice(0, limiteVisible)
+  }, [videosFiltrados, limiteVisible])
 
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
@@ -148,115 +160,128 @@ export default function VideotecaPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {videosFiltrados.map((video) => (
-            <div
-              key={video.id}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/40"
-            >
-              <button
-                type="button"
-                onClick={() => setVideoSeleccionado(video)}
-                aria-label={`Ver técnica: ${video.titulo}`}
-                className="relative h-48 w-full bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer group-hover:border-blue-500/30"
+        <div className="space-y-8">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {videosVisibles.map((video) => (
+              <div
+                key={video.id}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/40"
               >
-                {video.gifUrl || video.formato === 'GIF' ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={video.gifUrl || video.videoUrl}
-                      alt={video.titulo}
-                      className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 pointer-events-none" />
-                  </>
-                ) : (
-                  <>
-                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-                    <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[transform,background-color] duration-300 group-hover:scale-110 group-hover:bg-blue-500">
-                      <Play className="size-6 fill-white ml-0.5" />
-                    </div>
-                  </>
-                )}
-
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => setVideoSeleccionado(video)}
+                  aria-label={`Ver técnica: ${video.titulo}`}
+                  className="relative h-48 w-full bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer group-hover:border-blue-500/30"
+                >
                   {video.gifUrl || video.formato === 'GIF' ? (
-                    <span className="text-blue-400 font-extrabold flex items-center gap-1">
-                      ⚡ Loop GIF
-                    </span>
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={video.gifUrl || video.videoUrl}
+                        alt={video.titulo}
+                        className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 pointer-events-none" />
+                    </>
                   ) : (
                     <>
-                      <Clock className="size-3 text-slate-400" />
-                      {video.duracion}
+                      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
+                      <div className="relative size-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[transform,background-color] duration-300 group-hover:scale-110 group-hover:bg-blue-500">
+                        <Play className="size-6 fill-white ml-0.5" />
+                      </div>
                     </>
                   )}
-                </div>
 
-                <div className="absolute top-3 left-3">
-                  <span className="rounded-md bg-blue-600/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-blue-300 border border-blue-500/30">
-                    {video.grupoMuscular}
-                  </span>
-                </div>
-              </button>
-
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                      <Sparkles className="size-3 text-blue-400" />
-                      {video.nivel}
-                    </span>
-
-                    {esAdmin && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setVideoAEliminar(video)
-                        }}
-                        className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                        title="Eliminar video"
-                        aria-label={`Eliminar video ${video.titulo}`}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
+                    {video.gifUrl || video.formato === 'GIF' ? (
+                      <span className="text-blue-400 font-extrabold flex items-center gap-1">
+                        ⚡ Loop GIF
+                      </span>
+                    ) : (
+                      <>
+                        <Clock className="size-3 text-slate-400" />
+                        {video.duracion}
+                      </>
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors leading-snug">
-                    <button
-                      type="button"
-                      onClick={() => setVideoSeleccionado(video)}
-                      className="text-left hover:text-blue-400 transition-colors cursor-pointer"
-                    >
+                  <div className="absolute top-3 left-3">
+                    <span className="rounded-md bg-blue-600/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-blue-300 border border-blue-500/30">
+                      {video.grupoMuscular}
+                    </span>
+                  </div>
+                </button>
+
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Sparkles className="size-3 text-blue-400" />
+                        {video.nivel}
+                      </span>
+
+                      {esAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setVideoAEliminar(video)
+                          }}
+                          className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
+                          title="Eliminar video"
+                          aria-label={`Eliminar video ${video.titulo}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <h3 className="font-bold text-white text-base md:text-lg leading-snug group-hover:text-blue-400 transition-colors line-clamp-1">
                       {video.titulo}
+                    </h3>
+
+                    {video.descripcion && (
+                      <p className="mt-2 text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                        {video.descripcion}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-slate-800/60 flex items-center justify-between">
+                    <button
+                      onClick={() => setVideoSeleccionado(video)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                    >
+                      <Play className="size-3.5 fill-blue-400" />
+                      Reproducir y ver tips
                     </button>
-                  </h3>
 
-                  {video.descripcion && (
-                    <p className="mt-2 text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                      {video.descripcion}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-slate-800/60 flex items-center justify-between">
-                  <button
-                    onClick={() => setVideoSeleccionado(video)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                  >
-                    <Play className="size-3.5 fill-blue-400" />
-                    Reproducir y ver tips
-                  </button>
-
-                  <span className="text-[11px] font-medium text-slate-500">
-                    ATLAS Gym
-                  </span>
+                    <span className="text-[11px] font-medium text-slate-500">
+                      ATLAS Gym
+                    </span>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* Botón de Carga por Tandas / Paginación */}
+          {limiteVisible < videosFiltrados.length && (
+            <div className="flex flex-col items-center justify-center pt-4 pb-2 gap-3">
+              <p className="text-xs text-slate-400 font-medium">
+                Mostrando <span className="text-white font-bold">{videosVisibles.length}</span> de <span className="text-white font-bold">{videosFiltrados.length.toLocaleString('es-AR')}</span> ejercicios
+              </p>
+              <button
+                type="button"
+                onClick={() => setLimiteVisible((prev) => prev + ELEMENTOS_POR_LOTE)}
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/25 transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5"
+              >
+                <Plus className="size-4" />
+                Cargar más videos (+24)
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -337,6 +362,24 @@ export default function VideotecaPage() {
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {(videoSeleccionado as any).instruccionesPasoAPaso && (videoSeleccionado as any).instruccionesPasoAPaso.length > 0 && (
+                <div className="space-y-2.5 pt-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Instrucciones paso a paso
+                  </h4>
+                  <ol className="space-y-2">
+                    {(videoSeleccionado as any).instruccionesPasoAPaso.map((paso: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-300">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-[10px] font-bold text-blue-400 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span className="flex-1 leading-relaxed">{paso.replace(/^Paso\s*\d+:\s*/i, '')}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
 

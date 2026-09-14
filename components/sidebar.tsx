@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell } from 'lucide-react'
 import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
+import { ModalPerfil } from '@/components/modal-perfil'
 
 const navItemsAdmin = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
@@ -29,10 +30,12 @@ function SidebarUserCard({
   usuario,
   collapsed,
   onCerrarSesion,
+  onAbrirPerfil,
 }: {
-  usuario: { nombre: string; rol: string }
+  usuario: { nombre: string; rol: string; fotoUrl?: string }
   collapsed: boolean
   onCerrarSesion: () => void
+  onAbrirPerfil: () => void
 }) {
   const iniciales = usuario.nombre
     .split(' ')
@@ -42,27 +45,62 @@ function SidebarUserCard({
 
   const rolLabel = usuario.rol === 'ALUMNO' ? 'Alumno/a' : 'Coach / Admin'
 
-  return (
-    <div
-      className={`mt-4 flex items-center justify-between rounded-xl bg-slate-900/60 p-2.5 border border-slate-800/60 ${collapsed ? 'justify-center' : ''}`}
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400">
-          {iniciales}
-        </span>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-slate-200">{usuario.nombre}</p>
-            <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
-          </div>
-        )}
+  if (collapsed) {
+    return (
+      <div className="mt-4 flex flex-col items-center gap-2 rounded-xl bg-slate-900/80 p-2 border border-slate-800/80 shadow-sm">
+        <button
+          type="button"
+          onClick={onAbrirPerfil}
+          title={`Mi Perfil: ${usuario.nombre} (${rolLabel})`}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-all cursor-pointer overflow-hidden active:scale-95"
+        >
+          {usuario.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={usuario.fotoUrl} alt={usuario.nombre} className="size-full object-cover" />
+          ) : (
+            iniciales
+          )}
+        </button>
+        <Link
+          href="/login"
+          onClick={onCerrarSesion}
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+          className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90"
+        >
+          <LogOut className="size-4 shrink-0" />
+        </Link>
       </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-900/60 p-2.5 border border-slate-800/60 shadow-sm">
+      <button
+        type="button"
+        onClick={onAbrirPerfil}
+        className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-85 transition-opacity cursor-pointer flex-1"
+        title="Ver y editar mi perfil"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 overflow-hidden">
+          {usuario.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={usuario.fotoUrl} alt={usuario.nombre} className="size-full object-cover" />
+          ) : (
+            iniciales
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-slate-200">{usuario.nombre}</p>
+          <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
+        </div>
+      </button>
       <Link
         href="/login"
         onClick={onCerrarSesion}
         title="Cerrar sesión"
         aria-label="Cerrar sesión"
-        className={`flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90 ${collapsed ? 'mt-2' : 'ml-1'}`}
+        className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90 ml-1 shrink-0"
       >
         <LogOut className="size-4 shrink-0" />
       </Link>
@@ -77,6 +115,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [mostrarPerfil, setMostrarPerfil] = useState(false)
   const cantNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   return (
@@ -159,6 +198,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               usuario={usuarioActual}
               collapsed={collapsed}
               onCerrarSesion={cerrarSesion}
+              onAbrirPerfil={() => setMostrarPerfil(true)}
             />
           </div>
         </div>
@@ -167,6 +207,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       <ModalCentroAyuda
         abierto={mostrarAyuda}
         onCerrar={() => setMostrarAyuda(false)}
+      />
+
+      <ModalPerfil
+        abierto={mostrarPerfil}
+        onCerrar={() => setMostrarPerfil(false)}
       />
     </>
   )

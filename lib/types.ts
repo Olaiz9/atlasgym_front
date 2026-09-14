@@ -11,6 +11,8 @@ export interface UsuarioSesion {
   email: string;
   rol: "ADMIN" | "ALUMNO";
   alumnoId?: string;
+  fotoUrl?: string;
+  celular?: string;
 }
 
 export interface Alumno {

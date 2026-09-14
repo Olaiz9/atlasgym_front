@@ -30,6 +30,7 @@ interface AppDataContextValue {
   planes: Plan[];
   avisos: Aviso[];
   usuarioActual: UsuarioSesion;
+  actualizarUsuarioActual: (cambios: Partial<UsuarioSesion>) => void;
   iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
@@ -65,7 +66,23 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 function useGymStore(): AppDataContextValue {
-  const [alumnos, setAlumnos] = useState<Alumno[]>(ALUMNOS_MOCK);
+  const [alumnos, setAlumnos] = useState<Alumno[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_alumnos_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return ALUMNOS_MOCK;
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("atlas_alumnos_v1", JSON.stringify(alumnos));
+    }
+  }, [alumnos]);
   const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
   const [rutinas, setRutinas] = useState<Rutina[]>(RUTINAS_MOCK);
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(VIDEOS_TECNICA_MOCK);
@@ -130,6 +147,16 @@ function useGymStore(): AppDataContextValue {
     if (typeof window !== "undefined") {
       localStorage.removeItem("atlas_sesion_v1");
     }
+  }, []);
+
+  const actualizarUsuarioActual = useCallback((cambios: Partial<UsuarioSesion>) => {
+    setUsuarioActual((prev) => {
+      const siguiente = { ...prev, ...cambios };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
+      }
+      return siguiente;
+    });
   }, []);
 
   const agregarAlumno = useCallback((alumno: Omit<Alumno, "id">) => {
@@ -317,6 +344,7 @@ function useGymStore(): AppDataContextValue {
       videosTecnica,
       planes,
       usuarioActual,
+      actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
       agregarAlumno,
