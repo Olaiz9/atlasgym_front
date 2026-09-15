@@ -448,35 +448,51 @@ export default function Page() {
 
         {/* TARJETAS SUPERIORES (BLANCAS Y FLOTANTES) */}
         <section className="mt-10 grid gap-6 md:grid-cols-2">
-          <article className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 text-slate-900 border border-slate-200 cursor-default">
+          <Link
+            href="/alumnos"
+            className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 text-slate-900 border border-slate-200 hover:border-blue-300 cursor-pointer"
+          >
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Alumnos activos</p>
                 <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">{alumnosActivos}</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600"><ArrowUpRight className="size-4" />{alumnos.length} registrados <span className="font-medium text-slate-400">en total</span></p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600">
+                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  {alumnos.length} registrados <span className="font-medium text-slate-400">en total</span>
+                </p>
               </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110 group-hover:bg-blue-100"><Users className="size-7" /></div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-sm">
+                <Users className="size-7" />
+              </div>
             </div>
             <div
               className="absolute bottom-0 left-0 h-1.5 bg-blue-600 transition-[width] duration-500"
               style={{ width: `${alumnos.length > 0 ? Math.round((alumnosActivos / alumnos.length) * 100) : 0}%` }}
             />
-          </article>
+          </Link>
 
-          <article className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/10 text-slate-900 border border-slate-200 cursor-default">
+          <Link
+            href="/finanzas"
+            className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/10 text-slate-900 border border-slate-200 hover:border-rose-300 cursor-pointer"
+          >
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Cuotas pendientes</p>
                 <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">${totalPendiente.toLocaleString('es-AR')}</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500"><ArrowUpRight className="size-4" />{pagosPendientes.length} pendientes <span className="font-medium text-slate-400">requieren atención</span></p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500">
+                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  {pagosPendientes.length} pendientes <span className="font-medium text-slate-400">requieren atención</span>
+                </p>
               </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-transform duration-300 group-hover:scale-110 group-hover:bg-rose-100"><WalletCards className="size-7" /></div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-all duration-300 group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white shadow-sm">
+                <WalletCards className="size-7" />
+              </div>
             </div>
             <div
               className="absolute bottom-0 left-0 h-1.5 bg-rose-500 transition-[width] duration-500"
               style={{ width: `${pagos.length > 0 ? Math.round((pagosPendientes.length / pagos.length) * 100) : 0}%` }}
             />
-          </article>
+          </Link>
         </section>
 
         {/* LISTAS INFERIORES (BLANCAS Y FLOTANTES) */}

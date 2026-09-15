@@ -79,10 +79,16 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
     <dialog
       ref={dialogRef}
       onClose={handleCerrar}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) handleCerrar()
+      }}
       aria-labelledby="modal-nuevo-aviso-title"
-      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/60 p-4 backdrop-blur-sm backdrop:bg-transparent"
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/60 p-4 backdrop-blur-sm backdrop:bg-transparent transition-opacity duration-200"
     >
-      <div className="w-full max-w-lg scale-100 rounded-3xl border border-slate-200 bg-white p-7 text-slate-900 shadow-2xl">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg scale-100 rounded-3xl border border-slate-200 bg-white p-7 text-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Cabecera del modal */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

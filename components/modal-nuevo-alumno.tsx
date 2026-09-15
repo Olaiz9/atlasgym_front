@@ -48,10 +48,16 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
     <dialog
       ref={dialogRef}
       onClose={handleCerrar}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) handleCerrar()
+      }}
       aria-labelledby="modal-nuevo-alumno-title"
-      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/60 p-4 backdrop-blur-sm backdrop:bg-transparent"
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/60 p-4 backdrop-blur-sm backdrop:bg-transparent transition-opacity duration-200"
     >
-      <div className="w-full max-w-md scale-100 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-2xl">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md scale-100 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         <div className="flex items-start justify-between">
           <div>
             <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-slate-900">Nuevo alumno</h2>

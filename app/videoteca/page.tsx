@@ -268,10 +268,16 @@ export default function VideotecaPage() {
       {videoSeleccionado && (
         <dialog
           open
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setVideoSeleccionado(null)
+          }}
           className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/85 p-4 backdrop-blur-md backdrop:bg-transparent transition-opacity duration-200 animate-in fade-in"
           aria-labelledby="modal-player-title"
         >
-          <div className="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 text-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 text-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
             <div className="flex items-center justify-between border-b border-slate-800 p-5 bg-slate-950/60">
               <div className="flex items-center gap-3">
                 <span className="px-2.5 py-1 rounded-md bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-bold">
@@ -416,10 +422,16 @@ function ModalNuevoVideo({
   return (
     <dialog
       open
-      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/80 p-4 backdrop-blur-sm backdrop:bg-transparent"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCerrar()
+      }}
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/80 p-4 backdrop-blur-sm backdrop:bg-transparent transition-opacity duration-200"
       aria-labelledby="modal-video-title"
     >
-      <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-7 text-slate-100 shadow-2xl">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-7 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         <div className="flex items-start justify-between">
           <div>
             <h2 id="modal-video-title" className="text-2xl font-black text-white">Nuevo Video de Técnica</h2>
@@ -542,8 +554,14 @@ function ModalConfirmarEliminarVideo({
   onConfirm: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 transition-opacity duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 mb-4 border border-rose-500/20">
           <Trash2 className="size-6" />
         </div>
