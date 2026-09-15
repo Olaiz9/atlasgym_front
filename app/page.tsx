@@ -108,7 +108,10 @@ function AlumnoCardsSection({
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Tarjeta 1: Mi Rutina */}
-      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+      <Link
+        href="/rutinas"
+        className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 text-slate-900 border border-slate-200 hover:border-blue-300 cursor-pointer"
+      >
         <div className="flex items-start justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
@@ -116,21 +119,22 @@ function AlumnoCardsSection({
             <p className="mt-1 text-sm font-semibold text-blue-600">{subtituloRutina}</p>
             <p className="mt-4 text-xs font-medium text-slate-500">{detalleRutina}</p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-sm">
             <Dumbbell className="size-7" />
           </div>
         </div>
-        <Link
-          href="/rutinas"
-          className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          {rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'} <ChevronRight className="size-3.5" />
-        </Link>
+        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
+          <span>{rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'}</span>
+          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+        </div>
         <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-600" />
-      </div>
+      </Link>
 
       {/* Tarjeta 2: Mi Cuota */}
-      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+      <Link
+        href="/finanzas"
+        className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/10 text-slate-900 border border-slate-200 hover:border-emerald-300 cursor-pointer"
+      >
         <div className="flex items-start justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado de mi cuota</span>
@@ -144,21 +148,22 @@ function AlumnoCardsSection({
               Vence el {calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined)}
             </p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white shadow-sm">
             <WalletCards className="size-7" />
           </div>
         </div>
-        <Link
-          href="/finanzas"
-          className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
-        >
-          Ver mis pagos y datos de cuota <ChevronRight className="size-3.5" />
-        </Link>
+        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-600 group-hover:text-emerald-700 transition-colors">
+          <span>Ver mis pagos y datos de cuota</span>
+          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+        </div>
         <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
-      </div>
+      </Link>
 
-      {/* Tarjeta 3: Mi Asistencia */}
-      <div className="group relative overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200">
+      {/* Tarjeta 3: Mi Constancia */}
+      <Link
+        href="/rutinas"
+        className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/10 text-slate-900 border border-slate-200 hover:border-amber-300 cursor-pointer"
+      >
         <div className="flex items-start justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Constancia</span>
@@ -166,15 +171,16 @@ function AlumnoCardsSection({
             <p className="mt-1 text-sm font-semibold text-slate-600">registrados este mes</p>
             <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform duration-300 group-hover:scale-110">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white shadow-sm">
             <Sparkles className="size-7" />
           </div>
         </div>
-        <div className="mt-5 text-xs font-bold text-slate-500">
-          ¡Mantené el ritmo esta semana! 🔥
+        <div className="mt-5 flex items-center justify-between text-xs font-bold text-slate-600 group-hover:text-amber-600 transition-colors">
+          <span>¡Mantené el ritmo esta semana! 🔥</span>
+          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
         </div>
         <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
-      </div>
+      </Link>
     </div>
   )
 }
