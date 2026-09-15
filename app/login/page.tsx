@@ -34,7 +34,21 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false)
   const [plataformaTutorial, setPlataformaTutorial] = useState<'ANDROID' | 'IOS'>('ANDROID')
   const [mostrarModalTutorial, setMostrarModalTutorial] = useState(false)
+  const [animandoCierre, setAnimandoCierre] = useState(false)
   const [error, setError] = useState('')
+
+  const abrirModalTutorial = () => {
+    setAnimandoCierre(false)
+    setMostrarModalTutorial(true)
+  }
+
+  const cerrarModalTutorial = () => {
+    setAnimandoCierre(true)
+    setTimeout(() => {
+      setMostrarModalTutorial(false)
+      setAnimandoCierre(false)
+    }, 200)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -241,12 +255,12 @@ export default function LoginPage() {
             {/* Botón ¿Cómo descargarlo en mi celular? */}
             <button
               type="button"
-              onClick={() => setMostrarModalTutorial(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/15 py-2.5 px-4 text-xs font-bold text-blue-300 hover:text-blue-200 transition-all duration-200 group cursor-pointer shadow-sm"
+              onClick={abrirModalTutorial}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 py-2.5 px-4 text-xs font-bold text-blue-300 hover:text-white transition-all duration-300 group cursor-pointer shadow-sm active:scale-[0.99]"
             >
-              <Smartphone className="size-4 text-blue-400 group-hover:scale-110 transition-transform duration-200" />
+              <Smartphone className="size-4 text-blue-400 group-hover:scale-110 transition-transform duration-300 ease-out" />
               <span>¿Cómo instalar la app en mi celular?</span>
-              <HelpCircle className="size-3.5 text-blue-400/80 ml-auto" />
+              <HelpCircle className="size-3.5 text-blue-400/80 group-hover:text-blue-300 ml-auto transition-colors" />
             </button>
           </div>
         </div>
@@ -259,13 +273,25 @@ export default function LoginPage() {
 
       {/* Modal Tutorial de Instalación PWA */}
       {mostrarModalTutorial && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div
+          onClick={cerrarModalTutorial}
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 transition-opacity duration-300 ease-out ${
+            animandoCierre ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-2xl transition-all duration-300 ease-out ${
+              animandoCierre
+                ? 'opacity-0 scale-95 translate-y-3'
+                : 'opacity-100 scale-100 translate-y-0'
+            }`}
+          >
             {/* Botón cerrar */}
             <button
               type="button"
-              onClick={() => setMostrarModalTutorial(false)}
-              className="absolute right-4 top-4 rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              onClick={cerrarModalTutorial}
+              className="absolute right-4 top-4 rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
               aria-label="Cerrar modal"
             >
               <X className="size-5" />
