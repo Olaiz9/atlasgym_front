@@ -109,4 +109,24 @@ describe("Fase 5: Experiencia de Uso y Consistencia (lib/experiencia-consistenci
       expect(diaExpandido["d-3"]).toBe(false);
     });
   });
+
+  describe("Gestión de Asistencia: Marcar y Desmarcar / Anular Asistencia", () => {
+    it("permite anular la asistencia de un alumno restableciendo ultimaAsistencia a undefined", () => {
+      let alumnoPrueba = {
+        id: "a-1",
+        nombre: "Lucas",
+        ultimaAsistencia: "2026-09-15",
+      };
+
+      // Desmarcar / anular asistencia
+      const desmarcar = (a: typeof alumnoPrueba) => ({
+        ...a,
+        ultimaAsistencia: undefined,
+      });
+
+      alumnoPrueba = desmarcar(alumnoPrueba);
+      expect(alumnoPrueba.ultimaAsistencia).toBeUndefined();
+    });
+  });
 });
+

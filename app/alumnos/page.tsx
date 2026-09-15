@@ -6,7 +6,7 @@ import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search,
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
-import { formatDiasIngreso } from "@/lib/date-utils";
+import { formatDiasIngreso, fechaLocalHoy } from "@/lib/date-utils";
 import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
@@ -32,7 +32,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, desmarcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
   const { toast } = useToast();
 
@@ -294,18 +294,35 @@ export default function AlumnosPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => {
-                        marcarAsistenciaAlumno(alumno.id);
-                        toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
-                      }}
-                      title="Marcar asistencia hoy"
-                      aria-label={`Marcar asistencia hoy para ${alumno.nombre}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors duration-150 active:scale-95 mr-1"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      Presente
-                    </button>
+                    {alumno.ultimaAsistencia === fechaLocalHoy() ? (
+                      <button
+                        onClick={() => {
+                          desmarcarAsistenciaAlumno(alumno.id);
+                          toast(`Asistencia anulada para ${alumno.nombre}`, "info");
+                        }}
+                        title="Asistencia registrada hoy. Clic para anular si hubo un error."
+                        aria-label={`Anular asistencia hoy para ${alumno.nombre}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-rose-600 transition-colors duration-150 active:scale-95 mr-1 group/btn cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5 group-hover/btn:hidden" />
+                        <X className="w-3.5 h-3.5 hidden group-hover/btn:inline" />
+                        <span className="group-hover/btn:hidden">Presente</span>
+                        <span className="hidden group-hover/btn:inline">Anular</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          marcarAsistenciaAlumno(alumno.id);
+                          toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
+                        }}
+                        title="Marcar asistencia hoy"
+                        aria-label={`Marcar asistencia hoy para ${alumno.nombre}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors duration-150 active:scale-95 mr-1 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Presente
+                      </button>
+                    )}
                     <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}

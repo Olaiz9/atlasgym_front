@@ -14,6 +14,7 @@ import {
   Dumbbell,
   CreditCard,
   Check,
+  X,
   Pencil,
   MessageSquare,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import { useAppData } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { AccesoRestringido } from "@/components/acceso-restringido";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
-import { formatFechaAR, calcularDiasDesde } from "@/lib/date-utils";
+import { formatFechaAR, calcularDiasDesde, fechaLocalHoy } from "@/lib/date-utils";
 import { construirLinkWhatsapp } from "@/lib/validators";
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio, Pago, Alumno, EstadoCuenta } from "@/lib/types";
 
@@ -277,6 +278,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
     getPagosDeAlumno,
     getRutinaDeAlumno,
     marcarAsistenciaAlumno,
+    desmarcarAsistenciaAlumno,
     actualizarAlumno,
     usuarioActual,
   } = useAppData();
@@ -354,16 +356,30 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
                 <Clock className="w-4 h-4 text-slate-400" />
                 Asistencia
               </h2>
-              <button
-                onClick={() => {
-                  marcarAsistenciaAlumno(alumno.id);
-                  toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-200"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Marcar presencia hoy
-              </button>
+              {alumno.ultimaAsistencia === fechaLocalHoy() || diasAusente === 0 ? (
+                <button
+                  onClick={() => {
+                    desmarcarAsistenciaAlumno(alumno.id);
+                    toast(`Asistencia anulada para ${alumno.nombre}`, "info");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors active:scale-95 border border-rose-200 cursor-pointer"
+                  title="Anular asistencia de hoy si hubo un error"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Anular presencia hoy
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    marcarAsistenciaAlumno(alumno.id);
+                    toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-200 cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Marcar presencia hoy
+                </button>
+              )}
             </div>
             {alumno.ultimaAsistencia ? (
               <div className="mt-3">

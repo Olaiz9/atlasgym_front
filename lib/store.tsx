@@ -39,6 +39,7 @@ interface AppDataContextValue {
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
+  desmarcarAsistenciaAlumno: (id: string) => void;
   agregarPago: (pago: Omit<Pago, "id">) => void;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   eliminarPago: (id: string) => void;
@@ -250,6 +251,12 @@ function useGymStore(): AppDataContextValue {
     );
   }, []);
 
+  const desmarcarAsistenciaAlumno = useCallback((id: string) => {
+    setAlumnos((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, ultimaAsistencia: undefined } : a))
+    );
+  }, []);
+
   const agregarPago = useCallback((pago: Omit<Pago, "id">) => {
     const alumno = alumnos.find((a) => a.id === pago.alumnoId);
     const alumnoNombreHistorico = pago.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
@@ -445,6 +452,7 @@ function useGymStore(): AppDataContextValue {
       actualizarAlumno,
       eliminarAlumno,
       marcarAsistenciaAlumno,
+      desmarcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,
       eliminarPago,
@@ -492,6 +500,7 @@ function useGymStore(): AppDataContextValue {
       actualizarAlumno,
       eliminarAlumno,
       marcarAsistenciaAlumno,
+      desmarcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,
       eliminarPago,
