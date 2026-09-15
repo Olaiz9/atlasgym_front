@@ -348,16 +348,22 @@ export default function Page() {
   const alumnosActivos = alumnos.filter((a) => a.activo).length
   const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
   const totalPendiente = pagosPendientes.reduce((acc, p) => acc + p.monto, 0)
+  const pagosOrdenados = useMemo(
+    () => [...pagos].sort((a, b) => b.fecha.localeCompare(a.fecha)),
+    [pagos]
+  );
+  const alumnosMap = useMemo(
+    () => new Map(alumnos.map((a) => [a.id, a])),
+    [alumnos]
+  );
   const ultimosPagos = useMemo(() => {
-    const alumnosMap = new Map(alumnos.map((a) => [a.id, a]))
-    const ordenados = [...pagos].sort((a, b) => b.fecha.localeCompare(a.fecha))
-    const res = []
-    const q = query.trim().toLowerCase()
+    const res = [];
+    const q = query.trim().toLowerCase();
 
-    for (const p of ordenados) {
-      if (res.length >= 5) break
-      const al = alumnosMap.get(p.alumnoId)
-      const nombre = al ? al.nombre : (p.alumnoNombreHistorico || 'Alumno Atlas')
+    for (const p of pagosOrdenados) {
+      if (res.length >= 5) break;
+      const al = alumnosMap.get(p.alumnoId);
+      const nombre = al ? al.nombre : (p.alumnoNombreHistorico || 'Alumno Atlas');
       if (!q || nombre.toLowerCase().includes(q) || p.plan.toLowerCase().includes(q)) {
         res.push({
           id: p.id,
@@ -370,11 +376,11 @@ export default function Page() {
             .map((n) => n[0])
             .slice(0, 2)
             .join(''),
-        })
+        });
       }
     }
-    return res
-  }, [pagos, alumnos, query])
+    return res;
+  }, [pagosOrdenados, alumnosMap, query]);
 
   const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")

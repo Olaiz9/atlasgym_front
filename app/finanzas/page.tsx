@@ -23,6 +23,7 @@ import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSes
 import { construirLinkWhatsapp } from "@/lib/validators";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
+import { useDebounce } from "@/lib/use-debounce";
 import { descargarCSV } from "@/lib/export-utils";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -320,9 +321,14 @@ export default function FinanzasPage() {
   const [mes, setMes] = useState<string>(() => mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
   const [filtro, setFiltro] = useState<EstadoPago | "TODOS">("TODOS");
+  const [filtroMetodo, setFiltroMetodo] = useState<string>("TODOS");
   const [busqueda, setBusqueda] = useState("");
+  const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pagoAEliminar, setPagoAEliminar] = useState<Pago | null>(null);
+
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [elementosPorPagina, setElementosPorPagina] = useState(15);
 
   const pagosDelMes = useMemo(() => {
     if (verTodos) return pagos;
@@ -348,15 +354,29 @@ export default function FinanzasPage() {
   }, [pagosDelMes]);
 
   const pagosFiltrados = useMemo(() => {
+    const q = busquedaDebounced.trim().toLowerCase();
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
+      const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
       const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? p.alumnoNombreHistorico ?? "";
-      const coincideBusqueda = nombreAlumno
-        .toLowerCase()
-        .includes(busqueda.toLowerCase());
-      return coincideFiltro && coincideBusqueda;
+      const coincideBusqueda =
+        !q ||
+        nombreAlumno.toLowerCase().includes(q) ||
+        p.plan.toLowerCase().includes(q) ||
+        p.metodo.toLowerCase().includes(q);
+      return coincideFiltro && coincideMetodo && coincideBusqueda;
     });
-  }, [pagosDelMes, filtro, busqueda, getAlumno]);
+  }, [pagosDelMes, filtro, filtroMetodo, busquedaDebounced, getAlumno]);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busquedaDebounced, filtro, filtroMetodo, mes, verTodos]);
+
+  const totalPaginas = Math.ceil(pagosFiltrados.length / elementosPorPagina) || 1;
+  const pagosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * elementosPorPagina;
+    return pagosFiltrados.slice(inicio, inicio + elementosPorPagina);
+  }, [pagosFiltrados, paginaActual, elementosPorPagina]);
 
   // Soporte para cerrar modales con tecla Escape
   useEffect(() => {
@@ -520,20 +540,42 @@ export default function FinanzasPage() {
       {/* Tarjeta principal: filtros + tabla */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-100 bg-slate-50/60">
-          <div className="flex gap-2 flex-wrap">
-            {FILTROS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFiltro(f.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                  filtro === f.value
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="flex gap-4 flex-wrap items-center">
+            <div className="flex gap-2 flex-wrap">
+              {FILTROS.map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setFiltro(f.value)}
+                  className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
+                    filtro === f.value
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+
+            {/* Filtro por método de pago */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs font-bold text-slate-400 mr-1">Método:</span>
+              {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
+                <button
+                  key={met}
+                  onClick={() => setFiltroMetodo(met)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
+                    filtroMetodo === met
+                      ? "bg-slate-800 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {met === "TODOS" ? "Todos" : met}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -562,7 +604,7 @@ export default function FinanzasPage() {
               </tr>
             </thead>
             <tbody>
-              {pagosFiltrados.map((pago) => {
+              {pagosPaginados.map((pago) => {
                 const alumno = getAlumno(pago.alumnoId);
                 return (
                   <tr
@@ -629,6 +671,54 @@ export default function FinanzasPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {pagosFiltrados.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 text-xs font-semibold text-slate-500 bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <span>Mostrar</span>
+              <select
+                aria-label="Pagos por página"
+                value={elementosPorPagina}
+                onChange={(e) => {
+                  setElementosPorPagina(Number(e.target.value));
+                  setPaginaActual(1);
+                }}
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 outline-none"
+              >
+                <option value={15}>15 por página</option>
+                <option value={30}>30 por página</option>
+                <option value={50}>50 por página</option>
+                <option value={100}>100 por página</option>
+              </select>
+              <span>
+                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
+                {Math.min(paginaActual * elementosPorPagina, pagosFiltrados.length)} de{" "}
+                {pagosFiltrados.length} pagos
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                disabled={paginaActual === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              <span className="px-2 font-bold text-slate-700">
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+                disabled={paginaActual === totalPaginas}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modalAbierto && (

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
+import { useEscapeKey } from '@/lib/use-escape-key'
 import {
   Mail,
   Lock,
@@ -49,6 +50,8 @@ export default function LoginPage() {
       setAnimandoCierre(false)
     }, 200)
   }
+
+  useEscapeKey(cerrarModalTutorial, mostrarModalTutorial)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

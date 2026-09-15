@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAppData } from '@/lib/store'
 import { VideoTecnica } from '@/lib/types'
+import { CLASICOS_CURADOS } from '@/lib/clasicos-curados'
+import { useDebounce } from '@/lib/use-debounce'
 import {
   Video,
   Play,
@@ -42,22 +44,23 @@ export default function VideotecaPage() {
 
   const [filtroGrupo, setFiltroGrupo] = useState<string>('TODOS')
   const [busqueda, setBusqueda] = useState('')
+  const busquedaDebounced = useDebounce(busqueda, 300)
   const [videoSeleccionado, setVideoSeleccionado] = useState<VideoTecnica | null>(null)
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false)
   const [videoAEliminar, setVideoAEliminar] = useState<VideoTecnica | null>(null)
 
   const esAdmin = usuarioActual?.rol === 'ADMIN'
 
-  const ELEMENTOS_POR_LOTE = 24
+  const ELEMENTOS_POR_LOTE = 12
   const [limiteVisible, setLimiteVisible] = useState(ELEMENTOS_POR_LOTE)
-  const [ejerciciosApi, setEjerciciosApi] = useState<VideoTecnica[]>([])
-  const [totalApi, setTotalApi] = useState(0)
+  const [ejerciciosApi, setEjerciciosApi] = useState<VideoTecnica[]>(() => CLASICOS_CURADOS)
+  const [totalApi, setTotalApi] = useState(() => CLASICOS_CURADOS.length)
   const [cargandoApi, setCargandoApi] = useState(false)
 
   // Resetear límite al cambiar búsqueda o grupo
   useEffect(() => {
     setLimiteVisible(ELEMENTOS_POR_LOTE)
-  }, [filtroGrupo, busqueda])
+  }, [filtroGrupo, busquedaDebounced])
 
   // Cerrar modales con tecla Escape
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function VideotecaPage() {
 
     const params = new URLSearchParams()
     if (filtroGrupo !== 'TODOS') params.set('grupo', filtroGrupo)
-    if (busqueda.trim()) params.set('q', busqueda.trim())
+    if (busquedaDebounced.trim()) params.set('q', busquedaDebounced.trim())
     params.set('limit', String(limiteVisible))
 
     fetch(`/api/ejercicios?${params.toString()}`)
@@ -93,7 +96,6 @@ export default function VideotecaPage() {
       })
       .catch(() => {
         if (!cancelado) {
-          setEjerciciosApi([])
           setCargandoApi(false)
         }
       })
@@ -101,19 +103,19 @@ export default function VideotecaPage() {
     return () => {
       cancelado = true
     }
-  }, [filtroGrupo, busqueda, limiteVisible])
+  }, [filtroGrupo, busquedaDebounced, limiteVisible])
 
   // Filtrar videos personalizados del store
   const videosCustom = useMemo(() => {
     return videosTecnica.filter((v) => {
       const matchGrupo = filtroGrupo === 'TODOS' || v.grupoMuscular.toLowerCase() === filtroGrupo.toLowerCase()
       const matchTexto =
-        !busqueda ||
-        v.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (v.descripcion && v.descripcion.toLowerCase().includes(busqueda.toLowerCase()))
+        !busquedaDebounced ||
+        v.titulo.toLowerCase().includes(busquedaDebounced.toLowerCase()) ||
+        (v.descripcion && v.descripcion.toLowerCase().includes(busquedaDebounced.toLowerCase()))
       return matchGrupo && matchTexto
     })
-  }, [videosTecnica, filtroGrupo, busqueda])
+  }, [videosTecnica, filtroGrupo, busquedaDebounced])
 
   // Combinar videos del store y de la API sin duplicar
   const videosVisibles = useMemo(() => {

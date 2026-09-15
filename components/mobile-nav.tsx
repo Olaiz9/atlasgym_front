@@ -10,6 +10,7 @@ const navItemsAdmin = [
   { label: 'Alumnos', href: '/alumnos', icon: Users },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
+  { label: 'Planes', href: '/planes', icon: Package },
   { label: 'Avisos', href: '/avisos', icon: Bell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
 ]

@@ -32,11 +32,18 @@ export async function GET(request: Request) {
   const offsetParam = searchParams.get('offset')
   const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10)) : 0
 
-  return NextResponse.json({
-    total: resultados.length,
-    offset,
-    limit,
-    hasMore: offset + limit < resultados.length,
-    ejercicios: resultados.slice(offset, offset + limit),
-  })
+  return NextResponse.json(
+    {
+      total: resultados.length,
+      offset,
+      limit,
+      hasMore: offset + limit < resultados.length,
+      ejercicios: resultados.slice(offset, offset + limit),
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+      },
+    }
+  )
 }

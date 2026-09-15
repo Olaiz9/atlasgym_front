@@ -25,13 +25,17 @@ import {
   PlayCircle,
   Save,
   CheckCircle2,
+  Copy,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 const OBJETIVOS = ['TODOS', 'Hipertrofia', 'Fuerza', 'Adaptación', 'Funcional']
 
 export default function RutinasPage() {
   const { rutinas, alumnos, videosTecnica, usuarioActual, agregarRutina, asignarRutinaAAlumno, eliminarRutina, getRutinaDeAlumno } =
     useAppData()
+  const { toast } = useToast()
 
   const [filtroObjetivo, setFiltroObjetivo] = useState('TODOS')
   const [busqueda, setBusqueda] = useState('')
@@ -39,6 +43,31 @@ export default function RutinasPage() {
   const [rutinaAAsignar, setRutinaAAsignar] = useState<Rutina | null>(null)
   const [rutinaAEliminar, setRutinaAEliminar] = useState<Rutina | null>(null)
   const [diaExpandido, setDiaExpandido] = useState<Record<string, boolean>>({})
+
+  useEscapeKey(() => {
+    if (modalNuevaAbierto) setModalNuevaAbierto(false)
+    if (rutinaAAsignar) setRutinaAAsignar(null)
+    if (rutinaAEliminar) setRutinaAEliminar(null)
+  }, modalNuevaAbierto || !!rutinaAAsignar || !!rutinaAEliminar)
+
+  const handleDuplicarRutina = (rutina: Rutina) => {
+    const copia: Omit<Rutina, "id"> = {
+      nombre: `${rutina.nombre} (Copia)`,
+      descripcion: rutina.descripcion || "",
+      objetivo: rutina.objetivo,
+      esGenerica: true,
+      dias: rutina.dias.map((d) => ({
+        ...d,
+        id: crypto.randomUUID(),
+        ejercicios: d.ejercicios.map((e) => ({
+          ...e,
+          id: crypto.randomUUID(),
+        })),
+      })),
+    };
+    const nueva = agregarRutina(copia);
+    toast(`Rutina "${nueva.nombre}" duplicada con éxito`, "success");
+  };
 
   // Filtrado de rutinas para el admin
   const rutinasFiltradas = useMemo(() => {
@@ -149,14 +178,24 @@ export default function RutinasPage() {
                     <Flame className="size-3" />
                     {rutina.objetivo}
                   </span>
-                  <button
-                    onClick={() => setRutinaAEliminar(rutina)}
-                    title="Eliminar rutina"
-                    aria-label="Eliminar rutina"
-                    className="text-slate-500 hover:text-rose-400 transition-colors p-1"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleDuplicarRutina(rutina)}
+                      title="Duplicar rutina (crear copia)"
+                      aria-label={`Duplicar rutina ${rutina.nombre}`}
+                      className="text-slate-500 hover:text-blue-400 transition-colors p-1 cursor-pointer"
+                    >
+                      <Copy className="size-4" />
+                    </button>
+                    <button
+                      onClick={() => setRutinaAEliminar(rutina)}
+                      title="Eliminar rutina"
+                      aria-label="Eliminar rutina"
+                      className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="mt-3 text-xl font-black text-white">{rutina.nombre}</h3>
@@ -304,6 +343,8 @@ export default function RutinasPage() {
           onClose={() => setRutinaAAsignar(null)}
           onConfirm={(alumnoId) => {
             asignarRutinaAAlumno(rutinaAAsignar.id, alumnoId)
+            const al = alumnos.find((a) => a.id === alumnoId)
+            toast(`Rutina asignada a ${al?.nombre || 'alumno'}`, 'success')
             setRutinaAAsignar(null)
           }}
         />
@@ -316,6 +357,7 @@ export default function RutinasPage() {
           onCancel={() => setRutinaAEliminar(null)}
           onConfirm={() => {
             eliminarRutina(rutinaAEliminar.id)
+            toast(`Rutina "${rutinaAEliminar.nombre}" eliminada`, 'info')
             setRutinaAEliminar(null)
           }}
         />
@@ -327,7 +369,8 @@ export default function RutinasPage() {
           videosTecnica={videosTecnica}
           onClose={() => setModalNuevaAbierto(false)}
           onSave={(nueva) => {
-            agregarRutina(nueva)
+            const r = agregarRutina(nueva)
+            toast(`Rutina "${r.nombre}" creada exitosamente`, 'success')
             setModalNuevaAbierto(false)
           }}
         />

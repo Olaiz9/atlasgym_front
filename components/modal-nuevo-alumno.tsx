@@ -6,6 +6,8 @@ import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface ModalNuevoAlumnoProps {
   isOpen: boolean
@@ -14,6 +16,7 @@ interface ModalNuevoAlumnoProps {
 
 export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const { agregarAlumno, planes, alumnos } = useAppData()
+  const { toast } = useToast()
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -41,6 +44,8 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
     setErroresAlumno({})
     onClose()
   }
+
+  useEscapeKey(handleCerrar, isOpen)
 
   if (!isOpen) return null
 
@@ -81,6 +86,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               fechaAlta: fechaLocalHoy(),
               activo: true,
             })
+            toast(`Alumno "${formAlumno.nombre}" registrado exitosamente`, 'success')
             handleCerrar()
           }}
           className="mt-6 flex flex-col gap-5"
@@ -89,6 +95,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             Nombre completo
             <input
               required
+              autoFocus
               value={formAlumno.nombre}
               onChange={(e) => setFormAlumno({ ...formAlumno, nombre: soloLetras(e.target.value) })}
               maxLength={60}

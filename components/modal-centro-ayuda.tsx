@@ -2,6 +2,7 @@
 
 import { HelpCircle, X, Mail, Phone, ExternalLink } from 'lucide-react'
 import { CONTACTO_ATLAS } from '@/lib/constants'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface ModalCentroAyudaProps {
   abierto: boolean
@@ -9,6 +10,8 @@ interface ModalCentroAyudaProps {
 }
 
 export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
+  useEscapeKey(onCerrar, abierto)
+
   if (!abierto) return null
 
   return (

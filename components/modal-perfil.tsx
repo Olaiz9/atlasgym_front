@@ -16,6 +16,8 @@ import {
   Save,
 } from 'lucide-react'
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES } from '@/lib/types'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface ModalPerfilProps {
   abierto: boolean
@@ -23,6 +25,8 @@ interface ModalPerfilProps {
 }
 
 export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
+  const { toast } = useToast()
+  useEscapeKey(onCerrar, abierto)
   const {
     usuarioActual,
     alumnos,
@@ -75,6 +79,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
       actualizarUsuarioActual({ celular })
     }
 
+    toast('Teléfono de contacto actualizado correctamente', 'success')
     setTimeout(() => {
       setGuardandoCelular(false)
       setCelularGuardado(true)
@@ -100,6 +105,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
       actualizarUsuarioActual({ password: passwordNueva } as any)
     }
 
+    toast('Contraseña modificada exitosamente', 'success')
     setPasswordGuardada(true)
     setPasswordNueva('')
     setPasswordConfirm('')
@@ -111,6 +117,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     if (actualizarUsuarioActual) {
       actualizarUsuarioActual({ fotoUrl: nuevaUrl })
     }
+    toast('Foto de perfil actualizada', 'success')
     setEditandoFoto(false)
   }
 

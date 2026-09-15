@@ -6,6 +6,8 @@ import { X, Bell, Users, User, AlertCircle, Info, Clock } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { CategoriaAviso, CATEGORIA_AVISO_LABEL } from '@/lib/types'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface ModalNuevoAvisoProps {
   isOpen: boolean
@@ -14,6 +16,7 @@ interface ModalNuevoAvisoProps {
 
 export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
   const { crearAviso, alumnos } = useAppData()
+  const { toast } = useToast()
   const [titulo, setTitulo] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [categoria, setCategoria] = useState<CategoriaAviso>('IMPORTANTE')
@@ -57,6 +60,8 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
     onClose()
   }
 
+  useEscapeKey(handleCerrar, isOpen)
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validar()) return
@@ -70,6 +75,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
       alumnoId: paraTodos ? undefined : alumnoId,
     })
 
+    toast(`Aviso "${titulo.trim()}" publicado exitosamente`, 'success')
     handleCerrar()
   }
 
@@ -124,6 +130,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
             <input
               id="aviso-titulo"
               required
+              autoFocus
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               maxLength={80}

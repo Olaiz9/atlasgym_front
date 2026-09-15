@@ -1,7 +1,7 @@
 // app/alumnos/[id]/page.tsx
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,11 +14,15 @@ import {
   Dumbbell,
   CreditCard,
   Check,
+  Pencil,
+  MessageSquare,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { AccesoRestringido } from "@/components/acceso-restringido";
+import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { formatFechaAR, calcularDiasDesde } from "@/lib/date-utils";
+import { construirLinkWhatsapp } from "@/lib/validators";
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio, Pago, Alumno, EstadoCuenta } from "@/lib/types";
 
 const ESTADO_PAGO_STYLES = {
@@ -139,15 +143,28 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
   );
 }
 
-function HeaderAlumno({ alumno, estadoCuenta }: { alumno: Alumno; estadoCuenta: EstadoCuenta }) {
+function HeaderAlumno({
+  alumno,
+  estadoCuenta,
+  onEditar,
+}: {
+  alumno: Alumno;
+  estadoCuenta: EstadoCuenta;
+  onEditar: () => void;
+}) {
   const iniciales = alumno.nombre
     .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
     .join("");
 
+  const mensajeWhatsApp =
+    estadoCuenta === "MOROSO"
+      ? `Hola ${alumno.nombre}, te escribimos desde Atlas Gym para recordarte que tenés cuotas pendientes. ¿Podrías confirmarnos si precisás el link de pago o pasás por recepción? ¡Muchas gracias!`
+      : `Hola ${alumno.nombre}, te escribimos desde Atlas Gym. ¡Esperamos que estés teniendo una excelente semana de entrenamiento!`;
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 text-slate-900">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 text-slate-900 shadow-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 text-xl font-black">
@@ -158,9 +175,30 @@ function HeaderAlumno({ alumno, estadoCuenta }: { alumno: Alumno; estadoCuenta: 
             <p className="text-sm text-slate-500 font-medium">{alumno.plan || "Sin plan asignado"}</p>
           </div>
         </div>
-        <span className={`self-start px-3 py-1.5 rounded-full text-xs font-bold ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
-          {ESTADO_CUENTA_LABEL[estadoCuenta]}
-        </span>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
+            {ESTADO_CUENTA_LABEL[estadoCuenta]}
+          </span>
+          {alumno.celular && (
+            <a
+              href={construirLinkWhatsapp(alumno.celular, mensajeWhatsApp)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Enviar WhatsApp a ${alumno.nombre}`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors border border-emerald-200 active:scale-95"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              WhatsApp
+            </a>
+          )}
+          <button
+            onClick={onEditar}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors border border-slate-200 active:scale-95"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Editar
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -231,8 +269,19 @@ function AvisoAcceso({ estadoCuenta }: { estadoCuenta: EstadoCuenta }) {
 
 export default function FichaAlumnoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, marcarAsistenciaAlumno, usuarioActual } = useAppData();
+  const {
+    alumnos,
+    planes,
+    getAlumno,
+    getEstadoCuenta,
+    getPagosDeAlumno,
+    getRutinaDeAlumno,
+    marcarAsistenciaAlumno,
+    actualizarAlumno,
+    usuarioActual,
+  } = useAppData();
   const { toast } = useToast();
+  const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
@@ -272,7 +321,26 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
       </Link>
 
       {/* Header con datos principales */}
-      <HeaderAlumno alumno={alumno} estadoCuenta={estadoCuenta} />
+      <HeaderAlumno
+        alumno={alumno}
+        estadoCuenta={estadoCuenta}
+        onEditar={() => setModalEditarAbierto(true)}
+      />
+
+      {/* Modal de edición */}
+      {modalEditarAbierto && (
+        <ModalEditarAlumno
+          alumno={alumno}
+          alumnos={alumnos}
+          planes={planes}
+          onClose={() => setModalEditarAbierto(false)}
+          onSubmit={(cambios) => {
+            actualizarAlumno(alumno.id, cambios);
+            setModalEditarAbierto(false);
+            toast(`Datos de ${cambios.nombre || alumno.nombre} actualizados con éxito`, "success");
+          }}
+        />
+      )}
 
       {/* Aviso de acceso — si está moroso o al día */}
       <AvisoAcceso estadoCuenta={estadoCuenta} />
