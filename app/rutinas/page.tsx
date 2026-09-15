@@ -29,6 +29,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useEscapeKey } from '@/lib/use-escape-key'
+import { CLASICOS_CURADOS } from '@/lib/clasicos-curados'
+import { useDebounce } from '@/lib/use-debounce'
 
 const OBJETIVOS = ['TODOS', 'Hipertrofia', 'Fuerza', 'Adaptación', 'Funcional']
 
@@ -578,10 +580,8 @@ function ModalNuevaRutina({
     )
   }
 
-  const agregarEjercicioDesdeVideoteca = (diaId: string, videoTitulo: string) => {
-    if (!videoTitulo) return
-    const video = videosTecnica.find((v) => v.titulo.toLowerCase() === videoTitulo.toLowerCase())
-    const nombreEj = video?.titulo || videoTitulo
+  const agregarEjercicioDesdeVideoteca = (diaId: string, video: VideoTecnica) => {
+    if (!video) return
     setDias((prev) =>
       prev.map((d) =>
         d.id === diaId
@@ -591,11 +591,13 @@ function ModalNuevaRutina({
                 ...d.ejercicios,
                 {
                   id: `e-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-                  nombre: nombreEj,
+                  nombre: video.titulo,
                   series: 3,
                   repeticiones: '10-12',
                   tipoSerie: 'NORMAL',
                   descansoSegundos: 60,
+                  videoUrl: video.videoUrl || video.gifUrl,
+                  gifUrl: video.gifUrl,
                 },
               ],
             }
@@ -792,7 +794,7 @@ function ModalNuevaRutina({
             diaNombre={dias.find((d) => d.id === diaParaBuscar)?.nombre}
             videosTecnica={videosTecnica}
             onSeleccionar={(video) => {
-              agregarEjercicioDesdeVideoteca(diaParaBuscar, video.titulo)
+              agregarEjercicioDesdeVideoteca(diaParaBuscar, video)
             }}
             onClose={() => setDiaParaBuscar(null)}
           />
@@ -978,37 +980,60 @@ function ModalBuscarEjercicioVideoteca({
   onClose: () => void
 }) {
   const [busqueda, setBusqueda] = useState('')
+  const busquedaDebounced = useDebounce(busqueda, 250)
   const [grupoSeleccionado, setGrupoSeleccionado] = useState('TODOS')
   const [recientesAgregados, setRecientesAgregados] = useState<Record<string, boolean>>({})
   const [contadorAgregados, setContadorAgregados] = useState(0)
+  const [ejerciciosApi, setEjerciciosApi] = useState<VideoTecnica[]>(() => CLASICOS_CURADOS)
+  const [totalApi, setTotalApi] = useState(1500)
+  const [cargandoApi, setCargandoApi] = useState(false)
 
   const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
 
-  const normalizar = (texto: string) =>
-    texto
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+  useEscapeKey(onClose)
+
+  useEffect(() => {
+    let cancelado = false
+    setCargandoApi(true)
+
+    const params = new URLSearchParams()
+    if (grupoSeleccionado !== 'TODOS') params.set('grupo', grupoSeleccionado)
+    if (busquedaDebounced.trim()) params.set('q', busquedaDebounced.trim())
+    params.set('limit', '60')
+
+    fetch(`/api/ejercicios?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelado) {
+          setEjerciciosApi(data.ejercicios || [])
+          if (data.total) setTotalApi(data.total)
+          setCargandoApi(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelado) setCargandoApi(false)
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [grupoSeleccionado, busquedaDebounced])
 
   const ejerciciosFiltrados = useMemo(() => {
-    const queryNorm = normalizar(busqueda.trim())
-    const palabras = queryNorm.split(/\s+/).filter(Boolean)
-
-    return videosTecnica.filter((v) => {
-      if (grupoSeleccionado !== 'TODOS' && v.grupoMuscular !== grupoSeleccionado) {
-        return false
-      }
-      if (palabras.length === 0) return true
-
-      const titNorm = normalizar(v.titulo)
-      const descNorm = normalizar(v.descripcion || '')
-      const gNorm = normalizar(v.grupoMuscular || '')
-
-      return palabras.every((p) => titNorm.includes(p) || descNorm.includes(p) || gNorm.includes(p))
+    const videosCoachFiltrados = videosTecnica.filter((v) => {
+      if (v.id.startsWith('cat-') || v.id.startsWith('ex-')) return false
+      if (grupoSeleccionado !== 'TODOS' && v.grupoMuscular !== grupoSeleccionado) return false
+      if (!busquedaDebounced.trim()) return true
+      return v.titulo.toLowerCase().includes(busquedaDebounced.toLowerCase())
     })
-  }, [videosTecnica, busqueda, grupoSeleccionado])
 
-  const visibles = useMemo(() => ejerciciosFiltrados.slice(0, 50), [ejerciciosFiltrados])
+    const idsCoach = new Set(videosCoachFiltrados.map((v) => v.id))
+    const apiSinDuplicados = ejerciciosApi.filter((e) => !idsCoach.has(e.id))
+
+    return [...videosCoachFiltrados, ...apiSinDuplicados]
+  }, [videosTecnica, ejerciciosApi, grupoSeleccionado, busquedaDebounced])
+
+  const visibles = useMemo(() => ejerciciosFiltrados.slice(0, 60), [ejerciciosFiltrados])
 
   const handleAgregar = (video: VideoTecnica) => {
     onSeleccionar(video)
@@ -1018,6 +1043,11 @@ function ModalBuscarEjercicioVideoteca({
       setRecientesAgregados((prev) => ({ ...prev, [video.id]: false }))
     }, 1800)
   }
+
+  const totalGeneral = useMemo(() => {
+    const coachCount = videosTecnica.filter((v) => !v.id.startsWith('cat-') && !v.id.startsWith('ex-')).length
+    return totalApi + coachCount
+  }, [totalApi, videosTecnica])
 
   return (
     <div
@@ -1034,7 +1064,7 @@ function ModalBuscarEjercicioVideoteca({
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-black text-slate-900">Videoteca de Ejercicios</h3>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                {videosTecnica.length.toLocaleString('es-AR')} ejercicios
+                {totalGeneral.toLocaleString('es-AR')} ejercicios
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -1185,9 +1215,9 @@ function ModalBuscarEjercicioVideoteca({
             })
           )}
 
-          {ejerciciosFiltrados.length > 50 && (
+          {ejerciciosFiltrados.length > 60 && (
             <div className="text-center py-3 text-xs text-slate-400 font-medium">
-              Mostrando los primeros 50 de {ejerciciosFiltrados.length} resultados. Escribí más letras para afinar la búsqueda.
+              Mostrando los primeros 60 de {totalGeneral.toLocaleString('es-AR')} ejercicios. Escribí más letras para afinar la búsqueda.
             </div>
           )}
         </div>
@@ -1197,16 +1227,18 @@ function ModalBuscarEjercicioVideoteca({
           <span className="text-xs text-slate-600 font-medium">
             {contadorAgregados > 0 ? (
               <span className="text-emerald-700 font-bold">
-                ✓ {contadorAgregados} ejercicio{contadorAgregados > 1 ? 's' : ''} sumado{contadorAgregados > 1 ? 's' : ''}
+                ✓ {contadorAgregados} ejercicio{contadorAgregados > 1 ? 's' : ''} sumado{contadorAgregados > 1 ? 's' : ''} {diaNombre ? `a ${diaNombre}` : 'a la rutina'}
               </span>
+            ) : cargandoApi ? (
+              <span className="text-blue-600 font-medium">Buscando ejercicios en catálogo...</span>
             ) : (
-              `${ejerciciosFiltrados.length} ejercicios disponibles`
+              `${totalGeneral.toLocaleString('es-AR')} ejercicios disponibles en videoteca`
             )}
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-colors"
+            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
           >
             Listo, volver a la rutina
           </button>
