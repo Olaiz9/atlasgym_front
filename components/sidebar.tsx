@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell } from 'lucide-react'
@@ -47,7 +48,7 @@ function SidebarUserCard({
 
   if (collapsed) {
     return (
-      <div className="mt-4 flex flex-col items-center gap-2 rounded-xl bg-slate-900/80 p-2 border border-slate-800/80 shadow-sm">
+      <div className="mt-4 flex flex-col items-center gap-2 rounded-xl bg-slate-900/80 p-2 border border-slate-800/80 shadow-sm shrink-0">
         <button
           type="button"
           onClick={onAbrirPerfil}
@@ -75,7 +76,7 @@ function SidebarUserCard({
   }
 
   return (
-    <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-900/60 p-2.5 border border-slate-800/60 shadow-sm">
+    <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-900/60 p-2.5 border border-slate-800/60 shadow-sm shrink-0">
       <button
         type="button"
         onClick={onAbrirPerfil}
@@ -135,17 +136,34 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
 
-        <div className={`flex h-20 items-center border-b border-slate-800/50 ${collapsed ? 'justify-center px-2' : 'px-7'}`}>
-          <Link href="/" className="flex items-center gap-3 group">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-base font-black text-white shadow-lg shadow-blue-600/20 transition-transform group-hover:scale-105">A</span>
-            {!collapsed && <span className="text-2xl font-black tracking-[0.2em] text-white">ATLAS</span>}
+        <div className="flex h-20 items-center justify-center border-b border-slate-800/50 px-4 shrink-0">
+          <Link href="/" className="flex items-center justify-center group py-2" title="ATLAS GYM">
+            {collapsed ? (
+              <Image
+                src="/logo-a-blanco.png"
+                alt="ATLAS"
+                width={36}
+                height={64}
+                className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                priority
+              />
+            ) : (
+              <Image
+                src="/logo-atlas-blanco.png"
+                alt="ATLAS GYM"
+                width={160}
+                height={90}
+                className="h-11 w-auto max-w-[170px] object-contain transition-transform duration-200 group-hover:scale-105"
+                priority
+              />
+            )}
           </Link>
         </div>
 
-        <div className="flex flex-1 flex-col justify-between px-4 py-6">
-          <nav className="flex flex-col gap-1.5" aria-label="Navegación principal">
+        <div className="flex flex-1 flex-col justify-between px-3.5 py-6 overflow-y-auto overflow-x-hidden min-h-0">
+          <nav className="flex flex-col gap-2.5 pb-5 shrink-0" aria-label="Navegación principal">
             {!collapsed && (
-              <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                 {esAlumno ? 'Portal del Alumno' : 'Panel principal'}
               </p>
             )}
@@ -157,7 +175,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                   key={label}
                   href={href}
                   title={collapsed ? (esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label) : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
+                  className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
                     collapsed ? 'justify-center' : ''
                   } ${
                     active
@@ -186,11 +204,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             })}
           </nav>
 
-          <div className="flex flex-col gap-1.5 border-t border-slate-800/50 pt-5">
+          <div className="mt-auto shrink-0 flex flex-col gap-2.5 border-t border-slate-800/50 pt-5">
             <button
               onClick={() => setMostrarAyuda(true)}
               title={collapsed ? 'Centro de ayuda' : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
               {!collapsed && 'Centro de ayuda'}
