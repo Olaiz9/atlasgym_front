@@ -2,7 +2,6 @@
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
 import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
-import { CLASICOS_CURADOS } from "./clasicos-curados";
 
 
 export const ALUMNOS_MOCK: Alumno[] = [
@@ -115,7 +114,6 @@ export const RUTINAS_MOCK: Rutina[] = [
 ];
 
 export const VIDEOS_TECNICA_MOCK: VideoTecnica[] = [
-  ...CLASICOS_CURADOS,
   {
     id: "v1",
     titulo: "Press de Banca con Mancuernas",

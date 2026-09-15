@@ -107,10 +107,21 @@ function useGymStore(): AppDataContextValue {
 
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(() => {
     if (typeof window !== "undefined") {
-      const guardado = localStorage.getItem("atlas_videos_v1");
-      if (guardado) {
+      const guardadoV2 = localStorage.getItem("atlas_videos_v2");
+      if (guardadoV2) {
         try {
-          return JSON.parse(guardado);
+          return JSON.parse(guardadoV2);
+        } catch {}
+      }
+      // Migración desde v1: eliminar duplicados del catálogo
+      const guardadoV1 = localStorage.getItem("atlas_videos_v1");
+      if (guardadoV1) {
+        try {
+          const parseado = JSON.parse(guardadoV1) as VideoTecnica[];
+          const limpios = parseado.filter((v) => !v.id.startsWith("cat-") && !v.id.startsWith("ex-"));
+          const resultado = limpios.length > 0 ? limpios : VIDEOS_TECNICA_MOCK;
+          localStorage.setItem("atlas_videos_v2", JSON.stringify(resultado));
+          return resultado;
         } catch {}
       }
     }
@@ -316,7 +327,7 @@ function useGymStore(): AppDataContextValue {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("atlas_videos_v1", JSON.stringify(videosTecnica));
+        localStorage.setItem("atlas_videos_v2", JSON.stringify(videosTecnica));
       } catch {}
     }
   }, [videosTecnica]);

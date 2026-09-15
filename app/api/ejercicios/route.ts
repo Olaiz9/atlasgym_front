@@ -2,8 +2,38 @@
 import { NextResponse } from 'next/server'
 import { CATALOGO_EJERCICIOS_GIF } from '@/lib/catalogo-ejercicios'
 
+const TOTALES_POR_GRUPO: Record<string, number> = {
+  Pecho: 0,
+  Espalda: 0,
+  Piernas: 0,
+  Hombros: 0,
+  Brazos: 0,
+  Core: 0,
+}
+for (const e of CATALOGO_EJERCICIOS_GIF) {
+  if (TOTALES_POR_GRUPO[e.grupoMuscular] !== undefined) {
+    TOTALES_POR_GRUPO[e.grupoMuscular]++
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
+  const resumen = searchParams.get('resumen') === 'true'
+
+  if (resumen) {
+    return NextResponse.json(
+      {
+        totales: TOTALES_POR_GRUPO,
+        total: CATALOGO_EJERCICIOS_GIF.length,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+        },
+      }
+    )
+  }
+
   const grupo = searchParams.get('grupo')
   const q = searchParams.get('q')?.toLowerCase()
   const limitParam = searchParams.get('limit')
