@@ -89,6 +89,7 @@ export function NotificacionesDropdown() {
   }, [abierto])
 
   function handleVerAviso(aviso: Aviso) {
+    if (!usuarioActual) return
     if (!aviso.leidoPor.includes(usuarioActual.id)) {
       marcarAvisoLeido(aviso.id, usuarioActual.id)
     }
@@ -97,8 +98,11 @@ export function NotificacionesDropdown() {
   }
 
   function handleMarcarTodasLeidas() {
+    if (!usuarioActual) return
     marcarTodosAvisosLeidos(usuarioActual.id)
   }
+
+  if (!usuarioActual) return null
 
   return (
     <div ref={containerRef} className="relative inline-block text-left">
@@ -168,7 +172,7 @@ export function NotificacionesDropdown() {
                 <DropdownItem
                   key={aviso.id}
                   aviso={aviso}
-                  esLeido={aviso.leidoPor.includes(usuarioActual.id)}
+                  esLeido={usuarioActual ? aviso.leidoPor.includes(usuarioActual.id) : false}
                   onClick={() => handleVerAviso(aviso)}
                 />
               ))

@@ -73,6 +73,7 @@ function SidebarUserCard({
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname()
   const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
+  if (!usuarioActual) return null
 
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin

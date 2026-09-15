@@ -6,6 +6,7 @@ import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
+import { fechaLocalHoy } from '@/lib/date-utils'
 import {
   Dumbbell,
   Plus,
@@ -49,6 +50,10 @@ export default function RutinasPage() {
       return matchObj && matchBusqueda
     })
   }, [rutinas, filtroObjetivo, busqueda])
+
+  if (!usuarioActual) {
+    return null
+  }
 
   // Si es ALUMNO, le mostramos directamente su rutina asignada
   if (usuarioActual.rol === 'ALUMNO') {
@@ -473,6 +478,7 @@ function ModalNuevaRutina({
   const [descripcion, setDescripcion] = useState('')
   const [objetivo, setObjetivo] = useState('Hipertrofia')
   const [diaParaBuscar, setDiaParaBuscar] = useState<string | null>(null)
+  const [errorValidacion, setErrorValidacion] = useState<string | null>(null)
   const [dias, setDias] = useState<DiaRutina[]>([
     {
       id: 'd-1',
@@ -486,6 +492,7 @@ function ModalNuevaRutina({
 
 
   const agregarDia = () => {
+    setErrorValidacion(null)
     const num = dias.length + 1
     setDias((prev) => [
       ...prev,
@@ -500,6 +507,7 @@ function ModalNuevaRutina({
   }
 
   const agregarEjercicioADia = (diaId: string) => {
+    setErrorValidacion(null)
     setDias((prev) =>
       prev.map((d) =>
         d.id === diaId
@@ -542,10 +550,12 @@ function ModalNuevaRutina({
   }
 
   const actualizarNombreDia = (diaId: string, nuevoNombre: string) => {
+    setErrorValidacion(null)
     setDias((prev) => prev.map((d) => (d.id === diaId ? { ...d, nombre: nuevoNombre } : d)))
   }
 
   const actualizarEjercicio = (diaId: string, ejId: string, campo: string, valor: any) => {
+    setErrorValidacion(null)
     setDias((prev) =>
       prev.map((d) =>
         d.id === diaId
@@ -559,6 +569,7 @@ function ModalNuevaRutina({
   }
 
   const eliminarEjercicio = (diaId: string, ejId: string) => {
+    setErrorValidacion(null)
     setDias((prev) =>
       prev.map((d) =>
         d.id === diaId
@@ -570,10 +581,35 @@ function ModalNuevaRutina({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nombre.trim()) return
+    if (!nombre.trim()) {
+      setErrorValidacion('El nombre de la rutina es obligatorio.')
+      return
+    }
+    if (dias.length === 0) {
+      setErrorValidacion('Debe agregar al menos un día a la rutina.')
+      return
+    }
+    for (let i = 0; i < dias.length; i++) {
+      const dia = dias[i]
+      if (!dia.nombre.trim()) {
+        setErrorValidacion(`El día ${i + 1} no tiene un nombre válido.`)
+        return
+      }
+      if (dia.ejercicios.length === 0) {
+        setErrorValidacion(`El día "${dia.nombre}" debe incluir al menos un ejercicio.`)
+        return
+      }
+      for (const ej of dia.ejercicios) {
+        if (!ej.nombre.trim()) {
+          setErrorValidacion(`Todos los ejercicios deben tener un nombre asignado (revisá "${dia.nombre}").`)
+          return
+        }
+      }
+    }
+    setErrorValidacion(null)
     onSave({
-      nombre,
-      descripcion,
+      nombre: nombre.trim(),
+      descripcion: descripcion.trim(),
       objetivo,
       dias,
       esGenerica: true,
@@ -665,6 +701,13 @@ function ModalNuevaRutina({
               ))}
             </div>
           </div>
+
+          {errorValidacion && (
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>{errorValidacion}</span>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-3">
             <button
@@ -1664,16 +1707,16 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
   }, [dia, seriesPorEjercicio])
 
   const ejecutarGuardado = useCallback(() => {
-    if (!dia) return
+    if (!dia || !usuario.alumnoId) return
     const ejerciciosSesion: SesionEjercicio[] = dia.ejercicios.map((ej) => ({
       ejercicioId: ej.id,
       series: seriesPorEjercicio[ej.id] ?? [],
     }))
     guardarSesion({
-      alumnoId: usuario.alumnoId || 'a1',
+      alumnoId: usuario.alumnoId,
       rutinaId: rutina.id,
       diaId: dia.id,
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: fechaLocalHoy(),
       ejercicios: ejerciciosSesion,
     })
     setGuardado(true)

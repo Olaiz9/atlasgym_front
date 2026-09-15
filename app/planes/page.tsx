@@ -21,7 +21,8 @@ type AccionModalPlan =
   | { type: 'ABRIR_CREAR' }
   | { type: 'ABRIR_EDITAR'; plan: Plan }
   | { type: 'CERRAR_MODAL' }
-  | { type: 'SET_CAMPO'; campo: 'nombre' | 'precio' | 'descripcion' | 'diasPorSemana' | 'activo'; valor: any }
+  | { type: 'SET_CAMPO'; campo: 'nombre' | 'precio' | 'descripcion' | 'diasPorSemana'; valor: string }
+  | { type: 'SET_CAMPO'; campo: 'activo'; valor: boolean }
 
 const ESTADO_INICIAL_MODAL: EstadoModalPlan = {
   modalAbierto: false,
@@ -70,7 +71,7 @@ export default function PlanesPage() {
   const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
   const [planAEliminar, setPlanAEliminar] = useState<Plan | null>(null)
 
-  if (usuarioActual.rol === 'ALUMNO') {
+  if (!usuarioActual || usuarioActual.rol === 'ALUMNO') {
     return (
       <AccesoRestringido
         titulo="Gestión de Planes Restringida"
@@ -129,7 +130,7 @@ export default function PlanesPage() {
           </p>
         </div>
 
-        {usuarioActual.rol === 'ADMIN' && (
+        {usuarioActual?.rol === 'ADMIN' && (
           <Button
             onClick={abrirCrear}
             className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
@@ -342,8 +343,12 @@ export default function PlanesPage() {
           plan={planAEliminar}
           onCancel={() => setPlanAEliminar(null)}
           onConfirm={() => {
-            eliminarPlan(planAEliminar.id)
-            setPlanAEliminar(null)
+            const res = eliminarPlan(planAEliminar.id)
+            if (!res.ok) {
+              alert(res.motivo)
+            } else {
+              setPlanAEliminar(null)
+            }
           }}
         />
       )}

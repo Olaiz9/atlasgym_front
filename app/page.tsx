@@ -190,7 +190,7 @@ function HomeAlumno({
   ubicacion: string
 }) {
   const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
-  const alumno = alumnos.find((a) => a.id === usuario.alumnoId) || alumnos[0]
+  const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
 
@@ -374,11 +374,8 @@ export default function Page() {
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
 
   useEffect(() => {
-  setFechaHoy(new Date());
-  // Por si la pestaña queda abierta hasta pasar la medianoche
-  const intervalo = setInterval(() => setFechaHoy(new Date()), 60_000);
-  return () => clearInterval(intervalo);
-}, []);
+    setFechaHoy(new Date());
+  }, []);
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
@@ -400,6 +397,10 @@ export default function Page() {
     );
     return () => controller.abort();
   }, []);
+
+  if (!usuarioActual) {
+    return null;
+  }
 
   if (usuarioActual.rol === 'ALUMNO') {
     return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} ubicacion={ubicacion} />

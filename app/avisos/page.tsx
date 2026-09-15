@@ -363,7 +363,7 @@ export default function AvisosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState<string>('TODOS')
 
-  const esAdmin = usuarioActual.rol === 'ADMIN'
+  const esAdmin = usuarioActual?.rol === 'ADMIN'
   const avisosVisibles = getAvisosParaUsuario(usuarioActual)
   const cantidadNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
@@ -372,8 +372,13 @@ export default function AvisosPage() {
   }, [alumnos])
 
   const avisosFiltrados = useMemo(() => {
+    if (!usuarioActual) return []
     return filtrarAvisos(avisosVisibles, filtroCategoria, busqueda, usuarioActual.id)
-  }, [avisosVisibles, filtroCategoria, busqueda, usuarioActual.id])
+  }, [avisosVisibles, filtroCategoria, busqueda, usuarioActual])
+
+  if (!usuarioActual) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 pb-20">

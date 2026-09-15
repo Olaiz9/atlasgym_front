@@ -231,7 +231,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, usuarioActual } = useAppData();
 
-  if (usuarioActual.rol === "ALUMNO") {
+  if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
       <AccesoRestringido
         titulo="Ficha de Alumno Restringida"

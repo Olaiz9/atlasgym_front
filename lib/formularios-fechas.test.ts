@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validarDatosAlumno, soloLetras, soloNumeros, emailValido } from "./validators";
+import { validarDatosAlumno, soloLetras, soloNumeros, emailValido, normalizarCelularArgentina, construirLinkWhatsapp } from "./validators";
 import { formatFechaAR, parsearFechaLocal, calcularDiasDesde, formatDiasIngreso } from "./date-utils";
 
 describe("Fase 2: Formularios, DNI y Fechas (lib/formularios-fechas.test.ts)", () => {
@@ -106,4 +106,83 @@ describe("Fase 2: Formularios, DNI y Fechas (lib/formularios-fechas.test.ts)", (
       expect(formatDiasIngreso(strHoy)).toBe("Hoy");
     });
   });
+
+  describe("Unicidad de DNI (validarDatosAlumno con alumnosExistentes)", () => {
+    const padronExistente = [
+      { id: "a1", dni: "40111222" },
+      { id: "a2", dni: "41333444" },
+    ];
+
+    it("falla al dar de alta un alumno con DNI ya registrado", () => {
+      const errores = validarDatosAlumno(
+        {
+          nombre: "Nuevo Alumno",
+          dni: "40111222",
+          email: "nuevo@gmail.com",
+          plan: "Musculación",
+        },
+        true,
+        padronExistente
+      );
+      expect(errores.dni).toBe("Este DNI ya está registrado en el gimnasio");
+    });
+
+    it("permite actualizar un alumno manteniendo su propio DNI", () => {
+      const errores = validarDatosAlumno(
+        {
+          nombre: "Alumno Modificado",
+          dni: "40111222",
+          email: "alumno1@gmail.com",
+          plan: "Musculación",
+        },
+        false,
+        padronExistente,
+        "a1" // Su propio ID
+      );
+      expect(errores.dni).toBeUndefined();
+    });
+
+    it("falla al editar un alumno si ingresa el DNI de otro alumno existente", () => {
+      const errores = validarDatosAlumno(
+        {
+          nombre: "Alumno Modificado",
+          dni: "41333444",
+          email: "alumno1@gmail.com",
+          plan: "Musculación",
+        },
+        false,
+        padronExistente,
+        "a1"
+      );
+      expect(errores.dni).toBe("Este DNI ya está registrado en el gimnasio");
+    });
+  });
+
+  describe("Normalización de Celular y Enlaces de WhatsApp", () => {
+    it("normaliza celular de 10 dígitos locales agregando prefijo internacional 549", () => {
+      expect(normalizarCelularArgentina("2611234567")).toBe("5492611234567");
+    });
+
+    it("normaliza celular de 11 dígitos con 0 inicial (remueve el 0 y agrega 549)", () => {
+      expect(normalizarCelularArgentina("02611234567")).toBe("5492611234567");
+    });
+
+    it("normaliza celular de 12 dígitos con 54 sin 9 móvil (agrega el 9)", () => {
+      expect(normalizarCelularArgentina("542611234567")).toBe("5492611234567");
+    });
+
+    it("mantiene intacto celular de 13 dígitos que ya incluye 549", () => {
+      expect(normalizarCelularArgentina("5492611234567")).toBe("5492611234567");
+    });
+
+    it("elimina guiones, paréntesis y espacios antes de normalizar", () => {
+      expect(normalizarCelularArgentina("+54 (261) 123-4567")).toBe("5492611234567");
+    });
+
+    it("construye un enlace de wa.me con mensaje codificado", () => {
+      const link = construirLinkWhatsapp("2611234567", "Hola mundo! ¿Cómo estás?");
+      expect(link).toBe("https://wa.me/5492611234567?text=Hola%20mundo!%20%C2%BFC%C3%B3mo%20est%C3%A1s%3F");
+    });
+  });
 });
+

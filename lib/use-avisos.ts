@@ -49,7 +49,8 @@ export function useAvisosManager() {
   }, []);
 
   const getAvisosParaUsuario = useCallback(
-    (usuario: UsuarioSesion) => {
+    (usuario: UsuarioSesion | null) => {
+      if (!usuario) return [];
       if (usuario.rol === "ADMIN") {
         return avisos;
       }
@@ -61,7 +62,8 @@ export function useAvisosManager() {
   );
 
   const getCantidadAvisosNoLeidos = useCallback(
-    (usuario: UsuarioSesion) => {
+    (usuario: UsuarioSesion | null) => {
+      if (!usuario) return 0;
       const aplicables = getAvisosParaUsuario(usuario);
       return aplicables.filter((av) => !av.leidoPor.includes(usuario.id)).length;
     },

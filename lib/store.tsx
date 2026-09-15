@@ -14,6 +14,8 @@ import { createContext, useContext, useMemo, useState, useEffect, useCallback, R
 import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
 import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK, SESIONES_MOCK } from "./mock-data";
 import { useAvisosManager } from "./use-avisos";
+import { fechaLocalHoy } from "./date-utils";
+import { puedeEliminarPlan, ejecutarBajaAlumno, sincronizarNombrePlanEnAlumnos } from "./plan-utils";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   id: "u1",
@@ -29,7 +31,7 @@ interface AppDataContextValue {
   videosTecnica: VideoTecnica[];
   planes: Plan[];
   avisos: Aviso[];
-  usuarioActual: UsuarioSesion;
+  usuarioActual: UsuarioSesion | null;
   iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
@@ -46,13 +48,13 @@ interface AppDataContextValue {
   eliminarVideoTecnica: (id: string) => void;
   agregarPlan: (plan: Omit<Plan, "id">) => Plan;
   actualizarPlan: (id: string, cambios: Partial<Omit<Plan, "id">>) => void;
-  eliminarPlan: (id: string) => void;
+  eliminarPlan: (id: string) => { ok: boolean; motivo?: string };
   crearAviso: (aviso: Omit<Aviso, "id" | "leidoPor">) => Aviso;
   marcarAvisoLeido: (avisoId: string, usuarioId: string) => void;
   marcarTodosAvisosLeidos: (usuarioId: string) => void;
   eliminarAviso: (avisoId: string) => void;
-  getAvisosParaUsuario: (usuario: UsuarioSesion) => Aviso[];
-  getCantidadAvisosNoLeidos: (usuario: UsuarioSesion) => number;
+  getAvisosParaUsuario: (usuario: UsuarioSesion | null) => Aviso[];
+  getCantidadAvisosNoLeidos: (usuario: UsuarioSesion | null) => number;
   getAlumno: (id: string) => Alumno | undefined;
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   getPagosDeAlumno: (alumnoId: string) => Pago[];
@@ -65,10 +67,53 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 function useGymStore(): AppDataContextValue {
-  const [alumnos, setAlumnos] = useState<Alumno[]>(ALUMNOS_MOCK);
-  const [pagos, setPagos] = useState<Pago[]>(PAGOS_MOCK);
-  const [rutinas, setRutinas] = useState<Rutina[]>(RUTINAS_MOCK);
-  const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(VIDEOS_TECNICA_MOCK);
+  const [alumnos, setAlumnos] = useState<Alumno[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_alumnos_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return ALUMNOS_MOCK;
+  });
+
+  const [pagos, setPagos] = useState<Pago[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_pagos_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return PAGOS_MOCK;
+  });
+
+  const [rutinas, setRutinas] = useState<Rutina[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_rutinas_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return RUTINAS_MOCK;
+  });
+
+  const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_videos_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return VIDEOS_TECNICA_MOCK;
+  });
   const [planes, setPlanes] = useState<Plan[]>(() => {
     if (typeof window !== "undefined") {
       const guardado = localStorage.getItem("atlas_planes_v1");
@@ -80,7 +125,7 @@ function useGymStore(): AppDataContextValue {
     }
     return PLANES_MOCK;
   });
-  const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion>(() => {
+  const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion | null>(() => {
     if (typeof window !== "undefined") {
       const guardado = localStorage.getItem("atlas_sesion_v1");
       if (guardado) {
@@ -89,7 +134,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return USUARIO_ADMIN_DEFAULT;
+    return null;
   });
 
   // Historial de entrenamiento: se hidrata desde localStorage o desde el mock inicial
@@ -105,18 +150,20 @@ function useGymStore(): AppDataContextValue {
     return SESIONES_MOCK;
   });
 
-  const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO") => {
+  const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO", email?: string) => {
     let nuevoUsuario: UsuarioSesion;
     if (rol === "ADMIN") {
       nuevoUsuario = USUARIO_ADMIN_DEFAULT;
     } else {
-      const alumno = alumnos.find((a) => a.activo) || alumnos[0];
+      const alumno = email
+        ? alumnos.find((a) => a.email?.toLowerCase() === email.toLowerCase()) || alumnos.find((a) => a.activo)
+        : alumnos.find((a) => a.activo);
       nuevoUsuario = {
         id: "u_alumno_1",
-        nombre: alumno ? alumno.nombre : "Lucía Fernández",
-        email: alumno?.email || "lucia.fernandez@mail.com",
+        nombre: alumno ? alumno.nombre : (email ? email.split("@")[0] : "Alumno Atlas"),
+        email: alumno?.email || email || "alumno@atlasgym.com",
         rol: "ALUMNO",
-        alumnoId: alumno ? alumno.id : "a1",
+        alumnoId: alumno?.id,
       };
     }
     setUsuarioActual(nuevoUsuario);
@@ -126,7 +173,7 @@ function useGymStore(): AppDataContextValue {
   }, [alumnos]);
 
   const cerrarSesion = useCallback(() => {
-    setUsuarioActual(USUARIO_ADMIN_DEFAULT);
+    setUsuarioActual(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("atlas_sesion_v1");
     }
@@ -165,8 +212,12 @@ function useGymStore(): AppDataContextValue {
   }, [planes]);
 
   const eliminarAlumno = useCallback((id: string) => {
-    setAlumnos((prev) => prev.filter((a) => a.id !== id));
-  }, []);
+    const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
+      ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
+    setAlumnos(nuevosAlumnos);
+    setPagos(nuevosPagos);
+    setRutinas(nuevasRutinas);
+  }, [alumnos, pagos, rutinas]);
 
   const agregarPago = useCallback((pago: Omit<Pago, "id">) => {
     const alumno = alumnos.find((a) => a.id === pago.alumnoId);
@@ -217,6 +268,39 @@ function useGymStore(): AppDataContextValue {
     return nuevoVideo;
   }, []);
 
+  // Persistir entidades en localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("atlas_alumnos_v1", JSON.stringify(alumnos));
+      } catch {}
+    }
+  }, [alumnos]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("atlas_pagos_v1", JSON.stringify(pagos));
+      } catch {}
+    }
+  }, [pagos]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("atlas_rutinas_v1", JSON.stringify(rutinas));
+      } catch {}
+    }
+  }, [rutinas]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("atlas_videos_v1", JSON.stringify(videosTecnica));
+      } catch {}
+    }
+  }, [videosTecnica]);
+
   // Persistir planes en localStorage cuando cambian (sin efectos secundarios en el updater)
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -240,15 +324,21 @@ function useGymStore(): AppDataContextValue {
   const actualizarPlan = useCallback((id: string, cambios: Partial<Omit<Plan, "id">>) => {
     setPlanes((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
     if (cambios.nombre) {
-      setAlumnos((prev) =>
-        prev.map((a) => (a.planId === id ? { ...a, plan: cambios.nombre! } : a))
-      );
+      setAlumnos((prev) => sincronizarNombrePlanEnAlumnos(prev, id, cambios.nombre!));
     }
   }, []);
 
-  const eliminarPlan = useCallback((id: string) => {
-    setPlanes((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+  const eliminarPlan = useCallback(
+    (id: string): { ok: boolean; motivo?: string } => {
+      const chequeo = puedeEliminarPlan(id, alumnos);
+      if (!chequeo.ok) {
+        return chequeo;
+      }
+      setPlanes((prev) => prev.filter((p) => p.id !== id));
+      return { ok: true };
+    },
+    [alumnos]
+  );
 
   // Persistir historial de entrenamiento en localStorage
   useEffect(() => {
@@ -259,7 +349,7 @@ function useGymStore(): AppDataContextValue {
 
   // Guarda o reemplaza la sesión del día para ese alumno/rutina/día
   const guardarSesion = useCallback((sesion: Omit<SesionEntrenamiento, "id">) => {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocalHoy();
     setSesionesEntrenamiento((prev) => {
       // Reemplaza si ya existe una sesión del mismo alumno/rutina/día/fecha de hoy
       const existeHoy = prev.findIndex(
@@ -276,7 +366,7 @@ function useGymStore(): AppDataContextValue {
   // Devuelve la sesión más reciente que NO sea del día de hoy (la "previa")
   const getUltimaSesion = useCallback(
     (alumnoId: string, rutinaId: string, diaId: string): SesionEntrenamiento | undefined => {
-      const hoy = new Date().toISOString().slice(0, 10);
+      const hoy = fechaLocalHoy();
       const previas = sesionesEntrenamiento
         .filter((s) => s.alumnoId === alumnoId && s.rutinaId === rutinaId && s.diaId === diaId && s.fecha < hoy)
         .sort((a, b) => b.fecha.localeCompare(a.fecha));
