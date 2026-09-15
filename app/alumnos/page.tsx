@@ -2,12 +2,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
+import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
 import { formatDiasIngreso } from "@/lib/date-utils";
-import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
@@ -20,7 +18,6 @@ import {
   EstadoCuenta,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
-  Plan,
 } from "@/lib/types";
 
 const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
@@ -32,7 +29,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
   const { toast } = useToast();
 
@@ -123,12 +120,6 @@ export default function AlumnosPage() {
     ]);
     descargarCSV("alumnos_atlas_gym", encabezados, filas);
     toast("Lista de alumnos exportada a CSV con éxito", "success");
-  };
-
-  const handleNuevoAlumno = (nuevo: Omit<Alumno, "id">) => {
-    agregarAlumno(nuevo);
-    setModalAbierto(false);
-    toast(`Alumno "${nuevo.nombre}" dado de alta con éxito`, "success");
   };
 
   const confirmarEliminar = () => {
@@ -469,13 +460,5 @@ function ModalConfirmarEliminar({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium text-slate-500 mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
 
 
