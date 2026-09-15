@@ -22,3 +22,7 @@ Esta carpeta centraliza todos los informes técnicos, bitácoras y reportes de e
 4. **`CHANGELOG_ATLAS.pdf`**
    - **Sprint / Módulo:** Historial de Cambios y Versiones Atlas Gym.
    - **Contenido:** Registro consolidado de cambios evolutivos, arquitectura de componentes y funcionalidades implementadas en el sistema.
+
+5. **`INFORME_AUDITORIA_FRONTEND_ATLAS_GYM.pdf`**
+   - **Sprint / Módulo:** Auditoría Integral Frontend & Roadmap de Rendimiento (Sprint 4/5).
+   - **Contenido:** Diagnóstico de empaquetado (bundle de 1.2 MB por catálogo de ejercicios estático), arquitectura de re-renders por store monolítico, bugs silenciosos en fechas de finanzas, brechas para operación en gimnasios reales y hoja de ruta en 4 fases.
