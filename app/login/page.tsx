@@ -320,7 +320,7 @@ export default function LoginPage() {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                🤖 Android (Chrome)
+                Android (Chrome)
               </button>
               <button
                 type="button"
@@ -331,7 +331,7 @@ export default function LoginPage() {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                🍏 iPhone (Safari)
+                iPhone (Safari)
               </button>
             </div>
 

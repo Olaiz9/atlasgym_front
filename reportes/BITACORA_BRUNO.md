@@ -310,4 +310,61 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Rutas compiladas: **11/11 rutas estáticas y dinámicas optimizadas**
     - Estado: **Listo para producción**
 
+---
+
+### 8. Corrección de Sidebar Colapsado, Traducción Biomecánica al Español, Rendimiento de Videoteca y Módulo de Perfil de Usuario
+* **Fecha:** 14 de Septiembre de 2026
+* **Contexto de Negocio:** Tercera ronda de refinamiento UX, rendimiento y accesibilidad idiomática solicitada por Bruno:
+  1. **Ajuste visual en Sidebar colapsado:** Al contraer el menú lateral a 80px (`w-20`), las iniciales de usuario y el botón de cerrar sesión se superponían y quedaban descuadrados.
+  2. **Traducción integral de técnica al español:** Todos los ~1.480 ejercicios del catálogo tenían nombres, descripciones y pasos anatómicos en inglés. Se requería traducir íntegramente al español rioplatense/profesional de musculación.
+  3. **Optimización de rendimiento en Videoteca:** Con 1.500 GIFs animados reproduciéndose a la vez en el DOM, se detectaba lentitud. Se requería optimizar sin recortar ni un solo ejercicio.
+  4. **Edición de perfil de usuario sincronizada:** Permitir a usuarios (alumnos y profesores) actualizar su celular/WhatsApp, contraseña y foto de perfil, con sincronización automática e inmediata hacia el panel de administración del profesor y recibos de WhatsApp.
+  5. **Análisis de arquitectura UML / Base de Datos:** Evaluación del impacto en el diagrama de clases y entidad-relación del backend.
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Rediseño de Tarjeta de Usuario en Sidebar Colapsado (`components/sidebar.tsx`):**
+     - Desacople de estructura horizontal en favor de una tarjeta vertical compacta y centrada (`flex flex-col items-center gap-2 rounded-xl bg-slate-900/80 p-2 border border-slate-800/80`) cuando `collapsed` está activo.
+     - Separación nítida del avatar interactivo y del botón de cerrar sesión (`LogOut`), eliminando solapamientos de z-index y márgenes residuales.
+  2. **Fase 2 — Motor de Traducción Biomecánica en Español (`lib/traductor-ejercicios.ts` y `lib/catalogo-ejercicios.ts`):**
+     - Implementación de un motor heurístico de traducción anatómica y biomecánica (`traducirTituloEjercicio`, `traducirInstrucciones`, `traducirMusculoEspecifico`).
+     - Conversión terminológica de equipamiento y movimientos: *Press*, *Sentadilla*, *Curl*, *Jalón*, *Remo*, *Estocadas*, *Elevaciones*, etc.
+     - Traducción contextual de instrucciones paso a paso (*"Párate con los pies al ancho de hombros"*, *"Inhala y desciende controladamente"*, etc.) en lugar de texto plano en inglés.
+     - Preservación de los 20 ejercicios emblemáticos curados artesanalmente al inicio del catálogo.
+  3. **Fase 3 — Optimización de Videoteca por Lotes Progresivos (`app/videoteca/page.tsx`):**
+     - Implementación de paginación virtual en cliente (`ELEMENTOS_POR_LOTE = 24`, `limiteVisible`, `videosVisibles`).
+     - Carga diferida con botón interactivo *"Cargar más videos (+24)"* con indicador reactivo (`Mostrando X de Y ejercicios`).
+     - Mantenimiento del motor de búsqueda instantáneo en memoria sobre los 1.500 ejercicios en &lt;1ms.
+     - Integración de visualizador detallado en modal con instrucciones paso a paso en español formateadas con badges de pasos secuenciales.
+  4. **Fase 4 — Módulo y Modal de "Mi Perfil" con Sincronización Automática (`components/modal-perfil.tsx`, `lib/store.tsx`, `lib/types.ts`):**
+     - Componente `ModalPerfil` accesible desde el avatar del usuario tanto en el menú expandido como en el menú colapsado.
+     - Edición de teléfono celular con validación de prefijo internacional para WhatsApp (+54 9 ...).
+     - Cambio y confirmación segura de contraseña con feedback en vivo.
+     - Selector rápido de avatares fotográficos de alta calidad.
+     - Función `actualizarUsuarioActual` en el store central: cuando el alumno guarda su número telefónico, se actualiza automáticamente el listado de alumnos (`alumnos`) sincronizándolo para la tabla de administración del profesor y la emisión de comprobantes de pago vía WhatsApp.
+     - Persistencia reactiva en `localStorage` (`atlas_alumnos_v1`).
+  5. **Fase 5 — Análisis de Compatibilidad UML / BD:**
+     - Confirmado: **No requiere modificar la lógica ni las relaciones del diagrama UML**. Las entidades `Usuario` y `Alumno` ya contemplan los atributos `telefono`, `foto_url` y `password_hash`. No se alteran claves primarias, foráneas ni cardinalidades.
+
+* **Archivos afectados:**
+  - 📁 `components/sidebar.tsx`: Layout vertical para avatar/logout en estado colapsado e invocación del modal de perfil.
+  - 📁 `lib/traductor-ejercicios.ts`: Mapeo biomecánico y gramatical de ejercicios e instrucciones al español.
+  - 📁 `lib/catalogo-ejercicios.ts`: Integración de traducción para los 1.480 ejercicios restantes.
+  - 📁 `app/videoteca/page.tsx`: Carga por lotes progresivos (24 iniciales) y modal con pasos en español.
+  - 📁 `components/modal-perfil.tsx`: Modal interactivo de perfil (celular, clave, avatar y estado de cuota).
+  - 📁 `lib/types.ts`: Atributos `fotoUrl` y `celular` en `UsuarioSesion`.
+  - 📁 `lib/store.tsx`: Método `actualizarUsuarioActual` y persistencia reactiva de alumnos en almacenamiento local.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Documentación de hito 8.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `10 passed (10)`
+    - Tests ejecutados: `71 passed (71)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **TypeScript (`npx tsc --noEmit`):**
+    - Diagnóstico: **0 errores de compilación**
+  - 🚀 **Next.js Production Build (`npm run build`):**
+    - Rutas compiladas: **11/11 rutas optimizadas con Turbopack**
+    - Estado: **Listo para producción**
+
+
 

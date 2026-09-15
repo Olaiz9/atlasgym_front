@@ -32,6 +32,7 @@ interface AppDataContextValue {
   planes: Plan[];
   avisos: Aviso[];
   usuarioActual: UsuarioSesion | null;
+  actualizarUsuarioActual: (cambios: Partial<UsuarioSesion>) => void;
   iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
@@ -177,6 +178,17 @@ function useGymStore(): AppDataContextValue {
     if (typeof window !== "undefined") {
       localStorage.removeItem("atlas_sesion_v1");
     }
+  }, []);
+
+  const actualizarUsuarioActual = useCallback((cambios: Partial<UsuarioSesion>) => {
+    setUsuarioActual((prev) => {
+      if (!prev) return null;
+      const siguiente: UsuarioSesion = { ...prev, ...cambios };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
+      }
+      return siguiente;
+    });
   }, []);
 
   const agregarAlumno = useCallback((alumno: Omit<Alumno, "id">) => {
@@ -407,6 +419,7 @@ function useGymStore(): AppDataContextValue {
       videosTecnica,
       planes,
       usuarioActual,
+      actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
       agregarAlumno,

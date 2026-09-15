@@ -1,6 +1,7 @@
 // lib/catalogo-ejercicios.ts
 import { VideoTecnica } from './types'
 import rawExercises from './data/exercises.json'
+import { traducirNombre, traducirMusculo, traducirInstrucciones, generarDescripcionEspanol } from './traductor-ejercicios'
 
 export interface EjercicioCatalogo extends VideoTecnica {
   exerciseId: string
@@ -370,7 +371,7 @@ const CLASICOS_CURADOS: EjercicioCatalogo[] = [
 // Identificadores de los ya cargados para evitar duplicados
 const idsCurados = new Set(CLASICOS_CURADOS.map((c) => c.exerciseId))
 
-// ── Mapeo dinámico de los 1.500 ejercicios restantes ───────────────────────
+// ── Mapeo dinámico de los 1.500 ejercicios restantes con traducción al español ──
 const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
   .filter((raw) => !idsCurados.has(raw.exerciseId))
   .map((raw) => {
@@ -380,12 +381,26 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
     const rawEquip = (raw.equipments && raw.equipments[0]) ? String(raw.equipments[0]).toLowerCase() : 'body weight'
     const equipo = EQUIPMENT_MAP[rawEquip] || capitalizar(rawEquip)
 
-    const nombreFormateado = capitalizar(raw.name)
+    const nombreTraducido = traducirNombre(raw.name)
+    const instruccionesTraducidas = traducirInstrucciones(raw.instructions)
+    const musculosPrincipalesTraducidos = Array.isArray(raw.targetMuscles)
+      ? raw.targetMuscles.map(traducirMusculo)
+      : [grupo]
+    const musculosSecundariosTraducidos = Array.isArray(raw.secondaryMuscles)
+      ? raw.secondaryMuscles.map(traducirMusculo)
+      : []
+
+    const descripcion = generarDescripcionEspanol(
+      nombreTraducido,
+      grupo,
+      equipo,
+      musculosPrincipalesTraducidos
+    )
 
     return {
       id: `ex-${raw.exerciseId}`,
       exerciseId: raw.exerciseId,
-      titulo: nombreFormateado,
+      titulo: nombreTraducido,
       nombreIngles: raw.name,
       grupoMuscular: grupo,
       duracion: 'Loop GIF',
@@ -394,11 +409,11 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
       equipo: equipo,
       videoUrl: raw.gifUrl,
       gifUrl: raw.gifUrl,
-      descripcion: Array.isArray(raw.instructions) ? raw.instructions.slice(0, 2).join(' ') : 'Técnica guiada en bucle.',
-      musculosPrincipales: raw.targetMuscles || [grupo],
-      musculosSecundarios: raw.secondaryMuscles || [],
-      consejosClave: Array.isArray(raw.instructions) ? raw.instructions.slice(0, 3) : ['Ejecutar con rango completo de movimiento.'],
-      instruccionesPasoAPaso: Array.isArray(raw.instructions) ? raw.instructions : [],
+      descripcion: descripcion,
+      musculosPrincipales: musculosPrincipalesTraducidos,
+      musculosSecundarios: musculosSecundariosTraducidos,
+      consejosClave: instruccionesTraducidas.slice(0, 3),
+      instruccionesPasoAPaso: instruccionesTraducidas,
     }
   })
 
