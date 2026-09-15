@@ -1,7 +1,7 @@
 // app/finanzas/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   DollarSign,
   AlertCircle,
@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Trash2,
   MessageCircle,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
@@ -20,6 +21,9 @@ import { formatFechaAR, calcularVencimientoCuota, fechaLocalHoy, periodoMesActua
 import { CONTACTO_ATLAS } from "@/lib/constants";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion, Alumno, Plan } from "@/lib/types";
 import { construirLinkWhatsapp } from "@/lib/validators";
+import { MetricCard } from "@/components/ui/metric-card";
+import { useToast } from "@/components/ui/toast";
+import { descargarCSV } from "@/lib/export-utils";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
@@ -311,6 +315,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 export default function FinanzasPage() {
   const { alumnos, planes, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
     useAppData();
+  const { toast } = useToast();
 
   const [mes, setMes] = useState<string>(() => mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
@@ -321,7 +326,7 @@ export default function FinanzasPage() {
 
   const pagosDelMes = useMemo(() => {
     if (verTodos) return pagos;
-    return pagos.filter((p) => p.fecha.slice(0, 7) === mes);
+    return pagos.filter((p) => (p.periodoMes || p.fecha.slice(0, 7)) === mes);
   }, [pagos, mes, verTodos]);
 
   const metrica = useMemo(() => {
@@ -353,6 +358,18 @@ export default function FinanzasPage() {
     });
   }, [pagosDelMes, filtro, busqueda, getAlumno]);
 
+  // Soporte para cerrar modales con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setModalAbierto(false);
+        setPagoAEliminar(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   if (!usuarioActual) {
     return null;
   }
@@ -362,15 +379,47 @@ export default function FinanzasPage() {
     return <VistaCuotasAlumno usuario={usuarioActual} />;
   }
 
+  const exportarCSVFinanzas = () => {
+    const encabezados = [
+      "ID",
+      "Alumno",
+      "Plan",
+      "Monto",
+      "Fecha Pago",
+      "Periodo Mes",
+      "Método",
+      "Estado",
+    ];
+    const filas = pagosDelMes.map((p) => {
+      const alumno = getAlumno(p.alumnoId);
+      const nombre = alumno?.nombre ?? p.alumnoNombreHistorico ?? "Desconocido";
+      return [
+        p.id,
+        nombre,
+        p.plan,
+        p.monto.toString(),
+        p.fecha,
+        p.periodoMes || p.fecha.slice(0, 7),
+        p.metodo,
+        p.estado,
+      ];
+    });
+    const sufijo = verTodos ? "historico_completo" : mes;
+    descargarCSV(`finanzas_atlas_gym_${sufijo}`, encabezados, filas);
+    toast("Planilla de finanzas exportada a CSV con éxito", "success");
+  };
+
   const handleNuevoPago = (nuevo: Omit<Pago, "id">) => {
     agregarPago(nuevo);
     setModalAbierto(false);
+    toast("Pago registrado con éxito", "success");
   };
 
   const confirmarEliminar = () => {
     if (!pagoAEliminar) return;
     eliminarPago(pagoAEliminar.id);
     setPagoAEliminar(null);
+    toast("Pago eliminado del registro", "info");
   };
 
   return (
@@ -386,13 +435,23 @@ export default function FinanzasPage() {
                 : `Viendo ${formatearMes(mes)} — cada mes arranca con una planilla limpia.`}
             </p>
           </div>
-          <button
-            onClick={() => setModalAbierto(true)}
-            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            Registrar pago
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={exportarCSVFinanzas}
+              title="Exportar planilla actual a archivo CSV / Excel"
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+            >
+              <Download className="w-4 h-4 text-slate-400" />
+              Exportar CSV
+            </button>
+            <button
+              onClick={() => setModalAbierto(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            >
+              <Plus className="w-5 h-5" />
+              Registrar pago
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -593,36 +652,6 @@ export default function FinanzasPage() {
   );
 }
 
-// ---------- Tarjeta de métrica ----------
-function MetricCard({
-  icon,
-  label,
-  value,
-  sub,
-  tint,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
-  tint: { bg: string; text: string; bar: string };
-}) {
-  return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{value}</p>
-          {sub && <p className="mt-3 text-xs font-bold text-slate-400">{sub}</p>}
-        </div>
-        <div className={`flex size-12 items-center justify-center rounded-2xl ${tint.bg} ${tint.text} transition-transform duration-300 group-hover:scale-110`}>
-          {icon}
-        </div>
-      </div>
-      <div className={`absolute bottom-0 left-0 h-1.5 w-full ${tint.bar}`} />
-    </article>
-  );
-}
 
 // ---------- Modal: confirmar eliminación ----------
 function ModalConfirmarEliminar({
@@ -722,6 +751,7 @@ function ModalRegistrarPago({
     plan: inicial.planNombre,
     monto: inicial.planPrecio,
     fecha: fechaLocalHoy(),
+    periodoMes: mesActualISO(),
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
@@ -772,7 +802,7 @@ function ModalRegistrarPago({
       ...form,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
       monto: montoNum,
-      periodoMes: form.fecha.slice(0, 7),
+      periodoMes: form.periodoMes || form.fecha.slice(0, 7),
     });
   };
 
@@ -846,16 +876,34 @@ function ModalRegistrarPago({
                   required
                 />
               </Field>
-              <Field label="Fecha">
+              <Field label="Fecha de pago">
                 <input
                   aria-label="Fecha"
                   type="date"
                   value={form.fecha}
-                  onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+                  onChange={(e) => {
+                    const nuevaFecha = e.target.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      fecha: nuevaFecha,
+                      periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7),
+                    }));
+                  }}
                   className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </Field>
             </div>
+
+            <Field label="Mes que abona (Período)">
+              <input
+                aria-label="Mes que abona"
+                type="month"
+                value={form.periodoMes}
+                onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                required
+              />
+            </Field>
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Método">

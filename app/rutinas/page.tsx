@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
@@ -1390,7 +1390,25 @@ function TarjetaEjercicioAlumno({
 }) {
   const [expandido, setExpandido] = useState(index === 0)
   const [videoAbierto, setVideoAbierto] = useState(false)
-  const videoMatch = useMemo(() => buscarVideoParaEjercicio(ejercicio.nombre, videos), [ejercicio.nombre, videos])
+  const [videoApi, setVideoApi] = useState<VideoTecnica | null>(null)
+  const videoMatch = useMemo(() => buscarVideoParaEjercicio(ejercicio.nombre, videos) || videoApi || undefined, [ejercicio.nombre, videos, videoApi])
+
+  useEffect(() => {
+    if (!buscarVideoParaEjercicio(ejercicio.nombre, videos) && ejercicio.nombre) {
+      let cancelado = false
+      fetch(`/api/ejercicios?q=${encodeURIComponent(ejercicio.nombre)}&limit=1`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!cancelado && d.ejercicios && d.ejercicios.length > 0) {
+            setVideoApi(d.ejercicios[0])
+          }
+        })
+        .catch(() => {})
+      return () => {
+        cancelado = true
+      }
+    }
+  }, [ejercicio.nombre, videos])
 
   const seriesCompletas = seriesData.filter((s) => s.completada).length
   const todasCompletas = seriesCompletas === ejercicio.series && ejercicio.series > 0

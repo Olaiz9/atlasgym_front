@@ -50,26 +50,79 @@ export default function VideotecaPage() {
 
   const ELEMENTOS_POR_LOTE = 24
   const [limiteVisible, setLimiteVisible] = useState(ELEMENTOS_POR_LOTE)
+  const [ejerciciosApi, setEjerciciosApi] = useState<VideoTecnica[]>([])
+  const [totalApi, setTotalApi] = useState(0)
+  const [cargandoApi, setCargandoApi] = useState(false)
 
-  const videosFiltrados = useMemo(() => {
-    return videosTecnica.filter((v) => {
-      const matchGrupo = filtroGrupo === 'TODOS' || v.grupoMuscular.toLowerCase() === filtroGrupo.toLowerCase()
-      const matchTexto =
-        v.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (v.descripcion && v.descripcion.toLowerCase().includes(busqueda.toLowerCase())) ||
-        v.grupoMuscular.toLowerCase().includes(busqueda.toLowerCase())
-      return matchGrupo && matchTexto
-    })
-  }, [videosTecnica, filtroGrupo, busqueda])
-
-  // Resetear paginación al cambiar búsqueda o filtro de grupo muscular
+  // Resetear límite al cambiar búsqueda o grupo
   useEffect(() => {
     setLimiteVisible(ELEMENTOS_POR_LOTE)
   }, [filtroGrupo, busqueda])
 
+  // Cerrar modales con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setVideoSeleccionado(null)
+        setModalNuevoAbierto(false)
+        setVideoAEliminar(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Consultar API de ejercicios bajo demanda
+  useEffect(() => {
+    let cancelado = false
+    setCargandoApi(true)
+
+    const params = new URLSearchParams()
+    if (filtroGrupo !== 'TODOS') params.set('grupo', filtroGrupo)
+    if (busqueda.trim()) params.set('q', busqueda.trim())
+    params.set('limit', String(limiteVisible))
+
+    fetch(`/api/ejercicios?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelado) {
+          setEjerciciosApi(data.ejercicios || [])
+          setTotalApi(data.total || 0)
+          setCargandoApi(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setEjerciciosApi([])
+          setCargandoApi(false)
+        }
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [filtroGrupo, busqueda, limiteVisible])
+
+  // Filtrar videos personalizados del store
+  const videosCustom = useMemo(() => {
+    return videosTecnica.filter((v) => {
+      const matchGrupo = filtroGrupo === 'TODOS' || v.grupoMuscular.toLowerCase() === filtroGrupo.toLowerCase()
+      const matchTexto =
+        !busqueda ||
+        v.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (v.descripcion && v.descripcion.toLowerCase().includes(busqueda.toLowerCase()))
+      return matchGrupo && matchTexto
+    })
+  }, [videosTecnica, filtroGrupo, busqueda])
+
+  // Combinar videos del store y de la API sin duplicar
   const videosVisibles = useMemo(() => {
-    return videosFiltrados.slice(0, limiteVisible)
-  }, [videosFiltrados, limiteVisible])
+    const idsApi = new Set(ejerciciosApi.map((e) => e.id))
+    const customFiltrados = videosCustom.filter((v) => !idsApi.has(v.id))
+    return [...customFiltrados, ...ejerciciosApi]
+  }, [videosCustom, ejerciciosApi])
+
+  const totalEjercicios = totalApi + videosCustom.length
 
   if (!usuarioActual) {
     return null
@@ -150,8 +203,18 @@ export default function VideotecaPage() {
         </div>
       </div>
 
-      {/* Grid de Videos */}
-      {videosFiltrados.length === 0 ? (
+      {/* Grid de Videos o Skeletons de Carga */}
+      {cargandoApi && videosVisibles.length === 0 ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
+              <div className="h-44 rounded-xl bg-slate-800/60" />
+              <div className="h-4 w-1/3 rounded bg-slate-800" />
+              <div className="h-5 w-3/4 rounded bg-slate-800" />
+            </div>
+          ))}
+        </div>
+      ) : videosVisibles.length === 0 ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
           <div className="size-14 mx-auto rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-4">
             <Video className="size-7" />
@@ -271,18 +334,28 @@ export default function VideotecaPage() {
           </div>
 
           {/* Botón de Carga por Tandas / Paginación */}
-          {limiteVisible < videosFiltrados.length && (
+          {limiteVisible < totalEjercicios && (
             <div className="flex flex-col items-center justify-center pt-4 pb-2 gap-3">
               <p className="text-xs text-slate-400 font-medium">
-                Mostrando <span className="text-white font-bold">{videosVisibles.length}</span> de <span className="text-white font-bold">{videosFiltrados.length.toLocaleString('es-AR')}</span> ejercicios
+                Mostrando <span className="text-white font-bold">{videosVisibles.length}</span> de <span className="text-white font-bold">{totalEjercicios.toLocaleString('es-AR')}</span> ejercicios
               </p>
               <button
                 type="button"
+                disabled={cargandoApi}
                 onClick={() => setLimiteVisible((prev) => prev + ELEMENTOS_POR_LOTE)}
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/25 transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5"
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/25 transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 disabled:opacity-50"
               >
-                <Plus className="size-4" />
-                Cargar más videos (+24)
+                {cargandoApi ? (
+                  <>
+                    <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Cargando ejercicios...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    Cargar más videos (+24)
+                  </>
+                )}
               </button>
             </div>
           )}

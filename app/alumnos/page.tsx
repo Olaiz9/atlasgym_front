@@ -1,8 +1,8 @@
 // app/alumnos/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
-import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
@@ -10,6 +10,9 @@ import { formatDiasIngreso } from "@/lib/date-utils";
 import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
+import { MetricCard } from "@/components/ui/metric-card";
+import { useToast } from "@/components/ui/toast";
+import { descargarCSV } from "@/lib/export-utils";
 import {
   Alumno,
   EstadoCuenta,
@@ -27,8 +30,9 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
+  const { toast } = useToast();
 
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<EstadoCuenta | "TODOS">("TODOS");
@@ -49,22 +53,74 @@ export default function AlumnosPage() {
   }, [alumnosConEstado]);
 
   const alumnosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
     return alumnosConEstado.filter((a) => {
       const coincideFiltro = filtro === "TODOS" || a.estadoCuenta === filtro;
-      const coincideBusqueda = a.nombre.toLowerCase().includes(busqueda.toLowerCase());
+      const coincideBusqueda =
+        !q ||
+        a.nombre.toLowerCase().includes(q) ||
+        (a.dni && a.dni.toLowerCase().includes(q)) ||
+        (a.email && a.email.toLowerCase().includes(q)) ||
+        (a.celular && a.celular.includes(q)) ||
+        (a.plan && a.plan.toLowerCase().includes(q));
       return coincideFiltro && coincideBusqueda;
     });
   }, [alumnosConEstado, filtro, busqueda]);
 
+  // Soporte para cerrar modales con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setModalAbierto(false);
+        setAlumnoAEditar(null);
+        setAlumnoAEliminar(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const exportarCSVAlumnos = () => {
+    const encabezados = [
+      "ID",
+      "Nombre",
+      "DNI",
+      "Email",
+      "Celular",
+      "Plan",
+      "Estado de Cuenta",
+      "Fecha de Alta",
+      "Última Asistencia",
+      "Tiene Rutina",
+    ];
+    const filas = alumnosConEstado.map((a) => [
+      a.id,
+      a.nombre,
+      a.dni || "-",
+      a.email || "-",
+      a.celular || "-",
+      a.plan,
+      ESTADO_CUENTA_LABEL[a.estadoCuenta],
+      a.fechaAlta,
+      a.ultimaAsistencia || "Sin registros",
+      a.tieneRutina ? "Sí" : "No",
+    ]);
+    descargarCSV("alumnos_atlas_gym", encabezados, filas);
+    toast("Lista de alumnos exportada a CSV con éxito", "success");
+  };
+
   const handleNuevoAlumno = (nuevo: Omit<Alumno, "id">) => {
     agregarAlumno(nuevo);
     setModalAbierto(false);
+    toast(`Alumno "${nuevo.nombre}" dado de alta con éxito`, "success");
   };
 
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
+    const nombre = alumnoAEliminar.nombre;
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
+    toast(`Alumno "${nombre}" eliminado del sistema`, "info");
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -86,13 +142,23 @@ export default function AlumnosPage() {
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
-        <button
-          onClick={() => setModalAbierto(true)}
-          className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
-        >
-          <Plus className="w-5 h-5" />
-          Agregar alumno
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={exportarCSVAlumnos}
+            title="Exportar listado a archivo CSV / Excel"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+          >
+            <Download className="w-4 h-4 text-slate-400" />
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => setModalAbierto(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Agregar alumno
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de métricas */}
@@ -213,6 +279,18 @@ export default function AlumnosPage() {
                   </td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
                     <button
+                      onClick={() => {
+                        marcarAsistenciaAlumno(alumno.id);
+                        toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
+                      }}
+                      title="Marcar asistencia hoy"
+                      aria-label={`Marcar asistencia hoy para ${alumno.nombre}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors duration-150 active:scale-95 mr-1"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Presente
+                    </button>
+                    <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}
                       className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150 active:scale-90"
@@ -273,33 +351,6 @@ export default function AlumnosPage() {
   );
 }
 
-// ---------- Tarjeta de métrica ----------
-function MetricCard({
-  icon,
-  label,
-  value,
-  tint,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tint: { bg: string; text: string; bar: string };
-}) {
-  return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{value}</p>
-        </div>
-        <div className={`flex size-12 items-center justify-center rounded-2xl ${tint.bg} ${tint.text} transition-transform duration-300 group-hover:scale-110`}>
-          {icon}
-        </div>
-      </div>
-      <div className={`absolute bottom-0 left-0 h-1.5 w-full ${tint.bar}`} />
-    </article>
-  );
-}
 
 // ---------- Modal: confirmar eliminación ----------
 function ModalConfirmarEliminar({

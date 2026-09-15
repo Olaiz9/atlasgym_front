@@ -13,8 +13,10 @@ import {
   Clock,
   Dumbbell,
   CreditCard,
+  Check,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
+import { useToast } from "@/components/ui/toast";
 import { AccesoRestringido } from "@/components/acceso-restringido";
 import { formatFechaAR, calcularDiasDesde } from "@/lib/date-utils";
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, DiaRutina, Ejercicio, Pago, Alumno, EstadoCuenta } from "@/lib/types";
@@ -229,7 +231,8 @@ function AvisoAcceso({ estadoCuenta }: { estadoCuenta: EstadoCuenta }) {
 
 export default function FichaAlumnoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, usuarioActual } = useAppData();
+  const { getAlumno, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, marcarAsistenciaAlumno, usuarioActual } = useAppData();
+  const { toast } = useToast();
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
@@ -276,26 +279,40 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Asistencia */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-slate-900">
-          <h2 className="font-bold flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-400" />
-            Asistencia
-          </h2>
-          {alumno.ultimaAsistencia ? (
-            <div className="mt-3">
-              <p className="text-sm text-slate-500">Última visita registrada</p>
-              <p className="text-lg font-bold mt-0.5">
-                {formatFechaAR(alumno.ultimaAsistencia)}
-              </p>
-              <p className={`text-xs font-bold mt-2 ${diasAusente && diasAusente > 14 ? "text-rose-600" : "text-slate-400"}`}>
-                {diasAusente === 0 ? "Vino hoy" : `Hace ${diasAusente} día${diasAusente === 1 ? "" : "s"}`}
-              </p>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-slate-900 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400" />
+                Asistencia
+              </h2>
+              <button
+                onClick={() => {
+                  marcarAsistenciaAlumno(alumno.id);
+                  toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors active:scale-95 border border-emerald-200"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Marcar presencia hoy
+              </button>
             </div>
-          ) : (
-            <p className="mt-3 text-sm text-slate-400">
-              Todavía no hay registro de asistencia para este alumno.
-            </p>
-          )}
+            {alumno.ultimaAsistencia ? (
+              <div className="mt-3">
+                <p className="text-sm text-slate-500">Última visita registrada</p>
+                <p className="text-lg font-bold mt-0.5">
+                  {formatFechaAR(alumno.ultimaAsistencia)}
+                </p>
+                <p className={`text-xs font-bold mt-2 ${diasAusente === 0 ? "text-emerald-600" : diasAusente && diasAusente > 14 ? "text-rose-600" : "text-slate-400"}`}>
+                  {diasAusente === 0 ? "✓ Vino hoy" : `Hace ${diasAusente} día${diasAusente === 1 ? "" : "s"}`}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-400">
+                Todavía no hay registro de asistencia para este alumno.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Rutina Asignada */}

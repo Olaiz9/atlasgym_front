@@ -29,8 +29,14 @@ export async function GET(request: Request) {
     )
   }
 
+  const offsetParam = searchParams.get('offset')
+  const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10)) : 0
+
   return NextResponse.json({
     total: resultados.length,
-    ejercicios: resultados.slice(0, limit),
+    offset,
+    limit,
+    hasMore: offset + limit < resultados.length,
+    ejercicios: resultados.slice(offset, offset + limit),
   })
 }
