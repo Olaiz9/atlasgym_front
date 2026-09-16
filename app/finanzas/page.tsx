@@ -446,7 +446,7 @@ export default function FinanzasPage() {
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Finanzas</h1>
             <p className="text-sm text-slate-400 mt-1">
@@ -455,7 +455,7 @@ export default function FinanzasPage() {
                 : `Viendo ${formatearMes(mes)} — cada mes arranca con una planilla limpia.`}
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
             <button
               onClick={exportarCSVFinanzas}
               title="Exportar planilla actual a archivo CSV / Excel"

@@ -2,6 +2,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar } from 'lucide-react'
@@ -220,9 +221,15 @@ function HomeAlumno({
     <>
       {/* Header Superior */}
       <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-5 md:px-10">
-        <div className="flex items-center gap-3 md:hidden">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white">A</span>
-          <span className="font-black tracking-[0.15em] text-white">ATLAS</span>
+        <div className="flex items-center md:hidden">
+          <Image
+            src="/logo-atlas-blanco.png"
+            alt="ATLAS GYM"
+            width={120}
+            height={67}
+            className="h-8 w-auto object-contain"
+            priority
+          />
         </div>
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold">
@@ -423,9 +430,15 @@ export default function Page() {
     <>
       {/* HEADER SUPERIOR OSCURO */}
       <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-5 md:px-10">
-        <div className="flex items-center gap-3 md:hidden">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white">A</span>
-          <span className="font-black tracking-[0.15em] text-white">ATLAS</span>
+        <div className="flex items-center md:hidden">
+          <Image
+            src="/logo-atlas-blanco.png"
+            alt="ATLAS GYM"
+            width={120}
+            height={67}
+            className="h-8 w-auto object-contain"
+            priority
+          />
         </div>
         <div className="relative hidden w-80 sm:block group">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />

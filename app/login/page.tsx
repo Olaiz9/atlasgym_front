@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { useEscapeKey } from '@/lib/use-escape-key'
@@ -96,11 +97,15 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md">
         {/* Logo & Marca Superior */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-xl shadow-blue-600/30">
-            A
-          </div>
-          <h1 className="mt-3 text-2xl font-black tracking-[0.2em] text-white">ATLAS GYM</h1>
+        <div className="mb-8 text-center flex flex-col items-center">
+          <Image
+            src="/logo-atlas-blanco.png"
+            alt="ATLAS GYM"
+            width={240}
+            height={135}
+            className="h-16 w-auto object-contain mb-3 drop-shadow-[0_10px_25px_rgba(37,99,235,0.2)]"
+            priority
+          />
           <p className="mt-1 text-sm font-medium text-slate-400">
             Plataforma integral de gestión y entrenamiento
           </p>

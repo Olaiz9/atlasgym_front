@@ -9,22 +9,41 @@ import { puedeAccederRuta } from '@/lib/auth-utils'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [montado, setMontado] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { usuarioActual } = useAppData()
 
   useEffect(() => {
+    setMontado(true)
+  }, [])
+
+  useEffect(() => {
+    if (!montado) return
     if (!usuarioActual && pathname !== '/login') {
       router.replace('/login')
     } else if (usuarioActual && !puedeAccederRuta(pathname, usuarioActual.rol)) {
       router.replace('/')
     }
-  }, [usuarioActual, pathname, router])
+  }, [montado, usuarioActual, pathname, router])
 
   if (pathname === '/login') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30">
         {children}
+      </div>
+    )
+  }
+
+  // Prevenir Hydration Mismatch: durante SSR y el primer render en cliente
+  // se devuelve la misma estructura inicial hasta que se monta en el navegador.
+  if (!montado) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500" />
+          <p className="text-xs text-slate-400 font-medium">Cargando Atlas Gym...</p>
+        </div>
       </div>
     )
   }
@@ -43,7 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30 pb-20 md:pb-0">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-      <main className={`transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+      <main className={`min-w-0 w-full overflow-x-hidden transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
         {children}
       </main>
       <MobileNav />

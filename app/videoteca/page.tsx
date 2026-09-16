@@ -17,6 +17,12 @@ import {
   CheckCircle2,
   Clock,
   Dumbbell,
+  Shield,
+  Layers,
+  Flame,
+  Crosshair,
+  CircleDot,
+  type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -32,42 +38,48 @@ const GRUPOS_MUSCULARES = [
 
 type GrupoValido = 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Core'
 
-const INFO_GRUPOS: Record<GrupoValido, { icono: string; titulo: string; descripcion: string; color: string }> = {
+const INFO_GRUPOS: Record<GrupoValido, { icono: LucideIcon; titulo: string; descripcion: string; color: string; iconColor: string }> = {
   Pecho: {
-    icono: '🫁',
+    icono: Shield,
     titulo: 'Pecho y Pectorales',
     descripcion: 'Press de banca, aperturas y variantes para desarrollo y potencia del pectoral.',
     color: 'from-blue-600/15 via-blue-500/5 to-transparent border-blue-500/30 text-blue-400',
+    iconColor: 'text-blue-400',
   },
   Espalda: {
-    icono: '🎒',
+    icono: Layers,
     titulo: 'Espalda y Dorsales',
     descripcion: 'Dominadas, remos, jalones y tracciones para amplitud, densidad y salud postural.',
     color: 'from-emerald-600/15 via-emerald-500/5 to-transparent border-emerald-500/30 text-emerald-400',
+    iconColor: 'text-emerald-400',
   },
   Piernas: {
-    icono: '🦵',
+    icono: Flame,
     titulo: 'Piernas y Glúteos',
     descripcion: 'Sentadillas, peso muerto, prensa y ejercicios para tren inferior completo.',
     color: 'from-amber-600/15 via-amber-500/5 to-transparent border-amber-500/30 text-amber-400',
+    iconColor: 'text-amber-400',
   },
   Hombros: {
-    icono: '🥋',
+    icono: Crosshair,
     titulo: 'Hombros y Deltoides',
     descripcion: 'Press militar, elevaciones laterales y posteriores para hombros redondos y estables.',
     color: 'from-purple-600/15 via-purple-500/5 to-transparent border-purple-500/30 text-purple-400',
+    iconColor: 'text-purple-400',
   },
   Brazos: {
-    icono: '💪',
+    icono: Dumbbell,
     titulo: 'Brazos (Bíceps y Tríceps)',
     descripcion: 'Curls variados, extensiones, fondos y antebrazos con técnica estricta.',
     color: 'from-rose-600/15 via-rose-500/5 to-transparent border-rose-500/30 text-rose-400',
+    iconColor: 'text-rose-400',
   },
   Core: {
-    icono: '🧘',
+    icono: CircleDot,
     titulo: 'Core y Zona Media',
     descripcion: 'Planchas, elevaciones de piernas y estabilidad lumbopélvica profunda.',
     color: 'from-cyan-600/15 via-cyan-500/5 to-transparent border-cyan-500/30 text-cyan-400',
+    iconColor: 'text-cyan-400',
   },
 }
 
@@ -426,14 +438,16 @@ export default function VideotecaPage() {
             const estaCargando = cargandoGrupo[grupo] || false
             const quedanMas = ejerciciosCatalogo.length < totalDisponibles
 
+            const IconoGrupo = info.icono
+
             return (
               <section key={grupo} className="space-y-6">
                 {/* Encabezado del Grupo Muscular */}
                 <div className={`p-5 rounded-2xl border bg-gradient-to-r ${info.color} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
                   <div className="flex items-center gap-3.5">
-                    <span className="text-3xl p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 shrink-0">
-                      {info.icono}
-                    </span>
+                    <div className={`size-12 rounded-2xl bg-slate-950/80 border border-slate-800/90 flex items-center justify-center shrink-0 shadow-sm ${info.iconColor}`}>
+                      <IconoGrupo className="size-6" />
+                    </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-2xl font-black text-white">{info.titulo}</h2>

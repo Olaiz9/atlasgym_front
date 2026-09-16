@@ -5,9 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
 import { formatDiasIngreso, fechaLocalHoy } from "@/lib/date-utils";
-import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
@@ -20,7 +18,6 @@ import {
   EstadoCuenta,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
-  Plan,
 } from "@/lib/types";
 
 const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
@@ -32,7 +29,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, desmarcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, desmarcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
   const { toast } = useToast();
 
@@ -125,12 +122,6 @@ export default function AlumnosPage() {
     toast("Lista de alumnos exportada a CSV con éxito", "success");
   };
 
-  const handleNuevoAlumno = (nuevo: Omit<Alumno, "id">) => {
-    agregarAlumno(nuevo);
-    setModalAbierto(false);
-    toast(`Alumno "${nuevo.nombre}" dado de alta con éxito`, "success");
-  };
-
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
@@ -151,14 +142,14 @@ export default function AlumnosPage() {
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Alumnos</h1>
           <p className="text-sm text-slate-400 mt-1">
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
           <button
             onClick={exportarCSVAlumnos}
             title="Exportar listado a archivo CSV / Excel"
@@ -486,13 +477,5 @@ function ModalConfirmarEliminar({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium text-slate-500 mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
 
 
