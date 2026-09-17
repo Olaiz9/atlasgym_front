@@ -1,8 +1,9 @@
 'use client'
 
-import { HelpCircle, X, Mail, Phone, ExternalLink } from 'lucide-react'
+import { HelpCircle, X, ExternalLink } from 'lucide-react'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { useEscapeKey } from '@/lib/use-escape-key'
+import { GmailIcon, WhatsAppIcon, InstagramIcon } from '@/components/icons/brand-icons'
 
 interface ModalCentroAyudaProps {
   abierto: boolean
@@ -43,17 +44,18 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
+          {/* Gmail */}
           <a
             href={`mailto:${CONTACTO_ATLAS.email}`}
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-blue-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-red-500/40 hover:bg-slate-800/50 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-red-500/10 text-red-400 group-hover:scale-105 transition-transform">
-                <Mail className="size-5" />
+              <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 group-hover:border-red-500/30 group-hover:bg-white/[0.09] group-hover:scale-105 transition-all shadow-sm shrink-0">
+                <GmailIcon className="size-5.5" />
               </div>
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail / Correo</span>
-                <p className="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
+                <p className="text-sm font-bold text-slate-100 group-hover:text-red-400 transition-colors">
                   {CONTACTO_ATLAS.email}
                 </p>
               </div>
@@ -61,19 +63,20 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             <ExternalLink className="size-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
           </a>
 
+          {/* WhatsApp */}
           <a
             href={CONTACTO_ATLAS.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-emerald-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-[#25D366]/40 hover:bg-slate-800/50 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform">
-                <Phone className="size-5" />
+              <div className="flex size-11 items-center justify-center rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] group-hover:border-[#25D366]/40 group-hover:bg-[#25D366]/20 group-hover:scale-105 transition-all shadow-sm shrink-0">
+                <WhatsAppIcon className="size-5.5" />
               </div>
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teléfono / WhatsApp</span>
-                <p className="text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">
+                <p className="text-sm font-bold text-slate-100 group-hover:text-[#25D366] transition-colors">
                   {CONTACTO_ATLAS.telefono}
                 </p>
               </div>
@@ -81,19 +84,16 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             <ExternalLink className="size-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
           </a>
 
+          {/* Instagram */}
           <a
             href={CONTACTO_ATLAS.instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-pink-500/50 hover:bg-slate-800/40 group"
+            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-pink-500/40 hover:bg-slate-800/50 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-105 transition-transform">
-                <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                </svg>
+              <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-tr from-[#f09433]/15 via-[#dc2743]/15 to-[#bc1888]/15 border border-[#dc2743]/25 group-hover:border-[#dc2743]/50 group-hover:scale-105 transition-all shadow-sm shrink-0">
+                <InstagramIcon className="size-5.5" />
               </div>
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Instagram</span>

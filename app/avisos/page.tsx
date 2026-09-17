@@ -19,6 +19,7 @@ import {
 import { useAppData } from '@/lib/store'
 import { Aviso, CATEGORIA_AVISO_STYLES, CategoriaAviso, CATEGORIA_AVISO_LABEL } from '@/lib/types'
 import { CONTACTO_ATLAS } from '@/lib/constants'
+import { WhatsAppIcon } from '@/components/icons/brand-icons'
 import { ModalNuevoAviso } from '@/components/modal-nuevo-aviso'
 import { Button } from '@/components/ui/button'
 
@@ -99,7 +100,7 @@ function AvisoCardAlumno({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
         >
-          <MessageCircle className="size-3.5 text-emerald-600" />
+          <WhatsAppIcon className="size-3.5 fill-emerald-600" />
           Consultar por WhatsApp
         </a>
       </div>

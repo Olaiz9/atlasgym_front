@@ -7,6 +7,7 @@ import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, S
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { WhatsAppIcon } from '@/components/icons/brand-icons'
 import {
   Dumbbell,
   Plus,
@@ -1721,6 +1722,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
         >
+          <WhatsAppIcon className="w-5 h-5 fill-white" />
           Consultar a mi coach por WhatsApp
         </a>
         <Link

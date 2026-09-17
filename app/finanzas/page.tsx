@@ -21,6 +21,7 @@ import { formatFechaAR, calcularVencimientoCuota, fechaLocalHoy, periodoMesActua
 import { CONTACTO_ATLAS } from "@/lib/constants";
 import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion, Alumno, Plan } from "@/lib/types";
 import { construirLinkWhatsapp } from "@/lib/validators";
+import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
@@ -248,7 +249,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
             >
-              <MessageCircle className="w-5 h-5" />
+              <WhatsAppIcon className="w-5 h-5 fill-white" />
               Enviar comprobante por WhatsApp
             </a>
           </div>
