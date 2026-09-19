@@ -140,7 +140,7 @@ export default function AlumnosPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
+    <div className="mx-auto max-w-[1500px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -149,21 +149,21 @@ export default function AlumnosPage() {
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap w-full sm:w-auto">
           <button
             onClick={exportarCSVAlumnos}
             title="Exportar listado a archivo CSV / Excel"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
           >
-            <Download className="w-4 h-4 text-slate-400" />
-            Exportar CSV
+            <Download className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="truncate">Exportar CSV</span>
           </button>
           <button
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
           >
-            <Plus className="w-5 h-5" />
-            Agregar alumno
+            <Plus className="w-5 h-5 shrink-0" />
+            <span className="truncate">Agregar alumno</span>
           </button>
         </div>
       </div>

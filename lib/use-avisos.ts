@@ -70,18 +70,40 @@ export function useAvisosManager() {
     [getAvisosParaUsuario]
   );
 
-  const marcarTodosAvisosLeidos = useCallback((usuarioId: string) => {
-    setAvisos((prev) => {
-      const hayNoLeidos = prev.some((av) => !av.leidoPor.includes(usuarioId));
-      if (!hayNoLeidos) return prev;
-      return prev.map((av) => {
-        if (!av.leidoPor.includes(usuarioId)) {
-          return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
-        }
-        return av;
+  const marcarTodosAvisosLeidos = useCallback(
+    (usuarioOId: string | UsuarioSesion, alumnoIdOpcional?: string) => {
+      let usuarioId: string;
+      let alumnoId: string | undefined = alumnoIdOpcional;
+      let esAdmin = false;
+
+      if (typeof usuarioOId === "object" && usuarioOId !== null) {
+        usuarioId = usuarioOId.id;
+        alumnoId = usuarioOId.alumnoId;
+        esAdmin = usuarioOId.rol === "ADMIN";
+      } else {
+        usuarioId = usuarioOId;
+      }
+
+      setAvisos((prev) => {
+        const esAvisoAplicable = (av: Aviso) =>
+          esAdmin || av.paraTodos || (alumnoId && av.alumnoId === alumnoId) || (!alumnoId && !esAdmin);
+
+        const hayNoLeidos = prev.some(
+          (av) => esAvisoAplicable(av) && !av.leidoPor.includes(usuarioId)
+        );
+        if (!hayNoLeidos) return prev;
+
+        return prev.map((av) => {
+          if (esAvisoAplicable(av) && !av.leidoPor.includes(usuarioId)) {
+            return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
+          }
+          return av;
+        });
       });
-    });
-  }, []);
+    },
+    []
+  );
+
 
   return {
     avisos,

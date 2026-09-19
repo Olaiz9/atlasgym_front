@@ -355,10 +355,10 @@ export default function AvisosPage() {
   } = useAppData()
 
   useEffect(() => {
-    if (usuarioActual?.id) {
-      marcarTodosAvisosLeidos(usuarioActual.id)
+    if (usuarioActual) {
+      marcarTodosAvisosLeidos(usuarioActual)
     }
-  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
+  }, [marcarTodosAvisosLeidos, usuarioActual])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -414,7 +414,7 @@ export default function AvisosPage() {
       </header>
 
       {/* Contenido */}
-      <main className="mx-auto max-w-5xl px-5 py-8 md:px-10">
+      <section aria-label="Listado de avisos" className="mx-auto max-w-5xl px-5 py-8 md:px-10">
         <AvisosFiltrosBar
           esAdmin={esAdmin}
           filtroCategoria={filtroCategoria}
@@ -433,7 +433,7 @@ export default function AvisosPage() {
           onEliminar={(id) => eliminarAviso(id)}
           onMarcarLeido={(id) => marcarAvisoLeido(id, usuarioActual.id)}
         />
-      </main>
+      </section>
 
       {esAdmin && (
         <ModalNuevoAviso

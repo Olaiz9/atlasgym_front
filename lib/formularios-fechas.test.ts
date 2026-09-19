@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validarDatosAlumno, soloLetras, soloNumeros, emailValido, normalizarCelularArgentina, construirLinkWhatsapp } from "./validators";
-import { formatFechaAR, parsearFechaLocal, calcularDiasDesde, formatDiasIngreso } from "./date-utils";
+import { formatFechaAR, parsearFechaLocal, calcularDiasDesde, formatDiasIngreso, calcularConstanciaAlumno } from "./date-utils";
 
 describe("Fase 2: Formularios, DNI y Fechas (lib/formularios-fechas.test.ts)", () => {
   describe("Validación unificada de Alumno (validarDatosAlumno)", () => {
@@ -184,5 +184,36 @@ describe("Fase 2: Formularios, DNI y Fechas (lib/formularios-fechas.test.ts)", (
       expect(link).toBe("https://wa.me/5492611234567?text=Hola%20mundo!%20%C2%BFC%C3%B3mo%20est%C3%A1s%3F");
     });
   });
+
+  describe("[Auditoría M1] Constancia Dinámica del Alumno (calcularConstanciaAlumno)", () => {
+    const fechaRef = new Date(2026, 8, 15); // 15 de Septiembre 2026
+
+    it("calcula 0 entrenos y sin visitas si el alumno no tiene sesiones ni asistencias", () => {
+      const res = calcularConstanciaAlumno("a1", [], undefined, fechaRef);
+      expect(res.cantidadEntrenosMes).toBe(0);
+      expect(res.textoVisita).toBe("Sin visitas registradas");
+    });
+
+    it("calcula la cantidad exacta de sesiones del mes actual y última visita", () => {
+      const sesiones = [
+        { alumnoId: "a1", fecha: "2026-09-14" }, // ayer
+        { alumnoId: "a1", fecha: "2026-09-10" },
+        { alumnoId: "a1", fecha: "2026-08-28" }, // mes anterior
+        { alumnoId: "otro", fecha: "2026-09-15" }, // otro alumno
+      ];
+      const res = calcularConstanciaAlumno("a1", sesiones, undefined, fechaRef);
+      expect(res.cantidadEntrenosMes).toBe(2);
+      // Como fechaRef es 2026-09-15 y la última sesión fue 2026-09-14
+      expect(res.textoVisita).toBe("Última visita: Ayer");
+    });
+
+    it("toma la fecha más reciente entre asistencia y sesiones de entrenamiento", () => {
+      const sesiones = [{ alumnoId: "a1", fecha: "2026-09-10" }];
+      const ultimaAsistencia = "2026-09-15"; // Asistió hoy
+      const res = calcularConstanciaAlumno("a1", sesiones, ultimaAsistencia, fechaRef);
+      expect(res.textoVisita).toBe("Última visita: Hoy");
+    });
+  });
 });
+
 

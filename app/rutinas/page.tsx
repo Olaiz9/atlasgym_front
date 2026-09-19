@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
-import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
+import { buscarVideoParaEjercicio, formatPrevia, inicializarSeriesDia } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { WhatsAppIcon } from '@/components/icons/brand-icons'
@@ -1738,56 +1738,46 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
 
 // ── Vista dedicada para el Alumno en Rutinas ────────────────────────────────
 function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any }) {
-  const { guardarSesion, getUltimaSesion, videosTecnica } = useAppData()
+  const { guardarSesion, getUltimaSesion, getSesionHoy, videosTecnica } = useAppData()
   const [diaActivo, setDiaActivo] = useState(0)
-  const [guardado, setGuardado] = useState(false)
-  const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
 
   const dia = rutina.dias[diaActivo] ?? rutina.dias[0]
 
-  // Sesión previa para el día activo
+  // Sesión guardada hoy (si existe, para recuperar progreso en curso)
+  const sesionHoy = useMemo(
+    () => (dia ? getSesionHoy(usuario.alumnoId || 'a1', rutina.id, dia.id) : undefined),
+    [dia, getSesionHoy, usuario.alumnoId, rutina.id]
+  )
+
+  // Sesión previa (anterior a hoy) para referencia histórica
   const sesionPrevia = useMemo(
     () => (dia ? getUltimaSesion(usuario.alumnoId || 'a1', rutina.id, dia.id) : undefined),
     [dia, getUltimaSesion, usuario.alumnoId, rutina.id]
   )
 
-  // Estado local de las series actuales del día
+  const [guardado, setGuardado] = useState(() => !!sesionHoy)
+  const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
+
+  // Estado local de las series del día:
+  // Si ya se guardó progreso hoy, rehidrata los valores y el estado de completado.
+  // Si no, usa la sesión previa como referencia sin marcar completado.
   const [seriesPorEjercicio, setSeriesPorEjercicio] = useState<Record<string, RegistroSerie[]>>(() => {
     if (!dia) return {}
-    const inicial: Record<string, RegistroSerie[]> = {}
-    dia.ejercicios.forEach((ej) => {
-      const prevEj = sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id)
-      inicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
-        serieNumero: i + 1,
-        kg: prevEj?.series[i]?.kg ?? 0,
-        reps: prevEj?.series[i]?.reps ?? 0,
-        completada: false,
-      }))
-    })
-    return inicial
+    return inicializarSeriesDia(dia.ejercicios, sesionHoy, sesionPrevia)
   })
 
   // Reinicializar series cuando cambia el día activo
   const handleCambioDia = useCallback(
     (index: number) => {
       setDiaActivo(index)
-      setGuardado(false)
       const nuevoDia = rutina.dias[index]
       if (!nuevoDia) return
+      const hoyDia = getSesionHoy(usuario.alumnoId || 'a1', rutina.id, nuevoDia.id)
       const prevDia = getUltimaSesion(usuario.alumnoId || 'a1', rutina.id, nuevoDia.id)
-      const inicial: Record<string, RegistroSerie[]> = {}
-      nuevoDia.ejercicios.forEach((ej) => {
-        const prevEj = prevDia?.ejercicios.find((e) => e.ejercicioId === ej.id)
-        inicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
-          serieNumero: i + 1,
-          kg: prevEj?.series[i]?.kg ?? 0,
-          reps: prevEj?.series[i]?.reps ?? 0,
-          completada: false,
-        }))
-      })
-      setSeriesPorEjercicio(inicial)
+      setGuardado(!!hoyDia)
+      setSeriesPorEjercicio(inicializarSeriesDia(nuevoDia.ejercicios, hoyDia, prevDia))
     },
-    [rutina, getUltimaSesion, usuario.alumnoId]
+    [rutina, getSesionHoy, getUltimaSesion, usuario.alumnoId]
   )
 
   const handleChangeSeries = useCallback((ejercicioId: string, series: RegistroSerie[]) => {

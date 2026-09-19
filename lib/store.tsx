@@ -16,6 +16,7 @@ import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOC
 import { useAvisosManager } from "./use-avisos";
 import { fechaLocalHoy } from "./date-utils";
 import { puedeEliminarPlan, ejecutarBajaAlumno, sincronizarNombrePlanEnAlumnos } from "./plan-utils";
+import { validarCredenciales, construirSesionAlumno, ValidacionCredencialesResult } from "./auth-utils";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   id: "u1",
@@ -33,8 +34,10 @@ interface AppDataContextValue {
   avisos: Aviso[];
   usuarioActual: UsuarioSesion | null;
   actualizarUsuarioActual: (cambios: Partial<UsuarioSesion>) => void;
-  iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string) => void;
+  iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string, recordarme?: boolean) => { ok: boolean; motivo?: string };
   cerrarSesion: () => void;
+  actualizarPassword: (email: string, nuevaPassword: string) => void;
+  validarCredencialesStore: (email: string, clave: string, rol: "ADMIN" | "ALUMNO") => ValidacionCredencialesResult;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
@@ -54,7 +57,7 @@ interface AppDataContextValue {
   eliminarPlan: (id: string) => { ok: boolean; motivo?: string };
   crearAviso: (aviso: Omit<Aviso, "id" | "leidoPor">) => Aviso;
   marcarAvisoLeido: (avisoId: string, usuarioId: string) => void;
-  marcarTodosAvisosLeidos: (usuarioId: string) => void;
+  marcarTodosAvisosLeidos: (usuarioOId: string | UsuarioSesion, alumnoIdOpcional?: string) => void;
   eliminarAviso: (avisoId: string) => void;
   getAvisosParaUsuario: (usuario: UsuarioSesion | null) => Aviso[];
   getCantidadAvisosNoLeidos: (usuario: UsuarioSesion | null) => number;
@@ -65,6 +68,7 @@ interface AppDataContextValue {
   sesionesEntrenamiento: SesionEntrenamiento[];
   guardarSesion: (sesion: Omit<SesionEntrenamiento, "id">) => void;
   getUltimaSesion: (alumnoId: string, rutinaId: string, diaId: string) => SesionEntrenamiento | undefined;
+  getSesionHoy: (alumnoId: string, rutinaId: string, diaId: string) => SesionEntrenamiento | undefined;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -139,17 +143,49 @@ function useGymStore(): AppDataContextValue {
     }
     return PLANES_MOCK;
   });
+  // Sesión actual: chequea localStorage primero, y sessionStorage en fallback (Auditoría A4)
   const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion | null>(() => {
     if (typeof window !== "undefined") {
-      const guardado = localStorage.getItem("atlas_sesion_v1");
-      if (guardado) {
-        try {
-          return JSON.parse(guardado);
-        } catch {}
-      }
+      try {
+        const guardadoLocal = localStorage.getItem("atlas_sesion_v1");
+        if (guardadoLocal) return JSON.parse(guardadoLocal);
+        const guardadoSession = sessionStorage.getItem("atlas_sesion_v1");
+        if (guardadoSession) return JSON.parse(guardadoSession);
+      } catch {}
     }
     return null;
   });
+
+  // Credenciales personalizadas (Auditoría C2 y A4)
+  const [credenciales, setCredenciales] = useState<Record<string, string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const guardado = localStorage.getItem("atlas_credenciales_v1");
+        if (guardado) return JSON.parse(guardado);
+      } catch {}
+    }
+    return {};
+  });
+
+  const actualizarPassword = useCallback((email: string, nuevaClave: string) => {
+    const emailNorm = email.trim().toLowerCase();
+    setCredenciales((prev) => {
+      const siguiente = { ...prev, [emailNorm]: nuevaClave.trim() };
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("atlas_credenciales_v1", JSON.stringify(siguiente));
+        } catch {}
+      }
+      return siguiente;
+    });
+  }, []);
+
+  const validarCredencialesStore = useCallback(
+    (email: string, clave: string, rol: "ADMIN" | "ALUMNO"): ValidacionCredencialesResult => {
+      return validarCredenciales(email, clave, rol, credenciales, alumnos);
+    },
+    [credenciales, alumnos]
+  );
 
   // Historial de entrenamiento: se hidrata desde localStorage o desde el mock inicial
   const [sesionesEntrenamiento, setSesionesEntrenamiento] = useState<SesionEntrenamiento[]>(() => {
@@ -164,32 +200,59 @@ function useGymStore(): AppDataContextValue {
     return SESIONES_MOCK;
   });
 
-  const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO", email?: string) => {
-    let nuevoUsuario: UsuarioSesion;
-    if (rol === "ADMIN") {
-      nuevoUsuario = USUARIO_ADMIN_DEFAULT;
-    } else {
-      const alumno = email
-        ? alumnos.find((a) => a.email?.toLowerCase() === email.toLowerCase()) || alumnos.find((a) => a.activo)
-        : alumnos.find((a) => a.activo);
-      nuevoUsuario = {
-        id: "u_alumno_1",
-        nombre: alumno ? alumno.nombre : (email ? email.split("@")[0] : "Alumno Atlas"),
-        email: alumno?.email || email || "alumno@atlasgym.com",
-        rol: "ALUMNO",
-        alumnoId: alumno?.id,
-      };
-    }
-    setUsuarioActual(nuevoUsuario);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
-    }
-  }, [alumnos]);
+  const iniciarSesion = useCallback(
+    (rol: "ADMIN" | "ALUMNO", email?: string, recordarme: boolean = true): { ok: boolean; motivo?: string } => {
+      let nuevoUsuario: UsuarioSesion;
+      if (rol === "ADMIN") {
+        let adminData = USUARIO_ADMIN_DEFAULT;
+        if (typeof window !== "undefined") {
+          try {
+            const adminGuardado = localStorage.getItem("atlas_admin_perfil_v1");
+            if (adminGuardado) {
+              adminData = { ...adminData, ...JSON.parse(adminGuardado) };
+            }
+          } catch {}
+        }
+        nuevoUsuario = adminData;
+      } else {
+        const emailNorm = (email || "").trim().toLowerCase();
+        const alumno = emailNorm
+          ? alumnos.find((a) => (a.email || "").trim().toLowerCase() === emailNorm)
+          : undefined;
+
+        if (!alumno) {
+          return { ok: false, motivo: "No existe ningún socio registrado con este correo." };
+        }
+
+        nuevoUsuario = construirSesionAlumno(alumno);
+      }
+
+      setUsuarioActual(nuevoUsuario);
+
+      if (typeof window !== "undefined") {
+        try {
+          if (recordarme) {
+            localStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
+            sessionStorage.removeItem("atlas_sesion_v1");
+          } else {
+            sessionStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
+            localStorage.removeItem("atlas_sesion_v1");
+          }
+        } catch {}
+      }
+
+      return { ok: true };
+    },
+    [alumnos]
+  );
 
   const cerrarSesion = useCallback(() => {
     setUsuarioActual(null);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("atlas_sesion_v1");
+      try {
+        localStorage.removeItem("atlas_sesion_v1");
+        sessionStorage.removeItem("atlas_sesion_v1");
+      } catch {}
     }
   }, []);
 
@@ -198,7 +261,17 @@ function useGymStore(): AppDataContextValue {
       if (!prev) return null;
       const siguiente: UsuarioSesion = { ...prev, ...cambios };
       if (typeof window !== "undefined") {
-        localStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
+        try {
+          if (sessionStorage.getItem("atlas_sesion_v1")) {
+            sessionStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
+          } else {
+            localStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
+          }
+          // Si es el administrador, persistir perfil personalizado (Auditoría M5 y M8)
+          if (siguiente.rol === "ADMIN") {
+            localStorage.setItem("atlas_admin_perfil_v1", JSON.stringify(siguiente));
+          }
+        } catch {}
       }
       return siguiente;
     });
@@ -413,6 +486,17 @@ function useGymStore(): AppDataContextValue {
     [sesionesEntrenamiento]
   );
 
+  // Devuelve la sesión guardada hoy (si existe) para recuperar el progreso del entrenamiento en curso
+  const getSesionHoy = useCallback(
+    (alumnoId: string, rutinaId: string, diaId: string): SesionEntrenamiento | undefined => {
+      const hoy = fechaLocalHoy();
+      return sesionesEntrenamiento.find(
+        (s) => s.alumnoId === alumnoId && s.rutinaId === rutinaId && s.diaId === diaId && s.fecha === hoy
+      );
+    },
+    [sesionesEntrenamiento]
+  );
+
   const getAlumno = useCallback((id: string) => alumnos.find((a) => a.id === id), [alumnos]);
 
   const getEstadoCuenta = useCallback((alumnoId: string) => {
@@ -448,6 +532,8 @@ function useGymStore(): AppDataContextValue {
       actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
+      actualizarPassword,
+      validarCredencialesStore,
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
@@ -479,6 +565,7 @@ function useGymStore(): AppDataContextValue {
       sesionesEntrenamiento,
       guardarSesion,
       getUltimaSesion,
+      getSesionHoy,
     }),
     [
       alumnos,
@@ -494,8 +581,11 @@ function useGymStore(): AppDataContextValue {
       getAvisosParaUsuario,
       getCantidadAvisosNoLeidos,
       usuarioActual,
+      actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
+      actualizarPassword,
+      validarCredencialesStore,
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
@@ -519,6 +609,7 @@ function useGymStore(): AppDataContextValue {
       sesionesEntrenamiento,
       guardarSesion,
       getUltimaSesion,
+      getSesionHoy,
     ]
   );
 

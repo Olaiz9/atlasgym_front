@@ -35,15 +35,57 @@ export function formatFechaAR(fechaStr: string): string {
 }
 
 /**
- * Calcula la diferencia en días naturales de calendario entre hoy y una fecha "YYYY-MM-DD".
+ * Calcula la constancia real del alumno a partir de su historial de sesiones y asistencias (Auditoría M1).
  */
-export function calcularDiasDesde(fechaStr: string): number {
+export interface ConstanciaAlumno {
+  cantidadEntrenosMes: number;
+  textoVisita: string;
+}
+
+export function calcularConstanciaAlumno(
+  alumnoId: string,
+  sesiones: { alumnoId: string; fecha: string }[],
+  ultimaAsistencia?: string,
+  fechaReferencia: Date = new Date()
+): ConstanciaAlumno {
+  const periodoActual = periodoMesActual(fechaReferencia);
+  const sesionesDelMes = sesiones.filter(
+    (s) => s.alumnoId === alumnoId && s.fecha.startsWith(periodoActual)
+  );
+  const cantidadEntrenosMes = sesionesDelMes.length;
+
+  const fechas: string[] = [];
+  if (ultimaAsistencia) fechas.push(ultimaAsistencia);
+  sesiones
+    .filter((s) => s.alumnoId === alumnoId)
+    .forEach((s) => fechas.push(s.fecha));
+
+  if (fechas.length === 0) {
+    return {
+      cantidadEntrenosMes,
+      textoVisita: "Sin visitas registradas",
+    };
+  }
+
+  fechas.sort((a, b) => b.localeCompare(a));
+  const masReciente = fechas[0];
+  const textoVisita = formatDiasIngreso(masReciente, fechaReferencia);
+
+  return {
+    cantidadEntrenosMes,
+    textoVisita: `Última visita: ${textoVisita}`,
+  };
+}
+
+/**
+ * Calcula la diferencia en días naturales de calendario entre hoy (o fecha de referencia) y una fecha "YYYY-MM-DD".
+ */
+export function calcularDiasDesde(fechaStr: string, referencia: Date = new Date()): number {
   if (!fechaStr) return 0;
   const fecha = parsearFechaLocal(fechaStr);
-  const hoy = new Date();
 
   // Normalizar a medianoche local para comparar días de calendario limpios
-  const hoyNormalizado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+  const hoyNormalizado = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate()).getTime();
   const fechaNormalizada = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
 
   const diffMs = hoyNormalizado - fechaNormalizada;
@@ -53,14 +95,15 @@ export function calcularDiasDesde(fechaStr: string): number {
 /**
  * Formatea el texto de ingreso/antigüedad ("Hoy", "Ayer", "Hace X días", o "DD/MM/YYYY").
  */
-export function formatDiasIngreso(fechaStr: string): string {
+export function formatDiasIngreso(fechaStr: string, referencia: Date = new Date()): string {
   if (!fechaStr) return "";
-  const diffDias = calcularDiasDesde(fechaStr);
+  const diffDias = calcularDiasDesde(fechaStr, referencia);
   if (diffDias === 0) return "Hoy";
   if (diffDias === 1) return "Ayer";
   if (diffDias <= 7) return `Hace ${diffDias} días`;
   return formatFechaAR(fechaStr);
 }
+
 
 /**
  * Devuelve la fecha local del calendario en formato "YYYY-MM-DD"

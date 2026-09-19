@@ -67,3 +67,28 @@ export function formatPrevia(serie: RegistroSerie | undefined): string {
   }
   return `${serie.kg} kg × ${serie.reps}`;
 }
+
+/**
+ * Inicializa y rehidrata las series de los ejercicios de un día de rutina.
+ * Si ya se guardó una sesión hoy, rehidrata los valores (kg, reps) y las marcas completadas.
+ * Si no hay sesión hoy pero hay sesión previa, toma los kg/reps como referencia pero sin marcar completadas.
+ */
+export function inicializarSeriesDia(
+  ejercicios: { id: string; series: number }[],
+  sesionHoy?: { ejercicios: { ejercicioId: string; series: RegistroSerie[] }[] },
+  sesionPrevia?: { ejercicios: { ejercicioId: string; series: RegistroSerie[] }[] }
+): Record<string, RegistroSerie[]> {
+  const resultado: Record<string, RegistroSerie[]> = {};
+  ejercicios.forEach((ej) => {
+    const hoyEj = sesionHoy?.ejercicios.find((e) => e.ejercicioId === ej.id);
+    const prevEj = sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id);
+    resultado[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
+      serieNumero: i + 1,
+      kg: hoyEj?.series[i]?.kg ?? prevEj?.series[i]?.kg ?? 0,
+      reps: hoyEj?.series[i]?.reps ?? prevEj?.series[i]?.reps ?? 0,
+      completada: hoyEj?.series[i]?.completada ?? false,
+    }));
+  });
+  return resultado;
+}
+

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buscarVideoParaEjercicio, formatPrevia } from "./rutina-utils";
+import { buscarVideoParaEjercicio, formatPrevia, inicializarSeriesDia } from "./rutina-utils";
 import { VideoTecnica, RegistroSerie } from "./types";
 
 const VIDEOS_TEST: VideoTecnica[] = [
@@ -71,4 +71,70 @@ describe("rutina-utils", () => {
       expect(formatPrevia(serie)).toBe("0 kg × 15");
     });
   });
+
+  describe("[Auditoría A1] inicializarSeriesDia (persistencia y rehidratación)", () => {
+    const ejercicios = [
+      { id: "ej1", series: 3 },
+      { id: "ej2", series: 2 },
+    ];
+
+    it("inicializa series en 0 y no completadas cuando no hay sesión previa ni de hoy", () => {
+      const series = inicializarSeriesDia(ejercicios);
+      expect(series["ej1"]).toHaveLength(3);
+      expect(series["ej1"][0]).toEqual({ serieNumero: 1, kg: 0, reps: 0, completada: false });
+      expect(series["ej2"]).toHaveLength(2);
+      expect(series["ej2"][1]).toEqual({ serieNumero: 2, kg: 0, reps: 0, completada: false });
+    });
+
+    it("copia kg y reps de sesión previa como referencia sin marcar completadas", () => {
+      const sesionPrevia = {
+        ejercicios: [
+          {
+            ejercicioId: "ej1",
+            series: [
+              { serieNumero: 1, kg: 80, reps: 10, completada: true },
+              { serieNumero: 2, kg: 85, reps: 8, completada: true },
+            ],
+          },
+        ],
+      };
+      const series = inicializarSeriesDia(ejercicios, undefined, sesionPrevia);
+      expect(series["ej1"][0]).toEqual({ serieNumero: 1, kg: 80, reps: 10, completada: false });
+      expect(series["ej1"][1]).toEqual({ serieNumero: 2, kg: 85, reps: 8, completada: false });
+      expect(series["ej1"][2]).toEqual({ serieNumero: 3, kg: 0, reps: 0, completada: false });
+    });
+
+    it("rehidrata sesión guardada hoy restaurando checks completados y valores en curso", () => {
+      const sesionHoy = {
+        ejercicios: [
+          {
+            ejercicioId: "ej1",
+            series: [
+              { serieNumero: 1, kg: 85, reps: 10, completada: true },
+              { serieNumero: 2, kg: 90, reps: 8, completada: true },
+              { serieNumero: 3, kg: 90, reps: 6, completada: false },
+            ],
+          },
+        ],
+      };
+      const sesionPrevia = {
+        ejercicios: [
+          {
+            ejercicioId: "ej1",
+            series: [
+              { serieNumero: 1, kg: 70, reps: 10, completada: true },
+              { serieNumero: 2, kg: 70, reps: 10, completada: true },
+              { serieNumero: 3, kg: 70, reps: 10, completada: true },
+            ],
+          },
+        ],
+      };
+      const series = inicializarSeriesDia(ejercicios, sesionHoy, sesionPrevia);
+      // Debe priorizar sesión de hoy sobre la previa y mantener estado completada
+      expect(series["ej1"][0]).toEqual({ serieNumero: 1, kg: 85, reps: 10, completada: true });
+      expect(series["ej1"][1]).toEqual({ serieNumero: 2, kg: 90, reps: 8, completada: true });
+      expect(series["ej1"][2]).toEqual({ serieNumero: 3, kg: 90, reps: 6, completada: false });
+    });
+  });
 });
+

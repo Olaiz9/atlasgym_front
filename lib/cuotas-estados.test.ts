@@ -171,6 +171,95 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
       const estado = estadoCuentaDeAlumno(alumnoId, pagosSeptiembre, "2026-01-01", true, fechaSept15);
       expect(estado).toBe("AL_DIA");
     });
+
+    it("[Auditoría A2] Septiembre pendiente + octubre pagado NO devuelve AL_DIA si se debe septiembre", () => {
+      const pagos: Pago[] = [
+        {
+          id: "p-sep",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-09-01",
+          periodoMes: "2026-09",
+          metodo: "Efectivo",
+          estado: "PENDIENTE",
+        },
+        {
+          id: "p-oct",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-09-02",
+          periodoMes: "2026-10",
+          metodo: "Efectivo",
+          estado: "PAGADO",
+        },
+      ];
+
+      // La cuota del mes está pendiente de acreditación -> estado PENDIENTE, nunca AL_DIA
+      const fechaSept15 = new Date(2026, 8, 15);
+      const estado = estadoCuentaDeAlumno(alumnoId, pagos, "2026-01-01", true, fechaSept15);
+      expect(estado).not.toBe("AL_DIA");
+      expect(estado).toBe("PENDIENTE");
+    });
+
+    it("[Auditoría A2] Septiembre sin pagar + octubre pagado al 15 de septiembre devuelve MOROSO, no AL_DIA", () => {
+      const pagos: Pago[] = [
+        {
+          id: "p-oct",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-09-02",
+          periodoMes: "2026-10",
+          metodo: "Efectivo",
+          estado: "PAGADO",
+        },
+      ];
+
+      // Al 15 de septiembre, no tiene pago de septiembre, pagar octubre adelantado no exime de septiembre
+      const fechaSept15 = new Date(2026, 8, 15);
+      expect(estadoCuentaDeAlumno(alumnoId, pagos, "2026-01-01", true, fechaSept15)).toBe("MOROSO");
+    });
+
+    it("[Auditoría A2] Agosto pendiente al 15 de septiembre devuelve MOROSO automáticamente", () => {
+      const pagos: Pago[] = [
+        {
+          id: "p-ago",
+          alumnoId,
+          plan: "Musculación",
+          monto: 28000,
+          fecha: "2026-08-01",
+          periodoMes: "2026-08",
+          metodo: "Efectivo",
+          estado: "PENDIENTE",
+        },
+      ];
+
+      // Al 15 de septiembre, deuda sin saldar de mes anterior
+      const fechaSept15 = new Date(2026, 8, 15);
+      expect(estadoCuentaDeAlumno(alumnoId, pagos, "2026-01-01", true, fechaSept15)).toBe("MOROSO");
+    });
+
+    it("[Auditoría A2] Septiembre pagado en junio (pago adelantado) devuelve AL_DIA y no INACTIVO", () => {
+      const pagos: Pago[] = [
+        {
+          id: "p-adelantado",
+          alumnoId,
+          plan: "Musculación",
+          monto: 84000,
+          fecha: "2026-06-01",
+          periodoMes: "2026-09",
+          metodo: "Transferencia",
+          estado: "PAGADO",
+        },
+      ];
+
+      // Al 15 de septiembre pasaron 106 días desde junio, pero el período 2026-09 está pagado
+      const fechaSept15 = new Date(2026, 8, 15);
+      const estado = estadoCuentaDeAlumno(alumnoId, pagos, "2026-01-01", true, fechaSept15);
+      expect(estado).toBe("AL_DIA");
+    });
   });
 
   describe("Cálculo dinámico de vencimiento de cuota (calcularVencimientoCuota)", () => {
