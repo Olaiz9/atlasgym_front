@@ -171,10 +171,22 @@ function useGymStore(): AppDataContextValue {
 
   const [asistencias, setAsistencias] = useState<RegistroAsistencia[]>(() => {
     if (typeof window !== "undefined") {
-      const guardado = localStorage.getItem("atlas_asistencias_v1");
-      if (guardado) {
+      const guardadoV2 = localStorage.getItem("atlas_asistencias_v2");
+      if (guardadoV2) {
         try {
-          return JSON.parse(guardado);
+          const parsed = JSON.parse(guardadoV2);
+          if (Array.isArray(parsed) && parsed.length >= 6) {
+            return parsed;
+          }
+        } catch {}
+      }
+      const guardadoV1 = localStorage.getItem("atlas_asistencias_v1");
+      if (guardadoV1) {
+        try {
+          const parsed = JSON.parse(guardadoV1);
+          if (Array.isArray(parsed) && parsed.length >= 10) {
+            return parsed;
+          }
         } catch {}
       }
     }
@@ -184,7 +196,7 @@ function useGymStore(): AppDataContextValue {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("atlas_asistencias_v1", JSON.stringify(asistencias));
+        localStorage.setItem("atlas_asistencias_v2", JSON.stringify(asistencias));
       } catch {}
     }
   }, [asistencias]);

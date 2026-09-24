@@ -8,6 +8,7 @@ import {
   filtrarAsistenciasActivas,
   calcularDistribucionHoraria,
   calcularDistribucionSemanal,
+  obtenerUltimos7Dias,
   DURACION_SESION_MINUTOS,
   DURACION_SESION_MS,
 } from './asistencia-utils'
@@ -202,6 +203,18 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
       const lunes = dist.find((d) => d.dia === 'Lunes')
       expect(lunes?.cantidad).toBe(1)
       expect(lunes?.porcentaje).toBe(100)
+    })
+  })
+
+  describe('obtenerUltimos7Dias', () => {
+    it('retorna exactamente 7 días empezando por Hoy y Ayer', () => {
+      const dias = obtenerUltimos7Dias('2026-09-23')
+      expect(dias).toHaveLength(7)
+      expect(dias[0].etiqueta).toBe('Hoy')
+      expect(dias[0].fecha).toBe('2026-09-23')
+      expect(dias[1].etiqueta).toBe('Ayer')
+      expect(dias[1].fecha).toBe('2026-09-22')
+      expect(dias[6].fecha).toBe('2026-09-17')
     })
   })
 })

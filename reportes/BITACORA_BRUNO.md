@@ -203,6 +203,13 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
      - Optimización en `lib/use-avisos.ts` con la guarda `hayNoLeidos`, previniendo escrituras redundantes en `localStorage` o re-renders innecesarios.
      - El badge circular rojo con el conteo de no leídos desaparece instantáneamente del Sidebar, Mobile Nav y Header al acceder a la pantalla.
 
+   6. **Fase 6 — Ajustes de Experiencia, Responsive en Tablets y Analítica Multidía:**
+      - **Gráfico de franja horaria multidía:** Selector interactivo de días (Hoy, Ayer y hasta 7 días atrás + Semana completa) con recálculo dinámico de afluencia por hora y pico destacado.
+      - **Carrusel y lupa en Socios en Sala AHORA:** Navegación por flechas laterales (`<` y `>`) para explorar a los socios en sala cuando son más de 3 (paginación en tandas de 3), complementado con un buscador por lupa en tiempo real.
+      - **Auditoría histórica con doble filtrado:** Selector de fecha para inspeccionar por día (últimos 7 días y acumulado) combinado con selector de estado de cuota (*"Todos"*, *"Al día ✓"*, *"Cuota vencida"*).
+      - **Tótem 100% libre de scroll en tablets (`h-dvh max-h-screen`):** Reescalado de teclado numérico, visores y diálogos de confirmación para visualización completa a simple vista en tablets y móviles sin deslizar.
+      - **Identidad oficial ATLAS en Tótem:** Sustitución del isotipo genérico anterior y remoción del emoji de mancuerna, incorporando el logo oficial original `logo-atlas-blanco.png`.
+
 * **Archivos afectados:**
   - 📁 `components/modal-nuevo-alumno.tsx`: Selector nativo accesible de planes dentro de dialog.
   - 📁 `app/finanzas/page.tsx`: Autocompletado de tarifa y plan en cobro; extracción de `SeccionNotificarWhatsapp`.
@@ -421,7 +428,7 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
 * **Resultados de Verificación y Calidad Consolidados:**
   - 🧪 **Vitest (`npm test`):**
     - Archivos de prueba: `12 passed (12)`
-    - Tests ejecutados: `106 passed (106)`
+    - Tests ejecutados: `107 passed (107)`
     - Estado: **100% APROBADO (0 fallos)**
   - 🩺 **TypeScript (`npx tsc --noEmit`):**
     - Diagnóstico: **0 errores de compilación**

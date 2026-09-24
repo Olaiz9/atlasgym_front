@@ -10,17 +10,16 @@ import {
   calcularDistribucionSemanal,
   formatearTiempoEnSala,
   calcularMinutosTranscurridos,
+  obtenerUltimos7Dias,
   DURACION_SESION_MINUTOS,
 } from '@/lib/asistencia-utils'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import {
   Users,
   Clock,
-  TrendingUp,
   Download,
   Search,
   ExternalLink,
-  ShieldAlert,
   CheckCircle2,
   Calendar,
   Sparkles,
@@ -28,12 +27,25 @@ import {
   Activity,
   Flame,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 export default function AsistenciasPage() {
   const { asistencias, eliminarAsistencia } = useAppData()
-  const [filtroFecha, setFiltroFecha] = useState<'HOY' | 'TODOS'>('HOY')
-  const [busqueda, setBusqueda] = useState('')
+  const hoyFechaStr = fechaLocalHoy()
+  const ultimos7Dias = useMemo(() => obtenerUltimos7Dias(hoyFechaStr), [hoyFechaStr])
+
+  // Estados de filtros y controles
+  const [diaGrafico, setDiaGrafico] = useState<string>(hoyFechaStr) // 'YYYY-MM-DD' o 'SEMANA_COMPLETA'
+  const [busquedaSala, setBusquedaSala] = useState('')
+  const [paginaSala, setPaginaSala] = useState(0)
+
+  // Filtros de registro histórico
+  const [filtroFechaHistorial, setFiltroFechaHistorial] = useState<string>('HOY') // 'HOY' | 'TODOS' | 'YYYY-MM-DD'
+  const [filtroEstadoHistorial, setFiltroEstadoHistorial] = useState<'TODOS' | 'AL_DIA' | 'VENCIDO'>('TODOS')
+  const [busquedaHistorial, setBusquedaHistorial] = useState('')
+
   const [ahoraMs, setAhoraMs] = useState(Date.now())
 
   // Ticker en vivo cada 30 segundos para refrescar tiempos relativos en sala y aforo
@@ -43,8 +55,6 @@ export default function AsistenciasPage() {
     }, 30000)
     return () => clearInterval(intv)
   }, [])
-
-  const hoyFechaStr = fechaLocalHoy()
 
   // 1. Asistencias del día de hoy
   const asistenciasHoy = useMemo(() => {
@@ -56,21 +66,56 @@ export default function AsistenciasPage() {
     return filtrarAsistenciasActivas(asistenciasHoy, ahoraMs)
   }, [asistenciasHoy, ahoraMs])
 
-  // 3. Distribución horaria y semanal
+  // Filtrado y paginación de socios en sala
+  const sociosEnSalaFiltrados = useMemo(() => {
+    const q = busquedaSala.trim().toLowerCase()
+    if (!q) return sociosEnSala
+    return sociosEnSala.filter(
+      (s) =>
+        s.alumnoNombre.toLowerCase().includes(q) ||
+        s.alumnoDni.toLowerCase().includes(q) ||
+        s.planNombre.toLowerCase().includes(q)
+    )
+  }, [sociosEnSala, busquedaSala])
+
+  const totalPaginasSala = Math.max(1, Math.ceil(sociosEnSalaFiltrados.length / 3))
+  const paginaSalaActual = Math.min(paginaSala, totalPaginasSala - 1)
+
+  const sociosEnSalaVisibles = useMemo(() => {
+    const inicio = paginaSalaActual * 3
+    return sociosEnSalaFiltrados.slice(inicio, inicio + 3)
+  }, [sociosEnSalaFiltrados, paginaSalaActual])
+
+  // 3. Distribución horaria y semanal adaptable al día seleccionado
+  const asistenciasParaGrafico = useMemo(() => {
+    if (diaGrafico === 'SEMANA_COMPLETA') {
+      const fechasSet = new Set(ultimos7Dias.map((d) => d.fecha))
+      return asistencias.filter((a) => fechasSet.has(a.fecha))
+    }
+    return asistencias.filter((a) => a.fecha === diaGrafico)
+  }, [asistencias, diaGrafico, ultimos7Dias])
+
   const distribucionHoraria = useMemo(() => {
-    return calcularDistribucionHoraria(asistencias)
-  }, [asistencias])
+    return calcularDistribucionHoraria(asistenciasParaGrafico)
+  }, [asistenciasParaGrafico])
 
   const distribucionSemanal = useMemo(() => {
     return calcularDistribucionSemanal(asistencias)
   }, [asistencias])
+
+  // Etiqueta legible del día del gráfico seleccionado
+  const etiquetaDiaGrafico = useMemo(() => {
+    if (diaGrafico === 'SEMANA_COMPLETA') return 'Últimos 7 días'
+    const encontrado = ultimos7Dias.find((d) => d.fecha === diaGrafico)
+    return encontrado ? encontrado.etiqueta : diaGrafico
+  }, [diaGrafico, ultimos7Dias])
 
   // Hora pico detectada
   const horaPico = useMemo(() => {
     if (distribucionHoraria.length === 0) return 'Sin datos'
     const ordenada = [...distribucionHoraria].sort((a, b) => b.cantidad - a.cantidad)
     const top = ordenada[0]
-    if (!top || top.cantidad === 0) return '18:00 - 20:00'
+    if (!top || top.cantidad === 0) return 'Sin ingresos'
     const fin = (top.hora + 1).toString().padStart(2, '0') + ':00'
     return `${top.etiqueta} - ${fin}`
   }, [distribucionHoraria])
@@ -82,10 +127,22 @@ export default function AsistenciasPage() {
     return Math.round((alDia / asistenciasHoy.length) * 100)
   }, [asistenciasHoy])
 
-  // Lista filtrada para la tabla de historial
+  // Lista filtrada para la tabla de historial (con filtro de fecha y estado de cuota)
   const listaFiltrada = useMemo(() => {
-    const base = filtroFecha === 'HOY' ? asistenciasHoy : asistencias
-    const q = busqueda.trim().toLowerCase()
+    let base = asistencias
+    if (filtroFechaHistorial === 'HOY') {
+      base = base.filter((a) => a.fecha === hoyFechaStr)
+    } else if (filtroFechaHistorial !== 'TODOS') {
+      base = base.filter((a) => a.fecha === filtroFechaHistorial)
+    }
+
+    if (filtroEstadoHistorial === 'AL_DIA') {
+      base = base.filter((a) => a.estadoCuenta === 'AL_DIA')
+    } else if (filtroEstadoHistorial === 'VENCIDO') {
+      base = base.filter((a) => a.estadoCuenta !== 'AL_DIA')
+    }
+
+    const q = busquedaHistorial.trim().toLowerCase()
     if (!q) return base
     return base.filter(
       (a) =>
@@ -93,7 +150,7 @@ export default function AsistenciasPage() {
         a.alumnoDni.toLowerCase().includes(q) ||
         a.planNombre.toLowerCase().includes(q)
     )
-  }, [filtroFecha, asistenciasHoy, asistencias, busqueda])
+  }, [asistencias, filtroFechaHistorial, filtroEstadoHistorial, busquedaHistorial, hoyFechaStr])
 
   const exportarCSV = () => {
     if (listaFiltrada.length === 0) return
@@ -209,17 +266,17 @@ export default function AsistenciasPage() {
             <Flame className="size-4 text-amber-500" />
           </div>
           <div className="mt-3">
-            <span className="text-2xl font-black tracking-tight text-amber-400">{horaPico}</span>
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-amber-400">{horaPico}</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">Franja horaria con mayor concurrencia.</p>
+          <p className="mt-2 text-[11px] text-slate-500">Franja con mayor concurrencia ({etiquetaDiaGrafico}).</p>
         </div>
       </section>
 
       {/* SECCIÓN ANALÍTICA: HORARIOS PICO Y DÍAS */}
       <section className="grid gap-6 lg:grid-cols-3 mb-10">
-        {/* GRÁFICO DE HORAS PICO */}
-        <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        {/* GRÁFICO DE HORAS PICO CON SELECTOR DE DÍAS ANTERIORES */}
+        <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Clock className="size-4 text-blue-400" />
@@ -229,9 +286,45 @@ export default function AsistenciasPage() {
                 Visualizá las horas con mayor y menor afluencia para organizar profesores en sala.
               </p>
             </div>
-            <span className="text-xs font-bold bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-bold bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full self-start sm:self-auto shrink-0">
               Pico: {horaPico}
             </span>
+          </div>
+
+          {/* Selector de días anteriores (hasta 1 semana atrás) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-thin">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
+              <Calendar className="size-3.5" /> Día:
+            </span>
+            {ultimos7Dias.map((opc) => {
+              const seleccionado = diaGrafico === opc.fecha
+              return (
+                <button
+                  key={opc.fecha}
+                  type="button"
+                  onClick={() => setDiaGrafico(opc.fecha)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    seleccionado
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold'
+                      : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  }`}
+                  title={opc.diaNombre}
+                >
+                  {opc.etiqueta}
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setDiaGrafico('SEMANA_COMPLETA')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                diaGrafico === 'SEMANA_COMPLETA'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold'
+                  : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              }`}
+            >
+              Semana completa
+            </button>
           </div>
 
           {/* Gráfico de barras */}
@@ -307,21 +400,74 @@ export default function AsistenciasPage() {
         </div>
       </section>
 
-      {/* SECCIÓN: SOCIOS ENTRENANDO EN SALA AHORA */}
+      {/* SECCIÓN: SOCIOS ENTRENANDO EN SALA AHORA (CON CARRUSEL DE 3 Y BUSCADOR POR LUPA) */}
       <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Timer className="size-5 text-emerald-400" />
-              Socios en Sala Ahora ({sociosEnSala.length})
-            </h2>
-            <p className="text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Timer className="size-5 text-emerald-400" />
+                Socios en Sala Ahora ({sociosEnSala.length})
+              </h2>
+              {sociosEnSalaFiltrados.length > 3 && (
+                <span className="text-xs font-semibold text-slate-400 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded-full">
+                  Pág. {paginaSalaActual + 1} de {totalPaginasSala}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
               Alumnos con check-in activo. La sesión caduca automáticamente a los {DURACION_SESION_MINUTOS} minutos (1h 40m).
             </p>
           </div>
-          <span className="text-xs font-semibold text-slate-500">
-            Límite de sesión: 1h 40m
-          </span>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Buscador por lupa dentro de los socios en sala */}
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={busquedaSala}
+                onChange={(e) => {
+                  setBusquedaSala(e.target.value)
+                  setPaginaSala(0)
+                }}
+                placeholder="Buscar en sala..."
+                aria-label="Buscar socio en sala"
+                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 pl-8 pr-3 text-xs text-slate-200 outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Flechas de navegación para inspeccionar más de 3 socios */}
+            {sociosEnSalaFiltrados.length > 3 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPaginaSala((prev) => Math.max(0, prev - 1))}
+                  disabled={paginaSalaActual === 0}
+                  title="Anteriores"
+                  className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                    paginaSalaActual === 0
+                      ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                      : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
+                  }`}
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaginaSala((prev) => Math.min(totalPaginasSala - 1, prev + 1))}
+                  disabled={paginaSalaActual >= totalPaginasSala - 1}
+                  title="Siguientes"
+                  className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                    paginaSalaActual >= totalPaginasSala - 1
+                      ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                      : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
+                  }`}
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {sociosEnSala.length === 0 ? (
@@ -330,9 +476,21 @@ export default function AsistenciasPage() {
             <p className="text-sm font-semibold">No hay alumnos entrenando en sala en este momento.</p>
             <p className="text-xs mt-1">Los socios aparecerán aquí cuando marquen su DNI en el tótem.</p>
           </div>
+        ) : sociosEnSalaFiltrados.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
+            <Search className="size-8 mx-auto mb-2 text-slate-600" />
+            <p className="text-sm font-semibold">No se encontraron socios en sala con ese criterio.</p>
+            <button
+              type="button"
+              onClick={() => setBusquedaSala('')}
+              className="text-xs text-blue-400 hover:underline mt-2 cursor-pointer"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sociosEnSala.map((s) => {
+            {sociosEnSalaVisibles.map((s) => {
               const minutosTranscurridos = calcularMinutosTranscurridos(s.timestamp, ahoraMs)
               const minutosRestantes = Math.max(0, DURACION_SESION_MINUTOS - minutosTranscurridos)
               const esAlDia = s.estadoCuenta === 'AL_DIA'
@@ -384,46 +542,84 @@ export default function AsistenciasPage() {
         )}
       </section>
 
-      {/* SECCIÓN: HISTORIAL DE INGRESOS (FEED AUDITABLE) */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* SECCIÓN: HISTORIAL DE INGRESOS (FEED AUDITABLE CON FILTRO POR DÍA Y ESTADO DE CUOTA) */}
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-base font-bold text-white">Registro Histórico de Accesos</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Auditoría completa de asistencias registradas.</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Auditoría completa filtrable por día (última semana) y estado de cuota.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Filtros fecha */}
+            {/* Filtro de Días (Hoy, Ayer, Últimos 7 días, Todos) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                <Calendar className="size-3.5" />
+              </span>
+              <select
+                value={filtroFechaHistorial}
+                onChange={(e) => setFiltroFechaHistorial(e.target.value)}
+                aria-label="Filtrar por fecha"
+                className="h-9 rounded-xl bg-slate-950 border border-slate-800 px-3 text-xs font-semibold text-slate-200 outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="HOY">Hoy ({asistenciasHoy.length})</option>
+                {ultimos7Dias.slice(1).map((d) => (
+                  <option key={d.fecha} value={d.fecha}>
+                    {d.etiqueta} - {d.diaNombre}
+                  </option>
+                ))}
+                <option value="TODOS">Todos los registros ({asistencias.length})</option>
+              </select>
+            </div>
+
+            {/* Filtro de Estado de Cuota (Todos, Al día, Vencida) */}
             <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
               <button
                 type="button"
-                onClick={() => setFiltroFecha('HOY')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                  filtroFecha === 'HOY' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                onClick={() => setFiltroEstadoHistorial('TODOS')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                  filtroEstadoHistorial === 'TODOS'
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Hoy ({asistenciasHoy.length})
+                Todos
               </button>
               <button
                 type="button"
-                onClick={() => setFiltroFecha('TODOS')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                  filtroFecha === 'TODOS' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                onClick={() => setFiltroEstadoHistorial('AL_DIA')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                  filtroEstadoHistorial === 'AL_DIA'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Todos ({asistencias.length})
+                Al día ✓
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroEstadoHistorial('VENCIDO')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                  filtroEstadoHistorial === 'VENCIDO'
+                    ? 'bg-amber-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Cuota vencida
               </button>
             </div>
 
-            {/* Buscador */}
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            {/* Buscador por nombre o DNI */}
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
+                value={busquedaHistorial}
+                onChange={(e) => setBusquedaHistorial(e.target.value)}
                 placeholder="Buscar por alumno o DNI..."
-                aria-label="Buscar por alumno o DNI"
-                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 pl-9 pr-3 text-xs text-slate-200 outline-none focus:border-blue-500"
+                aria-label="Buscar en historial"
+                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 pl-8 pr-3 text-xs text-slate-200 outline-none focus:border-blue-500"
               />
             </div>
           </div>

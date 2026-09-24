@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useAppData } from '@/lib/store'
 import { normalizarDni, reproducirSonidoFeedback } from '@/lib/asistencia-utils'
 import { Alumno, EstadoCuenta } from '@/lib/types'
-import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck, Dumbbell } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck } from 'lucide-react'
 
 type EstadoTotem = 'IDLE' | 'EXITO' | 'ALERTA' | 'ERROR'
 
@@ -182,29 +182,28 @@ export default function TotemPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none overflow-x-hidden">
+    <main className="h-dvh max-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-3 sm:p-5 select-none overflow-hidden">
       {/* CABECERA KIOSCO */}
-      <header className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-5 max-w-4xl w-full mx-auto">
-        <div className="flex items-center gap-3.5">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-blue-600 font-black text-white text-xl shadow-lg shadow-blue-600/30">
-            A
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-black tracking-widest text-white">ATLAS GYM</span>
-              <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
-                Acceso
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-medium">Terminal Autónoma de Asistencias</p>
-          </div>
+      <header className="flex items-center justify-between gap-3 border-b border-slate-800/80 pb-3 max-w-4xl w-full mx-auto shrink-0">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/logo-atlas-blanco.png"
+            alt="ATLAS GYM"
+            width={140}
+            height={60}
+            className="h-7 sm:h-9 w-auto object-contain drop-shadow"
+            priority
+          />
+          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
+            Terminal Asistencias
+          </span>
         </div>
 
         {/* Reloj y Estado */}
-        <div className="flex items-center gap-4 text-right">
+        <div className="flex items-center gap-3 sm:gap-4 text-right">
           <div className="hidden sm:block">
-            <p className="text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
-            <p className="text-xs font-medium text-slate-400 capitalize">{fechaActual}</p>
+            <p className="text-xl sm:text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
+            <p className="text-[11px] font-medium text-slate-400 capitalize">{fechaActual}</p>
           </div>
           <div className="flex items-center gap-2 rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-1.5 shadow-sm">
             <span className="relative flex size-2.5">
@@ -217,42 +216,39 @@ export default function TotemPage() {
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
-      <section className="flex-1 flex items-center justify-center py-6 w-full max-w-xl mx-auto">
+      <section className="flex-1 flex items-center justify-center py-2 w-full max-w-md mx-auto overflow-hidden">
         {/* ESTADO 1: EN ESPERA / DIGITANDO DNI */}
         {estado === 'IDLE' && (
           <div className="w-full flex flex-col items-center">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center size-12 rounded-2xl bg-blue-600/10 text-blue-400 mb-3 border border-blue-500/20 shadow-inner">
-                <Dumbbell className="size-6" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">¡Hola! Marcá tu ingreso</h1>
-              <p className="text-sm text-slate-400 mt-1">Ingresá tu número de DNI para registrar tu asistencia hoy.</p>
+            <div className="text-center mb-2 sm:mb-3">
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Marcá tu ingreso</h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
             </div>
 
             {/* VISOR DE DNI */}
-            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 p-4 sm:p-5 text-center shadow-2xl shadow-blue-950/20 mb-6 transition-all focus-within:border-blue-500">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Documento Nacional de Identidad</p>
-              <div className="h-14 flex items-center justify-center">
+            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2 sm:py-3 px-4 text-center shadow-lg shadow-blue-950/20 mb-2 sm:mb-3 transition-all focus-within:border-blue-500">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Documento Nacional de Identidad</p>
+              <div className="h-10 sm:h-12 flex items-center justify-center">
                 {dni ? (
-                  <span className="text-3xl sm:text-4xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
+                  <span className="text-2xl sm:text-3xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
                     {formatearDniVisual(dni)}
                   </span>
                 ) : (
-                  <span className="text-2xl sm:text-3xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
+                  <span className="text-xl sm:text-2xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
                     _ _ . _ _ _ . _ _ _
                   </span>
                 )}
               </div>
             </div>
 
-            {/* TECLADO NUMÉRICO TÁCTIL (NUMPAD) */}
-            <div className="w-full grid grid-cols-3 gap-2.5 sm:gap-3 mb-4">
+            {/* TECLADO NUMÉRICO TÁCTIL (NUMPAD COMPACTO PARA TABLETS SIN SCROLL) */}
+            <div className="w-full grid grid-cols-3 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => agregarDigito(num)}
-                  className="h-16 sm:h-18 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                  className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
                 >
                   {num}
                 </button>
@@ -262,16 +258,16 @@ export default function TotemPage() {
                 type="button"
                 onClick={limpiar}
                 title="Limpiar campo"
-                className="h-16 sm:h-18 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               >
-                <RotateCcw className="size-5 text-slate-400" />
+                <RotateCcw className="size-4 text-slate-400" />
                 <span>Limpiar</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => agregarDigito('0')}
-                className="h-16 sm:h-18 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
               >
                 0
               </button>
@@ -280,9 +276,9 @@ export default function TotemPage() {
                 type="button"
                 onClick={borrarUltimo}
                 title="Borrar último dígito"
-                className="h-16 sm:h-18 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               >
-                <Delete className="size-5 text-slate-400" />
+                <Delete className="size-4 text-slate-400" />
                 <span>Borrar</span>
               </button>
             </div>
@@ -292,13 +288,13 @@ export default function TotemPage() {
               type="button"
               disabled={dni.length < 6 || procesando}
               onClick={() => manejarEnvio()}
-              className={`w-full h-15 rounded-2xl font-black text-base tracking-wide flex items-center justify-center gap-3 transition-all duration-200 cursor-pointer shadow-lg ${
+              className={`w-full h-11 sm:h-13 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg ${
                 dni.length >= 6 && !procesando
                   ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 active:scale-98'
                   : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
               }`}
             >
-              <Check className="size-6" />
+              <Check className="size-5" />
               <span>REGISTRAR ENTRADA</span>
             </button>
           </div>
@@ -306,33 +302,33 @@ export default function TotemPage() {
 
         {/* ESTADO 2: ACCESO AUTORIZADO (AL DÍA) */}
         {estado === 'EXITO' && resultado?.alumno && (
-          <div className="w-full rounded-3xl border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-950/70 to-slate-950 p-6 sm:p-8 text-center shadow-2xl shadow-emerald-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-20 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mb-4 shadow-lg shadow-emerald-500/20 animate-bounce">
-              <CheckCircle2 className="size-12" />
+          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-emerald-950/40 animate-in zoom-in-95 duration-200">
+            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mb-3 shadow-lg shadow-emerald-500/20 animate-bounce">
+              <CheckCircle2 className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-xs font-black uppercase tracking-widest text-emerald-400">Acceso Autorizado</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
-            <p className="text-sm font-semibold text-emerald-300/90 mt-1">Cuota al día · ¡Que tengas un excelente entrenamiento!</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Acceso Autorizado</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
+            <p className="text-xs sm:text-sm font-semibold text-emerald-300/90 mt-1">Cuota al día · ¡Que tengas un excelente entrenamiento!</p>
 
-            <div className="my-6 rounded-2xl bg-slate-900/80 border border-emerald-500/20 p-4 flex items-center justify-around text-left">
+            <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-emerald-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
               <div>
-                <p className="text-[11px] font-bold uppercase text-slate-500">Plan contratado</p>
-                <p className="text-base font-black text-white">{resultado.alumno.plan}</p>
+                <p className="text-[10px] font-bold uppercase text-slate-500">Plan contratado</p>
+                <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
               </div>
-              <div className="h-8 w-px bg-slate-800" />
+              <div className="h-7 w-px bg-slate-800" />
               <div>
-                <p className="text-[11px] font-bold uppercase text-slate-500">Estado de cuenta</p>
-                <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                <p className="text-[10px] font-bold uppercase text-slate-500">Estado de cuenta</p>
+                <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   AL DÍA ✓
                 </span>
               </div>
             </div>
 
             {/* Temporizador y botón siguiente */}
-            <div className="flex items-center justify-between gap-4 mt-6">
+            <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[11px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
                     className="h-full bg-emerald-500 transition-all duration-100 ease-linear rounded-full"
@@ -343,7 +339,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
               >
                 Siguiente socio
               </button>
@@ -353,35 +349,35 @@ export default function TotemPage() {
 
         {/* ESTADO 3: ALERTA (CUOTA VENCIDA / MOROSO) */}
         {estado === 'ALERTA' && resultado?.alumno && (
-          <div className="w-full rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/70 to-slate-950 p-6 sm:p-8 text-center shadow-2xl shadow-amber-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-20 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-4 shadow-lg shadow-amber-500/20">
-              <AlertTriangle className="size-12" />
+          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-amber-950/40 animate-in zoom-in-95 duration-200">
+            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-3 shadow-lg shadow-amber-500/20">
+              <AlertTriangle className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-xs font-black uppercase tracking-widest text-amber-400">Atención · Cuota Vencida</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
-            <p className="text-sm font-semibold text-amber-200/90 mt-2 max-w-md mx-auto">
-              Tu cuota mensual se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.
+            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Atención · Cuota Vencida</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
+            <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
+              Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.
             </p>
 
-            <div className="my-6 rounded-2xl bg-slate-900/80 border border-amber-500/20 p-4 flex items-center justify-around text-left">
+            <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-amber-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
               <div>
-                <p className="text-[11px] font-bold uppercase text-slate-500">Plan</p>
-                <p className="text-base font-black text-white">{resultado.alumno.plan}</p>
+                <p className="text-[10px] font-bold uppercase text-slate-500">Plan</p>
+                <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
               </div>
-              <div className="h-8 w-px bg-slate-800" />
+              <div className="h-7 w-px bg-slate-800" />
               <div>
-                <p className="text-[11px] font-bold uppercase text-slate-500">Condición</p>
-                <span className="inline-flex items-center gap-1 text-xs font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                <p className="text-[10px] font-bold uppercase text-slate-500">Condición</p>
+                <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   RENOVAR CUOTA
                 </span>
               </div>
             </div>
 
             {/* Temporizador y botón siguiente */}
-            <div className="flex items-center justify-between gap-4 mt-6">
+            <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[11px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
                     className="h-full bg-amber-500 transition-all duration-100 ease-linear rounded-full"
@@ -392,7 +388,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
               >
                 Siguiente socio
               </button>
@@ -402,24 +398,24 @@ export default function TotemPage() {
 
         {/* ESTADO 4: ERROR (DNI NO ENCONTRADO O INACTIVO) */}
         {estado === 'ERROR' && (
-          <div className="w-full rounded-3xl border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/70 to-slate-950 p-6 sm:p-8 text-center shadow-2xl shadow-rose-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-20 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 mb-4 shadow-lg shadow-rose-500/20">
-              <XCircle className="size-12" />
+          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-rose-950/40 animate-in zoom-in-95 duration-200">
+            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 mb-3 shadow-lg shadow-rose-500/20">
+              <XCircle className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-xs font-black uppercase tracking-widest text-rose-400">Acceso No Registrado</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">No pudimos identificar tu DNI</h2>
-            <p className="text-sm font-medium text-slate-300 mt-2 max-w-md mx-auto">
-              {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está dado de baja.'}
+            <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso No Registrado</p>
+            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">No identificamos tu DNI</h2>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1 max-w-sm mx-auto">
+              {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está inactivo.'}
             </p>
 
-            <div className="my-6 rounded-2xl bg-slate-900/80 border border-rose-500/20 p-4 text-xs font-semibold text-slate-400">
-              💡 Por favor acercate al mostrador de recepción para verificar tus datos de inscripción.
+            <div className="my-4 rounded-xl bg-slate-900/80 border border-rose-500/20 p-3 text-xs font-semibold text-slate-400">
+              💡 Acercate a recepción para verificar tus datos de inscripción.
             </div>
 
-            <div className="flex items-center justify-between gap-4 mt-6">
+            <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[11px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
                     className="h-full bg-rose-500 transition-all duration-100 ease-linear rounded-full"
@@ -430,7 +426,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
               >
                 Reintentar
               </button>
@@ -440,12 +436,12 @@ export default function TotemPage() {
       </section>
 
       {/* PIE DE PÁGINA KIOSCO */}
-      <footer className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-900 pt-4 max-w-4xl w-full mx-auto text-xs text-slate-500">
+      <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-[11px] sm:text-xs text-slate-500 shrink-0">
         <p className="flex items-center gap-1.5">
-          <ShieldCheck className="size-4 text-blue-500" />
-          <span>Terminal Kiosco segura protegida por ATLAS GYM</span>
+          <ShieldCheck className="size-3.5 text-blue-500" />
+          <span>Terminal Kiosco protegida por ATLAS GYM</span>
         </p>
-        <p className="text-[11px]">Soporte táctil y teclado físico habilitados</p>
+        <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
     </main>
   )

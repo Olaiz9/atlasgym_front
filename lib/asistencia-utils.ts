@@ -1,5 +1,48 @@
 // lib/asistencia-utils.ts
 import { RegistroAsistencia } from "./types";
+import { fechaLocalHoy, parsearFechaLocal } from "./date-utils";
+
+export interface OpcionDiaFiltro {
+  fecha: string; // "YYYY-MM-DD"
+  etiqueta: string; // "Hoy", "Ayer", "Lun 21/09"
+  diaNombre: string; // "Lunes 21 Sep"
+}
+
+/**
+ * Retorna las opciones de fecha para los últimos 7 días (Hoy, Ayer y hasta 1 semana atrás).
+ */
+export function obtenerUltimos7Dias(fechaReferencia: string = fechaLocalHoy()): OpcionDiaFiltro[] {
+  const opciones: OpcionDiaFiltro[] = [];
+  const base = parsearFechaLocal(fechaReferencia);
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i, 12, 0, 0);
+    const yyyy = d.getFullYear();
+    const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+    const dd = d.getDate().toString().padStart(2, "0");
+    const fStr = `${yyyy}-${mm}-${dd}`;
+
+    let etiqueta = `${dd}/${mm}`;
+    if (i === 0) etiqueta = "Hoy";
+    else if (i === 1) etiqueta = "Ayer";
+    else {
+      const diaSem = d.toLocaleDateString("es-AR", { weekday: "short" });
+      const diaCapitalizado = diaSem.replace(".", "").charAt(0).toUpperCase() + diaSem.replace(".", "").slice(1);
+      etiqueta = `${diaCapitalizado} ${dd}/${mm}`;
+    }
+
+    const diaNombre = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" });
+    const nombreCap = diaNombre.charAt(0).toUpperCase() + diaNombre.slice(1);
+
+    opciones.push({
+      fecha: fStr,
+      etiqueta,
+      diaNombre: nombreCap,
+    });
+  }
+
+  return opciones;
+}
 
 /**
  * Duración máxima estimada de una sesión de entrenamiento en ATLAS GYM.
