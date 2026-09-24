@@ -413,7 +413,7 @@ export default function TotemPage() {
             </p>
 
             <div className="my-4 rounded-xl bg-slate-900/80 border border-rose-500/20 p-3 text-xs font-semibold text-slate-400">
-              💡 Acercate a recepción para verificar tus datos de inscripción.
+              Acercate a recepción para verificar tus datos de inscripción.
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-4">

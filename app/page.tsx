@@ -117,7 +117,7 @@ function AlumnoCardsSection({
       >
         <div className="flex items-start justify-between">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Rutina de hoy</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi rutina de hoy</span>
             <p className="mt-2 text-2xl font-black text-slate-900">{nombreRutina}</p>
             <p className="mt-1 text-sm font-semibold text-blue-600">{subtituloRutina}</p>
             <p className="mt-4 text-xs font-medium text-slate-500">{detalleRutina}</p>
@@ -169,7 +169,7 @@ function AlumnoCardsSection({
       >
         <div className="flex items-start justify-between">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi Constancia</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mi constancia</span>
             <p className="mt-2 text-2xl font-black text-slate-900">12 entrenos</p>
             <p className="mt-1 text-sm font-semibold text-slate-600">registrados este mes</p>
             <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
@@ -179,7 +179,7 @@ function AlumnoCardsSection({
           </div>
         </div>
         <div className="mt-5 flex items-center justify-between text-xs font-bold text-slate-600 group-hover:text-amber-600 transition-colors">
-          <span>¡Mantené el ritmo esta semana! 🔥</span>
+          <span>¡Mantené el ritmo esta semana!</span>
           <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
         </div>
         <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
@@ -472,7 +472,7 @@ export default function Page() {
             <p className="mt-2 text-base text-slate-400">Esto es lo que está pasando en tu gimnasio hoy.</p>
           </div>
           <Button onClick={() => setShowModal(true)} className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">
-            <Plus data-icon="inline-start" className="mr-2 size-5" />Nuevo Alumno
+            <Plus data-icon="inline-start" className="mr-2 size-5" />Nuevo alumno
           </Button>
         </div>
 

@@ -103,7 +103,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
             </div>
             <div>
               <h2 id="modal-nuevo-aviso-title" className="text-xl font-black text-slate-900">
-                Nuevo Comunicado o Aviso
+                Nuevo comunicado o aviso
               </h2>
               <p className="text-xs font-medium text-slate-500">
                 Publicá avisos generales o mensajes para alumnos específicos.
@@ -189,7 +189,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
                 }`}
               >
                 <Users className="size-4" />
-                Todos los Alumnos
+                Todos los alumnos
               </button>
               <button
                 type="button"
@@ -201,14 +201,14 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
                 }`}
               >
                 <User className="size-4" />
-                Alumno Específico
+                Alumno específico
               </button>
             </div>
 
             {!paraTodos && (
               <div className="mt-1 flex flex-col gap-1">
                 <label htmlFor="aviso-alumno" className="text-xs font-semibold text-slate-600">
-                  Seleccionar Alumno
+                  Seleccionar alumno
                 </label>
                 <select
                   id="aviso-alumno"
@@ -267,7 +267,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
               type="submit"
               className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-500 active:scale-95"
             >
-              Publicar Aviso
+              Publicar aviso
             </Button>
           </div>
         </form>

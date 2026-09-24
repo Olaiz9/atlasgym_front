@@ -22,8 +22,8 @@ const navItemsAdmin = [
 
 const navItemsAlumno = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
-  { label: 'Mi Rutina', href: '/rutinas', icon: Dumbbell },
-  { label: 'Mis Cuotas', href: '/finanzas', icon: WalletCards },
+  { label: 'Mi rutina', href: '/rutinas', icon: Dumbbell },
+  { label: 'Mis cuotas', href: '/finanzas', icon: WalletCards },
   { label: 'Avisos', href: '/avisos', icon: Bell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
 ]
@@ -53,7 +53,7 @@ function SidebarUserCard({
         <button
           type="button"
           onClick={onAbrirPerfil}
-          title={`Mi Perfil: ${usuario.nombre} (${rolLabel})`}
+          title={`Mi perfil: ${usuario.nombre} (${rolLabel})`}
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-all cursor-pointer overflow-hidden active:scale-95"
         >
           {usuario.fotoUrl ? (
@@ -63,15 +63,15 @@ function SidebarUserCard({
             iniciales
           )}
         </button>
-        <Link
-          href="/login"
+        <button
+          type="button"
           onClick={onCerrarSesion}
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
           className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90"
         >
           <LogOut className="size-4 shrink-0" />
-        </Link>
+        </button>
       </div>
     )
   }
@@ -97,15 +97,15 @@ function SidebarUserCard({
           <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
         </div>
       </button>
-      <Link
-        href="/login"
+      <button
+        type="button"
         onClick={onCerrarSesion}
         title="Cerrar sesión"
         aria-label="Cerrar sesión"
         className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90 ml-1 shrink-0"
       >
         <LogOut className="size-4 shrink-0" />
-      </Link>
+      </button>
     </div>
   )
 }
@@ -115,6 +115,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
   const [mostrarPerfil, setMostrarPerfil] = useState(false)
+  const [mostrarConfirmCerrar, setMostrarConfirmCerrar] = useState(false)
 
   if (!usuarioActual) return null
 
@@ -218,12 +219,52 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             <SidebarUserCard
               usuario={usuarioActual}
               collapsed={collapsed}
-              onCerrarSesion={cerrarSesion}
+              onCerrarSesion={() => setMostrarConfirmCerrar(true)}
               onAbrirPerfil={() => setMostrarPerfil(true)}
             />
           </div>
         </div>
       </aside>
+
+      {mostrarConfirmCerrar && (
+        <div
+          onClick={() => setMostrarConfirmCerrar(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 transition-opacity duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 mb-4">
+              <LogOut className="size-6" />
+            </div>
+            <h3 className="text-lg font-bold text-white">¿Cerrar sesión?</h3>
+            <p className="mt-2 text-sm text-slate-400">
+              Vas a salir de tu cuenta en ATLAS Gym. Podrás volver a iniciar sesión en cualquier momento.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmCerrar(false)}
+                className="h-10 rounded-xl border border-slate-700 px-5 text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmCerrar(false)
+                  cerrarSesion()
+                  window.location.href = '/login'
+                }}
+                className="h-10 rounded-xl bg-rose-600 px-5 text-xs font-bold text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500 transition-colors active:scale-95"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ModalCentroAyuda
         abierto={mostrarAyuda}

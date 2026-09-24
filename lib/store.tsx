@@ -201,6 +201,47 @@ function useGymStore(): AppDataContextValue {
     }
   }, [asistencias]);
 
+  // Sincronización en tiempo real entre pestañas/ventanas (Tótem y Panel de Asistencias)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const sincronizarAsistencias = () => {
+      try {
+        const guardadoV2 = localStorage.getItem("atlas_asistencias_v2");
+        if (guardadoV2) {
+          const parsed = JSON.parse(guardadoV2);
+          if (Array.isArray(parsed)) {
+            setAsistencias((prev) => {
+              if (prev.length !== parsed.length || (prev[0]?.id !== parsed[0]?.id)) {
+                return parsed;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch {}
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "atlas_asistencias_v2" || e.key === "atlas_asistencias_v1") {
+        sincronizarAsistencias();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("atlas_asistencia_actualizada", sincronizarAsistencias);
+    window.addEventListener("focus", sincronizarAsistencias);
+
+    // Polling rápido cada 2.5s para actualización fluida en tiempo real
+    const interval = setInterval(sincronizarAsistencias, 2500);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("atlas_asistencia_actualizada", sincronizarAsistencias);
+      window.removeEventListener("focus", sincronizarAsistencias);
+      clearInterval(interval);
+    };
+  }, []);
+
   const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO", email?: string) => {
     let nuevoUsuario: UsuarioSesion;
     if (rol === "ADMIN") {
@@ -509,6 +550,10 @@ function useGymStore(): AppDataContextValue {
       };
 
       setAsistencias((prev) => [nueva, ...prev]);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("atlas_asistencia_actualizada"));
+      }
 
       setAlumnos((prev) =>
         prev.map((a) => (a.id === alumno.id ? { ...a, ultimaAsistencia: hoy } : a))

@@ -388,10 +388,10 @@ export default function AvisosPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
               <Bell className="size-4" />
-              {esAdmin ? 'Centro de Comunicación' : 'Avisos y Comunicados'}
+              {esAdmin ? 'Centro de comunicación' : 'Avisos y comunicados'}
             </div>
-            <h1 className="mt-1 text-2xl font-black text-white md:text-3xl">
-              {esAdmin ? 'Avisos del Gimnasio' : 'Novedades y Notificaciones'}
+            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+              {esAdmin ? 'Avisos del gimnasio' : 'Novedades y notificaciones'}
             </h1>
             <p className="mt-1 text-sm text-slate-400">
               {esAdmin
@@ -406,7 +406,7 @@ export default function AvisosPage() {
               className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 active:scale-95 self-start md:self-auto"
             >
               <Plus className="mr-2 size-4" />
-              Nuevo Aviso
+              Nuevo aviso
             </Button>
           )}
         </div>

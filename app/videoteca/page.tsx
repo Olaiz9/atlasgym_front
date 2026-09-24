@@ -41,42 +41,42 @@ type GrupoValido = 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Cor
 const INFO_GRUPOS: Record<GrupoValido, { icono: LucideIcon; titulo: string; descripcion: string; color: string; iconColor: string }> = {
   Pecho: {
     icono: Shield,
-    titulo: 'Pecho y Pectorales',
+    titulo: 'Pecho',
     descripcion: 'Press de banca, aperturas y variantes para desarrollo y potencia del pectoral.',
     color: 'from-blue-600/15 via-blue-500/5 to-transparent border-blue-500/30 text-blue-400',
     iconColor: 'text-blue-400',
   },
   Espalda: {
     icono: Layers,
-    titulo: 'Espalda y Dorsales',
+    titulo: 'Espalda',
     descripcion: 'Dominadas, remos, jalones y tracciones para amplitud, densidad y salud postural.',
     color: 'from-emerald-600/15 via-emerald-500/5 to-transparent border-emerald-500/30 text-emerald-400',
     iconColor: 'text-emerald-400',
   },
   Piernas: {
     icono: Flame,
-    titulo: 'Piernas y Glúteos',
+    titulo: 'Piernas',
     descripcion: 'Sentadillas, peso muerto, prensa y ejercicios para tren inferior completo.',
     color: 'from-amber-600/15 via-amber-500/5 to-transparent border-amber-500/30 text-amber-400',
     iconColor: 'text-amber-400',
   },
   Hombros: {
     icono: Crosshair,
-    titulo: 'Hombros y Deltoides',
+    titulo: 'Hombros',
     descripcion: 'Press militar, elevaciones laterales y posteriores para hombros redondos y estables.',
     color: 'from-purple-600/15 via-purple-500/5 to-transparent border-purple-500/30 text-purple-400',
     iconColor: 'text-purple-400',
   },
   Brazos: {
     icono: Dumbbell,
-    titulo: 'Brazos (Bíceps y Tríceps)',
+    titulo: 'Brazos',
     descripcion: 'Curls variados, extensiones, fondos y antebrazos con técnica estricta.',
     color: 'from-rose-600/15 via-rose-500/5 to-transparent border-rose-500/30 text-rose-400',
     iconColor: 'text-rose-400',
   },
   Core: {
     icono: CircleDot,
-    titulo: 'Core y Zona Media',
+    titulo: 'Core',
     descripcion: 'Planchas, elevaciones de piernas y estabilidad lumbopélvica profunda.',
     color: 'from-cyan-600/15 via-cyan-500/5 to-transparent border-cyan-500/30 text-cyan-400',
     iconColor: 'text-cyan-400',
@@ -298,9 +298,9 @@ export default function VideotecaPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-400 mb-1">
             <Video className="size-4" />
-            <span>Videoteca Biomecánica ATLAS</span>
+            <span>Videoteca biomecánica ATLAS</span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
             Técnica por <span className="text-blue-500">grupo muscular</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
@@ -474,7 +474,7 @@ export default function VideotecaPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
                       <Sparkles className="size-3.5" />
-                      <span>Tutoriales Exclusivos de los Coaches</span>
+                      <span>Tutoriales exclusivos de los coaches</span>
                     </div>
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {videosGym.map((video) => (
@@ -496,7 +496,7 @@ export default function VideotecaPage() {
                   <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
                     <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
                       <Dumbbell className="size-3.5 text-slate-400" />
-                      Ejercicios y Biomecánica en Bucles (Loop)
+                      Ejercicios y biomecánica en bucles (loop)
                     </span>
                     <span>
                       Mostrando <strong className="text-white">{ejerciciosCatalogo.length}</strong> de{' '}
@@ -593,7 +593,7 @@ export default function VideotecaPage() {
                   className="max-h-full max-w-full object-contain mx-auto"
                 />
                 <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
-                  ⚡ Loop continuo sin cortes
+                  Loop continuo sin cortes
                 </div>
               </div>
             ) : (
@@ -761,24 +761,22 @@ function TarjetaEjercicio({
                 <Play className="size-5 fill-current ml-0.5" />
               </div>
               <span className="text-[11px] font-bold text-slate-300 group-hover:text-blue-400 transition-colors">
-                ⚡ Ver loop biomecánico
+                Ver loop biomecánico
               </span>
             </div>
 
-            {/* El GIF solo se monta cuando el usuario hace hover, ahorrando ~40MB en la carga inicial */}
-            {hoverActivo && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={urlMedio}
-                alt={video.titulo}
-                onLoad={() => setGifCargado(true)}
-                className={`absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-300 ${
-                  gifCargado ? 'opacity-100' : 'opacity-0'
-                }`}
-                loading="lazy"
-                decoding="async"
-              />
-            )}
+            {/* El GIF carga lazy automáticamente (se eliminó el check hoverActivo para que siempre se muestre la previsualización) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={urlMedio}
+              alt={video.titulo}
+              onLoad={() => setGifCargado(true)}
+              className={`absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-300 ${
+                gifCargado ? 'opacity-100' : 'opacity-0'
+              }`}
+              loading="lazy"
+              decoding="async"
+            />
           </>
         ) : (
           /* Video de YouTube de coach */
@@ -805,7 +803,7 @@ function TarjetaEjercicio({
         {/* Badge inferior de duración o GIF */}
         <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[10px] font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
           {esGif ? (
-            <span className="text-blue-400 font-extrabold flex items-center gap-1">⚡ Loop GIF</span>
+            <span className="text-blue-400 font-extrabold flex items-center gap-1">Loop GIF</span>
           ) : (
             <>
               <Clock className="size-3 text-slate-400" />

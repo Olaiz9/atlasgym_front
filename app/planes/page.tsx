@@ -92,7 +92,7 @@ export default function PlanesPage() {
   if (!usuarioActual || usuarioActual.rol === 'ALUMNO') {
     return (
       <AccesoRestringido
-        titulo="Gestión de Planes Restringida"
+        titulo="Gestión de planes restringida"
         mensaje="La creación, edición y tarifas de los planes de membresía solo pueden ser gestionadas por administradores."
       />
     )
@@ -140,10 +140,10 @@ export default function PlanesPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500 mb-1">
             <Package className="size-4" />
-            <span>Administración de Membresías</span>
+            <span>Administración de membresías</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
-            Planes y <span className="text-blue-500">Tarifas</span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+            Planes y <span className="text-blue-500">tarifas</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-2xl">
             Ajustá los precios de las cuotas, creá nuevos planes o actualizá las condiciones de cada pase. Los cambios impactan inmediatamente en Alumnos y Finanzas.
@@ -156,7 +156,7 @@ export default function PlanesPage() {
             className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
-            Nuevo Plan
+            Nuevo plan
           </Button>
         )}
       </div>
@@ -265,7 +265,7 @@ export default function PlanesPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 id="modal-plan-title" className="text-2xl font-black text-white">
-                  {form.planAEditar ? 'Modificar Plan' : 'Nuevo Plan de Gimnasio'}
+                  {form.planAEditar ? 'Modificar plan' : 'Nuevo plan de gimnasio'}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
                   {form.planAEditar
@@ -284,7 +284,7 @@ export default function PlanesPage() {
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <label htmlFor="plan-nombre" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
-                Nombre del Plan
+                Nombre del plan
                 <input
                   id="plan-nombre"
                   required

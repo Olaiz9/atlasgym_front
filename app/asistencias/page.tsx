@@ -49,12 +49,25 @@ export default function AsistenciasPage() {
 
   const [ahoraMs, setAhoraMs] = useState(Date.now())
 
-  // Ticker en vivo cada 30 segundos para refrescar tiempos relativos en sala y aforo
+  // Ticker en vivo cada 10 segundos para refrescar tiempos relativos y detectar nuevos ingresos
   useEffect(() => {
-    const intv = setInterval(() => {
-      setAhoraMs(Date.now())
-    }, 30000)
-    return () => clearInterval(intv)
+    const refrescar = () => setAhoraMs(Date.now())
+    const intv = setInterval(refrescar, 10000)
+    // Refrescar inmediatamente al volver a la pestaña
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refrescar()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    // Escuchar cambios de localStorage desde otras pestañas (totem)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key.includes('asistencia')) refrescar()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => {
+      clearInterval(intv)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('storage', onStorage)
+    }
   }, [])
 
   // 1. Asistencias del día de hoy
@@ -637,12 +650,12 @@ export default function AsistenciasPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
               <tr>
-                <th className="py-3 px-3">Fecha y Hora</th>
+                <th className="py-3 px-3">Fecha y hora</th>
                 <th className="py-3 px-3">Alumno</th>
                 <th className="py-3 px-3">DNI</th>
                 <th className="py-3 px-3">Plan</th>
-                <th className="py-3 px-3">Estado Cuota</th>
-                <th className="py-3 px-3">Tiempo en Sala</th>
+                <th className="py-3 px-3">Estado cuota</th>
+                <th className="py-3 px-3">Tiempo en sala</th>
                 <th className="py-3 px-3 text-right">Acción</th>
               </tr>
             </thead>

@@ -151,10 +151,10 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
       {/* Header Alumno */}
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
-          Portal del Alumno
+          Portal del alumno
         </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-          Mis Cuotas y Pagos
+          Mis cuotas y pagos
         </h1>
         <p className="text-sm text-slate-400 mt-1">
           Hola, <strong className="text-white">{usuario.nombre}</strong>. Revisá el estado de tu suscripción en Atlas Gym y consultá los datos para abonar.
@@ -188,7 +188,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
         {/* Plan Actual */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mi Plan actual</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mi plan actual</p>
           <p className="mt-2 text-2xl font-black text-slate-900">{alumno?.plan || "Musculación"}</p>
           <p className="mt-1 text-sm font-bold text-blue-600">
             ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-400 font-medium">/ mes</span>
@@ -216,7 +216,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
               💳 Datos para abonar tu cuota
             </span>
-            <h2 className="text-xl font-black">Transferencia Bancaria o Mercado Pago</h2>
+            <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
               Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
             </p>
@@ -448,7 +448,7 @@ export default function FinanzasPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">Finanzas</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Finanzas</h1>
             <p className="text-sm text-slate-400 mt-1">
               {verTodos
                 ? "Viendo el historial completo de pagos."
@@ -836,6 +836,7 @@ function ModalRegistrarPago({
 
   const inicial = obtenerPlanYPrecio(primerAlumno);
 
+  const [busquedaAlumno, setBusquedaAlumno] = useState('')
   const [form, setForm] = useState({
     alumnoId: primerAlumno?.id ?? "",
     plan: inicial.planNombre,
@@ -849,6 +850,7 @@ function ModalRegistrarPago({
   const [celular, setCelular] = useState(primerAlumno?.celular ?? "");
   const [errorValidacion, setErrorValidacion] = useState("");
 
+  const alumnosFiltrados = alumnos.filter(a => !busquedaAlumno.trim() || a.nombre.toLowerCase().includes(busquedaAlumno.trim().toLowerCase()) || (a.dni && a.dni.includes(busquedaAlumno.trim())))
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
 
   const handleAlumnoChange = (nuevoId: string) => {
@@ -931,17 +933,34 @@ function ModalRegistrarPago({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field label="Alumno">
-              <select
-                aria-label="Alumno"
-                value={form.alumnoId}
-                onChange={(e) => handleAlumnoChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                required
-              >
-                {alumnos.map((a) => (
-                  <option key={a.id} value={a.id}>{a.nombre}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={busquedaAlumno}
+                  onChange={(e) => setBusquedaAlumno(e.target.value)}
+                  placeholder="Buscar alumno por nombre o DNI..."
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              {alumnosFiltrados.length === 0 ? (
+                <p className="text-xs text-slate-400 py-2 italic text-center">No se encontraron alumnos con ese nombre o DNI</p>
+              ) : (
+                <select
+                  aria-label="Alumno"
+                  value={form.alumnoId}
+                  onChange={(e) => handleAlumnoChange(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm mt-1.5 cursor-pointer"
+                  required
+                  size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
+                >
+                  {alumnosFiltrados.map((a) => (
+                    <option key={a.id} value={a.id} className="py-1">
+                      {a.nombre} {a.dni ? `(${a.dni})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Field>
 
             <Field label="Plan">

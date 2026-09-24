@@ -27,7 +27,7 @@ export const PAGOS_MOCK: Pago[] = [
 export const RUTINAS_MOCK: Rutina[] = [
   {
     id: "r1",
-    nombre: "Hipertrofia Nivel 2",
+    nombre: "Hipertrofia nivel 2",
     descripcion: "Rutina orientada a ganancia de masa muscular y fuerza en 3 días semanales.",
     objetivo: "Hipertrofia",
     esGenerica: true,

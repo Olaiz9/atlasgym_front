@@ -133,7 +133,7 @@ export default function AlumnosPage() {
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
       <AccesoRestringido
-        titulo="Panel de Alumnos Restringido"
+        titulo="Panel de alumnos restringido"
         mensaje="La administración de fichas de alumnos, estados de cuenta y altas solo está disponible para entrenadores y administradores."
       />
     );
@@ -144,7 +144,7 @@ export default function AlumnosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Alumnos</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Alumnos</h1>
           <p className="text-sm text-slate-400 mt-1">
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>

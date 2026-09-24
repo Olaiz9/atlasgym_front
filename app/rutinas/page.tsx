@@ -120,7 +120,7 @@ export default function RutinasPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-            Rutinas y Entrenamientos
+            Rutinas y entrenamientos
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Creá plantillas genéricas por objetivos o asigná entrenamientos directamente a los alumnos.
@@ -131,7 +131,7 @@ export default function RutinasPage() {
           className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95"
         >
           <Plus className="w-5 h-5" />
-          Nueva Rutina
+          Nueva rutina
         </button>
       </div>
 
@@ -327,7 +327,7 @@ export default function RutinasPage() {
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-blue-600 hover:text-white py-2.5 text-xs font-bold text-slate-200 transition-[color,background-color] duration-200 active:scale-95"
                 >
                   <UserPlus className="size-4" />
-                  Asignar a Alumno
+                  Asignar a alumno
                 </button>
               </div>
             </div>
@@ -347,11 +347,14 @@ export default function RutinasPage() {
           rutina={rutinaAAsignar}
           alumnos={alumnos}
           onClose={() => setRutinaAAsignar(null)}
-          onConfirm={(alumnoId) => {
-            asignarRutinaAAlumno(rutinaAAsignar.id, alumnoId)
-            const al = alumnos.find((a) => a.id === alumnoId)
-            toast(`Rutina asignada a ${al?.nombre || 'alumno'}`, 'success')
-            setRutinaAAsignar(null)
+          onConfirm={(alumnoIds) => {
+            alumnoIds.forEach((id) => asignarRutinaAAlumno(rutinaAAsignar.id, id))
+            if (alumnoIds.length === 1) {
+              const al = alumnos.find((a) => a.id === alumnoIds[0])
+              toast(`Rutina asignada a ${al?.nombre || 'alumno'}`, 'success')
+            } else {
+              toast(`Rutina asignada a ${alumnoIds.length} alumnos con éxito`, 'success')
+            }
           }}
         />
       )}
@@ -439,17 +442,29 @@ function ModalAsignarRutina({
   rutina: Rutina
   alumnos: Alumno[]
   onClose: () => void
-  onConfirm: (alumnoId: string) => void
+  onConfirm: (alumnoIds: string[]) => void
 }) {
-  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(alumnos[0]?.id || '')
+  const [seleccionados, setSeleccionados] = useState<string[]>([])
+  const [busquedaAlumno, setBusquedaAlumno] = useState('')
+
+  const alumnosFiltrados = alumnos.filter((a) => {
+    if (!busquedaAlumno.trim()) return true
+    const q = busquedaAlumno.trim().toLowerCase()
+    return a.nombre.toLowerCase().includes(q) || (a.dni && a.dni.includes(q))
+  })
+
+  const toggleAlumno = (id: string) => {
+    setSeleccionados((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!alumnoSeleccionado) return
-    onConfirm(alumnoSeleccionado)
+    if (seleccionados.length === 0) return
+    onConfirm(seleccionados)
+    onClose()
   }
-
-  const alumnoActual = alumnos.find((a) => a.id === alumnoSeleccionado)
 
   return (
     <div
@@ -458,53 +473,76 @@ function ModalAsignarRutina({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-bold">Asignar Rutina</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Asignar plan a un alumno del gimnasio</p>
+            <h2 className="text-lg font-bold">Asignar rutina</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Seleccioná uno o más alumnos</p>
           </div>
           <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-900">
+        <form onSubmit={handleSubmit} className="space-y-4 flex flex-col min-h-0 flex-1">
+          <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-900 shrink-0">
             <p className="font-bold">Rutina seleccionada:</p>
             <p className="text-sm font-extrabold text-blue-700 mt-0.5">{rutina.nombre}</p>
-            <p className="text-[11px] text-blue-600 mt-1">{rutina.dias.length} Días de entrenamiento</p>
+            <p className="text-[11px] text-blue-600 mt-1">{rutina.dias.length} días de entrenamiento</p>
           </div>
 
-          <div>
-            <label htmlFor="alumno-asignar-select" className="block text-xs font-bold text-slate-700 mb-1.5">
-              Elegir Alumno:
-            </label>
-            <select
-              id="alumno-asignar-select"
-              value={alumnoSeleccionado}
-              onChange={(e) => setAlumnoSeleccionado(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium text-slate-900 cursor-pointer"
-            >
-              {alumnos.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nombre} ({a.plan}) {a.rutinaId === rutina.id ? '— Ya la tiene asignada' : ''}
-                </option>
-              ))}
-            </select>
+          <div className="relative shrink-0">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={busquedaAlumno}
+              onChange={(e) => setBusquedaAlumno(e.target.value)}
+              placeholder="Buscar alumno por nombre o DNI..."
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
           </div>
 
-          {alumnoActual && alumnoActual.rutinaId && alumnoActual.rutinaId !== rutina.id && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2">
-              <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
-              <span>
-                Este alumno ya tiene otra rutina asignada. Al confirmar, se reemplazará por <strong>{rutina.nombre}</strong>.
-              </span>
-            </div>
+          <div className="overflow-y-auto min-h-0 flex-1 space-y-1 border border-slate-200 rounded-xl p-2 max-h-[280px]">
+            {alumnosFiltrados.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No se encontraron alumnos</p>
+            ) : (
+              alumnosFiltrados.map((a) => {
+                const checked = seleccionados.includes(a.id)
+                const yaAsignada = a.rutinaId === rutina.id
+                return (
+                  <label
+                    key={a.id}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                      checked
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'hover:bg-slate-50 border border-transparent'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAlumno(a.id)}
+                      className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{a.nombre}</p>
+                      <p className="text-[11px] text-slate-500">{a.plan}{yaAsignada ? ' — Ya la tiene asignada' : ''}</p>
+                    </div>
+                    {checked && <Check className="size-4 text-blue-600 shrink-0" />}
+                  </label>
+                )
+              })
+            )}
+          </div>
+
+          {seleccionados.length > 0 && (
+            <p className="text-xs text-slate-500 text-center shrink-0">
+              {seleccionados.length} {seleccionados.length === 1 ? 'alumno seleccionado' : 'alumnos seleccionados'}
+            </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-3">
+          <div className="flex justify-end gap-3 pt-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -514,7 +552,8 @@ function ModalAsignarRutina({
             </button>
             <button
               type="submit"
-              className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95"
+              disabled={seleccionados.length === 0}
+              className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Confirmar asignación
             </button>
@@ -688,7 +727,7 @@ function ModalNuevaRutina({
       >
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-xl font-bold">Crear Nueva Rutina</h2>
+            <h2 className="text-xl font-bold">Crear nueva rutina</h2>
             <p className="text-xs text-slate-500 mt-0.5">Definí el nombre general, los días y sus ejercicios</p>
           </div>
           <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 transition-colors p-1">
@@ -699,7 +738,7 @@ function ModalNuevaRutina({
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="rutina-nombre" className="block text-xs font-bold text-slate-700 mb-1.5">Nombre de la Rutina</label>
+              <label htmlFor="rutina-nombre" className="block text-xs font-bold text-slate-700 mb-1.5">Nombre de la rutina</label>
               <input
                 id="rutina-nombre"
                 value={nombre}
@@ -742,14 +781,14 @@ function ModalNuevaRutina({
           <div className="pt-3 border-t border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Días de Entrenamiento ({dias.length})
+                Días de entrenamiento ({dias.length})
               </span>
               <button
                 type="button"
                 onClick={agregarDia}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
               >
-                <Plus className="size-3.5" /> Agregar Día
+                <Plus className="size-3.5" /> Agregar día
               </button>
             </div>
 
@@ -788,7 +827,7 @@ function ModalNuevaRutina({
               type="submit"
               className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95"
             >
-              Guardar Rutina
+              Guardar rutina
             </button>
           </div>
         </form>
@@ -843,7 +882,7 @@ function TarjetaDiaRutina({
             title="Buscar en la videoteca de ejercicios"
           >
             <Search className="size-3.5 text-blue-600" />
-            <span>Buscar en Videoteca</span>
+            <span>Buscar en videoteca</span>
           </button>
           <button
             type="button"
@@ -1038,7 +1077,7 @@ function ModalBuscarEjercicioVideoteca({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-black text-slate-900">Videoteca de Ejercicios</h3>
+              <h3 className="text-lg font-black text-slate-900">Videoteca de ejercicios</h3>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
                 {videosTecnica.length.toLocaleString('es-AR')} ejercicios
               </span>
@@ -1257,7 +1296,7 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
               loading="lazy"
             />
             <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
-              ⚡ Loop continuo
+              Loop continuo
             </div>
           </div>
         ) : (
@@ -1564,7 +1603,7 @@ function TarjetaEjercicioAlumno({
             {/* Notas y descanso mobile */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3">
               {ejercicio.notas ? (
-                <p className="text-xs text-slate-400 italic">💡 {ejercicio.notas}</p>
+                <p className="text-xs text-slate-400 italic">{ejercicio.notas}</p>
               ) : (
                 <span />
               )}
@@ -1684,7 +1723,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
       </div>
 
       <span className="mb-2 rounded-full border border-blue-500/30 bg-blue-950/40 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-400">
-        Portal del Alumno
+        Portal del alumno
       </span>
 
       <h1 className="text-2xl font-black text-white sm:text-3xl">
@@ -1708,7 +1747,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
           href="/videoteca"
           className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 px-6 py-3 text-sm font-bold text-slate-200 transition-colors"
         >
-          Explorar Videoteca
+          Explorar videoteca
         </Link>
       </div>
     </div>
