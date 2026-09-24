@@ -67,7 +67,7 @@ interface AppDataContextValue {
   getUltimaSesion: (alumnoId: string, rutinaId: string, diaId: string) => SesionEntrenamiento | undefined;
   // Módulo de Asistencias y Tótem
   asistencias: RegistroAsistencia[];
-  registrarAsistenciaPorDni: (dni: string) => { ok: boolean; alumno?: Alumno; estadoCuenta?: EstadoCuenta; motivo?: string };
+  registrarAsistenciaPorDni: (dni: string) => { ok: boolean; yaRegistrado?: boolean; alumno?: Alumno; estadoCuenta?: EstadoCuenta; motivo?: string };
   eliminarAsistencia: (id: string) => void;
 }
 
@@ -361,20 +361,122 @@ function useGymStore(): AppDataContextValue {
     );
   }, []);
 
-  const agregarPago = useCallback((pago: Omit<Pago, "id">) => {
-    const alumno = alumnos.find((a) => a.id === pago.alumnoId);
-    const alumnoNombreHistorico = pago.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
-    const planId = pago.planId || alumno?.planId;
-    setPagos((prev) => [{ ...pago, alumnoNombreHistorico, planId, id: crypto.randomUUID() }, ...prev]);
-  }, [alumnos]);
+  const agregarPago = useCallback(
+    (pago: Omit<Pago, "id">) => {
+      const alumno = alumnos.find((a) => a.id === pago.alumnoId);
+      const alumnoNombreHistorico = pago.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
+      const planId = pago.planId || alumno?.planId;
+      const nuevoPago: Pago = { ...pago, alumnoNombreHistorico, planId, id: crypto.randomUUID() };
 
-  const actualizarEstadoPago = useCallback((id: string, estado: EstadoPago) => {
-    setPagos((prev) => prev.map((p) => (p.id === id ? { ...p, estado } : p)));
-  }, []);
+      setPagos((prev) => {
+        const nuevosPagos = [nuevoPago, ...prev];
+        const nuevoEstado = estadoCuentaDeAlumno(
+          pago.alumnoId,
+          nuevosPagos,
+          alumno?.fechaAlta,
+          alumno ? alumno.activo : true
+        );
 
-  const eliminarPago = useCallback((id: string) => {
-    setPagos((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+        setAsistencias((asistPrev) => {
+          const actualizadas = asistPrev.map((asist) =>
+            asist.alumnoId === pago.alumnoId && asist.fecha === fechaLocalHoy()
+              ? { ...asist, estadoCuenta: nuevoEstado }
+              : asist
+          );
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("atlas_asistencias_v2", JSON.stringify(actualizadas));
+              if (typeof BroadcastChannel !== "undefined") {
+                const bc = new BroadcastChannel("atlas_asistencias_channel");
+                bc.postMessage({ tipo: "ACTUALIZAR_ASISTENCIAS", asistencias: actualizadas });
+                bc.close();
+              }
+            } catch {}
+          }
+          return actualizadas;
+        });
+
+        return nuevosPagos;
+      });
+    },
+    [alumnos]
+  );
+
+  const actualizarEstadoPago = useCallback(
+    (id: string, estado: EstadoPago) => {
+      setPagos((prev) => {
+        const nuevosPagos = prev.map((p) => (p.id === id ? { ...p, estado } : p));
+        const pagoModificado = nuevosPagos.find((p) => p.id === id);
+        if (pagoModificado) {
+          const alumno = alumnos.find((a) => a.id === pagoModificado.alumnoId);
+          const nuevoEstado = estadoCuentaDeAlumno(
+            pagoModificado.alumnoId,
+            nuevosPagos,
+            alumno?.fechaAlta,
+            alumno ? alumno.activo : true
+          );
+          setAsistencias((asistPrev) => {
+            const actualizadas = asistPrev.map((asist) =>
+              asist.alumnoId === pagoModificado.alumnoId && asist.fecha === fechaLocalHoy()
+                ? { ...asist, estadoCuenta: nuevoEstado }
+                : asist
+            );
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("atlas_asistencias_v2", JSON.stringify(actualizadas));
+                if (typeof BroadcastChannel !== "undefined") {
+                  const bc = new BroadcastChannel("atlas_asistencias_channel");
+                  bc.postMessage({ tipo: "ACTUALIZAR_ASISTENCIAS", asistencias: actualizadas });
+                  bc.close();
+                }
+              } catch {}
+            }
+            return actualizadas;
+          });
+        }
+        return nuevosPagos;
+      });
+    },
+    [alumnos]
+  );
+
+  const eliminarPago = useCallback(
+    (id: string) => {
+      setPagos((prev) => {
+        const pagoAEliminar = prev.find((p) => p.id === id);
+        const nuevosPagos = prev.filter((p) => p.id !== id);
+        if (pagoAEliminar) {
+          const alumno = alumnos.find((a) => a.id === pagoAEliminar.alumnoId);
+          const nuevoEstado = estadoCuentaDeAlumno(
+            pagoAEliminar.alumnoId,
+            nuevosPagos,
+            alumno?.fechaAlta,
+            alumno ? alumno.activo : true
+          );
+          setAsistencias((asistPrev) => {
+            const actualizadas = asistPrev.map((asist) =>
+              asist.alumnoId === pagoAEliminar.alumnoId && asist.fecha === fechaLocalHoy()
+                ? { ...asist, estadoCuenta: nuevoEstado }
+                : asist
+            );
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("atlas_asistencias_v2", JSON.stringify(actualizadas));
+                if (typeof BroadcastChannel !== "undefined") {
+                  const bc = new BroadcastChannel("atlas_asistencias_channel");
+                  bc.postMessage({ tipo: "ACTUALIZAR_ASISTENCIAS", asistencias: actualizadas });
+                  bc.close();
+                }
+              } catch {}
+            }
+            return actualizadas;
+          });
+        }
+        return nuevosPagos;
+      });
+    },
+    [alumnos]
+  );
 
   const agregarRutina = useCallback((rutina: Omit<Rutina, "id">) => {
     const nueva: Rutina = { ...rutina, id: crypto.randomUUID() };
@@ -559,6 +661,22 @@ function useGymStore(): AppDataContextValue {
 
       const estado = getEstadoCuenta(alumno.id);
       const hoy = fechaLocalHoy();
+
+      // Control de unicidad: evitar registrar duplicados para el mismo alumno en el mismo día
+      const asistenciaPreviaHoy = asistencias.find(
+        (a) => a.alumnoId === alumno.id && a.fecha === hoy
+      );
+
+      if (asistenciaPreviaHoy) {
+        return {
+          ok: false,
+          yaRegistrado: true,
+          alumno,
+          estadoCuenta: estado,
+          motivo: `Ya registraste tu ingreso hoy a las ${asistenciaPreviaHoy.hora} hs. Tu sesión de entrenamiento continúa activa.`,
+        };
+      }
+
       const ahora = new Date();
       const horaStr = ahora.toLocaleTimeString("es-AR", {
         hour: "2-digit",
@@ -611,7 +729,7 @@ function useGymStore(): AppDataContextValue {
         estadoCuenta: estado,
       };
     },
-    [alumnos, getEstadoCuenta]
+    [alumnos, asistencias, getEstadoCuenta]
   );
 
   const eliminarAsistencia = useCallback((id: string) => {

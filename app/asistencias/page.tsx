@@ -33,7 +33,7 @@ import {
 import { Tooltip } from '@/components/ui/tooltip'
 
 export default function AsistenciasPage() {
-  const { asistencias, eliminarAsistencia } = useAppData()
+  const { asistencias, eliminarAsistencia, getEstadoCuenta } = useAppData()
   const hoyFechaStr = fechaLocalHoy()
   const ultimos7Dias = useMemo(() => obtenerUltimos7Dias(hoyFechaStr), [hoyFechaStr])
 
@@ -135,11 +135,11 @@ export default function AsistenciasPage() {
   // Tasa de socios al día hoy
   const porcentajeAlDiaHoy = useMemo(() => {
     if (asistenciasHoy.length === 0) return 100
-    const alDia = asistenciasHoy.filter((a) => a.estadoCuenta === 'AL_DIA').length
+    const alDia = asistenciasHoy.filter((a) => (getEstadoCuenta ? getEstadoCuenta(a.alumnoId) === 'AL_DIA' : a.estadoCuenta === 'AL_DIA')).length
     return Math.round((alDia / asistenciasHoy.length) * 100)
-  }, [asistenciasHoy])
+  }, [asistenciasHoy, getEstadoCuenta])
 
-  // Lista filtrada para la tabla de historial (con filtro de fecha y estado de cuota)
+  // Lista filtrada para la tabla de historial (con filtro de fecha y estado de cuota en vivo para hoy)
   const listaFiltrada = useMemo(() => {
     let base = asistencias
     if (filtroFechaHistorial === 'HOY') {
@@ -148,10 +148,13 @@ export default function AsistenciasPage() {
       base = base.filter((a) => a.fecha === filtroFechaHistorial)
     }
 
+    const obtenerEstado = (a: (typeof asistencias)[number]) =>
+      a.fecha === hoyFechaStr && getEstadoCuenta ? getEstadoCuenta(a.alumnoId) : a.estadoCuenta
+
     if (filtroEstadoHistorial === 'AL_DIA') {
-      base = base.filter((a) => a.estadoCuenta === 'AL_DIA')
+      base = base.filter((a) => obtenerEstado(a) === 'AL_DIA')
     } else if (filtroEstadoHistorial === 'VENCIDO') {
-      base = base.filter((a) => a.estadoCuenta !== 'AL_DIA')
+      base = base.filter((a) => obtenerEstado(a) !== 'AL_DIA')
     }
 
     const q = busquedaHistorial.trim().toLowerCase()
@@ -511,7 +514,7 @@ export default function AsistenciasPage() {
             {sociosEnSalaVisibles.map((s) => {
               const minutosTranscurridos = calcularMinutosTranscurridos(s.timestamp, ahoraMs)
               const minutosRestantes = Math.max(0, DURACION_SESION_MINUTOS - minutosTranscurridos)
-              const esAlDia = s.estadoCuenta === 'AL_DIA'
+              const esAlDia = (getEstadoCuenta ? getEstadoCuenta(s.alumnoId) : s.estadoCuenta) === 'AL_DIA'
 
               return (
                 <div
@@ -682,15 +685,21 @@ export default function AsistenciasPage() {
                         {asist.planNombre}
                       </td>
                       <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            asist.estadoCuenta === 'AL_DIA'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                          }`}
-                        >
-                          {asist.estadoCuenta === 'AL_DIA' ? 'Al día' : 'Vencida'}
-                        </span>
+                        {(() => {
+                          const estadoFila = (asist.fecha === hoyFechaStr && getEstadoCuenta) ? getEstadoCuenta(asist.alumnoId) : asist.estadoCuenta
+                          const esFilaAlDia = estadoFila === 'AL_DIA'
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                esFilaAlDia
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              }`}
+                            >
+                              {esFilaAlDia ? 'Al día' : 'Vencida'}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className="py-3.5 px-3 text-xs">
                         {activa ? (
