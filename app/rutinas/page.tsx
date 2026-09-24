@@ -7,6 +7,7 @@ import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, S
 import { buscarVideoParaEjercicio, formatPrevia } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { reproducirSonidoFinDescanso } from '@/lib/asistencia-utils'
 import {
   Dumbbell,
   Plus,
@@ -26,9 +27,14 @@ import {
   Save,
   CheckCircle2,
   Copy,
+  Play,
+  Pause,
+  RotateCcw,
+  Volume2,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useEscapeKey } from '@/lib/use-escape-key'
+import { Tooltip } from '@/components/ui/tooltip'
 
 const OBJETIVOS = ['TODOS', 'Hipertrofia', 'Fuerza', 'Adaptación', 'Funcional']
 
@@ -906,8 +912,8 @@ function TarjetaDiaRutina({
                   }`}
                 >
                   <option value="NORMAL">Normal</option>
-                  <option value="BI_SERIE">⚡ Bi-serie</option>
-                  <option value="DROP_SET">🔥 Drop Set</option>
+                  <option value="BI_SERIE">Bi-serie</option>
+                  <option value="DROP_SET">Drop Set</option>
                 </select>
               </div>
 
@@ -1423,6 +1429,7 @@ function TarjetaEjercicioAlumno({
   sesionPrevia,
   videos,
   onChange,
+  onIniciarDescanso,
 }: {
   ejercicio: Ejercicio
   index: number
@@ -1430,6 +1437,7 @@ function TarjetaEjercicioAlumno({
   sesionPrevia: SesionEjercicio | undefined
   videos: VideoTecnica[]
   onChange: (series: RegistroSerie[]) => void
+  onIniciarDescanso?: (ejercicioNombre: string, segundos: number) => void
 }) {
   const [expandido, setExpandido] = useState(index === 0)
   const [videoAbierto, setVideoAbierto] = useState(false)
@@ -1468,12 +1476,17 @@ function TarjetaEjercicioAlumno({
 
   const toggleCompletada = useCallback(
     (numSerie: number) => {
+      const serieTarget = seriesData.find((s) => s.serieNumero === numSerie)
+      const vaACompletar = serieTarget ? !serieTarget.completada : false
       const actualizadas = seriesData.map((s) =>
         s.serieNumero === numSerie ? { ...s, completada: !s.completada } : s
       )
       onChange(actualizadas)
+      if (vaACompletar && onIniciarDescanso) {
+        onIniciarDescanso(ejercicio.nombre, ejercicio.descansoSegundos || 60)
+      }
     },
-    [seriesData, onChange]
+    [seriesData, onChange, onIniciarDescanso, ejercicio.nombre, ejercicio.descansoSegundos]
   )
 
   const contenedorClass = todasCompletas
@@ -1506,16 +1519,16 @@ function TarjetaEjercicioAlumno({
 
             {/* Nombre y Badges de estado */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-white truncate">{ejercicio.nombre}</h3>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-white break-words">{ejercicio.nombre}</h3>
                 {ejercicio.tipoSerie === 'BI_SERIE' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm">
-                    ⚡ Bi-serie
+                  <span className="inline-flex items-center text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm shrink-0">
+                    Bi-serie
                   </span>
                 )}
                 {ejercicio.tipoSerie === 'DROP_SET' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm">
-                    🔥 Drop Set
+                  <span className="inline-flex items-center text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm shrink-0">
+                    Drop Set
                   </span>
                 )}
                 <BadgeEstadoEjercicio
@@ -1709,6 +1722,59 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
   const [guardado, setGuardado] = useState(false)
   const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
 
+  // Temporizador de descanso automático entre series
+  const [temporizador, setTemporizador] = useState<{
+    ejercicioNombre: string
+    segundosRestantes: number
+    totalSegundos: number
+    activo: boolean
+    notificado: boolean
+  } | null>(null)
+
+  const iniciarDescanso = useCallback((ejercicioNombre: string, segundos: number) => {
+    setTemporizador({
+      ejercicioNombre,
+      segundosRestantes: segundos,
+      totalSegundos: segundos,
+      activo: true,
+      notificado: false,
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!temporizador || !temporizador.activo) return
+
+    if (temporizador.segundosRestantes <= 0) {
+      if (!temporizador.notificado) {
+        reproducirSonidoFinDescanso()
+        setTemporizador((prev) => (prev ? { ...prev, notificado: true, activo: false } : null))
+      }
+      return
+    }
+
+    const timer = setInterval(() => {
+      setTemporizador((prev) => {
+        if (!prev || !prev.activo) return prev
+        const nuevosSegundos = prev.segundosRestantes - 1
+        if (nuevosSegundos <= 0 && !prev.notificado) {
+          reproducirSonidoFinDescanso()
+          return {
+            ...prev,
+            segundosRestantes: 0,
+            activo: false,
+            notificado: true,
+          }
+        }
+        return {
+          ...prev,
+          segundosRestantes: nuevosSegundos,
+        }
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [temporizador])
+
   const dia = rutina.dias[diaActivo] ?? rutina.dias[0]
 
   // Sesión previa para el día activo
@@ -1815,7 +1881,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     <div className="mx-auto max-w-[1200px] px-5 py-8 md:px-10 md:py-10 space-y-8">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
-          Mi Entrenamiento Asignado
+          Mi entrenamiento asignado
         </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
           {rutina.nombre}
@@ -1880,6 +1946,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 sesionPrevia={sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id)}
                 videos={videosTecnica}
                 onChange={(series) => handleChangeSeries(ej.id, series)}
+                onIniciarDescanso={iniciarDescanso}
               />
             ))}
           </div>
@@ -1905,11 +1972,151 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 <>
                   <Save className="size-4" />
                   {completados === total && total > 0
-                    ? 'Finalizar y Guardar Entreno'
-                    : 'Guardar Entreno'}
+                    ? 'Finalizar y guardar entreno'
+                    : 'Guardar entreno'}
                 </>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Barra Flotante de Temporizador de Descanso Automático */}
+      {temporizador && (
+        <div className="fixed bottom-22 md:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md animate-in slide-in-from-bottom-5 duration-300">
+          <div
+            className={`rounded-2xl border p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl transition-all ${
+              temporizador.segundosRestantes === 0
+                ? 'bg-emerald-950/95 border-emerald-500/80 shadow-emerald-900/50'
+                : 'bg-slate-900/95 border-blue-500/50 shadow-blue-950/60'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={`size-10 sm:size-11 rounded-xl flex items-center justify-center shrink-0 font-mono font-black text-sm border ${
+                    temporizador.segundosRestantes === 0
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-bounce'
+                      : 'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                  }`}
+                >
+                  {temporizador.segundosRestantes === 0 ? (
+                    <Volume2 className="size-5" />
+                  ) : (
+                    <Clock className="size-5" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                    {temporizador.segundosRestantes === 0
+                      ? '¡Tiempo cumplido!'
+                      : 'Descanso en progreso'}
+                  </p>
+                  <p className="text-xs sm:text-sm font-black text-white truncate">
+                    {temporizador.ejercicioNombre}
+                  </p>
+                </div>
+              </div>
+
+              {/* Cuenta regresiva digital */}
+              <div className="text-right shrink-0">
+                <span
+                  className={`font-mono text-xl sm:text-2xl font-black ${
+                    temporizador.segundosRestantes === 0
+                      ? 'text-emerald-400 animate-pulse'
+                      : temporizador.segundosRestantes <= 10
+                      ? 'text-amber-400'
+                      : 'text-blue-400'
+                  }`}
+                >
+                  {Math.floor(temporizador.segundosRestantes / 60)}:
+                  {(temporizador.segundosRestantes % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+
+              {/* Controles del temporizador */}
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                {temporizador.segundosRestantes > 0 && (
+                  <>
+                    <Tooltip content={temporizador.activo ? 'Pausar descanso' : 'Reanudar descanso'}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemporizador((prev) =>
+                            prev ? { ...prev, activo: !prev.activo } : null
+                          )
+                        }
+                        className="size-8 sm:size-8.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        {temporizador.activo ? (
+                          <Pause className="size-3.5 sm:size-4" />
+                        ) : (
+                          <Play className="size-3.5 sm:size-4" />
+                        )}
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Sumar 15 segundos">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemporizador((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  segundosRestantes: prev.segundosRestantes + 15,
+                                  totalSegundos: Math.max(prev.totalSegundos, prev.segundosRestantes + 15),
+                                }
+                              : null
+                          )
+                        }
+                        className="h-8 px-2 sm:px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        +15s
+                      </button>
+                    </Tooltip>
+                  </>
+                )}
+                <Tooltip content="Cerrar temporizador">
+                  <button
+                    type="button"
+                    onClick={() => setTemporizador(null)}
+                    className="size-8 sm:size-8.5 rounded-lg bg-slate-800/80 hover:bg-rose-900/60 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+
+            {/* Barra de progreso animada */}
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-2.5">
+              <div
+                className={`h-full transition-all duration-300 rounded-full ${
+                  temporizador.segundosRestantes === 0
+                    ? 'bg-emerald-500'
+                    : 'bg-gradient-to-r from-blue-500 to-emerald-400'
+                }`}
+                style={{
+                  width: `${
+                    temporizador.totalSegundos > 0
+                      ? Math.min(
+                          100,
+                          ((temporizador.totalSegundos - temporizador.segundosRestantes) /
+                            temporizador.totalSegundos) *
+                            100
+                        )
+                      : 100
+                  }%`,
+                }}
+              />
+            </div>
+
+            {temporizador.segundosRestantes === 0 && (
+              <p className="text-center text-[11px] font-bold text-emerald-300 mt-2 animate-pulse">
+                🔔 ¡Descanso completado! Preparate para tu próxima serie.
+              </p>
+            )}
           </div>
         </div>
       )}

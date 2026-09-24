@@ -7,6 +7,7 @@ import { useAppData } from '@/lib/store'
 import { normalizarDni, reproducirSonidoFeedback } from '@/lib/asistencia-utils'
 import { Alumno, EstadoCuenta } from '@/lib/types'
 import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck } from 'lucide-react'
+import { Tooltip } from '@/components/ui/tooltip'
 
 type EstadoTotem = 'IDLE' | 'EXITO' | 'ALERTA' | 'ERROR'
 
@@ -195,7 +196,7 @@ export default function TotemPage() {
             priority
           />
           <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
-            Terminal Asistencias
+            Terminal de asistencias
           </span>
         </div>
 
@@ -210,77 +211,79 @@ export default function TotemPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
             </span>
-            <span className="text-xs font-bold text-slate-300">Terminal Activa</span>
+            <span className="text-xs font-bold text-slate-300">Terminal activa</span>
           </div>
         </div>
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
-      <section className="flex-1 flex items-center justify-center py-2 w-full max-w-md mx-auto overflow-hidden">
+      <section className="flex-1 flex items-center justify-center py-2 w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto overflow-hidden">
         {/* ESTADO 1: EN ESPERA / DIGITANDO DNI */}
         {estado === 'IDLE' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-2 sm:mb-3">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Marcá tu ingreso</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">Marcá tu ingreso</h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
             </div>
 
             {/* VISOR DE DNI */}
-            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2 sm:py-3 px-4 text-center shadow-lg shadow-blue-950/20 mb-2 sm:mb-3 transition-all focus-within:border-blue-500">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Documento Nacional de Identidad</p>
-              <div className="h-10 sm:h-12 flex items-center justify-center">
+            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500">
+              <p className="text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
+              <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center">
                 {dni ? (
-                  <span className="text-2xl sm:text-3xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
                     {formatearDniVisual(dni)}
                   </span>
                 ) : (
-                  <span className="text-xl sm:text-2xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
                     _ _ . _ _ _ . _ _ _
                   </span>
                 )}
               </div>
             </div>
 
-            {/* TECLADO NUMÉRICO TÁCTIL (NUMPAD COMPACTO PARA TABLETS SIN SCROLL) */}
-            <div className="w-full grid grid-cols-3 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+            {/* TECLADO NUMÉRICO TÁCTIL */}
+            <div className="w-full grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-2.5 mb-2.5 sm:mb-3.5">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => agregarDigito(num)}
-                  className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                  className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
                 >
                   {num}
                 </button>
               ))}
 
-              <button
-                type="button"
-                onClick={limpiar}
-                title="Limpiar campo"
-                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-              >
-                <RotateCcw className="size-4 text-slate-400" />
-                <span>Limpiar</span>
-              </button>
+              <Tooltip content="Limpiar DNI ingresado">
+                <button
+                  type="button"
+                  onClick={limpiar}
+                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                >
+                  <RotateCcw className="size-4 md:size-5 text-slate-400" />
+                  <span>Limpiar</span>
+                </button>
+              </Tooltip>
 
               <button
                 type="button"
                 onClick={() => agregarDigito('0')}
-                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
               >
                 0
               </button>
 
-              <button
-                type="button"
-                onClick={borrarUltimo}
-                title="Borrar último dígito"
-                className="h-11 sm:h-13 md:h-14 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-              >
-                <Delete className="size-4 text-slate-400" />
-                <span>Borrar</span>
-              </button>
+              <Tooltip content="Borrar último dígito">
+                <button
+                  type="button"
+                  onClick={borrarUltimo}
+                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                >
+                  <Delete className="size-4 md:size-5 text-slate-400" />
+                  <span>Borrar</span>
+                </button>
+              </Tooltip>
             </div>
 
             {/* BOTÓN REGISTRAR */}
@@ -288,14 +291,14 @@ export default function TotemPage() {
               type="button"
               disabled={dni.length < 6 || procesando}
               onClick={() => manejarEnvio()}
-              className={`w-full h-11 sm:h-13 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg ${
+              className={`w-full h-11 sm:h-13 md:h-14 lg:h-15 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg tracking-wide flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg ${
                 dni.length >= 6 && !procesando
                   ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 active:scale-98'
                   : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
               }`}
             >
-              <Check className="size-5" />
-              <span>REGISTRAR ENTRADA</span>
+              <Check className="size-5 md:size-6" />
+              <span>Registrar entrada</span>
             </button>
           </div>
         )}
@@ -307,7 +310,7 @@ export default function TotemPage() {
               <CheckCircle2 className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Acceso Autorizado</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Acceso autorizado</p>
             <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
             <p className="text-xs sm:text-sm font-semibold text-emerald-300/90 mt-1">Cuota al día · ¡Que tengas un excelente entrenamiento!</p>
 
@@ -320,7 +323,7 @@ export default function TotemPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase text-slate-500">Estado de cuenta</p>
                 <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                  AL DÍA ✓
+                  Al día
                 </span>
               </div>
             </div>
@@ -354,7 +357,7 @@ export default function TotemPage() {
               <AlertTriangle className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Atención · Cuota Vencida</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Atención · Cuota vencida</p>
             <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
             <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
               Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.
@@ -369,7 +372,7 @@ export default function TotemPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase text-slate-500">Condición</p>
                 <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  RENOVAR CUOTA
+                  Renovar cuota
                 </span>
               </div>
             </div>
@@ -403,7 +406,7 @@ export default function TotemPage() {
               <XCircle className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso No Registrado</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso no registrado</p>
             <h2 className="text-xl sm:text-2xl font-black text-white mt-1">No identificamos tu DNI</h2>
             <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1 max-w-sm mx-auto">
               {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está inactivo.'}
@@ -439,7 +442,7 @@ export default function TotemPage() {
       <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-[11px] sm:text-xs text-slate-500 shrink-0">
         <p className="flex items-center gap-1.5">
           <ShieldCheck className="size-3.5 text-blue-500" />
-          <span>Terminal Kiosco protegida por ATLAS GYM</span>
+          <span>Terminal kiosco protegida por ATLAS GYM</span>
         </p>
         <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>

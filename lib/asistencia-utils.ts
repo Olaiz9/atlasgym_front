@@ -273,3 +273,43 @@ export function reproducirSonidoFeedback(tipo: "EXITO" | "ALERTA" | "ERROR"): vo
     // Si el navegador bloquea la reproducción automática o no la soporta, falla silenciosamente
   }
 }
+
+/**
+ * Emite una campana / chime sonoro nítido y agradable cuando finaliza el tiempo de descanso
+ * entre series en la rutina del alumno, avisándole que debe comenzar la siguiente serie.
+ */
+export function reproducirSonidoFinDescanso(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const ahora = ctx.currentTime;
+
+    // Doble campana deportiva nítida (880 Hz y 1174.66 Hz - A5 a D6)
+    const notas = [880, 1174.66];
+    notas.forEach((freq, i) => {
+      const start = ahora + i * 0.16;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.55);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(start);
+      osc.stop(start + 0.6);
+    });
+  } catch {
+    // Si el navegador bloquea audio sin interacción previa, no rompe la UI
+  }
+}
+

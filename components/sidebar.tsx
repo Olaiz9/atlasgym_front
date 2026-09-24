@@ -166,7 +166,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <nav className="flex flex-col gap-2.5 pb-5 shrink-0" aria-label="Navegación principal">
             {!collapsed && (
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                {esAlumno ? 'Portal del Alumno' : 'Panel principal'}
+                {esAlumno ? 'Portal del alumno' : 'Panel principal'}
               </p>
             )}
             {navItems.map(({ label, href, icon: Icon }) => {
@@ -209,11 +209,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <div className="mt-auto shrink-0 flex flex-col gap-2.5 border-t border-slate-800/50 pt-5">
             <button
               onClick={() => setMostrarAyuda(true)}
-              title={collapsed ? 'Centro de ayuda' : undefined}
-              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
+              title={collapsed ? (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda') : undefined}
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
-              {!collapsed && 'Centro de ayuda'}
+              {!collapsed && (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda')}
             </button>
             <SidebarUserCard
               usuario={usuarioActual}

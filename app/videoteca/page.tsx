@@ -301,7 +301,7 @@ export default function VideotecaPage() {
             <span>Videoteca Biomecánica ATLAS</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
-            Técnica por <span className="text-blue-500">Grupo Muscular</span>
+            Técnica por <span className="text-blue-500">grupo muscular</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
             {esAdmin
@@ -316,7 +316,7 @@ export default function VideotecaPage() {
             className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-200 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus className="mr-2 size-4" />
-            Nuevo Video Coach
+            Nuevo video coach
           </Button>
         )}
       </div>
@@ -958,7 +958,7 @@ function ModalNuevoVideo({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
-              Grupo Muscular
+              Grupo muscular
               <select
                 value={grupoMuscular}
                 onChange={(e) => setGrupoMuscular(e.target.value as any)}

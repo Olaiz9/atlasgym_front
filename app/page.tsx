@@ -73,7 +73,7 @@ function AvisoBannerDestacado({ aviso }: { aviso: { fecha: string; titulo: strin
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-              Aviso del Gimnasio
+              Aviso del gimnasio
             </span>
             <span className="text-xs text-slate-400 font-medium">{aviso.fecha}</span>
           </div>
@@ -222,20 +222,20 @@ function HomeAlumno({
   return (
     <>
       {/* Header Superior */}
-      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-5 md:px-10">
-        <div className="flex items-center md:hidden">
-          <Image
-            src="/logo-atlas-blanco.png"
-            alt="ATLAS GYM"
-            width={120}
-            height={67}
-            className="h-8 w-auto object-contain"
-            priority
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold">
-            Portal del Alumno
+      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-4 sm:px-6 md:px-10">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center md:hidden shrink-0">
+            <Image
+              src="/logo-atlas-blanco.png"
+              alt="ATLAS GYM"
+              width={120}
+              height={67}
+              className="h-8 w-auto object-contain"
+              priority
+            />
+          </div>
+          <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold shrink-0">
+            Portal del alumno
           </span>
         </div>
         <HeaderStatusSection
@@ -252,7 +252,7 @@ function HomeAlumno({
         {/* Bienvenida Alumno */}
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">Mi Panel de Entrenamiento</p>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">Mi panel de entrenamiento</p>
             <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
               ¡Hola, <span className="text-blue-500">{usuario.nombre.split(' ')[0]}</span>! 💪
             </h1>
@@ -285,7 +285,7 @@ function HomeAlumno({
                 <PlayCircle className="size-4" />
                 Videoteca ATLAS
               </div>
-              <h2 className="text-2xl font-black text-white">Técnica y Ejecución de Ejercicios</h2>
+              <h2 className="text-2xl font-black text-white">Técnica y ejecución de ejercicios</h2>
               <p className="text-sm text-slate-400 mt-1">
                 Mirá los videos de técnica correcta para optimizar tu entrenamiento y prevenir lesiones.
               </p>

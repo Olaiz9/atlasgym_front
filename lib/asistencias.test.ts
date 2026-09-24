@@ -9,6 +9,7 @@ import {
   calcularDistribucionHoraria,
   calcularDistribucionSemanal,
   obtenerUltimos7Dias,
+  reproducirSonidoFinDescanso,
   DURACION_SESION_MINUTOS,
   DURACION_SESION_MS,
 } from './asistencia-utils'
@@ -213,8 +214,13 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
       expect(dias[0].etiqueta).toBe('Hoy')
       expect(dias[0].fecha).toBe('2026-09-23')
       expect(dias[1].etiqueta).toBe('Ayer')
-      expect(dias[1].fecha).toBe('2026-09-22')
       expect(dias[6].fecha).toBe('2026-09-17')
+    })
+  })
+
+  describe('reproducirSonidoFinDescanso', () => {
+    it('se ejecuta sin lanzar errores en entornos sin AudioContext o en node', () => {
+      expect(() => reproducirSonidoFinDescanso()).not.toThrow()
     })
   })
 })

@@ -29,14 +29,14 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
               <HelpCircle className="size-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Centro de Ayuda</h3>
-              <p className="text-xs text-slate-400">Canales de atención de ATLAS Gym</p>
+              <h3 className="text-lg font-bold text-white">Consultar al profesor</h3>
+              <p className="text-xs text-slate-400">Canales de atención directa con profesores de ATLAS GYM</p>
             </div>
           </div>
           <button
             onClick={onCerrar}
-            aria-label="Cerrar centro de ayuda"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            aria-label="Cerrar consulta al profesor"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
           >
             <X className="size-5" />
           </button>
@@ -52,7 +52,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
                 <Mail className="size-5" />
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail / Correo</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Correo electrónico</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
                   {CONTACTO_ATLAS.email}
                 </p>
@@ -72,7 +72,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
                 <Phone className="size-5" />
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teléfono / WhatsApp</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teléfono y WhatsApp</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">
                   {CONTACTO_ATLAS.telefono}
                 </p>

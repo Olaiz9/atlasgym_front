@@ -428,13 +428,57 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
 * **Resultados de Verificación y Calidad Consolidados:**
   - 🧪 **Vitest (`npm test`):**
     - Archivos de prueba: `12 passed (12)`
-    - Tests ejecutados: `107 passed (107)`
+    - Tests ejecutados: `108 passed (108)`
     - Estado: **100% APROBADO (0 fallos)**
   - 🩺 **TypeScript (`npx tsc --noEmit`):**
     - Diagnóstico: **0 errores de compilación**
   - 🚀 **Next.js Production Build (`npm run build`):**
     - Rutas compiladas: **13/13 rutas estáticas y dinámicas optimizadas** (incluyendo `/totem` y `/asistencias`).
     - Estado: **Listo para producción local**
+
+---
+
+### 10. Refinamiento UX/UI: Espaciado de Tótem en PC, Controles en Fila Única, Estandarización Sentence Case, Tooltips Instantáneos, Temporizador de Descanso con Audio en Rutinas y Ampliación de Barra Móvil
+* **Fecha:** 24 de Septiembre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Espaciado y proporción del Tótem al 100% de zoom en PC:** El contenedor en pantalla de computadora se percibía apretado y angosto con demasiado espacio vacío lateral. Se requería mayor amplitud (`max-w-xl`), escalado de teclado numérico, visor ampliado y proporciones confortables sin perder la compatibilidad estricta con tablets sin scroll.
+  2. **Registro Histórico de Asistencias en Fila Única:** La barra de búsqueda por DNI/nombre quebraba visualmente a una segunda fila intermedia. Se integró junto con el selector de fecha y los filtros de estado de cuota en una única fila continua y limpia.
+  3. **Eliminación del emoticon de check en "Al día":** Retiro sistemático del caracter `✓` en todas las referencias de estado de cuenta ("Al día").
+  4. **Estandarización de Sentence Case en toda la interfaz:** Siguiendo las directrices profesionales de diseño UX/UI, todos los títulos, subtítulos y badges se convirtieron a mayúscula únicamente en la primera letra de la primera palabra (ej. *"Control de asistencias y aforo"*, *"Técnica por grupo muscular"*, *"Socios en sala ahora"*, *"Monitoreo en tiempo real"*).
+  5. **Tooltips Instantáneos en Botones:** Reemplazo de los tooltips nativos lentos del navegador por un componente reactivo ultraligero (`Tooltip`) con renderizado inmediato (0ms de delay) y diseño armónico con la paleta de ATLAS.
+  6. **Temporizador de Descanso Automático con Notificación Sonora en Rutina de Alumno:**
+     - Al tildar una serie como completada, se inicia automáticamente una cuenta regresiva regresiva del descanso configurado para dicho ejercicio.
+     - Barra flotante inferior con indicador digital en vivo, botón de pausar/reanudar, botón de +15s y botón de descarte.
+     - Al llegar a 0 segundos, emite una campana deportiva armónica con Web Audio API (`reproducirSonidoFinDescanso`) avisando al alumno que comience la siguiente serie.
+     - Eliminación de emojis de IA (`⚡ Bi-serie` -> `Bi-serie`, `🔥 Drop Set` -> `Drop Set`).
+  7. **Botón "Consultar al profesor":**
+     - Renombrado intuitivo de *"Centro de ayuda"* a *"Consultar al profesor"* para el perfil de alumno.
+     - Garantía de visibilidad en dispositivos móviles: incorporación directa del botón *"Profesor"* en la barra de navegación inferior móvil (`MobileNav`) abriendo el modal de contacto directo.
+  8. **Corrección de Solapamientos Responsive:** Corrección de `truncate`, `flex-wrap` y anchos mínimos en las tarjetas de ejercicios, tabla de series y badges en pantallas móviles estrechas.
+  9. **Espaciado del Logo y Portal del Alumno en Celular:** Agrupación unificada con `gap-3` en la cabecera de `app/page.tsx` para evitar que el logo de ATLAS y el badge azul colisionen o queden pegados.
+  10. **Ampliación de la Barra de Navegación Móvil (`MobileNav`):** Incremento de altura (`h-[72px]`), agrandado de íconos (`size-[22px]`) y tipografía (`text-[10.5px] sm:text-[11px] font-semibold`), ajustando el padding inferior de `AppShell` (`pb-24`) para evitar que el contenido quede tapado.
+
+* **Archivos modificados y creados:**
+  - 📁 `components/ui/tooltip.tsx`: [NUEVO] Componente de tooltip instantáneo y accesible sin delay.
+  - 📁 `lib/asistencia-utils.ts`: Nueva función `reproducirSonidoFinDescanso()` vía sintetizador Web Audio API.
+  - 📁 `app/totem/page.tsx`: Escala de contenedor (`max-w-xl`), botones agrandados, visor espaciado, sentence case y eliminación de `✓`.
+  - 📁 `app/asistencias/page.tsx`: Alineación en fila única para controles históricos, sentence case y tooltips instantáneos.
+  - 📁 `app/rutinas/page.tsx`: Temporizador de descanso automático con campana sonora, eliminación de emojis y ajuste responsive de series.
+  - 📁 `app/videoteca/page.tsx`: Estandarización a sentence case (*"Técnica por grupo muscular"*).
+  - 📁 `app/page.tsx`: Espaciado nítido entre logo ATLAS y "Portal del alumno", sentence case en títulos.
+  - 📁 `components/sidebar.tsx` & `components/modal-centro-ayuda.tsx`: Renombrado a *"Consultar al profesor"* y canales en sentence case.
+  - 📁 `components/mobile-nav.tsx`: Ampliación dimensional y acceso directo al botón de consulta para alumnos.
+  - 📁 `components/app-shell.tsx`: Ajuste de espacio inferior (`pb-24`) para la barra móvil ampliada.
+  - 📁 `lib/asistencias.test.ts`: Nueva prueba unitaria para `reproducirSonidoFinDescanso`.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `108 passed (108)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **Next.js Production Build (`npm run build`):**
+    - Estado: **Compilado con éxito sin errores en 13/13 rutas**
+
 
 
 

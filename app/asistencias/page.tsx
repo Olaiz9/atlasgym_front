@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
+import { Tooltip } from '@/components/ui/tooltip'
 
 export default function AsistenciasPage() {
   const { asistencias, eliminarAsistencia } = useAppData()
@@ -181,10 +182,10 @@ export default function AsistenciasPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">
             <Activity className="size-4" />
-            Monitoreo en Tiempo Real
+            Monitoreo en tiempo real
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-            Control de Asistencias & Aforo
+            Control de asistencias y aforo
           </h1>
           <p className="mt-1 text-sm text-slate-400">
             Registro instantáneo de ingresos por DNI, socios en sala y analítica de horarios pico.
@@ -192,24 +193,28 @@ export default function AsistenciasPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={exportarCSV}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-all shadow-sm cursor-pointer"
-          >
-            <Download className="size-4" />
-            Exportar CSV
-          </button>
+          <Tooltip content="Descargar historial de ingresos en archivo CSV compatible con Excel">
+            <button
+              type="button"
+              onClick={exportarCSV}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-all shadow-sm cursor-pointer"
+            >
+              <Download className="size-4" />
+              Exportar CSV
+            </button>
+          </Tooltip>
 
-          <Link
-            href="/totem"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all cursor-pointer"
-          >
-            <ExternalLink className="size-4" />
-            Abrir Pantalla Tótem
-          </Link>
+          <Tooltip content="Abrir pantalla táctil de autoservicio para el ingreso de socios">
+            <Link
+              href="/totem"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all cursor-pointer"
+            >
+              <ExternalLink className="size-4" />
+              Abrir terminal tótem
+            </Link>
+          </Tooltip>
         </div>
       </div>
 
@@ -280,7 +285,7 @@ export default function AsistenciasPage() {
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Clock className="size-4 text-blue-400" />
-                Distribución por Franja Horaria (07:00 a 22:00 hs)
+                Distribución por franja horaria (07:00 a 22:00 hs)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Visualizá las horas con mayor y menor afluencia para organizar profesores en sala.
@@ -371,7 +376,7 @@ export default function AsistenciasPage() {
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2 mb-1">
               <Calendar className="size-4 text-emerald-400" />
-              Concurrencia por Día
+              Concurrencia por día
             </h2>
             <p className="text-xs text-slate-400 mb-5">Promedio semanal de lunes a sábado.</p>
 
@@ -407,7 +412,7 @@ export default function AsistenciasPage() {
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Timer className="size-5 text-emerald-400" />
-                Socios en Sala Ahora ({sociosEnSala.length})
+                Socios en sala ahora ({sociosEnSala.length})
               </h2>
               {sociosEnSalaFiltrados.length > 3 && (
                 <span className="text-xs font-semibold text-slate-400 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded-full">
@@ -439,32 +444,34 @@ export default function AsistenciasPage() {
             {/* Flechas de navegación para inspeccionar más de 3 socios */}
             {sociosEnSalaFiltrados.length > 3 && (
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setPaginaSala((prev) => Math.max(0, prev - 1))}
-                  disabled={paginaSalaActual === 0}
-                  title="Anteriores"
-                  className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
-                    paginaSalaActual === 0
-                      ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
-                      : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
-                  }`}
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaginaSala((prev) => Math.min(totalPaginasSala - 1, prev + 1))}
-                  disabled={paginaSalaActual >= totalPaginasSala - 1}
-                  title="Siguientes"
-                  className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
-                    paginaSalaActual >= totalPaginasSala - 1
-                      ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
-                      : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
-                  }`}
-                >
-                  <ChevronRight className="size-4" />
-                </button>
+                <Tooltip content="Socios anteriores">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaSala((prev) => Math.max(0, prev - 1))}
+                    disabled={paginaSalaActual === 0}
+                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                      paginaSalaActual === 0
+                        ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                        : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Socios siguientes">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaSala((prev) => Math.min(totalPaginasSala - 1, prev + 1))}
+                    disabled={paginaSalaActual >= totalPaginasSala - 1}
+                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                      paginaSalaActual >= totalPaginasSala - 1
+                        ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                        : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -522,7 +529,7 @@ export default function AsistenciasPage() {
                               : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           }`}
                         >
-                          {esAlDia ? 'Al día ✓' : 'Vencida'}
+                          {esAlDia ? 'Al día' : 'Vencida'}
                         </span>
                       </div>
                     </div>
@@ -544,17 +551,17 @@ export default function AsistenciasPage() {
 
       {/* SECCIÓN: HISTORIAL DE INGRESOS (FEED AUDITABLE CON FILTRO POR DÍA Y ESTADO DE CUOTA) */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-base font-bold text-white">Registro Histórico de Accesos</h2>
+            <h2 className="text-base font-bold text-white">Registro histórico de accesos</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Auditoría completa filtrable por día (última semana) y estado de cuota.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap overflow-x-auto pb-1 max-w-full">
             {/* Filtro de Días (Hoy, Ayer, Últimos 7 días, Todos) */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
                 <Calendar className="size-3.5" />
               </span>
@@ -562,7 +569,7 @@ export default function AsistenciasPage() {
                 value={filtroFechaHistorial}
                 onChange={(e) => setFiltroFechaHistorial(e.target.value)}
                 aria-label="Filtrar por fecha"
-                className="h-9 rounded-xl bg-slate-950 border border-slate-800 px-3 text-xs font-semibold text-slate-200 outline-none focus:border-blue-500 cursor-pointer"
+                className="h-9 rounded-xl bg-slate-950 border border-slate-800 px-2.5 text-xs font-semibold text-slate-200 outline-none focus:border-blue-500 cursor-pointer shrink-0"
               >
                 <option value="HOY">Hoy ({asistenciasHoy.length})</option>
                 {ultimos7Dias.slice(1).map((d) => (
@@ -570,12 +577,12 @@ export default function AsistenciasPage() {
                     {d.etiqueta} - {d.diaNombre}
                   </option>
                 ))}
-                <option value="TODOS">Todos los registros ({asistencias.length})</option>
+                <option value="TODOS">Todos ({asistencias.length})</option>
               </select>
             </div>
 
             {/* Filtro de Estado de Cuota (Todos, Al día, Vencida) */}
-            <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
+            <div className="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 shrink-0">
               <button
                 type="button"
                 onClick={() => setFiltroEstadoHistorial('TODOS')}
@@ -596,7 +603,7 @@ export default function AsistenciasPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Al día ✓
+                Al día
               </button>
               <button
                 type="button"
@@ -612,12 +619,12 @@ export default function AsistenciasPage() {
             </div>
 
             {/* Buscador por nombre o DNI */}
-            <div className="relative w-full sm:w-56">
-              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+            <div className="relative w-44 sm:w-56 shrink-0">
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={busquedaHistorial}
                 onChange={(e) => setBusquedaHistorial(e.target.value)}
-                placeholder="Buscar por alumno o DNI..."
+                placeholder="Buscar alumno o DNI..."
                 aria-label="Buscar en historial"
                 className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 pl-8 pr-3 text-xs text-slate-200 outline-none focus:border-blue-500"
               />
@@ -671,7 +678,7 @@ export default function AsistenciasPage() {
                               : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           }`}
                         >
-                          {asist.estadoCuenta === 'AL_DIA' ? 'Al día ✓' : 'Vencida'}
+                          {asist.estadoCuenta === 'AL_DIA' ? 'Al día' : 'Vencida'}
                         </span>
                       </td>
                       <td className="py-3.5 px-3 text-xs">
@@ -687,14 +694,15 @@ export default function AsistenciasPage() {
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => eliminarAsistencia(asist.id)}
-                          title="Eliminar registro"
-                          className="size-8 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        <Tooltip content="Eliminar registro de asistencia" side="left">
+                          <button
+                            type="button"
+                            onClick={() => eliminarAsistencia(asist.id)}
+                            className="size-8 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Tooltip>
                       </td>
                     </tr>
                   )
