@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ATLAS Gym — Auditoría y Recomendaciones de Backend & Base de Datos</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    @page {
+      size: A4 portrait;
+      margin: 18mm 15mm 18mm 15mm;
+      @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-family: 'Inter', sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      line-height: 1.55;
+      font-size: 9.5pt;
+    }
+
+    .header-cover {
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .brand-title {
+      font-size: 22pt;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+
+    .brand-title span {
+      color: #0284c7;
+    }
+
+    .brand-subtitle {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #475569;
+      margin-top: 4px;
+    }
+
+    .meta-box {
+      text-align: right;
+      font-size: 8pt;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .meta-box strong {
+      color: #1e293b;
+    }
+
+    .badge-status {
+      display: inline-block;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 22px 0 10px 0;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      page-break-after: avoid;
+    }
+
+    h2 .num {
+      color: #0284c7;
+      font-size: 12pt;
+    }
+
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 14px 0 6px 0;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin-bottom: 9px;
+      color: #334155;
+    }
+
+    strong {
+      color: #0f172a;
+    }
+
+    ul, ol {
+      margin: 6px 0 12px 20px;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+
+    .card-highlight {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+      border-left: 4px solid #0284c7;
+    }
+
+    .card-alert {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .card-success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left: 4px solid #10b981;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 10px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+
+    th {
+      background: #0f172a;
+      color: #f8fafc;
+      font-weight: 600;
+      text-align: left;
+      padding: 7px 10px;
+    }
+
+    td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tag-blue { background: #e0f2fe; color: #0369a1; }
+    .tag-green { background: #dcfce7; color: #15803d; }
+    .tag-amber { background: #fef3c7; color: #b45309; }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 7.5pt;
+      color: #94a3b8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ENCABEZADO PRINCIPAL -->
+  <header class="header-cover">
+    <div>
+      <div class="brand-title">ATLAS <span>GYM</span></div>
+      <div class="brand-subtitle">Auditoría de Sistemas & Recomendaciones Técnicas para Backend y Base de Datos</div>
+    </div>
+    <div class="meta-box">
+      <span class="badge-status">Estado: Frontend 100% Validado</span><br>
+      <strong>Fecha:</strong> 24 de Septiembre de 2026<br>
+      <strong>Destinatario:</strong> Bruno / Equipo ATLAS GYM<br>
+      <strong>Rama Git:</strong> <code>ramaBruno</code> (Commits locales al día)
+    </div>
+  </header>
+
+  <!-- RESUMEN EJECUTIVO -->
+  <h2><span class="num">01.</span> Resumen Ejecutivo</h2>
+  <p>
+    El frontend de <strong>ATLAS Gym</strong> ha concluido satisfactoriamente su etapa de pulido integral y verificación funcional, contando con <strong>108 tests unitarios pasando al 100%</strong> y compilación en Turbopack libre de errores. Con la resolución de la sincronización en vivo entre Finanzas y Asistencias y el bloqueo de registros duplicados en el Tótem, el sistema cuenta con todas sus interfaces operativas listas para conectarse a un backend formal.
+  </p>
+  <p>
+    El propósito de este documento es detallar la <strong>arquitectura de base de datos relacional</strong>, las <strong>reglas de negocio de servidor</strong> y las <strong>prácticas de seguridad de grado industrial</strong> necesarias para garantizar que el traspaso a PostgreSQL/NodeJS sea fluido, escalable y robusto.
+  </p>
+
+  <div class="card card-highlight">
+    <strong>Principio Rector de la Transición:</strong>
+    El frontend actual ya implementa las interfaces y contratos de datos definitivos (<code>Alumno</code>, <code>Pago</code>, <code>Plan</code>, <code>Rutina</code>, <code>RegistroAsistencia</code>, <code>Aviso</code>). La migración consistirá en reemplazar las operaciones locales de <code>lib/store.tsx</code> por peticiones HTTP/REST a controladores autenticados, sin necesidad de reescribir las pantallas de usuario.
+  </div>
+
+  <!-- ESTADO Y FORTALEZAS DEL FRONTEND -->
+  <h2><span class="num">02.</span> Estado Actual y Activos del Frontend</h2>
+  <table style="margin-top: 6px;">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Módulo Frontend</th>
+        <th style="width: 45%;">Comportamiento Implementado</th>
+        <th style="width: 30%;">Impacto / Preparación Backend</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Asistencias & Tótem</strong></td>
+        <td>Check-in táctil por DNI, caducidad de aforo a 100 min, prevención de doble ingreso diario y sincronización inter-pestañas.</td>
+        <td>Requiere tabla <code>asistencias</code> indexada por <code>(alumno_id, fecha)</code> con constraint UNIQUE condicional.</td>
+      </tr>
+      <tr>
+        <td><strong>Finanzas & Pagos</strong></td>
+        <td>Cálculo de vencimientos al día 10, morosidad mensual automática, buscador por nombre/DNI y generación de link WhatsApp.</td>
+        <td>Requiere tabla <code>pagos</code> con snapshot inmutable de precios y tabla <code>planes</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Rutinas & Alumnos</strong></td>
+        <td>Asignación múltiple con checkboxes, timer de descanso con sonido Web Audio API y biblioteca de 1.500 GIFs biomecánicos.</td>
+        <td>Requiere tablas <code>rutinas</code>, <code>dias_rutina</code>, <code>ejercicios</code> y tabla puente <code>alumno_rutinas</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Avisos & Notificaciones</strong></td>
+        <td>Mensajería global ('TODOS') y personalizada, conteo de no leídos en sidebar y auto-marcado al visualizar.</td>
+        <td>Requiere tabla <code>avisos</code> y tabla de lecturas <code>aviso_lecturas (aviso_id, usuario_id)</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- RECOMENDACIONES ARQUITECTÓNICAS DE BACKEND -->
+  <h2><span class="num">03.</span> Recomendaciones de Arquitectura & Base de Datos</h2>
+
+  <h3>3.1. Inmutabilidad de Pagos e Historial de Precios (Auditoría Contable)</h3>
+  <p>
+    En un gimnasio, los precios de las membresías cambian a lo largo del año por inflación o políticas comerciales. Si se actualiza el precio del plan <em>Full Access</em> de \$22.000 a \$26.000 en el backend, los pagos pasados o las cuotas emitidas con anterioridad no deben recalcularse retroactivamente.
+  </p>
+  <div class="card card-alert">
+    <strong>Recomendación para la BD:</strong>
+    La tabla <code>pagos</code> debe almacenar explícitamente:
+    <code>monto_cobrado (DECIMAL)</code>, <code>precio_plan_momento (DECIMAL)</code>, <code>periodo_mes ("YYYY-MM")</code>, <code>metodo_pago</code> y <code>fecha_pago (DATE)</code>. No debe confiarse únicamente en un <code>JOIN</code> dinámico a la tabla <code>planes</code> para saber cuánto costaba el pase en meses anteriores.
+  </div>
+
+  <h3>3.2. Reglas de Asistencia: Control Anti-Fraude vs. Doble Turno</h3>
+  <p>
+    El control implementado en el frontend bloquea más de un ingreso el mismo día calendario. Al diseñar el backend, la lógica recomendada es:
+  </p>
+  <ul>
+    <li><strong>Regla por defecto (98% de los casos):</strong> Impedir nuevo check-in si existe un registro para el socio con <code>fecha = CURRENT_DATE</code> y la sesión previa tiene menos de 100 minutos de antigüedad (sesión activa en sala).</li>
+    <li><strong>Excepción para doble turno:</strong> Si el gimnasio incorpora socios con pases especiales de doble turno (ej: mañana musculación y tarde spinning), el backend puede permitir un segundo check-in <em>únicamente</em> si la sesión anterior ya ha superado los 100 minutos (<code>timestamp < NOW() - INTERVAL '100 minutes'</code>) y el plan lo habilita.</li>
+    <li><strong>Índice en BD:</strong> Crear índice compuesto <code>CREATE INDEX idx_asistencias_alumno_fecha ON asistencias (alumno_id, fecha);</code> para que la verificación en el tótem responda en menos de 5 milisegundos.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- SEGUNDA PÁGINA -->
+  <header class="header-cover" style="padding-bottom: 10px; margin-bottom: 16px;">
+    <div>
+      <div class="brand-title" style="font-size: 16pt;">ATLAS <span>GYM</span> — Guía de Arquitectura de Backend</div>
+    </div>
+    <div class="meta-box">
+      Página 2 / 2
+    </div>
+  </header>
+
+  <h3>3.3. Autenticación y Control de Accesos Basado en Roles (RBAC + JWT)</h3>
+  <p>
+    Actualmente el frontend bifurca rutas en el cliente mediante <code>AppShell</code> y <code>puedeAccederRuta</code>. En el backend, la seguridad debe ser infalible a nivel API:
+  </p>
+  <ul>
+    <li><strong>Tokens JWT sin estado:</strong> El token de sesión debe contener <code>{ sub: usuario_id, rol: "ADMIN" | "ALUMNO", alumno_id: string | null }</code> firmado con secreto seguro (HS256 o RS256).</li>
+    <li><strong>Protección de endpoints por Guard/Middleware:</strong>
+      <ul>
+        <li><code>POST /api/pagos</code>, <code>PUT /api/planes</code>, <code>DELETE /api/alumnos/:id</code> &rarr; Exclusivos para rol <code>ADMIN</code>.</li>
+        <li><code>GET /api/mis-cuotas</code>, <code>GET /api/mi-rutina</code> &rarr; Autolimitados al <code>req.user.alumno_id</code> para evitar fuga de datos entre socios.</li>
+        <li><code>POST /api/asistencias/totem</code> &rarr; Endpoint protegido por API Key dedicada o token de dispositivo exclusivo de la tablet de recepción.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>3.4. Sincronización en Tiempo Real (De BroadcastChannel a WebSockets / SSE)</h3>
+  <p>
+    En la versión local actual utilizamos <code>BroadcastChannel</code> y <code>StorageEvent</code>, lo cual sincroniza perfectamente diferentes pestañas del mismo navegador. Al pasar a producción en red:
+  </p>
+  <div class="grid-2">
+    <div class="card">
+      <strong style="color: #0284c7;">Opción A: Server-Sent Events (SSE)</strong>
+      <p style="font-size: 8.5pt; margin-top: 4px;">
+        Unidireccional servidor &rarr; navegador. Ideal para el panel de Asistencias y Aforo. Extremadamente liviano, reconexión automática nativa en HTTP/2 sin overhead.
+      </p>
+      <span class="tag tag-blue">Recomendado para Asistencias</span>
+    </div>
+    <div class="card">
+      <strong style="color: #10b981;">Opción B: WebSockets (Socket.io)</strong>
+      <p style="font-size: 8.5pt; margin-top: 4px;">
+        Bidireccional en tiempo real. Conveniente si a futuro se añade chat interactivo profesor-alumno o notificaciones push instantáneas en vivo.
+      </p>
+      <span class="tag tag-green">Alternativa Escalable</span>
+    </div>
+  </div>
+
+  <h3>3.5. Transacciones ACID e Idempotencia en Cobros y Check-ins</h3>
+  <p>
+    En operaciones concurrentes (por ejemplo, dos recepcionistas cobrando al mismo tiempo o un socio ingresando mientras se procesa su pago):
+  </p>
+  <ul>
+    <li><strong>Transacciones atómicas:</strong> El cobro de una cuota y la actualización del estado del socio deben ejecutarse dentro de un bloque <code>BEGIN ... COMMIT</code> para evitar que un fallo de red deje un pago registrado sin actualizar la cuenta del alumno.</li>
+    <li><strong>Claves de Idempotencia:</strong> En el endpoint de cobro, aceptar un encabezado <code>X-Idempotency-Key</code> generado por el cliente. Si la recepcionista hace doble clic accidental en "Guardar pago", la API rechazará el duplicado.</li>
+  </ul>
+
+  <!-- HOJA DE RUTA / ROADMAP -->
+  <h2><span class="num">04.</span> Hoja de Ruta Sugerida de Implementación (Roadmap)</h2>
+  
+  <div class="card card-success" style="margin-bottom: 12px;">
+    <strong>Fase 1: Modelado de BD y Migraciones (Día 1 a 3)</strong><br>
+    Creación del esquema relacional en PostgreSQL / Supabase: tablas <code>usuarios</code>, <code>alumnos</code>, <code>planes</code>, <code>pagos</code>, <code>rutinas</code>, <code>ejercicios</code>, <code>asistencias</code> y <code>avisos</code>.
+  </div>
+
+  <div class="card" style="margin-bottom: 12px;">
+    <strong>Fase 2: API REST Core & Autenticación JWT (Día 4 a 7)</strong><br>
+    Desarrollo de endpoints de autenticación, CRUD de alumnos, módulo de finanzas con cálculo de vencimientos al día 10 y endpoint del tótem.
+  </div>
+
+  <div class="card" style="margin-bottom: 12px;">
+    <strong>Fase 3: Conexión Frontend & Adaptador de Store (Día 8 a 10)</strong><br>
+    Reemplazo de los métodos locales de <code>useGymStore</code> en <code>lib/store.tsx</code> por llamadas a la API usando React Query o SWR, manteniendo intactos los componentes de vista.
+  </div>
+
+  <div class="card">
+    <strong>Fase 4: Eventos en Vivo & Despliegue (Día 11 a 12)</strong><br>
+    Configuración de SSE/WebSockets para el aforo en sala de recepción y puesta en producción en servidor VPS o Cloud (Docker, Railway o AWS).
+  </div>
+
+  <!-- CHECKLIST FINAL -->
+  <h2><span class="num">05.</span> Checklist de Criterios de Aceptación</h2>
+  <ul>
+    <li>&#9745; <strong>Frontend 100% verificado:</strong> 108 tests unitarios pasando, build Turbopack limpio.</li>
+    <li>&#9745; <strong>Sincronización Finanzas &harr; Asistencias:</strong> Impacto inmediato al cobrar en recepción.</li>
+    <li>&#9745; <strong>Prevención de duplicados en Tótem:</strong> Feedback visual y sonoro con preservación del aforo.</li>
+    <li>&#9745; <strong>Diseño y UX:</strong> Sentence case global, tipografía estandarizada en <code>md:text-4xl</code>, tooltips en 0ms y confirmación de cierre de sesión.</li>
+    <li>&#9744; <strong>Siguiente paso:</strong> Inicio del desarrollo del Backend y esquema de base de datos relacional.</li>
+  </ul>
+
+  <div class="footer-note">
+    Documento generado automáticamente para ATLAS Gym — Sistema de Gestión Integral de Gimnasio. Todos los derechos reservados &copy; 2026.
+  </div>
+
+</body>
+</html>
