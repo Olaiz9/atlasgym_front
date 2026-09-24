@@ -29,8 +29,10 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from 'lucide-react'
 import { Tooltip } from '@/components/ui/tooltip'
+import { RegistroAsistencia, EstadoCuenta } from '@/lib/types'
 
 export default function AsistenciasPage() {
   const { asistencias, eliminarAsistencia, getEstadoCuenta } = useAppData()
@@ -44,8 +46,49 @@ export default function AsistenciasPage() {
 
   // Filtros de registro histórico
   const [filtroFechaHistorial, setFiltroFechaHistorial] = useState<string>('HOY') // 'HOY' | 'TODOS' | 'YYYY-MM-DD'
-  const [filtroEstadoHistorial, setFiltroEstadoHistorial] = useState<'TODOS' | 'AL_DIA' | 'VENCIDO'>('TODOS')
+  const [filtroEstadoHistorial, setFiltroEstadoHistorial] = useState<'TODOS' | 'AL_DIA' | 'PENDIENTE' | 'VENCIDO'>('TODOS')
   const [busquedaHistorial, setBusquedaHistorial] = useState('')
+  const [asistenciaAEliminar, setAsistenciaAEliminar] = useState<RegistroAsistencia | null>(null)
+
+  const renderBadgeEstadoCuota = (estado: EstadoCuenta | string, small: boolean = false) => {
+    if (estado === 'AL_DIA') {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 font-bold ${
+            small
+              ? 'text-[10px] px-2 py-0.5 rounded'
+              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+          } bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}
+        >
+          Al día
+        </span>
+      )
+    }
+    if (estado === 'PENDIENTE') {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 font-bold ${
+            small
+              ? 'text-[10px] px-2 py-0.5 rounded'
+              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+          } bg-amber-500/10 text-amber-400 border border-amber-500/20`}
+        >
+          Pendiente
+        </span>
+      )
+    }
+    return (
+      <span
+        className={`inline-flex items-center gap-1 font-bold ${
+          small
+            ? 'text-[10px] px-2 py-0.5 rounded'
+            : 'text-[11px] px-2.5 py-0.5 rounded-full'
+        } bg-rose-500/10 text-rose-400 border border-rose-500/20`}
+      >
+        Vencido
+      </span>
+    )
+  }
 
   const [ahoraMs, setAhoraMs] = useState(Date.now())
 
@@ -153,8 +196,13 @@ export default function AsistenciasPage() {
 
     if (filtroEstadoHistorial === 'AL_DIA') {
       base = base.filter((a) => obtenerEstado(a) === 'AL_DIA')
+    } else if (filtroEstadoHistorial === 'PENDIENTE') {
+      base = base.filter((a) => obtenerEstado(a) === 'PENDIENTE')
     } else if (filtroEstadoHistorial === 'VENCIDO') {
-      base = base.filter((a) => obtenerEstado(a) !== 'AL_DIA')
+      base = base.filter((a) => {
+        const est = obtenerEstado(a)
+        return est !== 'AL_DIA' && est !== 'PENDIENTE'
+      })
     }
 
     const q = busquedaHistorial.trim().toLowerCase()
@@ -514,7 +562,7 @@ export default function AsistenciasPage() {
             {sociosEnSalaVisibles.map((s) => {
               const minutosTranscurridos = calcularMinutosTranscurridos(s.timestamp, ahoraMs)
               const minutosRestantes = Math.max(0, DURACION_SESION_MINUTOS - minutosTranscurridos)
-              const esAlDia = (getEstadoCuenta ? getEstadoCuenta(s.alumnoId) : s.estadoCuenta) === 'AL_DIA'
+              const estadoSocio = getEstadoCuenta ? getEstadoCuenta(s.alumnoId) : s.estadoCuenta
 
               return (
                 <div
@@ -536,15 +584,7 @@ export default function AsistenciasPage() {
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
                           {s.planNombre}
                         </span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            esAlDia
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                          }`}
-                        >
-                          {esAlDia ? 'Al día' : 'Vencida'}
-                        </span>
+                        {renderBadgeEstadoCuota(estadoSocio, true)}
                       </div>
                     </div>
                   </div>
@@ -595,7 +635,7 @@ export default function AsistenciasPage() {
               </select>
             </div>
 
-            {/* Filtro de Estado de Cuota (Todos, Al día, Vencida) */}
+            {/* Filtro de Estado de Cuota (Todos, Al día, Pendiente, Vencido) */}
             <div className="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 shrink-0">
               <button
                 type="button"
@@ -621,14 +661,25 @@ export default function AsistenciasPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setFiltroEstadoHistorial('VENCIDO')}
+                onClick={() => setFiltroEstadoHistorial('PENDIENTE')}
                 className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                  filtroEstadoHistorial === 'VENCIDO'
+                  filtroEstadoHistorial === 'PENDIENTE'
                     ? 'bg-amber-600 text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Cuota vencida
+                Pendiente
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroEstadoHistorial('VENCIDO')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                  filtroEstadoHistorial === 'VENCIDO'
+                    ? 'bg-rose-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Vencido
               </button>
             </div>
 
@@ -687,18 +738,7 @@ export default function AsistenciasPage() {
                       <td className="py-3.5 px-3">
                         {(() => {
                           const estadoFila = (asist.fecha === hoyFechaStr && getEstadoCuenta) ? getEstadoCuenta(asist.alumnoId) : asist.estadoCuenta
-                          const esFilaAlDia = estadoFila === 'AL_DIA'
-                          return (
-                            <span
-                              className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                esFilaAlDia
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              }`}
-                            >
-                              {esFilaAlDia ? 'Al día' : 'Vencida'}
-                            </span>
-                          )
+                          return renderBadgeEstadoCuota(estadoFila)
                         })()}
                       </td>
                       <td className="py-3.5 px-3 text-xs">
@@ -717,7 +757,7 @@ export default function AsistenciasPage() {
                         <Tooltip content="Eliminar registro de asistencia" side="left">
                           <button
                             type="button"
-                            onClick={() => eliminarAsistencia(asist.id)}
+                            onClick={() => setAsistenciaAEliminar(asist)}
                             className="size-8 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           >
                             <Trash2 className="size-4" />
@@ -732,6 +772,58 @@ export default function AsistenciasPage() {
           </table>
         </div>
       </section>
+
+      {/* Modal de confirmación para eliminar asistencia */}
+      {asistenciaAEliminar && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="titulo-modal-eliminar"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+        >
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div className="flex-1">
+                <h3 id="titulo-modal-eliminar" className="text-base font-bold text-white">
+                  ¿Eliminar registro de asistencia?
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                  ¿Estás seguro de que deseás eliminar la sesión de{' '}
+                  <span className="font-bold text-white">{asistenciaAEliminar.alumnoNombre}</span>{' '}
+                  del día{' '}
+                  <span className="font-semibold text-slate-200">
+                    {asistenciaAEliminar.fecha} a las {asistenciaAEliminar.hora} hs
+                  </span>
+                  ? Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setAsistenciaAEliminar(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  eliminarAsistencia(asistenciaAEliminar.id)
+                  setAsistenciaAEliminar(null)
+                }}
+                className="px-4 py-2 text-xs font-bold text-white rounded-xl bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Eliminar asistencia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
