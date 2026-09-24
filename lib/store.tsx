@@ -11,11 +11,12 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, useEffect, useCallback, ReactNode } from "react";
-import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
-import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK, SESIONES_MOCK } from "./mock-data";
+import { Alumno, Pago, EstadoPago, EstadoCuenta, estadoCuentaDeAlumno, UsuarioSesion, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento, RegistroAsistencia } from "./types";
+import { ALUMNOS_MOCK, PAGOS_MOCK, RUTINAS_MOCK, VIDEOS_TECNICA_MOCK, PLANES_MOCK, SESIONES_MOCK, ASISTENCIAS_MOCK } from "./mock-data";
 import { useAvisosManager } from "./use-avisos";
 import { fechaLocalHoy } from "./date-utils";
 import { puedeEliminarPlan, ejecutarBajaAlumno, sincronizarNombrePlanEnAlumnos } from "./plan-utils";
+import { normalizarDni } from "./asistencia-utils";
 
 const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   id: "u1",
@@ -64,7 +65,12 @@ interface AppDataContextValue {
   sesionesEntrenamiento: SesionEntrenamiento[];
   guardarSesion: (sesion: Omit<SesionEntrenamiento, "id">) => void;
   getUltimaSesion: (alumnoId: string, rutinaId: string, diaId: string) => SesionEntrenamiento | undefined;
+  // Módulo de Asistencias y Tótem
+  asistencias: RegistroAsistencia[];
+  registrarAsistenciaPorDni: (dni: string) => { ok: boolean; alumno?: Alumno; estadoCuenta?: EstadoCuenta; motivo?: string };
+  eliminarAsistencia: (id: string) => void;
 }
+
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
@@ -163,6 +169,26 @@ function useGymStore(): AppDataContextValue {
     return SESIONES_MOCK;
   });
 
+  const [asistencias, setAsistencias] = useState<RegistroAsistencia[]>(() => {
+    if (typeof window !== "undefined") {
+      const guardado = localStorage.getItem("atlas_asistencias_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
+    }
+    return ASISTENCIAS_MOCK;
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("atlas_asistencias_v1", JSON.stringify(asistencias));
+      } catch {}
+    }
+  }, [asistencias]);
+
   const iniciarSesion = useCallback((rol: "ADMIN" | "ALUMNO", email?: string) => {
     let nuevoUsuario: UsuarioSesion;
     if (rol === "ADMIN") {
@@ -193,15 +219,16 @@ function useGymStore(): AppDataContextValue {
   }, []);
 
   const actualizarUsuarioActual = useCallback((cambios: Partial<UsuarioSesion>) => {
-    setUsuarioActual((prev) => {
-      if (!prev) return null;
-      const siguiente: UsuarioSesion = { ...prev, ...cambios };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("atlas_sesion_v1", JSON.stringify(siguiente));
-      }
-      return siguiente;
-    });
+    setUsuarioActual((prev) => (prev ? { ...prev, ...cambios } : null));
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (usuarioActual) {
+        localStorage.setItem("atlas_sesion_v1", JSON.stringify(usuarioActual));
+      }
+    }
+  }, [usuarioActual]);
 
   const agregarAlumno = useCallback((alumno: Omit<Alumno, "id">) => {
     const planEncontrado = planes.find(
@@ -430,6 +457,64 @@ function useGymStore(): AppDataContextValue {
     getCantidadAvisosNoLeidos,
   } = useAvisosManager();
 
+  const registrarAsistenciaPorDni = useCallback(
+    (dniIngresado: string) => {
+      const dniLimpio = normalizarDni(dniIngresado);
+      if (!dniLimpio) {
+        return { ok: false, motivo: "Por favor ingresá un número de DNI válido." };
+      }
+
+      const alumno = alumnos.find((a) => a.dni && normalizarDni(a.dni) === dniLimpio);
+      if (!alumno) {
+        return { ok: false, motivo: "DNI no registrado en el sistema. Por favor consultá en recepción." };
+      }
+
+      if (!alumno.activo) {
+        return { ok: false, motivo: "El socio se encuentra inactivo. Acercate a recepción para reactivar tu cuenta.", alumno };
+      }
+
+      const estado = getEstadoCuenta(alumno.id);
+      const hoy = fechaLocalHoy();
+      const ahora = new Date();
+      const horaStr = ahora.toLocaleTimeString("es-AR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "America/Argentina/Buenos_Aires",
+      });
+
+      const nueva: RegistroAsistencia = {
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `asist-${Date.now()}`,
+        alumnoId: alumno.id,
+        alumnoNombre: alumno.nombre,
+        alumnoDni: alumno.dni || dniLimpio,
+        fecha: hoy,
+        hora: horaStr,
+        timestamp: Date.now(),
+        estadoCuenta: estado,
+        planNombre: alumno.plan || "Pase Libre",
+        metodo: "DNI_TOTEM",
+      };
+
+      setAsistencias((prev) => [nueva, ...prev]);
+
+      setAlumnos((prev) =>
+        prev.map((a) => (a.id === alumno.id ? { ...a, ultimaAsistencia: hoy } : a))
+      );
+
+      return {
+        ok: true,
+        alumno,
+        estadoCuenta: estado,
+      };
+    },
+    [alumnos, getEstadoCuenta]
+  );
+
+  const eliminarAsistencia = useCallback((id: string) => {
+    setAsistencias((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   const value = useMemo<AppDataContextValue>(
     () => ({
       alumnos,
@@ -471,6 +556,10 @@ function useGymStore(): AppDataContextValue {
       sesionesEntrenamiento,
       guardarSesion,
       getUltimaSesion,
+      // Asistencias y Tótem
+      asistencias,
+      registrarAsistenciaPorDni,
+      eliminarAsistencia,
     }),
     [
       alumnos,
@@ -510,6 +599,9 @@ function useGymStore(): AppDataContextValue {
       sesionesEntrenamiento,
       guardarSesion,
       getUltimaSesion,
+      asistencias,
+      registrarAsistenciaPorDni,
+      eliminarAsistencia,
     ]
   );
 

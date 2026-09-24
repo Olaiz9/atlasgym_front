@@ -247,4 +247,21 @@ export const CATEGORIA_AVISO_STYLES: Record<
   },
 };
 
+export type MetodoAsistencia = "DNI_TOTEM" | "MANUAL_ADMIN" | "QR";
+
+export interface RegistroAsistencia {
+  id: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  alumnoDni: string;
+  alumnoFotoUrl?: string;
+  fecha: string; // "YYYY-MM-DD"
+  hora: string;  // "HH:mm"
+  timestamp: number; // ms para cálculo preciso de aforo
+  estadoCuenta: EstadoCuenta;
+  planNombre: string;
+  metodo: MetodoAsistencia;
+}
+
+
 

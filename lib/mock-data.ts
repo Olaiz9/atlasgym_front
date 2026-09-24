@@ -1,7 +1,7 @@
 // lib/mock-data.ts
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
-import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
+import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento, RegistroAsistencia } from "./types";
 
 
 export const ALUMNOS_MOCK: Alumno[] = [
@@ -366,4 +366,129 @@ export const SESIONES_MOCK: SesionEntrenamiento[] = [
     ],
   },
 ];
+
+export const ASISTENCIAS_MOCK: RegistroAsistencia[] = [
+  {
+    id: "asist-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: "2026-09-23",
+    hora: "19:15",
+    timestamp: Date.now() - 25 * 60 * 1000, // Hace 25 min (Activa)
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: "2026-09-23",
+    hora: "19:30",
+    timestamp: Date.now() - 10 * 60 * 1000, // Hace 10 min (Activa)
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: "2026-09-23",
+    hora: "18:40",
+    timestamp: Date.now() - 60 * 60 * 1000, // Hace 60 min (Activa)
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-4",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: "2026-09-23",
+    hora: "10:15",
+    timestamp: Date.now() - 8 * 60 * 60 * 1000, // Hoy a la mañana (Completada)
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-5",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: "2026-09-23",
+    hora: "11:20",
+    timestamp: Date.now() - 7 * 60 * 60 * 1000, // Hoy al mediodía (Completada)
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  // Historial días previos para alimentar horas pico y días semanales:
+  {
+    id: "asist-6",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: "2026-09-22",
+    hora: "18:00",
+    timestamp: Date.now() - 26 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-7",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: "2026-09-22",
+    hora: "19:00",
+    timestamp: Date.now() - 25 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-8",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: "2026-09-21",
+    hora: "18:30",
+    timestamp: Date.now() - 50 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-9",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: "2026-09-21",
+    hora: "19:45",
+    timestamp: Date.now() - 49 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-10",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: "2026-09-20",
+    hora: "09:30",
+    timestamp: Date.now() - 74 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+];
+
 

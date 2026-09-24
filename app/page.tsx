@@ -5,13 +5,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar } from 'lucide-react'
+import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar, UserCheck } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL } from '@/lib/types'
 import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
+import { filtrarAsistenciasActivas } from '@/lib/asistencia-utils'
+
 
 function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
   return (
@@ -346,13 +348,16 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual, alumnos, pagos, rutinas, getCantidadAvisosNoLeidos } = useAppData()
+  const { usuarioActual, alumnos, pagos, rutinas, asistencias, getCantidadAvisosNoLeidos } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   // Cálculos dinámicos en base a los datos reales del Store
   const alumnosActivos = alumnos.filter((a) => a.activo).length
+  const sociosEnSala = useMemo(() => {
+    return filtrarAsistenciasActivas(asistencias)
+  }, [asistencias])
   const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
   const totalPendiente = pagosPendientes.reduce((acc, p) => acc + p.monto, 0)
   const pagosOrdenados = useMemo(
@@ -472,7 +477,7 @@ export default function Page() {
         </div>
 
         {/* TARJETAS SUPERIORES (BLANCAS Y FLOTANTES) */}
-        <section className="mt-10 grid gap-6 md:grid-cols-2">
+        <section className="mt-10 grid gap-6 md:grid-cols-3">
           <Link
             href="/alumnos"
             className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 text-slate-900 border border-slate-200 hover:border-blue-300 cursor-pointer"
@@ -480,7 +485,7 @@ export default function Page() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Alumnos activos</p>
-                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">{alumnosActivos}</p>
+                <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{alumnosActivos}</p>
                 <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-600">
                   <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   {alumnos.length} registrados <span className="font-medium text-slate-400">en total</span>
@@ -497,13 +502,42 @@ export default function Page() {
           </Link>
 
           <Link
+            href="/asistencias"
+            className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/10 text-slate-900 border border-slate-200 hover:border-emerald-300 cursor-pointer"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-500">En sala ahora</p>
+                  <span className="flex size-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{sociosEnSala.length}</p>
+                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-emerald-600">
+                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  Sesión activa <span className="font-medium text-slate-400">&lt; 1h 40m</span>
+                </p>
+              </div>
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white shadow-sm">
+                <UserCheck className="size-7" />
+              </div>
+            </div>
+            <div
+              className="absolute bottom-0 left-0 h-1.5 bg-emerald-500 transition-[width] duration-500"
+              style={{ width: `${Math.min(100, sociosEnSala.length * 20)}%` }}
+            />
+          </Link>
+
+          <Link
             href="/finanzas"
             className="group relative block overflow-hidden rounded-2xl bg-white p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/10 text-slate-900 border border-slate-200 hover:border-rose-300 cursor-pointer"
           >
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-500">Cuotas pendientes</p>
-                <p className="mt-2 text-5xl font-black tracking-tight text-slate-900">${totalPendiente.toLocaleString('es-AR')}</p>
+                <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">${totalPendiente.toLocaleString('es-AR')}</p>
                 <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-500">
                   <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   {pagosPendientes.length} pendientes <span className="font-medium text-slate-400">requieren atención</span>

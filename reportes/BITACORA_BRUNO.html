@@ -577,6 +577,74 @@
     </div>
   </div>
 
+  <!-- HITO 9 -->
+  <div class="mb-8 pt-8 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        9. Modo Tótem de Asistencia para Tablet de Entrada, Control de Aforo con Caducidad (1h 40m) y Analítica de Horarios Pico
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        23 Sep 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento del cliente:</em> 1) Pantalla exclusiva tipo Kiosco para colocar en una tablet fija en la entrada donde el socio marca asistencia ingresando su DNI. 2) Feedback inmediato de si está al día o con cuota vencida. 3) Notificación y aforo en vivo al panel del administrador. 4) Gráficos de distribución horaria (07:00 a 22:00 hs) y días de la semana para control de movimiento de alumnos. 5) Caducidad automática de las sesiones de entrenamiento a la 1 hora y 40 minutos (100 min) para no inflar el aforo diario.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Modelado y Motor de Sesiones con Caducidad):</strong> Creación de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">lib/asistencia-utils.ts</code> y tipo <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">RegistroAsistencia</code>. Configuración estricta de caducidad a 100 minutos exactos (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">DURACION_SESION_MINUTOS = 100</code>). Síntesis de audio autónoma con HTML5 Web Audio API.</li>
+        <li><strong>Fase 2 (Centralización en Store):</strong> Integración de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">asistencias</code> en el store con persistencia local en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">atlas_asistencias_v1</code> y método <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">registrarAsistenciaPorDni</code> sincronizando la última asistencia en la ficha del alumno.</li>
+        <li><strong>Fase 3 (Pantalla Kiosco Autónoma):</strong> Creación de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">app/totem/page.tsx</code> con teclado táctil Numpad, soporte para lector óptico de hardware, reloj digital en tiempo real y auto-reset en 3.5 segundos con reemplazo de historial para evitar retrocesos maliciosos.</li>
+        <li><strong>Fase 4 (Panel Administrador de Asistencias):</strong> Creación de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">app/asistencias/page.tsx</code> con KPIs en vivo, gráfico de horas pico (07:00 a 22:00), afluencia semanal, socios en sala ahora con cuenta regresiva de sesión y tabla histórica con exportación CSV.</li>
+        <li><strong>Fase 5 (Dashboard y Reglas de Hooks):</strong> Integración de tarjeta destacada *"En sala ahora"* en el Dashboard principal (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">app/page.tsx</code>) y corrección de la regla de Hooks en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">components/sidebar.tsx</code>.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados y verificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>app/totem/page.tsx (Pantalla táctil Kiosco para tablet de recepción)</li>
+        <li>app/asistencias/page.tsx (Panel administrativo, aforo y analítica horaria)</li>
+        <li>lib/asistencia-utils.ts (Cálculo de aforo, caducidad 100m, audio sintetizado)</li>
+        <li>lib/asistencias.test.ts (11 tests unitarios de caducidad y horas pico)</li>
+        <li>lib/types.ts &amp; lib/store.tsx (RegistroAsistencia + registrarAsistenciaPorDni)</li>
+        <li>app/page.tsx &amp; components/sidebar.tsx (Widget de aforo y navegación)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests consolidados Hito 9 -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 12 passed (12)</p>
+          <p>• <strong>Tests individuales:</strong> 106 passed (106)</p>
+          <p>• <strong>Nueva suite:</strong> <code class="font-mono">asistencias.test.ts</code> (11/11 aprobados)</p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🚀 Production Build</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">CLEAN BUILD</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Rutas Next.js:</strong> 13/13 rutas optimizadas con Turbopack</p>
+          <p>• <strong>TypeScript Compiler:</strong> 0 errores con <code class="font-mono">tsc --noEmit</code></p>
+          <p>• <strong>Nuevas rutas:</strong> <code class="font-mono">/totem</code> y <code class="font-mono">/asistencias</code></p>
+          <p>• <strong>Modo de entrega:</strong> 100% local en <code class="font-mono">ramaBruno</code> (sin push remoto)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>

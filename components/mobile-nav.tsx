@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Video, LogOut, Bell } from 'lucide-react'
+import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Video, LogOut, Bell, UserCheck } from 'lucide-react'
 
 const navItemsAdmin = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
   { label: 'Alumnos', href: '/alumnos', icon: Users },
+  { label: 'Asistencias', href: '/asistencias', icon: UserCheck },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
   { label: 'Planes', href: '/planes', icon: Package },

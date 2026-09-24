@@ -366,5 +366,69 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
     - Rutas compiladas: **11/11 rutas optimizadas con Turbopack**
     - Estado: **Listo para producción**
 
+---
+
+### 9. Modo Tótem de Asistencia para Tablet de Entrada, Control de Aforo con Caducidad (1h 40m) y Analítica de Horarios Pico
+* **Fecha:** 23 de Septiembre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Terminal Kiosco para Tablet de Entrada:** Pantalla exclusiva para colocar en un soporte a la entrada del gimnasio donde el alumno ingresa su DNI para marcar asistencia.
+  2. **Feedback Inmediato de Cuota:** Informa al instante si el socio está al día o con cuota vencida, con estímulo visual (verde/ámbar) y auditivo sin exponer datos privados de otros socios.
+  3. **Control de Aforo y Sesiones con Caducidad (1h 40m = 100 min):** Regla de negocio para que las personas entrenando en sala caduquen automáticamente transcurridos 100 minutos exactos de su ingreso, evitando que el aforo quede inflado todo el día.
+  4. **Analítica de Tráfico en Panel de Administrador:** Módulo con KPIs en vivo, gráfico de distribución horaria de 07:00 a 22:00 hs para detectar horas pico (apoyo a asignación de profesores), y afluencia por día de la semana de lunes a sábado.
+  5. **Impacto en el Diagrama UML del Backend:** Modelado relacional de la nueva entidad `Asistencia` (`id UUID`, `alumno_id UUID FK`, `fecha_hora TIMESTAMP`, `estado_cuota_al_ingreso VARCHAR`, `metodo VARCHAR`).
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Modelado de Datos y Utilidades de Asistencia (`lib/types.ts` y `lib/asistencia-utils.ts`):**
+     - Creación de interfaces `RegistroAsistencia` y `MetodoAsistencia`.
+     - Definición de constantes `DURACION_SESION_MINUTOS = 100` y `DURACION_SESION_MS = 6.000.000 ms`.
+     - Funciones analíticas: `normalizarDni`, `estaSesionActiva`, `calcularMinutosTranscurridos`, `formatearTiempoEnSala`, `filtrarAsistenciasActivas`, `calcularDistribucionHoraria` y `calcularDistribucionSemanal`.
+     - Sintetizador de sonido armónico nativo con HTML5 Web Audio API (`reproducirSonidoFeedback`) autónomo y sin dependencias de red.
+  2. **Fase 2 — Centralización en el Store y Persistencia (`lib/store.tsx` y `lib/mock-data.ts`):**
+     - Estado `asistencias` hidratado desde `localStorage` (`atlas_asistencias_v1`) y precargado con datos mock enriquecidos.
+     - Implementación de `registrarAsistenciaPorDni(dni)` con sincronización automática de `ultimaAsistencia` en la ficha del alumno.
+     - Corrección de pureza en el hook `actualizarUsuarioActual` para cumplir los estándares de React Doctor.
+  3. **Fase 3 — Pantalla Tótem Kiosco para Tablet (`app/totem/page.tsx`):**
+     - Diseño a pantalla completa modo Kiosco aislado sin barras de navegación ni acceso administrativo.
+     - Teclado numérico táctil interactivo (Numpad) con botones grandes (h-16/h-18) optimizados para dedos en tablets.
+     - Detección simultánea de pulsaciones en teclado físico y lectores ópticos/código de barras por hardware.
+     - Reloj digital en vivo con fecha en tiempo real (`America/Argentina/Buenos_Aires`).
+     - Respuestas dinámicas: Verde esmeralda con bienvenida y foto para cuota al día; Ámbar con aviso de regularización para cuota vencida; Carmesí para DNI no registrado.
+     - Auto-reset temporizado en 3.5 segundos con barra de progreso regresiva y botón de paso manual *"Siguiente socio"*.
+     - Invocación de `window.history.replaceState` para inhabilitar el retroceso en el navegador.
+  4. **Fase 4 — Panel Administrador de Asistencias y Aforo (`app/asistencias/page.tsx`):**
+     - Vista completa para el Administrador con métricas de socios en sala ahora, total del día, porcentaje al día y detección de hora pico.
+     - Gráfico de barras interactivo con tooltip de horas (07:00 a 22:00) y comparativa de afluencia semanal (Lunes a Sábado).
+     - Tarjetas en tiempo real de socios entrenando en este momento con indicador de tiempo transcurrido y tiempo restante de sesión.
+     - Tabla histórica auditable con filtros por fecha (Hoy / Todos), buscador reactivo y exportador descargable a CSV.
+  5. **Fase 5 — Integración de Navegación y Dashboard (`components/sidebar.tsx`, `components/mobile-nav.tsx`, `app/page.tsx`):**
+     - Inclusión del enlace *"Asistencias"* en el menú de navegación del Administrador (`UserCheck`).
+     - Nueva tarjeta destacada *"En sala ahora"* en el Dashboard Inicio (`app/page.tsx`) con sensor de pulso verde y aforo activo menor a 1h 40m.
+     - Corrección de la regla de Hooks en `components/sidebar.tsx` (declaración de hooks previa a cualquier salida condicional).
+
+* **Archivos afectados / creados:**
+  - 📁 `lib/types.ts`: Tipo `MetodoAsistencia` e interfaz `RegistroAsistencia`.
+  - 📁 `lib/asistencia-utils.ts`: [NUEVO] Motor de cálculo de aforo, caducidad a 100 min, horas pico y sintetizador de audio.
+  - 📁 `lib/asistencias.test.ts`: [NUEVO] Suite de 11 tests unitarios certificando caducidad y cálculos.
+  - 📁 `lib/mock-data.ts`: Dataset de asistencias iniciales `ASISTENCIAS_MOCK`.
+  - 📁 `lib/store.tsx`: Integración de estado y callbacks en `useGymStore`.
+  - 📁 `lib/auth-utils.ts`: Declaración de `/asistencias` en `RUTAS_EXCLUSIVAS_ADMIN`.
+  - 📁 `components/app-shell.tsx`: Bypass seguro para ruta `/totem` en modo Kiosco público.
+  - 📁 `app/totem/page.tsx`: [NUEVO] Pantalla completa táctil para la tablet de recepción.
+  - 📁 `app/asistencias/page.tsx`: [NUEVO] Panel administrativo de asistencias, aforo y analítica.
+  - 📁 `app/page.tsx`: Widget de aforo en sala en el Dashboard principal.
+  - 📁 `components/sidebar.tsx` & `components/mobile-nav.tsx`: Navegación de Asistencias.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `106 passed (106)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **TypeScript (`npx tsc --noEmit`):**
+    - Diagnóstico: **0 errores de compilación**
+  - 🚀 **Next.js Production Build (`npm run build`):**
+    - Rutas compiladas: **13/13 rutas estáticas y dinámicas optimizadas** (incluyendo `/totem` y `/asistencias`).
+    - Estado: **Listo para producción local**
+
+
 
 

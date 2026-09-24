@@ -5,13 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell } from 'lucide-react'
+import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell, UserCheck } from 'lucide-react'
 import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
 import { ModalPerfil } from '@/components/modal-perfil'
 
 const navItemsAdmin = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
   { label: 'Alumnos', href: '/alumnos', icon: Users },
+  { label: 'Asistencias', href: '/asistencias', icon: UserCheck },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
   { label: 'Avisos', href: '/avisos', icon: Bell },
@@ -112,12 +113,13 @@ function SidebarUserCard({
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname()
   const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
+  const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [mostrarPerfil, setMostrarPerfil] = useState(false)
+
   if (!usuarioActual) return null
 
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
-  const [mostrarAyuda, setMostrarAyuda] = useState(false)
-  const [mostrarPerfil, setMostrarPerfil] = useState(false)
   const cantNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   return (
