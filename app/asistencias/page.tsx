@@ -49,26 +49,24 @@ export default function AsistenciasPage() {
 
   const [ahoraMs, setAhoraMs] = useState(Date.now())
 
-  // Ticker en vivo cada 10 segundos para refrescar tiempos relativos y detectar nuevos ingresos
+  // Ticker en vivo cada 3 segundos para refrescar tiempos relativos y aforo
   useEffect(() => {
     const refrescar = () => setAhoraMs(Date.now())
-    const intv = setInterval(refrescar, 10000)
-    // Refrescar inmediatamente al volver a la pestaña
+    const intv = setInterval(refrescar, 3000)
     const onVisibility = () => {
       if (document.visibilityState === 'visible') refrescar()
     }
     document.addEventListener('visibilitychange', onVisibility)
-    // Escuchar cambios de localStorage desde otras pestañas (totem)
-    const onStorage = (e: StorageEvent) => {
-      if (e.key && e.key.includes('asistencia')) refrescar()
-    }
-    window.addEventListener('storage', onStorage)
     return () => {
       clearInterval(intv)
       document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('storage', onStorage)
     }
   }, [])
+
+  // Refrescar cálculo de sala inmediatamente cuando cambie el array de asistencias
+  useEffect(() => {
+    setAhoraMs(Date.now())
+  }, [asistencias])
 
   // 1. Asistencias del día de hoy
   const asistenciasHoy = useMemo(() => {

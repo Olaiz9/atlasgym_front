@@ -80,7 +80,15 @@ function useGymStore(): AppDataContextValue {
       const guardado = localStorage.getItem("atlas_alumnos_v1");
       if (guardado) {
         try {
-          return JSON.parse(guardado);
+          const parsed = JSON.parse(guardado);
+          if (Array.isArray(parsed) && parsed.length >= ALUMNOS_MOCK.length) {
+            return parsed;
+          }
+          if (Array.isArray(parsed)) {
+            const idsExistentes = new Set(parsed.map((a: Alumno) => a.id));
+            const faltantes = ALUMNOS_MOCK.filter((a) => !idsExistentes.has(a.id));
+            return [...parsed, ...faltantes];
+          }
         } catch {}
       }
     }
@@ -175,7 +183,7 @@ function useGymStore(): AppDataContextValue {
       if (guardadoV2) {
         try {
           const parsed = JSON.parse(guardadoV2);
-          if (Array.isArray(parsed) && parsed.length >= 6) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed;
           }
         } catch {}
@@ -184,7 +192,7 @@ function useGymStore(): AppDataContextValue {
       if (guardadoV1) {
         try {
           const parsed = JSON.parse(guardadoV1);
-          if (Array.isArray(parsed) && parsed.length >= 10) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed;
           }
         } catch {}
@@ -205,14 +213,46 @@ function useGymStore(): AppDataContextValue {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const sincronizarAsistencias = () => {
+    // 1. BroadcastChannel: comunicación instantánea en 0ms entre pestañas
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        bc = new BroadcastChannel("atlas_asistencias_channel");
+        bc.onmessage = (event) => {
+          if (event.data?.asistencias && Array.isArray(event.data.asistencias)) {
+            setAsistencias(event.data.asistencias);
+          }
+        };
+      } catch {}
+    }
+
+    // 2. StorageEvent nativo (se dispara cuando otra pestaña guarda en localStorage)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "atlas_asistencias_v2" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAsistencias(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    // 3. Polling de respaldo cada 1.5s y al enfocar pestaña
+    const sincronizarDesdeStorage = () => {
       try {
         const guardadoV2 = localStorage.getItem("atlas_asistencias_v2");
         if (guardadoV2) {
           const parsed = JSON.parse(guardadoV2);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setAsistencias((prev) => {
-              if (prev.length !== parsed.length || (prev[0]?.id !== parsed[0]?.id)) {
+              if (prev.length === parsed.length && prev[0]?.id === parsed[0]?.id) {
+                return prev;
+              }
+              const parsedTime = parsed[0]?.timestamp || 0;
+              const prevTime = prev[0]?.timestamp || 0;
+              if (parsedTime >= prevTime || parsed.length > prev.length) {
                 return parsed;
               }
               return prev;
@@ -222,22 +262,13 @@ function useGymStore(): AppDataContextValue {
       } catch {}
     };
 
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "atlas_asistencias_v2" || e.key === "atlas_asistencias_v1") {
-        sincronizarAsistencias();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("atlas_asistencia_actualizada", sincronizarAsistencias);
-    window.addEventListener("focus", sincronizarAsistencias);
-
-    // Polling rápido cada 2.5s para actualización fluida en tiempo real
-    const interval = setInterval(sincronizarAsistencias, 2500);
+    const interval = setInterval(sincronizarDesdeStorage, 1500);
+    window.addEventListener("focus", sincronizarDesdeStorage);
 
     return () => {
+      if (bc) bc.close();
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("atlas_asistencia_actualizada", sincronizarAsistencias);
-      window.removeEventListener("focus", sincronizarAsistencias);
+      window.removeEventListener("focus", sincronizarDesdeStorage);
       clearInterval(interval);
     };
   }, []);
@@ -549,15 +580,30 @@ function useGymStore(): AppDataContextValue {
         metodo: "DNI_TOTEM",
       };
 
-      setAsistencias((prev) => [nueva, ...prev]);
+      setAsistencias((prev) => {
+        const actualizadas = [nueva, ...prev];
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("atlas_asistencias_v2", JSON.stringify(actualizadas));
+            if (typeof BroadcastChannel !== "undefined") {
+              const bc = new BroadcastChannel("atlas_asistencias_channel");
+              bc.postMessage({ tipo: "NUEVA_ASISTENCIA", asistencias: actualizadas });
+              bc.close();
+            }
+          } catch {}
+        }
+        return actualizadas;
+      });
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("atlas_asistencia_actualizada"));
-      }
-
-      setAlumnos((prev) =>
-        prev.map((a) => (a.id === alumno.id ? { ...a, ultimaAsistencia: hoy } : a))
-      );
+      setAlumnos((prev) => {
+        const actualizados = prev.map((a) => (a.id === alumno.id ? { ...a, ultimaAsistencia: hoy } : a));
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("atlas_alumnos_v1", JSON.stringify(actualizados));
+          } catch {}
+        }
+        return actualizados;
+      });
 
       return {
         ok: true,
@@ -569,7 +615,20 @@ function useGymStore(): AppDataContextValue {
   );
 
   const eliminarAsistencia = useCallback((id: string) => {
-    setAsistencias((prev) => prev.filter((a) => a.id !== id));
+    setAsistencias((prev) => {
+      const actualizadas = prev.filter((a) => a.id !== id);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("atlas_asistencias_v2", JSON.stringify(actualizadas));
+          if (typeof BroadcastChannel !== "undefined") {
+            const bc = new BroadcastChannel("atlas_asistencias_channel");
+            bc.postMessage({ tipo: "ELIMINAR_ASISTENCIA", asistencias: actualizadas });
+            bc.close();
+          }
+        } catch {}
+      }
+      return actualizadas;
+    });
   }, []);
 
   const value = useMemo<AppDataContextValue>(
