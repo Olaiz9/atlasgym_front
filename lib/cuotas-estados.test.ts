@@ -31,7 +31,7 @@ describe("Fase 4: Cuotas y Estados de Negocio (lib/cuotas-estados.test.ts)", () 
           alumnoId,
           plan: "Musculación",
           monto: 28000,
-          fecha: "2026-08-05",
+          fecha: fechaLocalHoy(),
           metodo: "Efectivo",
           estado: "VENCIDO",
         },
