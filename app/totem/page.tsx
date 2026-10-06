@@ -15,6 +15,7 @@ interface ResultadoFeedback {
   alumno?: Alumno
   estadoCuenta?: EstadoCuenta
   motivo?: string
+  esDuplicado?: boolean
 }
 
 export default function TotemPage() {
@@ -113,6 +114,15 @@ export default function TotemPage() {
         setResultado({
           alumno: res.alumno,
           estadoCuenta: res.estadoCuenta,
+        })
+      } else if (res.yaRegistrado && res.alumno) {
+        setEstado('ALERTA')
+        reproducirSonidoFeedback('ALERTA')
+        setResultado({
+          alumno: res.alumno,
+          estadoCuenta: res.estadoCuenta,
+          motivo: res.motivo,
+          esDuplicado: true,
         })
       } else {
         setEstado('ERROR')
@@ -354,13 +364,15 @@ export default function TotemPage() {
         {estado === 'ALERTA' && resultado?.alumno && (
           <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-amber-950/40 animate-in zoom-in-95 duration-200">
             <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-3 shadow-lg shadow-amber-500/20">
-              <AlertTriangle className="size-8 sm:size-10" />
+              {resultado.esDuplicado ? <Check className="size-8 sm:size-10" /> : <AlertTriangle className="size-8 sm:size-10" />}
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Atención · Cuota vencida</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">
+              {resultado.esDuplicado ? 'Ingreso ya registrado' : 'Atención · Cuota vencida'}
+            </p>
             <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
             <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
-              Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.
+              {resultado.motivo || 'Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.'}
             </p>
 
             <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-amber-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
@@ -371,8 +383,14 @@ export default function TotemPage() {
               <div className="h-7 w-px bg-slate-800" />
               <div>
                 <p className="text-[10px] font-bold uppercase text-slate-500">Condición</p>
-                <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  Renovar cuota
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                    resultado.esDuplicado && resultado.estadoCuenta === 'AL_DIA'
+                      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                      : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+                  }`}
+                >
+                  {resultado.esDuplicado ? 'Sesión activa' : 'Renovar cuota'}
                 </span>
               </div>
             </div>

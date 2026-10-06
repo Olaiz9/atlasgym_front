@@ -223,4 +223,60 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
       expect(() => reproducirSonidoFinDescanso()).not.toThrow()
     })
   })
+
+  describe('clasificación tripartita de estados de cuota en asistencias', () => {
+    const asistencias: RegistroAsistencia[] = [
+      {
+        id: '1',
+        alumnoId: 'a1',
+        alumnoNombre: 'Lucas Al Día',
+        alumnoDni: '111',
+        fecha: '2026-09-24',
+        hora: '10:00',
+        timestamp: 1000,
+        estadoCuenta: 'AL_DIA',
+        planNombre: 'Musculación',
+        metodo: 'DNI_TOTEM',
+      },
+      {
+        id: '2',
+        alumnoId: 'a2',
+        alumnoNombre: 'Martín Pendiente',
+        alumnoDni: '222',
+        fecha: '2026-09-24',
+        hora: '10:15',
+        timestamp: 2000,
+        estadoCuenta: 'PENDIENTE',
+        planNombre: 'Full Access',
+        metodo: 'DNI_TOTEM',
+      },
+      {
+        id: '3',
+        alumnoId: 'a3',
+        alumnoNombre: 'Carla Vencida',
+        alumnoDni: '333',
+        fecha: '2026-09-24',
+        hora: '10:30',
+        timestamp: 3000,
+        estadoCuenta: 'MOROSO',
+        planNombre: 'Pase Libre',
+        metodo: 'DNI_TOTEM',
+      },
+    ]
+
+    it('diferencia correctamente entre Al día, Pendiente y Vencido', () => {
+      const alDia = asistencias.filter((a) => a.estadoCuenta === 'AL_DIA')
+      const pendientes = asistencias.filter((a) => a.estadoCuenta === 'PENDIENTE')
+      const vencidos = asistencias.filter((a) => a.estadoCuenta !== 'AL_DIA' && a.estadoCuenta !== 'PENDIENTE')
+
+      expect(alDia).toHaveLength(1)
+      expect(alDia[0].alumnoNombre).toBe('Lucas Al Día')
+
+      expect(pendientes).toHaveLength(1)
+      expect(pendientes[0].alumnoNombre).toBe('Martín Pendiente')
+
+      expect(vencidos).toHaveLength(1)
+      expect(vencidos[0].alumnoNombre).toBe('Carla Vencida')
+    })
+  })
 })
