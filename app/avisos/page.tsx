@@ -50,8 +50,8 @@ function AvisoCardAlumno({
   )}`
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
           {!esLeido && (
@@ -64,25 +64,25 @@ function AvisoCardAlumno({
       </div>
 
       <div className="mt-3">
-        <h3 className="text-lg font-bold text-slate-900">{aviso.titulo}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+        <h3 className="text-lg font-bold text-white">{aviso.titulo}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300 whitespace-pre-line">
           {aviso.mensaje}
         </p>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-4">
         <button
           type="button"
           onClick={onMarcarLeido}
           className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
             esLeido
-              ? 'bg-slate-100 text-slate-500'
-              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+              ? 'bg-slate-800 text-slate-400 border border-slate-700'
+              : 'bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30'
           }`}
         >
           {esLeido ? (
             <>
-              <CheckCircle2 className="size-3.5 text-emerald-600" />
+              <CheckCircle2 className="size-3.5 text-emerald-400" />
               Leído
             </>
           ) : (
@@ -97,9 +97,9 @@ function AvisoCardAlumno({
           href={whatsappMensaje}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-400 transition-colors hover:bg-emerald-500/25"
         >
-          <MessageCircle className="size-3.5 text-emerald-600" />
+          <MessageCircle className="size-3.5 text-emerald-400" />
           Consultar por WhatsApp
         </a>
       </div>
@@ -117,17 +117,17 @@ function AvisoCardAdmin({
   onEliminar: () => void
 }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
           {aviso.paraTodos ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 border border-slate-700 px-2 py-0.5 text-[11px] font-bold text-slate-300">
               <Users className="size-3" />
               Todos los alumnos
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[11px] font-bold text-indigo-300">
               <User className="size-3" />
               Para: {nombreAlumno || 'Alumno'}
             </span>
@@ -140,7 +140,7 @@ function AvisoCardAdmin({
             onClick={onEliminar}
             aria-label="Eliminar aviso"
             title="Eliminar aviso"
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-500/20 hover:text-rose-400"
           >
             <Trash2 className="size-4" />
           </button>
@@ -148,15 +148,15 @@ function AvisoCardAdmin({
       </div>
 
       <div className="mt-3">
-        <h3 className="text-lg font-bold text-slate-900">{aviso.titulo}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+        <h3 className="text-lg font-bold text-white">{aviso.titulo}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300 whitespace-pre-line">
           {aviso.mensaje}
         </p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 font-medium">
+      <div className="mt-4 flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs text-slate-400 font-medium">
         <span className="inline-flex items-center gap-1">
-          <CheckCircle2 className="size-3.5 text-emerald-500" />
+          <CheckCircle2 className="size-3.5 text-emerald-400" />
           Leído por {aviso.leidoPor.length} {aviso.leidoPor.length === 1 ? 'persona' : 'personas'}
         </span>
       </div>

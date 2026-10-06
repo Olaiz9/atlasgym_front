@@ -360,7 +360,7 @@ export default function TotemPage() {
           </div>
         )}
 
-        {/* ESTADO 3: ALERTA (CUOTA VENCIDA / MOROSO) */}
+        {/* ESTADO 3: ALERTA (CUOTA PENDIENTE O VENCIDA / MOROSO) */}
         {estado === 'ALERTA' && resultado?.alumno && (
           <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-amber-950/40 animate-in zoom-in-95 duration-200">
             <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-3 shadow-lg shadow-amber-500/20">
@@ -368,11 +368,18 @@ export default function TotemPage() {
             </div>
 
             <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">
-              {resultado.esDuplicado ? 'Ingreso ya registrado' : 'Atención · Cuota vencida'}
+              {resultado.esDuplicado
+                ? 'Ingreso ya registrado'
+                : resultado.estadoCuenta === 'PENDIENTE'
+                ? 'Atención · Cuota pendiente'
+                : 'Atención · Cuota vencida'}
             </p>
             <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
             <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
-              {resultado.motivo || 'Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.'}
+              {resultado.motivo ||
+                (resultado.estadoCuenta === 'PENDIENTE'
+                  ? 'Tu cuota del mes se encuentra pendiente de acreditación. Por favor consultá en recepción para regularizarla.'
+                  : 'Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.')}
             </p>
 
             <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-amber-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
@@ -387,10 +394,16 @@ export default function TotemPage() {
                   className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
                     resultado.esDuplicado && resultado.estadoCuenta === 'AL_DIA'
                       ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                      : resultado.estadoCuenta === 'PENDIENTE'
+                      ? 'text-amber-300 bg-amber-500/15 border-amber-400/40'
                       : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
                   }`}
                 >
-                  {resultado.esDuplicado ? 'Sesión activa' : 'Renovar cuota'}
+                  {resultado.esDuplicado
+                    ? 'Sesión activa'
+                    : resultado.estadoCuenta === 'PENDIENTE'
+                    ? 'Pago pendiente'
+                    : 'Renovar cuota'}
                 </span>
               </div>
             </div>

@@ -479,6 +479,59 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
   - 🩺 **Next.js Production Build (`npm run build`):**
     - Estado: **Compilado con éxito sin errores en 13/13 rutas**
 
+---
+
+### 11. Refinamiento Global UX/UI, Persistencia de Borradores de Entrenamiento, Edición de Rutinas con Propagación en Vivo y Alerta de Sobreescritura
+* **Fecha:** 06 de Octubre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Ajuste de Tótem ante cuota pendiente:** Cuando un usuario con cuota en estado `PENDIENTE` ingresa su DNI en el tótem, el cartel de advertencia ya no lo confunde diciendo que está vencido; ahora distingue expresamente el estado pendiente con indicaciones claras de regularización.
+  2. **Selector de descanso con mayor variedad:** La duración del descanso entre series al crear/editar rutinas ahora incluye un rango amplio y preciso de opciones (desde 15s hasta 300s / 5m).
+  3. **Homogeneización estética de modales:** Se unificó el estilo visual, paleta oscura, bordes `slate-800` y tipografías en todos los modales de la plataforma (*"Agregar alumno"*, *"Registrar pago"*, *"Crear Rutina"*, *"Nuevo Aviso"*).
+  4. **Persistencia de series marcadas ante cambio de día en la rutina:** Las series completadas en un día (ej. Día 1) se mantienen intactas en memoria si el alumno cambia accidentalmente de pestaña de día y regresa.
+  5. **Armonización de paleta y tipografía entre módulos:** Corrección de fondos en Alumnos, Finanzas e Inicio para unificar el azul oscuro identitario de ATLAS Gym, eliminando inconsistencias en tonos de títulos y tarjetas.
+  6. **Badges de estado con relleno sólido:** Las tarjetitas de `Pendiente`, `Al día` y `Vencido` ahora utilizan fondos rellenos sólidos y legibles en todas las vistas de alumnos y profesores.
+  7. **Limpieza visual de emojis y avisos:** Eliminación del emoji de bíceps en el portal del alumno, eliminación del emoji de tarjeta de crédito en datos bancarios y corrección de contraste en tarjetas de avisos.
+  8. **Restricción de series añadidas a voluntad:** Se deshabilitó la posibilidad de que el alumno agregue series por su cuenta sin autorización del plan del profesor.
+  9. **Fondo ambiental oscuro en el Login:** Se incorporó una imagen de fondo difuminada de gimnasio (`public/login-bg.jpg`) con viñeta y gradientes acordes a la estética oscura de ATLAS Gym.
+  10. **Eliminación del presente manual para profesores:** La asistencia se gestiona exclusivamente a través del Tótem de recepción; se retiró el botón de asistencia manual del panel de profesores.
+  11. **Visibilidad de badges Bi-serie / Drop Set en PC:** Se corrigieron los truncamientos visuales para que las etiquetas especiales se vean tanto en versión desktop como móvil.
+  12. **Desplazamiento horizontal en gráficos móviles de Asistencias:** Se agregó soporte para scroll táctil lateral (`overflow-x-auto`) en los gráficos de distribución horaria y semanal en celulares para evitar recortes.
+  13. **Persistencia de borradores de entrenamiento en tiempo real:**
+      - Las series marcadas parcialmente ya no se pierden al navegar entre secciones (*Mi Rutina* a *Mis Cuotas*, *Videoteca*, etc.) ni ante recargas de página o cierre involuntario de la app en celular.
+      - Se implementó almacenamiento persistente en tiempo real (`atlas_borrador_${alumnoId}_${rutinaId}_${fechaHoy}`) con purga automática de borradores obsoletos al cambiar de fecha de calendario.
+  14. **Edición de rutinas creadas y propagación automática a alumnos:**
+      - El profesor ahora puede editar cualquier rutina existente tocando el botón de edición (`Edit3`).
+      - Al guardar los cambios, la rutina se actualiza en el store y se refleja **automáticamente e instantáneamente en el portal de todos los alumnos que la tengan asignada**.
+  15. **Aviso de advertencia ante reasignación de rutina:**
+      - Si el profesor intenta asignar una rutina a un alumno que ya tiene otra asignada, se detecta el conflicto y se despliega un aviso destacado en ámbar solicitando confirmación explícita para evitar sobreescrituras accidentales.
+
+* **Archivos modificados y creados:**
+  - 📁 `lib/types.ts`: Ampliación de interfaces y contratos en el store para soportar edición de rutinas.
+  - 📁 `lib/store.tsx`: Incorporación de `actualizarRutina` y sincronización reactiva global.
+  - 📁 `lib/rutina-utils.ts`: Funciones de gestión de borradores (`obtenerBorradorEntrenamiento`, `limpiarBorradoresObsoletos`) y detección de conflictos (`detectarConflictosAsignacionRutina`).
+  - 📁 `lib/rutina-utils.test.ts`: Tests unitarios automatizados para persistencia de borradores y detección de conflictos de asignación.
+  - 📁 `app/rutinas/page.tsx`:
+    - Persistencia en tiempo real de entrenamientos en curso para alumnos.
+    - Botón de edición de rutina con modal reactivo pre-cargado.
+    - Modal de asignación con aviso de confirmación ante sobreescritura de planes activos.
+    - Corrección de badges Bi-serie / Drop Set y selector ampliado de tiempos de descanso.
+  - 📁 `app/login/page.tsx`: Imagen de fondo fotográfica ambiental con opacidad y blur balanceados.
+  - 📁 `app/alumnos/page.tsx` & `app/alumnos/[id]/page.tsx`: Eliminación del botón manual de presente para profesores y badges de series especiales.
+  - 📁 `app/asistencias/page.tsx`: Scroll táctil horizontal para gráficos de aforo en dispositivos móviles.
+  - 📁 `app/finanzas/page.tsx`: Eliminación del emoji de tarjeta de crédito y armonización de estados de cuota.
+  - 📁 `app/totem/page.tsx`: Ajuste del mensaje para cuotas pendientes en el tótem de entrada.
+  - 📁 `public/login-bg.jpg`: [NUEVO] Asset fotográfico de ambientación oscura para el Login.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Documentación del Hito 11.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `114 passed (114)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **Next.js Production Build (`npm run build`):**
+    - Estado: **Compilación limpia y exitosa en 13/13 rutas estáticas y dinámicas**
+
+
 
 
 

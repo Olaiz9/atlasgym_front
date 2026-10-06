@@ -44,6 +44,7 @@ interface AppDataContextValue {
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   eliminarPago: (id: string) => void;
   agregarRutina: (rutina: Omit<Rutina, "id">) => Rutina;
+  actualizarRutina: (id: string, cambios: Partial<Omit<Rutina, "id">>) => void;
   asignarRutinaAAlumno: (rutinaId: string, alumnoId: string) => void;
   eliminarRutina: (id: string) => void;
   getRutinaDeAlumno: (alumnoId: string) => Rutina | undefined;
@@ -484,6 +485,10 @@ function useGymStore(): AppDataContextValue {
     return nueva;
   }, []);
 
+  const actualizarRutina = useCallback((id: string, cambios: Partial<Omit<Rutina, "id">>) => {
+    setRutinas((prev) => prev.map((r) => (r.id === id ? { ...r, ...cambios } : r)));
+  }, []);
+
   const asignarRutinaAAlumno = useCallback((rutinaId: string, alumnoId: string) => {
     setAlumnos((prev) =>
       prev.map((a) => (a.id === alumnoId ? { ...a, tieneRutina: true, rutinaId } : a))
@@ -768,6 +773,7 @@ function useGymStore(): AppDataContextValue {
       actualizarEstadoPago,
       eliminarPago,
       agregarRutina,
+      actualizarRutina,
       asignarRutinaAAlumno,
       eliminarRutina,
       getRutinaDeAlumno,
@@ -819,6 +825,7 @@ function useGymStore(): AppDataContextValue {
       actualizarEstadoPago,
       eliminarPago,
       agregarRutina,
+      actualizarRutina,
       asignarRutinaAAlumno,
       eliminarRutina,
       getRutinaDeAlumno,

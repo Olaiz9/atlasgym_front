@@ -29,7 +29,7 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, actualizarAlumno, eliminarAlumno, marcarAsistenciaAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
   const { toast } = useToast();
 
@@ -174,31 +174,31 @@ export default function AlumnosPage() {
           icon={<Users className="size-6" />}
           label="Total de alumnos"
           value={`${metrica.total}`}
-          tint={{ bg: "bg-blue-50", text: "text-blue-600", bar: "bg-blue-600" }}
+          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
         />
         <MetricCard
           icon={<UserCheck className="size-6" />}
           label="Al día"
           value={`${metrica.alDia}`}
-          tint={{ bg: "bg-emerald-50", text: "text-emerald-600", bar: "bg-emerald-500" }}
+          tint={{ bg: "bg-emerald-500/15 border border-emerald-500/30", text: "text-emerald-400", bar: "bg-emerald-500" }}
         />
         <MetricCard
           icon={<AlertCircle className="size-6" />}
           label="Morosos"
           value={`${metrica.morosos}`}
-          tint={{ bg: "bg-rose-50", text: "text-rose-500", bar: "bg-rose-500" }}
+          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
         />
         <MetricCard
           icon={<UserX className="size-6" />}
           label="Inactivos"
           value={`${metrica.inactivos}`}
-          tint={{ bg: "bg-slate-100", text: "text-slate-500", bar: "bg-slate-400" }}
+          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
         />
       </div>
 
       {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-100 bg-slate-50/60">
+      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
           <div className="flex gap-2 flex-wrap">
             {FILTROS_ALUMNOS.map((f) => (
               <button
@@ -207,7 +207,7 @@ export default function AlumnosPage() {
                 className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   filtro === f.value
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                    : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
                 }`}
               >
                 {f.label}
@@ -222,7 +222,7 @@ export default function AlumnosPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function AlumnosPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
+              <tr className="text-left text-slate-400 border-b border-slate-800">
                 <th className="font-bold px-6 py-3.5">Alumno</th>
                 <th className="font-bold px-6 py-3.5">Plan</th>
                 <th className="font-bold px-6 py-3.5">Rutina</th>
@@ -243,38 +243,38 @@ export default function AlumnosPage() {
               {alumnosPaginados.map((alumno) => (
                 <tr
                   key={alumno.id}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                  className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
                 >
-                  <td className="px-6 py-4 font-bold text-slate-900">
+                  <td className="px-6 py-4 font-bold text-white">
                     <Link
                       href={`/alumnos/${alumno.id}`}
-                      className="hover:text-blue-600 hover:underline underline-offset-2 flex items-center gap-1.5"
+                      className="hover:text-blue-400 hover:underline underline-offset-2 flex items-center gap-1.5"
                     >
                       {alumno.nombre}
                       <ChevronRight className="w-3.5 h-3.5 opacity-40" />
                     </Link>
                   </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">{alumno.plan}</td>
+                  <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
                   <td className="px-6 py-4">
                     {alumno.tieneRutina ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
                         <Dumbbell className="w-3 h-3" />
                         Asignada
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-400">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60">
                         Sin rutina
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-slate-600 font-medium">
+                  <td className="px-6 py-4 text-slate-300 font-medium">
                     {alumno.ultimaAsistencia ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
                         <Clock className="w-3 h-3 text-slate-400" />
                         {formatDiasIngreso(alumno.ultimaAsistencia)}
                       </span>
                     ) : (
-                      <span className="text-slate-400 text-xs italic">Sin registros</span>
+                      <span className="text-slate-500 text-xs italic">Sin registros</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -286,28 +286,16 @@ export default function AlumnosPage() {
                   </td>
                   <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
                     <button
-                      onClick={() => {
-                        marcarAsistenciaAlumno(alumno.id);
-                        toast(`Asistencia registrada hoy para ${alumno.nombre}`, "success");
-                      }}
-                      title="Marcar asistencia hoy"
-                      aria-label={`Marcar asistencia hoy para ${alumno.nombre}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors duration-150 active:scale-95 mr-1"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      Presente
-                    </button>
-                    <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setAlumnoAEliminar(alumno)}
                       aria-label={`Eliminar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -316,7 +304,7 @@ export default function AlumnosPage() {
               ))}
               {alumnosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
                     {alumnos.length === 0
                       ? "Todavía no hay alumnos cargados. Arrancá agregando el primero."
                       : "No se encontraron alumnos con ese criterio."}
@@ -329,7 +317,7 @@ export default function AlumnosPage() {
 
         {/* Paginación */}
         {alumnosFiltrados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 text-xs font-semibold text-slate-500 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
             <div className="flex items-center gap-2">
               <span>Mostrar</span>
               <select
@@ -339,12 +327,12 @@ export default function AlumnosPage() {
                   setElementosPorPagina(Number(e.target.value));
                   setPaginaActual(1);
                 }}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 outline-none"
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
               >
-                <option value={15}>15 por página</option>
-                <option value={30}>30 por página</option>
-                <option value={50}>50 por página</option>
-                <option value={100}>100 por página</option>
+                <option value={15} className="bg-slate-900 text-white">15 por página</option>
+                <option value={30} className="bg-slate-900 text-white">30 por página</option>
+                <option value={50} className="bg-slate-900 text-white">50 por página</option>
+                <option value={100} className="bg-slate-900 text-white">100 por página</option>
               </select>
               <span>
                 Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
@@ -357,17 +345,17 @@ export default function AlumnosPage() {
               <button
                 onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
                 disabled={paginaActual === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Anterior
               </button>
-              <span className="px-2 font-bold text-slate-700">
+              <span className="px-2 font-bold text-slate-300">
                 Página {paginaActual} de {totalPaginas}
               </span>
               <button
                 onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
                 disabled={paginaActual === totalPaginas}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Siguiente
               </button>
@@ -422,17 +410,17 @@ function ModalConfirmarEliminar({
   return (
     <div
       onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 mb-4">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
           <Trash2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900">¿Eliminar a {alumno.nombre}?</h2>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <h2 className="text-lg font-black text-white">¿Eliminar a {alumno.nombre}?</h2>
+        <p className="mt-1.5 text-sm text-slate-400">
           Esta acción no se puede deshacer.
           {tienePagos && (
             <>
@@ -444,7 +432,7 @@ function ModalConfirmarEliminar({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>

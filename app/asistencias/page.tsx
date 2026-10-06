@@ -394,47 +394,51 @@ export default function AsistenciasPage() {
             </button>
           </div>
 
-          {/* Gráfico de barras */}
-          <div className="mt-6 flex items-end gap-1.5 sm:gap-2 h-44 border-b border-slate-800 pb-2 px-1">
-            {distribucionHoraria.map((item) => {
-              const esPico = item.cantidad > 0 && item.porcentaje >= 90
-              return (
-                <div key={item.hora} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  {/* Tooltip hover */}
-                  <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg pointer-events-none z-10 whitespace-nowrap border border-slate-700">
-                    {item.etiqueta}: {item.cantidad} {item.cantidad === 1 ? 'persona' : 'personas'}
-                  </div>
+          {/* Gráfico de barras desplazable horizontalmente en móviles */}
+          <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-thin">
+            <div className="min-w-[560px] sm:min-w-0">
+              <div className="mt-6 flex items-end gap-1.5 sm:gap-2 h-44 border-b border-slate-800 pb-2 px-1">
+                {distribucionHoraria.map((item) => {
+                  const esPico = item.cantidad > 0 && item.porcentaje >= 90
+                  return (
+                    <div key={item.hora} className="flex-1 flex flex-col items-center gap-1 group relative">
+                      {/* Tooltip hover */}
+                      <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg pointer-events-none z-10 whitespace-nowrap border border-slate-700">
+                        {item.etiqueta}: {item.cantidad} {item.cantidad === 1 ? 'persona' : 'personas'}
+                      </div>
 
-                  <div className="w-full flex items-end justify-center h-32">
-                    <div
-                      className={`w-full max-w-[20px] rounded-t-md transition-all duration-500 ease-out ${
-                        esPico
-                          ? 'bg-amber-500 shadow-md shadow-amber-500/20 group-hover:bg-amber-400'
-                          : item.cantidad > 0
-                          ? 'bg-blue-600 group-hover:bg-blue-500'
-                          : 'bg-slate-800/40'
-                      }`}
-                      style={{ height: `${Math.max(item.porcentaje, item.cantidad > 0 ? 8 : 3)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
-                    {item.hora}h
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-          <div className="flex items-center justify-between text-xs text-slate-500 mt-2 px-1">
-            <span>Apertura (07:00 hs)</span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-amber-500" /> Hora pico destacada
-            </span>
-            <span>Cierre (22:00 hs)</span>
+                      <div className="w-full flex items-end justify-center h-32">
+                        <div
+                          className={`w-full max-w-[20px] rounded-t-md transition-all duration-500 ease-out ${
+                            esPico
+                              ? 'bg-amber-500 shadow-md shadow-amber-500/20 group-hover:bg-amber-400'
+                              : item.cantidad > 0
+                              ? 'bg-blue-600 group-hover:bg-blue-500'
+                              : 'bg-slate-800/40'
+                          }`}
+                          style={{ height: `${Math.max(item.porcentaje, item.cantidad > 0 ? 8 : 3)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
+                        {item.hora}h
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mt-2 px-1">
+                <span>Apertura (07:00 hs)</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-amber-500" /> Hora pico destacada
+                </span>
+                <span>Cierre (22:00 hs)</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* AFLUENCIA POR DÍA DE LA SEMANA */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-sm flex flex-col justify-between">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-sm flex flex-col justify-between overflow-hidden">
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2 mb-1">
               <Calendar className="size-4 text-emerald-400" />
@@ -442,21 +446,23 @@ export default function AsistenciasPage() {
             </h2>
             <p className="text-xs text-slate-400 mb-5">Promedio semanal de lunes a sábado.</p>
 
-            <div className="flex flex-col gap-3">
-              {distribucionSemanal.map((d) => (
-                <div key={d.diaIndex}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-semibold text-slate-300">{d.dia}</span>
-                    <span className="font-mono text-slate-400">{d.cantidad} accesos</span>
+            <div className="overflow-x-auto pb-1 scrollbar-thin">
+              <div className="min-w-[280px] flex flex-col gap-3">
+                {distribucionSemanal.map((d) => (
+                  <div key={d.diaIndex}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-semibold text-slate-300">{d.dia}</span>
+                      <span className="font-mono text-slate-400">{d.cantidad} accesos</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-800/80 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-700"
+                        style={{ width: `${Math.max(d.porcentaje, 4)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-800/80 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-700"
-                      style={{ width: `${Math.max(d.porcentaje, 4)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 

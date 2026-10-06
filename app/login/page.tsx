@@ -91,11 +91,24 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
-      {/* Fondo con resplandores sutiles */}
-      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[600px] rounded-full bg-blue-600/15 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[500px] rounded-full bg-blue-500/10 blur-[140px]" />
+      {/* Imagen de fondo nítida y visible con atmósfera cinematográfica oscura */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <Image
+          src="/login-bg.jpg"
+          alt="Gimnasio Atlas"
+          fill
+          priority
+          className="object-cover object-center opacity-55 filter blur-[1.5px] scale-105"
+        />
+        {/* Capa de viñeta oscura para garantizar legibilidad óptima de la tarjeta */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/60 to-slate-950/90" />
+      </div>
 
-      <div className="relative w-full max-w-md">
+      {/* Fondo con resplandores sutiles */}
+      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[600px] rounded-full bg-blue-600/15 blur-[120px] z-0" />
+      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[500px] rounded-full bg-blue-500/10 blur-[140px] z-0" />
+
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo & Marca Superior */}
         <div className="mb-8 text-center flex flex-col items-center">
           <Image

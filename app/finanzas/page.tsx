@@ -34,9 +34,9 @@ const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
 ];
 
 const ESTADO_STYLES: Record<EstadoPago, string> = {
-  PAGADO: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  PENDIENTE: "bg-amber-50 text-amber-700 border border-amber-200",
-  VENCIDO: "bg-red-50 text-red-700 border border-red-200",
+  PAGADO: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
+  PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+  VENCIDO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
 };
 
 const NOMBRES_MESES = [
@@ -164,8 +164,8 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {/* Estado de Cuenta */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado de mi cuota</p>
+        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado de mi cuota</p>
           <div className="mt-3 flex items-center gap-2">
             <span
               className={`px-3 py-1 rounded-full text-xs font-black ${
@@ -175,7 +175,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               {ESTADO_CUENTA_LABEL[estadoCuenta]}
             </span>
           </div>
-          <p className="mt-3 text-xs text-slate-500 font-medium leading-relaxed">
+          <p className="mt-3 text-xs text-slate-400 font-medium leading-relaxed">
             {estadoCuenta === "AL_DIA"
               ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
               : estadoCuenta === "PENDIENTE"
@@ -187,34 +187,34 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         </div>
 
         {/* Plan Actual */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mi plan actual</p>
-          <p className="mt-2 text-2xl font-black text-slate-900">{alumno?.plan || "Musculación"}</p>
-          <p className="mt-1 text-sm font-bold text-blue-600">
-            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-400 font-medium">/ mes</span>
+        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mi plan actual</p>
+          <p className="mt-2 text-2xl font-black text-white">{alumno?.plan || "Musculación"}</p>
+          <p className="mt-1 text-sm font-bold text-blue-400">
+            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-500 font-medium">/ mes</span>
           </p>
         </div>
 
         {/* Próximo Vencimiento */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 text-slate-900">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Próximo vencimiento</p>
-          <p className="mt-2 text-2xl font-black text-slate-900">
+        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximo vencimiento</p>
+          <p className="mt-2 text-2xl font-black text-white">
             {calcularVencimientoCuota(
               estadoCuenta,
               new Date(),
               ultimoPago?.periodoMes || ultimoPago?.fecha?.slice(0, 7)
             )}
           </p>
-          <p className="mt-1 text-xs text-slate-400 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
+          <p className="mt-1 text-xs text-slate-500 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
         </div>
       </div>
 
       {/* Datos para pagar / Transferencia */}
-      <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 md:p-8 text-white shadow-xl">
+      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 text-white shadow-xl backdrop-blur-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
-              💳 Datos para abonar tu cuota
+              Datos para abonar tu cuota
             </span>
             <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
@@ -256,18 +256,18 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
       </div>
 
       {/* Historial de mis pagos */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-slate-900 shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden text-slate-100 shadow-sm backdrop-blur-md">
+        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
           <div>
-            <h2 className="text-lg font-bold">Historial de mis cuotas</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Registro histórico de tus pagos</p>
+            <h2 className="text-lg font-black text-white">Historial de mis cuotas</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Registro histórico de tus pagos</p>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100 bg-slate-50/50">
+              <tr className="text-left text-slate-400 border-b border-slate-800 bg-slate-950/20">
                 <th className="font-bold px-6 py-3.5">Plan / Concepto</th>
                 <th className="font-bold px-6 py-3.5">Monto</th>
                 <th className="font-bold px-6 py-3.5">Fecha</th>
@@ -277,15 +277,15 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             </thead>
             <tbody>
               {misPagos.map((pago) => (
-                <tr key={pago.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <td className="px-6 py-4 font-bold text-slate-900">{pago.plan}</td>
-                  <td className="px-6 py-4 font-black text-slate-900">
+                <tr key={pago.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors">
+                  <td className="px-6 py-4 font-bold text-white">{pago.plan}</td>
+                  <td className="px-6 py-4 font-black text-white">
                     ${pago.monto.toLocaleString("es-AR")}
                   </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">
+                  <td className="px-6 py-4 text-slate-400 font-medium">
                     {formatFechaAR(pago.fecha)}
                   </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
+                  <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -299,7 +299,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               ))}
               {misPagos.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
                     No tenés pagos registrados en el sistema todavía.
                   </td>
                 </tr>
@@ -513,33 +513,33 @@ export default function FinanzasPage() {
           icon={<DollarSign className="size-6" />}
           label={verTodos ? "Ingresos totales" : "Ingresos del mes"}
           value={`$${metrica.ingresosDelMes.toLocaleString("es-AR")}`}
-          tint={{ bg: "bg-blue-50", text: "text-blue-600", bar: "bg-blue-600" }}
+          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
         />
         <MetricCard
           icon={<Clock className="size-6" />}
           label="Cuotas pendientes"
           value={`$${metrica.pendientesMonto.toLocaleString("es-AR")}`}
           sub={`${metrica.pendientesCount} cuotas`}
-          tint={{ bg: "bg-amber-50", text: "text-amber-600", bar: "bg-amber-500" }}
+          tint={{ bg: "bg-amber-500/15 border border-amber-500/30", text: "text-amber-400", bar: "bg-amber-500" }}
         />
         <MetricCard
           icon={<AlertCircle className="size-6" />}
           label="Cuotas vencidas"
           value={`$${metrica.vencidosMonto.toLocaleString("es-AR")}`}
           sub={`${metrica.vencidosCount} cuotas`}
-          tint={{ bg: "bg-rose-50", text: "text-rose-500", bar: "bg-rose-500" }}
+          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
         />
         <MetricCard
           icon={<Users className="size-6" />}
           label="Alumnos morosos"
           value={`${metrica.morosos}`}
-          tint={{ bg: "bg-slate-100", text: "text-slate-600", bar: "bg-slate-400" }}
+          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
         />
       </div>
 
       {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-100 bg-slate-50/60">
+      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
           <div className="flex gap-4 flex-wrap items-center">
             <div className="flex gap-2 flex-wrap">
               {FILTROS.map((f) => (
@@ -549,7 +549,7 @@ export default function FinanzasPage() {
                   className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                     filtro === f.value
                       ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                      : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
                   {f.label}
@@ -557,7 +557,7 @@ export default function FinanzasPage() {
               ))}
             </div>
 
-            <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+            <div className="h-5 w-px bg-slate-800 hidden sm:block" />
 
             {/* Filtro por método de pago */}
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -568,8 +568,8 @@ export default function FinanzasPage() {
                   onClick={() => setFiltroMetodo(met)}
                   className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
                     filtroMetodo === met
-                      ? "bg-slate-800 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-slate-800/60 text-slate-300 border border-slate-700/60 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
                   {met === "TODOS" ? "Todos" : met}
@@ -585,7 +585,7 @@ export default function FinanzasPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -593,7 +593,7 @@ export default function FinanzasPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
+              <tr className="text-left text-slate-400 border-b border-slate-800">
                 <th className="font-bold px-6 py-3.5">Alumno</th>
                 <th className="font-bold px-6 py-3.5">Plan</th>
                 <th className="font-bold px-6 py-3.5">Monto</th>
@@ -609,27 +609,27 @@ export default function FinanzasPage() {
                 return (
                   <tr
                     key={pago.id}
-                    className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                    className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
                   >
-                    <td className="px-6 py-4 font-bold text-slate-900">
+                    <td className="px-6 py-4 font-bold text-white">
                       {alumno ? (
-                        <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-600 hover:underline underline-offset-2">
+                        <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-400 hover:underline underline-offset-2">
                           {alumno.nombre}
                         </Link>
                       ) : (
-                        <span className="text-slate-400 italic font-medium">
+                        <span className="text-slate-500 italic font-medium">
                           {pago.alumnoNombreHistorico || "Alumno Atlas"} (Baja)
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-medium">{pago.plan}</td>
-                    <td className="px-6 py-4 font-black text-slate-900">
+                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.plan}</td>
+                    <td className="px-6 py-4 font-black text-white">
                       ${pago.monto.toLocaleString("es-AR")}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-medium">
+                    <td className="px-6 py-4 text-slate-400 font-medium">
                       {formatFechaAR(pago.fecha)}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-medium">{pago.metodo}</td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
                     <td className="px-6 py-4">
                       <div className="relative inline-block">
                         <select
@@ -640,9 +640,9 @@ export default function FinanzasPage() {
                           }
                           className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
                         >
-                          <option value="PAGADO">PAGADO</option>
-                          <option value="PENDIENTE">PENDIENTE</option>
-                          <option value="VENCIDO">VENCIDO</option>
+                          <option value="PAGADO" className="bg-slate-900 text-white">PAGADO</option>
+                          <option value="PENDIENTE" className="bg-slate-900 text-white">PENDIENTE</option>
+                          <option value="VENCIDO" className="bg-slate-900 text-white">VENCIDO</option>
                         </select>
                         <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
                       </div>
@@ -651,7 +651,7 @@ export default function FinanzasPage() {
                       <button
                         onClick={() => setPagoAEliminar(pago)}
                         aria-label={`Eliminar pago de ${alumno?.nombre ?? "alumno"}`}
-                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
+                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -661,7 +661,7 @@ export default function FinanzasPage() {
               })}
               {pagosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">
                     {verTodos
                       ? "No se encontraron pagos con ese criterio."
                       : `Todavía no hay pagos registrados en ${formatearMes(mes)}. Arrancá agregando el primero.`}
@@ -674,7 +674,7 @@ export default function FinanzasPage() {
 
         {/* Paginación */}
         {pagosFiltrados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 text-xs font-semibold text-slate-500 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
             <div className="flex items-center gap-2">
               <span>Mostrar</span>
               <select
@@ -684,12 +684,12 @@ export default function FinanzasPage() {
                   setElementosPorPagina(Number(e.target.value));
                   setPaginaActual(1);
                 }}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 outline-none"
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
               >
-                <option value={15}>15 por página</option>
-                <option value={30}>30 por página</option>
-                <option value={50}>50 por página</option>
-                <option value={100}>100 por página</option>
+                <option value={15} className="bg-slate-900 text-white">15 por página</option>
+                <option value={30} className="bg-slate-900 text-white">30 por página</option>
+                <option value={50} className="bg-slate-900 text-white">50 por página</option>
+                <option value={100} className="bg-slate-900 text-white">100 por página</option>
               </select>
               <span>
                 Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
@@ -702,17 +702,17 @@ export default function FinanzasPage() {
               <button
                 onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
                 disabled={paginaActual === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Anterior
               </button>
-              <span className="px-2 font-bold text-slate-700">
+              <span className="px-2 font-bold text-slate-300">
                 Página {paginaActual} de {totalPaginas}
               </span>
               <button
                 onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
                 disabled={paginaActual === totalPaginas}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Siguiente
               </button>
@@ -758,24 +758,24 @@ function ModalConfirmarEliminar({
   return (
     <div
       onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 mb-4">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
           <Trash2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900">¿Eliminar este pago?</h2>
-        <p className="mt-1.5 text-sm text-slate-500">
-          Vas a eliminar el pago de <span className="font-semibold text-slate-700">{nombreAlumno}</span> por{" "}
-          <span className="font-semibold text-slate-700">${pago.monto.toLocaleString("es-AR")}</span>. Esta acción no se puede deshacer.
+        <h2 className="text-lg font-black text-white">¿Eliminar este pago?</h2>
+        <p className="mt-1.5 text-sm text-slate-400">
+          Vas a eliminar el pago de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
+          <span className="font-semibold text-emerald-400">${pago.monto.toLocaleString("es-AR")}</span>. Esta acción no se puede deshacer.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>
@@ -901,18 +901,18 @@ function ModalRegistrarPago({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold">Registrar pago</h2>
+          <h2 className="text-xl font-black text-white">Registrar pago</h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
+            className="text-slate-400 hover:text-white rounded-full p-1.5 hover:bg-slate-800 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -920,12 +920,12 @@ function ModalRegistrarPago({
 
         {alumnos.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               Todavía no hay alumnos cargados. Agregá un alumno primero para poder registrarle un pago.
             </p>
             <Link
               href="/alumnos"
-              className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-10 px-5 rounded-xl transition-colors"
+              className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-10 px-5 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
             >
               Ir a Alumnos
             </Link>
@@ -940,7 +940,7 @@ function ModalRegistrarPago({
                   value={busquedaAlumno}
                   onChange={(e) => setBusquedaAlumno(e.target.value)}
                   placeholder="Buscar alumno por nombre o DNI..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
                 />
               </div>
               {alumnosFiltrados.length === 0 ? (
@@ -950,12 +950,12 @@ function ModalRegistrarPago({
                   aria-label="Alumno"
                   value={form.alumnoId}
                   onChange={(e) => handleAlumnoChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm mt-1.5 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm mt-1.5 cursor-pointer"
                   required
                   size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
                 >
                   {alumnosFiltrados.map((a) => (
-                    <option key={a.id} value={a.id} className="py-1">
+                    <option key={a.id} value={a.id} className="py-1 bg-slate-900 text-white">
                       {a.nombre} {a.dni ? `(${a.dni})` : ''}
                     </option>
                   ))}
@@ -968,7 +968,7 @@ function ModalRegistrarPago({
                 aria-label="Plan"
                 value={form.plan}
                 onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
                 placeholder="Ej: Musculación"
               />
             </Field>
@@ -980,7 +980,7 @@ function ModalRegistrarPago({
                   type="number"
                   value={form.monto}
                   onChange={(e) => setForm({ ...form, monto: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
                   placeholder="$"
                   required
                 />
@@ -998,7 +998,7 @@ function ModalRegistrarPago({
                       periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7),
                     }));
                   }}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
                 />
               </Field>
             </div>
@@ -1009,7 +1009,7 @@ function ModalRegistrarPago({
                 type="month"
                 value={form.periodoMes}
                 onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
                 required
               />
             </Field>
@@ -1019,11 +1019,11 @@ function ModalRegistrarPago({
                 <select
                   value={form.metodo}
                   onChange={(e) => setForm({ ...form, metodo: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
                 >
-                  <option>Efectivo</option>
-                  <option>Transferencia</option>
-                  <option>Tarjeta</option>
+                  <option className="bg-slate-900 text-white">Efectivo</option>
+                  <option className="bg-slate-900 text-white">Transferencia</option>
+                  <option className="bg-slate-900 text-white">Tarjeta</option>
                 </select>
               </Field>
               <Field label="Estado">
@@ -1032,24 +1032,24 @@ function ModalRegistrarPago({
                   onChange={(e) =>
                     setForm({ ...form, estado: e.target.value as EstadoPago })
                   }
-                  className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
                 >
-                  <option value="PAGADO">Pagado</option>
-                  <option value="PENDIENTE">Pendiente</option>
-                  <option value="VENCIDO">Vencido</option>
+                  <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
+                  <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
+                  <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
                 </select>
               </Field>
             </div>
 
             {errorValidacion && (
-              <p className="text-xs font-semibold text-rose-500 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+              <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
                 {errorValidacion}
               </p>
             )}
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition-[color,background-color] duration-200 active:scale-95"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
             >
               Guardar pago
             </button>
@@ -1104,9 +1104,9 @@ function SeccionNotificarWhatsapp({
   };
 
   return (
-    <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
-      <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-        <MessageCircle className="w-4 h-4 text-emerald-600" />
+    <div className="border-t border-slate-800/80 pt-4 mt-2 space-y-4">
+      <p className="text-sm font-bold text-slate-300 flex items-center gap-2">
+        <MessageCircle className="w-4 h-4 text-emerald-400" />
         Notificar por WhatsApp (opcional)
       </p>
 
@@ -1118,7 +1118,7 @@ function SeccionNotificarWhatsapp({
           value={celular}
           onChange={(e) => onCelularChange(soloNumerosLocal(e.target.value).slice(0, 13))}
           maxLength={13}
-          className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
           placeholder="Ej. 2611234567 o 5492611234567"
         />
       </Field>
@@ -1129,8 +1129,8 @@ function SeccionNotificarWhatsapp({
           onClick={() => setTipoMensaje("pago")}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
             tipoMensaje === "pago"
-              ? "bg-blue-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:bg-slate-800 hover:text-white"
           }`}
         >
           Confirmación de pago
@@ -1140,8 +1140,8 @@ function SeccionNotificarWhatsapp({
           onClick={() => setTipoMensaje("bienvenida")}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
             tipoMensaje === "bienvenida"
-              ? "bg-blue-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:bg-slate-800 hover:text-white"
           }`}
         >
           Primera inscripción
@@ -1155,7 +1155,7 @@ function SeccionNotificarWhatsapp({
               aria-label="Usuario"
               value={usuarioApp}
               onChange={(e) => setUsuarioApp(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
               placeholder="Ej. lucia.fernandez"
             />
           </Field>
@@ -1165,13 +1165,13 @@ function SeccionNotificarWhatsapp({
                 aria-label="Contraseña"
                 value={passwordApp}
                 onChange={(e) => setPasswordApp(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
                 placeholder="Generala"
               />
               <button
                 type="button"
                 onClick={() => setPasswordApp(generarPassword())}
-                className="px-3 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-300 transition-colors active:scale-95 shrink-0"
+                className="px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 hover:text-white transition-colors active:scale-95 shrink-0"
               >
                 Generar
               </button>
@@ -1186,7 +1186,7 @@ function SeccionNotificarWhatsapp({
           value={mensaje}
           onChange={(e) => setMensaje(e.target.value)}
           rows={4}
-          className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+          className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm resize-none"
           placeholder="Generá el mensaje o escribí uno propio..."
         />
       </Field>
@@ -1195,7 +1195,7 @@ function SeccionNotificarWhatsapp({
         <button
           type="button"
           onClick={generarMensaje}
-          className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-[color,background-color] duration-200 active:scale-95"
+          className="flex-1 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-sm font-semibold hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
         >
           Generar mensaje
         </button>
@@ -1226,7 +1226,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-slate-500 mb-1.5 block">
+      <span className="text-xs font-bold text-slate-400 mb-1.5 block">
         {label}
       </span>
       {children}

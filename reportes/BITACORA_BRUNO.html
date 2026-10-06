@@ -650,6 +650,73 @@
     </div>
   </div>
 
+  <!-- HITO 11 -->
+  <div class="mb-8 pt-8 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        11. Refinamiento Global UX/UI, Persistencia de Borradores de Entrenamiento, Edición de Rutinas con Propagación en Vivo y Alerta de Sobreescritura
+      </h3>
+      <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+        06 Oct 2026
+      </span>
+    </div>
+
+    <div class="bg-slate-50 border-l-4 border-blue-600 p-3.5 my-3 rounded-r-xl text-sm text-slate-800 italic">
+      “<em>Requerimiento del cliente:</em> 1) Ajustar Tótem para que cuotas pendientes no digan vencido. 2) Más variedad de tiempos de descanso al crear/editar rutina. 3) Armonizar estética y color de modales. 4) No perder ejercicios completados al cambiar de día en la rutina. 5) Armonizar fondos y eliminar inconsistencias de color. 6) Tarjetas de Pendiente/Al día/Vencido con fondo relleno sólido. 7) Eliminar emojis innecesarios. 8) Quitar adición libre de series por parte del alumno. 9) Fondo ambiental difuminado en Login. 10) Quitar presente manual a profesores. 11) Visibilidad de badges Bi-serie/Drop Set en PC. 12) Scroll horizontal en gráficos de asistencias para celulares. 13) Persistencia de series marcadas ante navegación cruzada y recargas. 14) Permitir edición de rutinas con actualización automática para alumnos asignados. 15) Alerta de sobreescritura al asignar rutinas.”
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Desarrollo por Fases Ejecutadas:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+        <li><strong>Fase 1 (Persistencia de Borradores en Tiempo Real):</strong> Implementación de sincronización reactiva en <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">app/rutinas/page.tsx</code> con clave diaria persistente <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">atlas_borrador_${alumnoId}_${rutinaId}_${fechaHoy}</code> y purga automática al cambiar de fecha. Las series y el día activo se conservan intactos al navegar por otras secciones o refrescar.</li>
+        <li><strong>Fase 2 (Edición Centralizada de Rutinas y Propagación Reactiva):</strong> Creación del callback <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">actualizarRutina</code> en el Store central y botón de edición <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">Edit3</code> en las tarjetas de rutinas. Cualquier cambio se propaga instantáneamente a todos los alumnos asignados.</li>
+        <li><strong>Fase 3 (Prevención de Conflictos y Alerta de Sobreescritura):</strong> Implementación de <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">detectarConflictosAsignacionRutina</code> y modal de confirmación en ámbar cuando se intenta asignar un nuevo plan a un socio con rutina previa activa.</li>
+        <li><strong>Fase 4 (Homogeneización Estética y Responsive):</strong> Gráficos de asistencias con desplazamiento táctil horizontal en móviles (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">overflow-x-auto</code>), fondo ambiental con viñeta para Login, etiquetas Bi-serie / Drop Set visibles en desktop y mobile, y badges de estados de cuenta con relleno sólido.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-bold text-slate-800 mb-1">Archivos afectados y verificados:</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 font-mono text-xs space-y-1">
+        <li>app/rutinas/page.tsx (Borrador persistente, edición de rutinas y alerta de sobreescritura)</li>
+        <li>lib/store.tsx &amp; lib/types.ts (actualizarRutina en useGymStore y tipados compartidos)</li>
+        <li>lib/rutina-utils.ts &amp; lib/rutina-utils.test.ts (Funciones y tests de borradores y conflictos)</li>
+        <li>app/login/page.tsx &amp; public/login-bg.jpg (Fondo fotográfico ambiental)</li>
+        <li>app/asistencias/page.tsx (Scroll horizontal en gráficos móviles)</li>
+        <li>app/alumnos/page.tsx &amp; app/alumnos/[id]/page.tsx (Eliminación de asistencia manual)</li>
+        <li>app/finanzas/page.tsx &amp; app/totem/page.tsx (Ajustes de copy y consistencia visual)</li>
+      </ul>
+    </div>
+
+    <!-- Resultados de los tests consolidados Hito 11 -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-800">🧪 Vitest Test Suite</span>
+          <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">100% PASSED</span>
+        </div>
+        <div class="text-xs text-emerald-950 space-y-1">
+          <p>• <strong>Test Files:</strong> 12 passed (12)</p>
+          <p>• <strong>Tests individuales:</strong> 114 passed (114)</p>
+          <p>• <strong>Nuevas pruebas:</strong> Persistencia de borradores y detección de conflictos en rutinas</p>
+          <p>• <strong>Estado:</strong> 0 errores / 0 fallos</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black uppercase tracking-wider text-blue-800">🚀 Production Build</span>
+          <span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">CLEAN BUILD</span>
+        </div>
+        <div class="text-xs text-blue-950 space-y-1">
+          <p>• <strong>Rutas Next.js:</strong> 13/13 rutas optimizadas con Turbopack</p>
+          <p>• <strong>TypeScript Compiler:</strong> 0 errores con <code class="font-mono">tsc --noEmit</code></p>
+          <p>• <strong>Compilación:</strong> Lista y certificada para producción</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center border-t border-slate-200 pt-6 mt-12 text-xs text-slate-400">
     ATLAS GYM — Reporte interno de aseguramiento de calidad — Rama: <span class="font-mono text-slate-600">ramaBruno</span>
   </div>

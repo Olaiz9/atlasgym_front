@@ -57,18 +57,18 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
         if (e.target === dialogRef.current) handleCerrar()
       }}
       aria-labelledby="modal-nuevo-alumno-title"
-      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/60 p-4 backdrop-blur-sm backdrop:bg-transparent transition-opacity duration-200"
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-none bg-slate-950/80 p-4 backdrop-blur-sm backdrop:bg-transparent transition-opacity duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md scale-100 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-md scale-100 rounded-3xl border border-slate-800 bg-slate-900 p-7 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-slate-900">Nuevo alumno</h2>
-            <p className="mt-1 text-sm font-medium text-slate-500">Agrega los datos para crear un perfil.</p>
+            <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-white">Nuevo alumno</h2>
+            <p className="mt-1 text-xs text-slate-400">Agregá los datos personales para crear su perfil en ATLAS.</p>
           </div>
-          <button onClick={handleCerrar} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={handleCerrar} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
             <X className="size-5" />
           </button>
         </div>
@@ -89,9 +89,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             toast(`Alumno "${formAlumno.nombre}" registrado exitosamente`, 'success')
             handleCerrar()
           }}
-          className="mt-6 flex flex-col gap-5"
+          className="mt-6 flex flex-col gap-4"
         >
-          <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
             Nombre completo
             <input
               required
@@ -99,13 +99,13 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               value={formAlumno.nombre}
               onChange={(e) => setFormAlumno({ ...formAlumno, nombre: soloLetras(e.target.value) })}
               maxLength={60}
-              className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.nombre ? 'border-rose-400' : 'border-slate-200'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.nombre ? 'border-rose-500' : 'border-slate-700'}`}
               placeholder="Ej. Martín Gómez"
             />
-            {erroresAlumno.nombre && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.nombre}</span>}
+            {erroresAlumno.nombre && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.nombre}</span>}
           </label>
 
-          <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
             Correo electrónico
             <input
               required
@@ -113,14 +113,14 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               value={formAlumno.email}
               onChange={(e) => setFormAlumno({ ...formAlumno, email: e.target.value })}
               maxLength={80}
-              className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-400' : 'border-slate-200'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-500' : 'border-slate-700'}`}
               placeholder="correo@ejemplo.com"
             />
-            {erroresAlumno.email && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.email}</span>}
+            {erroresAlumno.email && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.email}</span>}
           </label>
 
-          <div className="grid grid-cols-2 gap-4">
-            <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
               DNI
               <input
                 required
@@ -128,12 +128,12 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 value={formAlumno.dni}
                 onChange={(e) => setFormAlumno({ ...formAlumno, dni: soloNumeros(e.target.value).slice(0, 8) })}
                 maxLength={8}
-                className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.dni ? 'border-rose-400' : 'border-slate-200'}`}
+                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.dni ? 'border-rose-500' : 'border-slate-700'}`}
                 placeholder="Ej. 32456789"
               />
-              {erroresAlumno.dni && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.dni}</span>}
+              {erroresAlumno.dni && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.dni}</span>}
             </label>
-            <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
               Celular
               <input
                 required
@@ -142,14 +142,14 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 value={formAlumno.celular}
                 onChange={(e) => setFormAlumno({ ...formAlumno, celular: soloNumeros(e.target.value).slice(0, 13) })}
                 maxLength={13}
-                className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.celular ? 'border-rose-400' : 'border-slate-200'}`}
+                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.celular ? 'border-rose-500' : 'border-slate-700'}`}
                 placeholder="Ej. 5491112345678"
               />
-              {erroresAlumno.celular && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.celular}</span>}
+              {erroresAlumno.celular && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.celular}</span>}
             </label>
           </div>
 
-          <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
             Plan asignado
             <select
               aria-label="Plan asignado"
@@ -167,21 +167,21 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                   setErroresAlumno((prev) => ({ ...prev, plan: '' }))
                 }
               }}
-              className={`h-12 rounded-xl border bg-slate-50 px-4 font-medium text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 cursor-pointer ${erroresAlumno.plan ? 'border-rose-400' : 'border-slate-200'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 cursor-pointer ${erroresAlumno.plan ? 'border-rose-500' : 'border-slate-700'}`}
             >
-              <option value="" disabled>Seleccioná un plan activo</option>
+              <option value="" disabled className="bg-slate-900 text-slate-400">Seleccioná un plan activo</option>
               {planesActivos.map((p) => (
-                <option key={p.id} value={p.id} className="font-semibold py-2">
+                <option key={p.id} value={p.id} className="bg-slate-900 text-white font-semibold py-2">
                   {p.nombre} — ${p.precio.toLocaleString('es-AR')}
                 </option>
               ))}
             </select>
-            {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-500">{erroresAlumno.plan}</span>}
+            {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.plan}</span>}
           </label>
 
           <div className="mt-4 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCerrar} className="h-12 rounded-xl border-slate-200 px-6 font-bold text-slate-600 hover:bg-slate-50">Cancelar</Button>
-            <Button type="submit" className="h-12 rounded-xl bg-blue-600 px-8 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+            <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
+            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
           </div>
         </form>
       </div>
