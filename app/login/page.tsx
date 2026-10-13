@@ -69,7 +69,7 @@ export default function LoginPage() {
     }
 
     setCargando(true)
-    iniciarSesion(rol, email)
+    iniciarSesion(rol, email, password)
 
     setTimeout(() => {
       setCargando(false)
