@@ -54,27 +54,22 @@ export default function LoginPage() {
 
   useEscapeKey(cerrarModalTutorial, mostrarModalTutorial)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    if (rol === 'ADMIN' && password !== 'admin123') {
-      setError('Contraseña incorrecta para Administrador (demo: admin123)')
-      return
-    }
-
-    if (rol === 'ALUMNO' && password !== 'alumno123') {
-      setError('Contraseña incorrecta para Alumno (demo: alumno123)')
-      return
-    }
-
     setCargando(true)
-    iniciarSesion(rol, email, password)
+
+    const resultado = await iniciarSesion(rol, email, password)
+    if (!resultado.ok) {
+      setCargando(false)
+      setError(resultado.error || 'Usuario o contraseña incorrectos.')
+      return
+    }
 
     setTimeout(() => {
       setCargando(false)
       router.push('/')
-    }, 400)
+    }, 300)
   }
 
   const handleQuickDemo = (demoRol: 'ADMIN' | 'ALUMNO') => {
@@ -155,20 +150,21 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input Email */}
+            {/* Input Usuario / Email */}
             <div>
               <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                Correo electrónico
+                {rol === 'ADMIN' ? 'Correo electrónico' : 'Usuario o correo electrónico'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                 <input
                   id="login-email"
-                  type="email"
+                  type="text"
+                  autoComplete="username"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'tu.email@ejemplo.com'}
+                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'Ej. bruno9 o tu.email@ejemplo.com'}
                   className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>

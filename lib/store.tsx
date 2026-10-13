@@ -51,6 +51,7 @@ import {
   apiActualizarEstadoPago,
   apiActualizarPlan,
   apiActualizarRutina,
+  apiAsignarCredencialesAlumno,
   apiAsignarRutina,
   apiCheckInTotem,
   apiCrearAlumno,
@@ -115,13 +116,18 @@ interface AppDataContextValue {
   avisos: Aviso[];
   usuarioActual: UsuarioSesion | null;
   actualizarUsuarioActual: (cambios: Partial<UsuarioSesion>) => void;
-  iniciarSesion: (rol: "ADMIN" | "ALUMNO", email?: string, password?: string) => void;
+  iniciarSesion: (
+    rol: "ADMIN" | "ALUMNO",
+    email?: string,
+    password?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
+  asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
-  agregarPago: (pago: Omit<Pago, "id">) => void;
+  agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   eliminarPago: (id: string) => void;
   agregarRutina: (rutina: Omit<Rutina, "id">) => Rutina;
@@ -476,49 +482,102 @@ function useGymStore(): AppDataContextValue {
   }, []);
 
   const iniciarSesion = useCallback(
-    (rol: "ADMIN" | "ALUMNO", email?: string, password?: string) => {
+    async (
+      rol: "ADMIN" | "ALUMNO",
+      email?: string,
+      password?: string
+    ): Promise<{ ok: boolean; error?: string }> => {
+      const emailEfectivo =
+        rol === "ADMIN"
+          ? email?.trim() || "admin@atlasgym.com"
+          : email?.trim() || "lucia.fernandez@mail.com";
+      const passwordEfectivo = password || (rol === "ADMIN" ? "admin123" : "alumno123");
+
+      if (isApiRuntimeEnabled()) {
+        try {
+          const res = await apiLogin(emailEfectivo, passwordEfectivo);
+          if (res.token) {
+            setStoredJwtToken(res.token);
+          }
+          const sesionReal = mapLoginResponseToUsuarioSesion(res);
+          setUsuarioActual(sesionReal);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("atlas_sesion_v1", JSON.stringify(sesionReal));
+          }
+          hidratarDesdeBackend(sesionReal);
+          return { ok: true };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "";
+          const esFalloRed =
+            msg.includes("Failed to fetch") ||
+            msg.includes("NetworkError") ||
+            msg.includes("Load failed");
+          if (!esFalloRed) {
+            return {
+              ok: false,
+              error: msg || "Usuario o contraseña incorrectos.",
+            };
+          }
+          // Si el backend está apagado (modo offline), continuamos al fallback local
+        }
+      }
+
+      // Fallback offline / tests
       let nuevoUsuario: UsuarioSesion;
       if (rol === "ADMIN") {
+        if (password && password !== "admin123") {
+          return { ok: false, error: "Contraseña incorrecta para Administrador." };
+        }
         nuevoUsuario = USUARIO_ADMIN_DEFAULT;
       } else {
-        const alumno = email
-          ? alumnos.find((a) => a.email?.toLowerCase() === email.toLowerCase()) ||
-            alumnos.find((a) => a.activo)
-          : alumnos.find((a) => a.activo);
-        nuevoUsuario = {
-          id: "u_alumno_1",
-          nombre: alumno ? alumno.nombre : email ? email.split("@")[0] : "Alumno Atlas",
-          email: alumno?.email || email || "lucia.fernandez@mail.com",
-          rol: "ALUMNO",
-          alumnoId: alumno?.id,
-        };
+        let credencialesGuardadas: Record<string, { usuario: string; password: string }> = {};
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+            if (raw) credencialesGuardadas = JSON.parse(raw);
+          } catch {}
+        }
+
+        const entradaCredencial = Object.entries(credencialesGuardadas).find(
+          ([, cred]) => cred.usuario.toLowerCase() === emailEfectivo.toLowerCase()
+        );
+
+        if (entradaCredencial) {
+          const [alumnoIdCred, cred] = entradaCredencial;
+          if (password && password !== cred.password) {
+            return { ok: false, error: "Usuario o contraseña incorrectos." };
+          }
+          const al = alumnos.find((a) => a.id === alumnoIdCred);
+          nuevoUsuario = {
+            id: `u_alumno_${alumnoIdCred}`,
+            nombre: al?.nombre || cred.usuario,
+            email: al?.email || cred.usuario,
+            rol: "ALUMNO",
+            alumnoId: al?.id || alumnoIdCred,
+          };
+        } else {
+          if (password && password !== "alumno123") {
+            return { ok: false, error: "Usuario o contraseña incorrectos." };
+          }
+          const alumno = email
+            ? alumnos.find((a) => a.email?.toLowerCase() === email.toLowerCase()) ||
+              alumnos.find((a) => a.activo)
+            : alumnos.find((a) => a.activo);
+          nuevoUsuario = {
+            id: "u_alumno_1",
+            nombre: alumno ? alumno.nombre : email ? email.split("@")[0] : "Alumno Atlas",
+            email: alumno?.email || email || "lucia.fernandez@mail.com",
+            rol: "ALUMNO",
+            alumnoId: alumno?.id,
+          };
+        }
       }
+
       setUsuarioActual(nuevoUsuario);
       if (typeof window !== "undefined") {
         localStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
       }
-
-      if (isApiRuntimeEnabled()) {
-        const emailEfectivo =
-          rol === "ADMIN"
-            ? email?.trim() || "admin@atlasgym.com"
-            : email?.trim() || "lucia.fernandez@mail.com";
-        const passwordEfectivo = password || (rol === "ADMIN" ? "admin123" : "alumno123");
-
-        apiLogin(emailEfectivo, passwordEfectivo)
-          .then((res) => {
-            if (res.token) {
-              setStoredJwtToken(res.token);
-            }
-            const sesionReal = mapLoginResponseToUsuarioSesion(res);
-            setUsuarioActual(sesionReal);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("atlas_sesion_v1", JSON.stringify(sesionReal));
-            }
-            hidratarDesdeBackend(sesionReal);
-          })
-          .catch(() => {});
-      }
+      return { ok: true };
     },
     [alumnos, hidratarDesdeBackend]
   );
@@ -623,28 +682,64 @@ function useGymStore(): AppDataContextValue {
     [alumnos, pagos, rutinas]
   );
 
+  const asignarCredencialesAlumno = useCallback(
+    async (alumnoId: string, usuario: string, password: string) => {
+      const u = usuario.trim();
+      const p = password.trim();
+      if (!u || !p) return;
+
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+          const mapa = raw ? JSON.parse(raw) : {};
+          mapa[alumnoId] = { usuario: u, password: p };
+          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
+        } catch {}
+      }
+
+      const numId = parseNumericId(alumnoId);
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
+        await apiAsignarCredencialesAlumno(numId, u, p);
+      }
+    },
+    []
+  );
+
   const marcarAsistenciaAlumno = useCallback((id: string, fecha?: string) => {
     const hoy = fecha || fechaLocalHoy();
     setAlumnos((prev) => prev.map((a) => (a.id === id ? { ...a, ultimaAsistencia: hoy } : a)));
   }, []);
 
   const agregarPago = useCallback(
-    (pago: Omit<Pago, "id">) => {
-      const alumno = alumnos.find((a) => a.id === pago.alumnoId);
-      const alumnoNombreHistorico = pago.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
-      const planId = pago.planId || alumno?.planId;
+    (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => {
+      const { usuarioApp, passwordApp, ...pagoBase } = pago;
+      const alumno = alumnos.find((a) => a.id === pagoBase.alumnoId);
+      const alumnoNombreHistorico = pagoBase.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
+      const planId = pagoBase.planId || alumno?.planId;
       const tempId = crypto.randomUUID();
       const nuevoPago: Pago = {
-        ...pago,
+        ...pagoBase,
         alumnoNombreHistorico,
         planId,
         id: tempId,
       };
 
+      if (usuarioApp?.trim() && passwordApp?.trim() && typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+          const mapa = raw ? JSON.parse(raw) : {};
+          mapa[pagoBase.alumnoId] = {
+            usuario: usuarioApp.trim(),
+            password: passwordApp.trim(),
+          };
+          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
+        } catch {}
+      }
+
       setPagos((prev) => {
         const nuevosPagos = [nuevoPago, ...prev];
         const nuevoEstado = estadoCuentaDeAlumno(
-          pago.alumnoId,
+          pagoBase.alumnoId,
           nuevosPagos,
           alumno?.fechaAlta,
           alumno ? alumno.activo : true
@@ -652,7 +747,7 @@ function useGymStore(): AppDataContextValue {
 
         setAsistencias((asistPrev) => {
           const actualizadas = asistPrev.map((asist) =>
-            asist.alumnoId === pago.alumnoId && asist.fecha === fechaLocalHoy()
+            asist.alumnoId === pagoBase.alumnoId && asist.fecha === fechaLocalHoy()
               ? { ...asist, estadoCuenta: nuevoEstado }
               : asist
           );
@@ -1196,6 +1291,7 @@ function useGymStore(): AppDataContextValue {
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
+      asignarCredencialesAlumno,
       marcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,
@@ -1247,6 +1343,7 @@ function useGymStore(): AppDataContextValue {
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
+      asignarCredencialesAlumno,
       marcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,

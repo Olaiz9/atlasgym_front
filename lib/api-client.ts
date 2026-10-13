@@ -126,6 +126,17 @@ export async function apiDarDeBajaAlumno(id: number): Promise<void> {
   });
 }
 
+export async function apiAsignarCredencialesAlumno(
+  id: number,
+  usuario: string,
+  password: string
+): Promise<BackendAlumnoDto> {
+  return apiFetch<BackendAlumnoDto>(`/alumnos/${id}/credenciales`, {
+    method: "POST",
+    body: JSON.stringify({ usuario, password }),
+  });
+}
+
 // ── Endpoints de Planes ─────────────────────────────────────────────────────
 
 export async function apiGetPlanes(): Promise<BackendPlanDto[]> {

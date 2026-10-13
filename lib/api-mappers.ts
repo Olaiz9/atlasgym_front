@@ -280,7 +280,9 @@ export function mapPagoDtoToFront(dto: BackendPagoDto): Pago {
   };
 }
 
-export function mapPagoFrontToRequestDto(pago: Omit<Pago, "id">) {
+export function mapPagoFrontToRequestDto(
+  pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+) {
   const periodo = pago.periodoMes || pago.fecha?.slice(0, 7) || new Date().toISOString().slice(0, 7);
   return {
     alumnoId: parseNumericId(pago.alumnoId) ?? 1,
@@ -289,6 +291,8 @@ export function mapPagoFrontToRequestDto(pago: Omit<Pago, "id">) {
     metodo: mapMetodoPagoToBack(pago.metodo),
     periodoMes: periodo,
     comprobante: null,
+    usuarioApp: pago.usuarioApp?.trim() || null,
+    passwordApp: pago.passwordApp?.trim() || null,
   };
 }
 

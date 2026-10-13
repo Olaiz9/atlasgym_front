@@ -314,8 +314,17 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
 // ---------- Componente principal ----------
 export default function FinanzasPage() {
-  const { alumnos, planes, pagos, agregarPago, actualizarEstadoPago, eliminarPago, getAlumno, usuarioActual } =
-    useAppData();
+  const {
+    alumnos,
+    planes,
+    pagos,
+    agregarPago,
+    actualizarEstadoPago,
+    eliminarPago,
+    asignarCredencialesAlumno,
+    getAlumno,
+    usuarioActual,
+  } = useAppData();
   const { toast } = useToast();
 
   const [mes, setMes] = useState<string>(() => mesActualISO());
@@ -429,10 +438,19 @@ export default function FinanzasPage() {
     toast("Planilla de finanzas exportada a CSV con éxito", "success");
   };
 
-  const handleNuevoPago = (nuevo: Omit<Pago, "id">) => {
+  const handleNuevoPago = (
+    nuevo: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+  ) => {
     agregarPago(nuevo);
     setModalAbierto(false);
-    toast("Pago registrado con éxito", "success");
+    if (nuevo.usuarioApp && nuevo.passwordApp) {
+      toast(
+        `Pago registrado y credenciales activadas para "${nuevo.usuarioApp}"`,
+        "success"
+      );
+    } else {
+      toast("Pago registrado con éxito", "success");
+    }
   };
 
   const confirmarEliminar = () => {
@@ -727,6 +745,7 @@ export default function FinanzasPage() {
           planes={planes}
           onClose={() => setModalAbierto(false)}
           onSubmit={handleNuevoPago}
+          onAsignarCredenciales={asignarCredencialesAlumno}
         />
       )}
 
@@ -802,10 +821,50 @@ function mensajeBienvenidaTemplate(nombre: string, usuario: string, password: st
 }
 
 function generarPassword() {
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  const lower = "abcdefghjkmnpqrstuvwxyz";
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const digits = "23456789";
+  const symbols = "!@#$%&*";
+  const all = lower + upper + digits + symbols;
+
+  const rnd = new Uint8Array(10);
+  crypto.getRandomValues(rnd);
+
+  const chars = [
+    upper[rnd[0] % upper.length],
+    lower[rnd[1] % lower.length],
+    digits[rnd[2] % digits.length],
+    symbols[rnd[3] % symbols.length],
+    ...Array.from(rnd.slice(4), (b) => all[b % all.length]),
+  ];
+
+  // Fisher-Yates shuffle con entropía criptográfica
+  const shuffleBytes = new Uint8Array(chars.length);
+  crypto.getRandomValues(shuffleBytes);
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = shuffleBytes[i] % (i + 1);
+    const tmp = chars[i];
+    chars[i] = chars[j];
+    chars[j] = tmp;
+  }
+
+  return chars.join("");
+}
+
+function sugerirUsuarioAlumno(alumno?: Alumno): string {
+  if (!alumno) return "";
+  if (alumno.email && alumno.email.includes("@")) {
+    return alumno.email.split("@")[0].trim().toLowerCase();
+  }
+  const baseNombre = alumno.nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)[0]
+    .replace(/[^a-z0-9]/g, "");
+  const sufijoDni = alumno.dni ? alumno.dni.replace(/\D/g, "").slice(-2) : "";
+  return `${baseNombre}${sufijoDni}`;
 }
 
 // ---------- Modal: registrar pago ----------
@@ -814,11 +873,13 @@ function ModalRegistrarPago({
   planes,
   onClose,
   onSubmit,
+  onAsignarCredenciales,
 }: {
   alumnos: Alumno[];
   planes: Plan[];
   onClose: () => void;
-  onSubmit: (pago: Omit<Pago, "id">) => void;
+  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
   const primerAlumno = alumnos[0];
   const obtenerPlanYPrecio = (alumno?: Alumno) => {
@@ -836,7 +897,7 @@ function ModalRegistrarPago({
 
   const inicial = obtenerPlanYPrecio(primerAlumno);
 
-  const [busquedaAlumno, setBusquedaAlumno] = useState('')
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
   const [form, setForm] = useState({
     alumnoId: primerAlumno?.id ?? "",
     plan: inicial.planNombre,
@@ -848,9 +909,17 @@ function ModalRegistrarPago({
   });
 
   const [celular, setCelular] = useState(primerAlumno?.celular ?? "");
+  const [tipoMensaje, setTipoMensaje] = useState<"pago" | "bienvenida">("pago");
+  const [usuarioApp, setUsuarioApp] = useState(() => sugerirUsuarioAlumno(primerAlumno));
+  const [passwordApp, setPasswordApp] = useState("");
   const [errorValidacion, setErrorValidacion] = useState("");
 
-  const alumnosFiltrados = alumnos.filter(a => !busquedaAlumno.trim() || a.nombre.toLowerCase().includes(busquedaAlumno.trim().toLowerCase()) || (a.dni && a.dni.includes(busquedaAlumno.trim())))
+  const alumnosFiltrados = alumnos.filter(
+    (a) =>
+      !busquedaAlumno.trim() ||
+      a.nombre.toLowerCase().includes(busquedaAlumno.trim().toLowerCase()) ||
+      (a.dni && a.dni.includes(busquedaAlumno.trim()))
+  );
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
 
   const handleAlumnoChange = (nuevoId: string) => {
@@ -867,6 +936,7 @@ function ModalRegistrarPago({
       monto: infoPlan.planPrecio,
     }));
     setCelular(alumno.celular ?? "");
+    setUsuarioApp(sugerirUsuarioAlumno(alumno));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -884,17 +954,32 @@ function ModalRegistrarPago({
       setErrorValidacion("Ingresá una fecha válida (YYYY-MM-DD)");
       return;
     }
+    if (tipoMensaje === "bienvenida" && (!usuarioApp.trim() || !passwordApp.trim())) {
+      setErrorValidacion(
+        "Para Primera inscripción, completá el Usuario y generá una Contraseña segura."
+      );
+      return;
+    }
     setErrorValidacion("");
     const planObj = planes.find(
       (p) =>
         (alumnoSeleccionado?.planId && p.id === alumnoSeleccionado.planId) ||
         p.nombre.trim().toLowerCase() === form.plan.trim().toLowerCase()
     );
+    const incluyeCredenciales =
+      tipoMensaje === "bienvenida" && usuarioApp.trim() && passwordApp.trim();
+
     onSubmit({
       ...form,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
       monto: montoNum,
       periodoMes: form.periodoMes || form.fecha.slice(0, 7),
+      ...(incluyeCredenciales
+        ? {
+            usuarioApp: usuarioApp.trim(),
+            passwordApp: passwordApp.trim(),
+          }
+        : {}),
     });
   };
 
@@ -1056,11 +1141,29 @@ function ModalRegistrarPago({
 
             {/* ---------- Notificación por WhatsApp ---------- */}
             <SeccionNotificarWhatsapp
+              alumnoId={form.alumnoId}
               alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
               plan={form.plan}
               monto={form.monto}
               celular={celular}
               onCelularChange={setCelular}
+              tipoMensaje={tipoMensaje}
+              onTipoMensajeChange={(nuevoTipo) => {
+                setTipoMensaje(nuevoTipo);
+                if (nuevoTipo === "bienvenida") {
+                  if (!usuarioApp.trim() && alumnoSeleccionado) {
+                    setUsuarioApp(sugerirUsuarioAlumno(alumnoSeleccionado));
+                  }
+                  if (!passwordApp.trim()) {
+                    setPasswordApp(generarPassword());
+                  }
+                }
+              }}
+              usuarioApp={usuarioApp}
+              onUsuarioAppChange={setUsuarioApp}
+              passwordApp={passwordApp}
+              onPasswordAppChange={setPasswordApp}
+              onAsignarCredenciales={onAsignarCredenciales}
             />
           </form>
         )}
@@ -1071,22 +1174,36 @@ function ModalRegistrarPago({
 
 // ---------- Subcomponente: Notificación por WhatsApp ----------
 function SeccionNotificarWhatsapp({
+  alumnoId,
   alumnoNombre,
   plan,
   monto,
   celular,
   onCelularChange,
+  tipoMensaje,
+  onTipoMensajeChange,
+  usuarioApp,
+  onUsuarioAppChange,
+  passwordApp,
+  onPasswordAppChange,
+  onAsignarCredenciales,
 }: {
+  alumnoId: string;
   alumnoNombre: string;
   plan: string;
   monto: string;
   celular: string;
   onCelularChange: (cel: string) => void;
+  tipoMensaje: "pago" | "bienvenida";
+  onTipoMensajeChange: (tipo: "pago" | "bienvenida") => void;
+  usuarioApp: string;
+  onUsuarioAppChange: (u: string) => void;
+  passwordApp: string;
+  onPasswordAppChange: (p: string) => void;
+  onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
-  const [tipoMensaje, setTipoMensaje] = useState<"pago" | "bienvenida">("pago");
-  const [usuarioApp, setUsuarioApp] = useState("");
-  const [passwordApp, setPasswordApp] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [credencialesGuardadas, setCredencialesGuardadas] = useState(false);
 
   const generarMensaje = () => {
     const texto =
@@ -1094,12 +1211,22 @@ function SeccionNotificarWhatsapp({
         ? mensajePagoTemplate(alumnoNombre, plan, monto)
         : mensajeBienvenidaTemplate(alumnoNombre, usuarioApp, passwordApp);
     setMensaje(texto);
+    if (tipoMensaje === "bienvenida" && alumnoId && usuarioApp.trim() && passwordApp.trim()) {
+      onAsignarCredenciales(alumnoId, usuarioApp.trim(), passwordApp.trim())
+        .then(() => setCredencialesGuardadas(true))
+        .catch(() => {});
+    }
   };
 
   const puedeEnviar = celular.replace(/\D/g, "").length >= 10 && mensaje.trim().length > 0;
 
   const enviarWhatsapp = () => {
     if (!puedeEnviar) return;
+    if (tipoMensaje === "bienvenida" && alumnoId && usuarioApp.trim() && passwordApp.trim()) {
+      onAsignarCredenciales(alumnoId, usuarioApp.trim(), passwordApp.trim())
+        .then(() => setCredencialesGuardadas(true))
+        .catch(() => {});
+    }
     window.open(construirLinkWhatsapp(celular, mensaje), "_blank");
   };
 
@@ -1126,7 +1253,7 @@ function SeccionNotificarWhatsapp({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setTipoMensaje("pago")}
+          onClick={() => onTipoMensajeChange("pago")}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
             tipoMensaje === "pago"
               ? "bg-blue-600 text-white shadow-sm"
@@ -1137,7 +1264,7 @@ function SeccionNotificarWhatsapp({
         </button>
         <button
           type="button"
-          onClick={() => setTipoMensaje("bienvenida")}
+          onClick={() => onTipoMensajeChange("bienvenida")}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-[color,background-color] duration-200 ${
             tipoMensaje === "bienvenida"
               ? "bg-blue-600 text-white shadow-sm"
@@ -1149,34 +1276,54 @@ function SeccionNotificarWhatsapp({
       </div>
 
       {tipoMensaje === "bienvenida" && (
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Usuario">
-            <input
-              aria-label="Usuario"
-              value={usuarioApp}
-              onChange={(e) => setUsuarioApp(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-              placeholder="Ej. lucia.fernandez"
-            />
-          </Field>
-          <Field label="Contraseña">
-            <div className="flex gap-1.5">
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Usuario">
               <input
-                aria-label="Contraseña"
-                value={passwordApp}
-                onChange={(e) => setPasswordApp(e.target.value)}
+                aria-label="Usuario"
+                value={usuarioApp}
+                onChange={(e) => {
+                  onUsuarioAppChange(e.target.value);
+                  setCredencialesGuardadas(false);
+                }}
                 className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                placeholder="Generala"
+                placeholder="Ej. lucia.fernandez"
               />
-              <button
-                type="button"
-                onClick={() => setPasswordApp(generarPassword())}
-                className="px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 hover:text-white transition-colors active:scale-95 shrink-0"
-              >
-                Generar
-              </button>
-            </div>
-          </Field>
+            </Field>
+            <Field label="Contraseña">
+              <div className="flex gap-1.5">
+                <input
+                  aria-label="Contraseña"
+                  value={passwordApp}
+                  onChange={(e) => {
+                    onPasswordAppChange(e.target.value);
+                    setCredencialesGuardadas(false);
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm font-mono"
+                  placeholder="Generala"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPasswordAppChange(generarPassword());
+                    setCredencialesGuardadas(false);
+                  }}
+                  className="px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 hover:text-white transition-colors active:scale-95 shrink-0"
+                >
+                  Generar
+                </button>
+              </div>
+            </Field>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            {credencialesGuardadas ? (
+              <span className="text-emerald-400 font-semibold">
+                ✓ Credenciales activadas en el sistema para el ingreso del alumno.
+              </span>
+            ) : (
+              "Al guardar el pago o generar el mensaje, se activará esta cuenta para el portal del alumno."
+            )}
+          </p>
         </div>
       )}
 
