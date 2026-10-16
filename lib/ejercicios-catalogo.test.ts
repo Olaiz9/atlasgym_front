@@ -1,6 +1,8 @@
 // lib/ejercicios-catalogo.test.ts
 import { describe, it, expect } from 'vitest'
 import { CATALOGO_EJERCICIOS_GIF } from './catalogo-ejercicios'
+import { CLASICOS_CURADOS } from './clasicos-curados'
+import { VIDEOS_TECNICA_MOCK } from './mock-data'
 import { buscarVideoParaEjercicio } from './rutina-utils'
 import { Ejercicio } from './types'
 
@@ -66,4 +68,27 @@ describe('Catálogo de Ejercicios GIF y API', () => {
     expect(ejDropSet.tipoSerie).toBe('DROP_SET')
     expect(ejDropSet.descansoSegundos).toBe(90)
   })
+
+  it('no existen IDs duplicados en todo el catálogo de ejercicios', () => {
+    const ids = CATALOGO_EJERCICIOS_GIF.map((e) => e.id)
+    const setIds = new Set(ids)
+    expect(setIds.size).toBe(ids.length)
+  })
+
+  it('CLASICOS_CURADOS están distribuidos en los 6 grupos musculares sin repeticiones', () => {
+    const grupos = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+    grupos.forEach((g) => {
+      const enGrupo = CLASICOS_CURADOS.filter((c: any) => c.grupoMuscular === g)
+      expect(enGrupo.length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  it('VIDEOS_TECNICA_MOCK contiene únicamente videos tutoriales de coaches sin duplicar el catálogo', () => {
+    VIDEOS_TECNICA_MOCK.forEach((v: any) => {
+      expect(v.id.startsWith('cat-')).toBe(false)
+      expect(v.id.startsWith('ex-')).toBe(false)
+      expect(v.videoUrl).toContain('youtube')
+    })
+  })
 })
+

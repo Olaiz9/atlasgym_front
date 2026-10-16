@@ -1,11 +1,13 @@
 'use client'
 
-import { useReducer, useState } from 'react'
+import { useReducer, useState, useMemo } from 'react'
 import { useAppData } from '@/lib/store'
 import { Plan } from '@/lib/types'
-import { Package, Plus, Pencil, Trash2, X, Check, DollarSign, Calendar, Sparkles, AlertCircle } from 'lucide-react'
+import { Package, Plus, Pencil, Trash2, X, Check, DollarSign, Calendar, Sparkles, AlertCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AccesoRestringido } from '@/components/acceso-restringido'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface EstadoModalPlan {
   modalAbierto: boolean
@@ -67,14 +69,30 @@ function reductorModalPlan(estado: EstadoModalPlan, accion: AccionModalPlan): Es
 }
 
 export default function PlanesPage() {
-  const { planes, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
+  const { planes, alumnos, agregarPlan, actualizarPlan, eliminarPlan, usuarioActual } = useAppData()
+  const { toast } = useToast()
   const [form, dispatch] = useReducer(reductorModalPlan, ESTADO_INICIAL_MODAL)
   const [planAEliminar, setPlanAEliminar] = useState<Plan | null>(null)
+
+  useEscapeKey(() => {
+    if (form.modalAbierto) dispatch({ type: 'CERRAR_MODAL' })
+    if (planAEliminar) setPlanAEliminar(null)
+  }, form.modalAbierto || !!planAEliminar)
+
+  const alumnosActivosPorPlan = useMemo(() => {
+    const mapa = new Map<string, number>()
+    alumnos.filter((a) => a.activo).forEach((a) => {
+      if (a.planId) {
+        mapa.set(a.planId, (mapa.get(a.planId) || 0) + 1)
+      }
+    })
+    return mapa
+  }, [alumnos])
 
   if (!usuarioActual || usuarioActual.rol === 'ALUMNO') {
     return (
       <AccesoRestringido
-        titulo="Gestión de Planes Restringida"
+        titulo="Gestión de planes restringida"
         mensaje="La creación, edición y tarifas de los planes de membresía solo pueden ser gestionadas por administradores."
       />
     )
@@ -101,6 +119,7 @@ export default function PlanesPage() {
         diasPorSemana: form.diasPorSemana,
         activo: form.activo,
       })
+      toast(`Plan "${form.nombre.trim()}" actualizado correctamente`, 'info')
     } else {
       agregarPlan({
         nombre: form.nombre.trim(),
@@ -109,6 +128,7 @@ export default function PlanesPage() {
         diasPorSemana: form.diasPorSemana,
         activo: form.activo,
       })
+      toast(`Plan "${form.nombre.trim()}" creado exitosamente`, 'success')
     }
     dispatch({ type: 'CERRAR_MODAL' })
   }
@@ -120,10 +140,10 @@ export default function PlanesPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500 mb-1">
             <Package className="size-4" />
-            <span>Administración de Membresías</span>
+            <span>Administración de membresías</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
-            Planes y <span className="text-blue-500">Tarifas</span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+            Planes y <span className="text-blue-500">tarifas</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-2xl">
             Ajustá los precios de las cuotas, creá nuevos planes o actualizá las condiciones de cada pase. Los cambios impactan inmediatamente en Alumnos y Finanzas.
@@ -136,7 +156,7 @@ export default function PlanesPage() {
             className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
-            Nuevo Plan
+            Nuevo plan
           </Button>
         )}
       </div>
@@ -156,10 +176,16 @@ export default function PlanesPage() {
               {/* Header de la tarjeta */}
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-blue-600/10 px-2.5 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/20">
-                    <Calendar className="size-3" />
-                    {plan.diasPorSemana || 'Pase Libre'}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-600/10 px-2.5 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/20">
+                      <Calendar className="size-3" />
+                      {plan.diasPorSemana || 'Pase Libre'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-800/80 px-2 py-0.5 text-xs font-semibold text-slate-300 border border-slate-700/80">
+                      <Users className="size-3 text-blue-400" />
+                      {alumnosActivosPorPlan.get(plan.id) ?? 0} socios activos
+                    </span>
+                  </div>
                   <h3 className="mt-3 text-2xl font-black text-white">{plan.nombre}</h3>
                 </div>
 
@@ -239,7 +265,7 @@ export default function PlanesPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 id="modal-plan-title" className="text-2xl font-black text-white">
-                  {form.planAEditar ? 'Modificar Plan' : 'Nuevo Plan de Gimnasio'}
+                  {form.planAEditar ? 'Modificar plan' : 'Nuevo plan de gimnasio'}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
                   {form.planAEditar
@@ -258,10 +284,11 @@ export default function PlanesPage() {
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <label htmlFor="plan-nombre" className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
-                Nombre del Plan
+                Nombre del plan
                 <input
                   id="plan-nombre"
                   required
+                  autoFocus
                   placeholder="Ej: Pase Libre Musculación"
                   value={form.nombre}
                   onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'nombre', valor: e.target.value })}
@@ -351,8 +378,9 @@ export default function PlanesPage() {
           onConfirm={() => {
             const res = eliminarPlan(planAEliminar.id)
             if (!res.ok) {
-              alert(res.motivo)
+              toast(res.motivo || 'No se pudo eliminar el plan', 'error')
             } else {
+              toast(`Plan "${planAEliminar.nombre}" eliminado`, 'info')
               setPlanAEliminar(null)
             }
           }}

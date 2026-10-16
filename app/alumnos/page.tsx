@@ -1,21 +1,23 @@
 // app/alumnos/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
-import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, X, Search, Trash2, Pencil, ChevronRight } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { soloLetras, soloNumeros, validarDatosAlumno } from "@/lib/validators";
 import { formatDiasIngreso } from "@/lib/date-utils";
-import { filtrarPlanesDisponibles } from "@/lib/plan-utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
+import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
+import { MetricCard } from "@/components/ui/metric-card";
+import { useToast } from "@/components/ui/toast";
+import { useDebounce } from "@/lib/use-debounce";
+import { descargarCSV } from "@/lib/export-utils";
 import {
   Alumno,
   EstadoCuenta,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
-  Plan,
 } from "@/lib/types";
 
 const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
@@ -27,8 +29,9 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, agregarAlumno, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
+  const { alumnos, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
     useAppData();
+  const { toast } = useToast();
 
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<EstadoCuenta | "TODOS">("TODOS");
@@ -48,29 +51,92 @@ export default function AlumnosPage() {
     return { total: alumnosConEstado.length, alDia, morosos, inactivos };
   }, [alumnosConEstado]);
 
+  const busquedaDebounced = useDebounce(busqueda, 250);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [elementosPorPagina, setElementosPorPagina] = useState(15);
+
   const alumnosFiltrados = useMemo(() => {
+    const q = busquedaDebounced.trim().toLowerCase();
     return alumnosConEstado.filter((a) => {
       const coincideFiltro = filtro === "TODOS" || a.estadoCuenta === filtro;
-      const coincideBusqueda = a.nombre.toLowerCase().includes(busqueda.toLowerCase());
+      const coincideBusqueda =
+        !q ||
+        a.nombre.toLowerCase().includes(q) ||
+        (a.usuario && a.usuario.toLowerCase().includes(q)) ||
+        (a.dni && a.dni.toLowerCase().includes(q)) ||
+        (a.email && a.email.toLowerCase().includes(q)) ||
+        (a.celular && a.celular.includes(q)) ||
+        (a.plan && a.plan.toLowerCase().includes(q));
       return coincideFiltro && coincideBusqueda;
     });
-  }, [alumnosConEstado, filtro, busqueda]);
+  }, [alumnosConEstado, filtro, busquedaDebounced]);
 
-  const handleNuevoAlumno = (nuevo: Omit<Alumno, "id">) => {
-    agregarAlumno(nuevo);
-    setModalAbierto(false);
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busquedaDebounced, filtro]);
+
+  const totalPaginas = Math.ceil(alumnosFiltrados.length / elementosPorPagina) || 1;
+  const alumnosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * elementosPorPagina;
+    return alumnosFiltrados.slice(inicio, inicio + elementosPorPagina);
+  }, [alumnosFiltrados, paginaActual, elementosPorPagina]);
+
+  // Soporte para cerrar modales con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setModalAbierto(false);
+        setAlumnoAEditar(null);
+        setAlumnoAEliminar(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const exportarCSVAlumnos = () => {
+    const encabezados = [
+      "ID",
+      "Nombre",
+      "Usuario",
+      "DNI",
+      "Email",
+      "Celular",
+      "Plan",
+      "Estado de Cuenta",
+      "Fecha de Alta",
+      "Última Asistencia",
+      "Tiene Rutina",
+    ];
+    const filas = alumnosConEstado.map((a) => [
+      a.id,
+      a.nombre,
+      a.usuario || "-",
+      a.dni || "-",
+      a.email || "-",
+      a.celular || "-",
+      a.plan,
+      ESTADO_CUENTA_LABEL[a.estadoCuenta],
+      a.fechaAlta,
+      a.ultimaAsistencia || "Sin registros",
+      a.tieneRutina ? "Sí" : "No",
+    ]);
+    descargarCSV("alumnos_atlas_gym", encabezados, filas);
+    toast("Lista de alumnos exportada a CSV con éxito", "success");
   };
 
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
+    const nombre = alumnoAEliminar.nombre;
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
+    toast(`Alumno "${nombre}" eliminado del sistema`, "info");
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
       <AccesoRestringido
-        titulo="Panel de Alumnos Restringido"
+        titulo="Panel de alumnos restringido"
         mensaje="La administración de fichas de alumnos, estados de cuenta y altas solo está disponible para entrenadores y administradores."
       />
     );
@@ -79,20 +145,30 @@ export default function AlumnosPage() {
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Alumnos</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Alumnos</h1>
           <p className="text-sm text-slate-400 mt-1">
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
-        <button
-          onClick={() => setModalAbierto(true)}
-          className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
-        >
-          <Plus className="w-5 h-5" />
-          Agregar alumno
-        </button>
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <button
+            onClick={exportarCSVAlumnos}
+            title="Exportar listado a archivo CSV / Excel"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+          >
+            <Download className="w-4 h-4 text-slate-400" />
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => setModalAbierto(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Agregar alumno
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de métricas */}
@@ -101,31 +177,31 @@ export default function AlumnosPage() {
           icon={<Users className="size-6" />}
           label="Total de alumnos"
           value={`${metrica.total}`}
-          tint={{ bg: "bg-blue-50", text: "text-blue-600", bar: "bg-blue-600" }}
+          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
         />
         <MetricCard
           icon={<UserCheck className="size-6" />}
           label="Al día"
           value={`${metrica.alDia}`}
-          tint={{ bg: "bg-emerald-50", text: "text-emerald-600", bar: "bg-emerald-500" }}
+          tint={{ bg: "bg-emerald-500/15 border border-emerald-500/30", text: "text-emerald-400", bar: "bg-emerald-500" }}
         />
         <MetricCard
           icon={<AlertCircle className="size-6" />}
           label="Morosos"
           value={`${metrica.morosos}`}
-          tint={{ bg: "bg-rose-50", text: "text-rose-500", bar: "bg-rose-500" }}
+          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
         />
         <MetricCard
           icon={<UserX className="size-6" />}
           label="Inactivos"
           value={`${metrica.inactivos}`}
-          tint={{ bg: "bg-slate-100", text: "text-slate-500", bar: "bg-slate-400" }}
+          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
         />
       </div>
 
       {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-100 bg-slate-50/60">
+      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
           <div className="flex gap-2 flex-wrap">
             {FILTROS_ALUMNOS.map((f) => (
               <button
@@ -134,7 +210,7 @@ export default function AlumnosPage() {
                 className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
                   filtro === f.value
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                    : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
                 }`}
               >
                 {f.label}
@@ -149,7 +225,7 @@ export default function AlumnosPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-white border border-slate-200 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -157,7 +233,7 @@ export default function AlumnosPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
+              <tr className="text-left text-slate-400 border-b border-slate-800">
                 <th className="font-bold px-6 py-3.5">Alumno</th>
                 <th className="font-bold px-6 py-3.5">Plan</th>
                 <th className="font-bold px-6 py-3.5">Rutina</th>
@@ -167,41 +243,49 @@ export default function AlumnosPage() {
               </tr>
             </thead>
             <tbody>
-              {alumnosFiltrados.map((alumno) => (
+              {alumnosPaginados.map((alumno) => (
                 <tr
                   key={alumno.id}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                  className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
                 >
-                  <td className="px-6 py-4 font-bold text-slate-900">
+                  <td className="px-6 py-4 font-bold text-white">
                     <Link
                       href={`/alumnos/${alumno.id}`}
-                      className="hover:text-blue-600 hover:underline underline-offset-2 flex items-center gap-1.5"
+                      className="hover:text-blue-400 hover:underline underline-offset-2 flex items-center gap-1.5"
                     >
                       {alumno.nombre}
                       <ChevronRight className="w-3.5 h-3.5 opacity-40" />
                     </Link>
+                    {(alumno.usuario || alumno.dni) && (
+                      <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
+                        {alumno.usuario && (
+                          <span className="font-mono text-blue-400">@{alumno.usuario}</span>
+                        )}
+                        {alumno.dni && <span>DNI: {alumno.dni}</span>}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">{alumno.plan}</td>
+                  <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
                   <td className="px-6 py-4">
                     {alumno.tieneRutina ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
                         <Dumbbell className="w-3 h-3" />
                         Asignada
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-400">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60">
                         Sin rutina
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-slate-600 font-medium">
+                  <td className="px-6 py-4 text-slate-300 font-medium">
                     {alumno.ultimaAsistencia ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
                         <Clock className="w-3 h-3 text-slate-400" />
                         {formatDiasIngreso(alumno.ultimaAsistencia)}
                       </span>
                     ) : (
-                      <span className="text-slate-400 text-xs italic">Sin registros</span>
+                      <span className="text-slate-500 text-xs italic">Sin registros</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -215,14 +299,14 @@ export default function AlumnosPage() {
                     <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setAlumnoAEliminar(alumno)}
                       aria-label={`Eliminar a ${alumno.nombre}`}
-                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors duration-150 active:scale-90"
+                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -231,7 +315,7 @@ export default function AlumnosPage() {
               ))}
               {alumnosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
                     {alumnos.length === 0
                       ? "Todavía no hay alumnos cargados. Arrancá agregando el primero."
                       : "No se encontraron alumnos con ese criterio."}
@@ -241,6 +325,54 @@ export default function AlumnosPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {alumnosFiltrados.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
+            <div className="flex items-center gap-2">
+              <span>Mostrar</span>
+              <select
+                aria-label="Alumnos por página"
+                value={elementosPorPagina}
+                onChange={(e) => {
+                  setElementosPorPagina(Number(e.target.value));
+                  setPaginaActual(1);
+                }}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
+              >
+                <option value={15} className="bg-slate-900 text-white">15 por página</option>
+                <option value={30} className="bg-slate-900 text-white">30 por página</option>
+                <option value={50} className="bg-slate-900 text-white">50 por página</option>
+                <option value={100} className="bg-slate-900 text-white">100 por página</option>
+              </select>
+              <span>
+                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
+                {Math.min(paginaActual * elementosPorPagina, alumnosFiltrados.length)} de{" "}
+                {alumnosFiltrados.length} alumnos
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                disabled={paginaActual === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              <span className="px-2 font-bold text-slate-300">
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+                disabled={paginaActual === totalPaginas}
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <ModalNuevoAlumno
@@ -273,33 +405,6 @@ export default function AlumnosPage() {
   );
 }
 
-// ---------- Tarjeta de métrica ----------
-function MetricCard({
-  icon,
-  label,
-  value,
-  tint,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tint: { bg: string; text: string; bar: string };
-}) {
-  return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{value}</p>
-        </div>
-        <div className={`flex size-12 items-center justify-center rounded-2xl ${tint.bg} ${tint.text} transition-transform duration-300 group-hover:scale-110`}>
-          {icon}
-        </div>
-      </div>
-      <div className={`absolute bottom-0 left-0 h-1.5 w-full ${tint.bar}`} />
-    </article>
-  );
-}
 
 // ---------- Modal: confirmar eliminación ----------
 function ModalConfirmarEliminar({
@@ -316,17 +421,17 @@ function ModalConfirmarEliminar({
   return (
     <div
       onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 mb-4">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
           <Trash2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900">¿Eliminar a {alumno.nombre}?</h2>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <h2 className="text-lg font-black text-white">¿Eliminar a {alumno.nombre}?</h2>
+        <p className="mt-1.5 text-sm text-slate-400">
           Esta acción no se puede deshacer.
           {tienePagos && (
             <>
@@ -338,7 +443,7 @@ function ModalConfirmarEliminar({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
           >
             Cancelar
           </button>
@@ -354,210 +459,5 @@ function ModalConfirmarEliminar({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium text-slate-500 mb-1.5 block">{label}</span>
-      {children}
-    </label>
-  );
-}
 
-// ---------- Modal: editar alumno ----------
-function ModalEditarAlumno({
-  alumno,
-  alumnos,
-  planes,
-  onClose,
-  onSubmit,
-}: {
-  alumno: Alumno;
-  alumnos: Alumno[];
-  planes: Plan[];
-  onClose: () => void;
-  onSubmit: (cambios: Partial<Omit<Alumno, "id">>) => void;
-}) {
-  const [form, setForm] = useState({
-    nombre: alumno.nombre,
-    dni: alumno.dni || "",
-    email: alumno.email || "",
-    celular: alumno.celular || "",
-    planId: alumno.planId || planes.find((p) => p.nombre === alumno.plan)?.id || "",
-    plan: alumno.plan,
-    activo: alumno.activo,
-  });
-  const [errores, setErrores] = useState<Record<string, string>>({});
 
-  const planesDisponibles = useMemo(() => {
-    return filtrarPlanesDisponibles(planes, alumno.planId, alumno.plan);
-  }, [planes, alumno.planId, alumno.plan]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const nuevosErrores = validarDatosAlumno(form, false, alumnos, alumno.id);
-    if (Object.keys(nuevosErrores).length > 0) {
-      setErrores(nuevosErrores);
-      return;
-    }
-    onSubmit(form);
-  };
-
-  return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-200 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
-      >
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-lg font-semibold">Editar alumno</h2>
-            <p className="text-sm text-slate-500 mt-0.5">Modificá los datos de {alumno.nombre}.</p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Nombre y apellido">
-            <input
-              aria-label="Nombre y apellido"
-              value={form.nombre}
-              onChange={(e) => {
-                setForm({ ...form, nombre: soloLetras(e.target.value) });
-                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: "" }));
-              }}
-              maxLength={60}
-              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.nombre ? "border border-rose-400" : ""}`}
-              placeholder="Nombre y apellido"
-              required
-            />
-            {errores.nombre && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.nombre}</span>}
-          </Field>
-
-          <Field label="DNI">
-            <input
-              aria-label="DNI"
-              value={form.dni}
-              onChange={(e) => {
-                setForm({ ...form, dni: soloNumeros(e.target.value).slice(0, 8) });
-                if (errores.dni) setErrores((prev) => ({ ...prev, dni: "" }));
-              }}
-              maxLength={8}
-              className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.dni ? "border border-rose-400" : ""}`}
-              placeholder="Ej. 41234567"
-            />
-            {errores.dni && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.dni}</span>}
-          </Field>
-
-          <Field label="Plan asignado">
-            <select
-              aria-label="Plan asignado"
-              value={form.planId || form.plan}
-              onChange={(e) => {
-                const planObj = planes.find((p) => p.id === e.target.value || p.nombre === e.target.value);
-                setForm({
-                  ...form,
-                  planId: planObj?.id || e.target.value,
-                  plan: planObj?.nombre || e.target.value,
-                });
-                if (errores.plan) setErrores((prev) => ({ ...prev, plan: "" }));
-              }}
-              className="w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-              required
-            >
-              {planesDisponibles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre} — ${p.precio.toLocaleString("es-AR")}{!p.activo ? " (Pausado)" : ""}
-                </option>
-              ))}
-            </select>
-            {errores.plan && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.plan}</span>}
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Email">
-              <input
-                aria-label="Email"
-                type="email"
-                value={form.email}
-                onChange={(e) => {
-                  setForm({ ...form, email: e.target.value });
-                  if (errores.email) setErrores((prev) => ({ ...prev, email: "" }));
-                }}
-                className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.email ? "border border-rose-400" : ""}`}
-                placeholder="nombre@mail.com"
-              />
-              {errores.email && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.email}</span>}
-            </Field>
-            <Field label="Celular">
-              <input
-                aria-label="Celular"
-                type="tel"
-                inputMode="numeric"
-                value={form.celular}
-                onChange={(e) => {
-                  setForm({ ...form, celular: e.target.value.replace(/[^0-9]/g, "").slice(0, 13) });
-                  if (errores.celular) setErrores((prev) => ({ ...prev, celular: "" }));
-                }}
-                className={`w-full px-3.5 py-2.5 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errores.celular ? "border border-rose-400" : ""}`}
-                placeholder="2611234567"
-              />
-              {errores.celular && <span className="text-xs font-semibold text-rose-500 mt-1 block">{errores.celular}</span>}
-            </Field>
-          </div>
-
-          <Field label="Estado">
-            <div className="flex gap-3 mt-1">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, activo: true })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                  form.activo
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
-              >
-                Activo
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, activo: false })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                  !form.activo
-                    ? "bg-rose-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
-              >
-                Inactivo
-              </button>
-            </div>
-          </Field>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color] duration-200 active:scale-95"
-            >
-              Guardar cambios
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}

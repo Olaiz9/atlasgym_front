@@ -203,6 +203,13 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
      - Optimización en `lib/use-avisos.ts` con la guarda `hayNoLeidos`, previniendo escrituras redundantes en `localStorage` o re-renders innecesarios.
      - El badge circular rojo con el conteo de no leídos desaparece instantáneamente del Sidebar, Mobile Nav y Header al acceder a la pantalla.
 
+   6. **Fase 6 — Ajustes de Experiencia, Responsive en Tablets y Analítica Multidía:**
+      - **Gráfico de franja horaria multidía:** Selector interactivo de días (Hoy, Ayer y hasta 7 días atrás + Semana completa) con recálculo dinámico de afluencia por hora y pico destacado.
+      - **Carrusel y lupa en Socios en Sala AHORA:** Navegación por flechas laterales (`<` y `>`) para explorar a los socios en sala cuando son más de 3 (paginación en tandas de 3), complementado con un buscador por lupa en tiempo real.
+      - **Auditoría histórica con doble filtrado:** Selector de fecha para inspeccionar por día (últimos 7 días y acumulado) combinado con selector de estado de cuota (*"Todos"*, *"Al día ✓"*, *"Cuota vencida"*).
+      - **Tótem 100% libre de scroll en tablets (`h-dvh max-h-screen`):** Reescalado de teclado numérico, visores y diálogos de confirmación para visualización completa a simple vista en tablets y móviles sin deslizar.
+      - **Identidad oficial ATLAS en Tótem:** Sustitución del isotipo genérico anterior y remoción del emoji de mancuerna, incorporando el logo oficial original `logo-atlas-blanco.png`.
+
 * **Archivos afectados:**
   - 📁 `components/modal-nuevo-alumno.tsx`: Selector nativo accesible de planes dentro de dialog.
   - 📁 `app/finanzas/page.tsx`: Autocompletado de tarifa y plan en cobro; extracción de `SeccionNotificarWhatsapp`.
@@ -365,6 +372,167 @@ Para cada cambio, nueva funcionalidad o corrección en el proyecto:
   - 🚀 **Next.js Production Build (`npm run build`):**
     - Rutas compiladas: **11/11 rutas optimizadas con Turbopack**
     - Estado: **Listo para producción**
+
+---
+
+### 9. Modo Tótem de Asistencia para Tablet de Entrada, Control de Aforo con Caducidad (1h 40m) y Analítica de Horarios Pico
+* **Fecha:** 23 de Septiembre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Terminal Kiosco para Tablet de Entrada:** Pantalla exclusiva para colocar en un soporte a la entrada del gimnasio donde el alumno ingresa su DNI para marcar asistencia.
+  2. **Feedback Inmediato de Cuota:** Informa al instante si el socio está al día o con cuota vencida, con estímulo visual (verde/ámbar) y auditivo sin exponer datos privados de otros socios.
+  3. **Control de Aforo y Sesiones con Caducidad (1h 40m = 100 min):** Regla de negocio para que las personas entrenando en sala caduquen automáticamente transcurridos 100 minutos exactos de su ingreso, evitando que el aforo quede inflado todo el día.
+  4. **Analítica de Tráfico en Panel de Administrador:** Módulo con KPIs en vivo, gráfico de distribución horaria de 07:00 a 22:00 hs para detectar horas pico (apoyo a asignación de profesores), y afluencia por día de la semana de lunes a sábado.
+  5. **Impacto en el Diagrama UML del Backend:** Modelado relacional de la nueva entidad `Asistencia` (`id UUID`, `alumno_id UUID FK`, `fecha_hora TIMESTAMP`, `estado_cuota_al_ingreso VARCHAR`, `metodo VARCHAR`).
+
+* **Desarrollo por Fases Ejecutadas:**
+  1. **Fase 1 — Modelado de Datos y Utilidades de Asistencia (`lib/types.ts` y `lib/asistencia-utils.ts`):**
+     - Creación de interfaces `RegistroAsistencia` y `MetodoAsistencia`.
+     - Definición de constantes `DURACION_SESION_MINUTOS = 100` y `DURACION_SESION_MS = 6.000.000 ms`.
+     - Funciones analíticas: `normalizarDni`, `estaSesionActiva`, `calcularMinutosTranscurridos`, `formatearTiempoEnSala`, `filtrarAsistenciasActivas`, `calcularDistribucionHoraria` y `calcularDistribucionSemanal`.
+     - Sintetizador de sonido armónico nativo con HTML5 Web Audio API (`reproducirSonidoFeedback`) autónomo y sin dependencias de red.
+  2. **Fase 2 — Centralización en el Store y Persistencia (`lib/store.tsx` y `lib/mock-data.ts`):**
+     - Estado `asistencias` hidratado desde `localStorage` (`atlas_asistencias_v1`) y precargado con datos mock enriquecidos.
+     - Implementación de `registrarAsistenciaPorDni(dni)` con sincronización automática de `ultimaAsistencia` en la ficha del alumno.
+     - Corrección de pureza en el hook `actualizarUsuarioActual` para cumplir los estándares de React Doctor.
+  3. **Fase 3 — Pantalla Tótem Kiosco para Tablet (`app/totem/page.tsx`):**
+     - Diseño a pantalla completa modo Kiosco aislado sin barras de navegación ni acceso administrativo.
+     - Teclado numérico táctil interactivo (Numpad) con botones grandes (h-16/h-18) optimizados para dedos en tablets.
+     - Detección simultánea de pulsaciones en teclado físico y lectores ópticos/código de barras por hardware.
+     - Reloj digital en vivo con fecha en tiempo real (`America/Argentina/Buenos_Aires`).
+     - Respuestas dinámicas: Verde esmeralda con bienvenida y foto para cuota al día; Ámbar con aviso de regularización para cuota vencida; Carmesí para DNI no registrado.
+     - Auto-reset temporizado en 3.5 segundos con barra de progreso regresiva y botón de paso manual *"Siguiente socio"*.
+     - Invocación de `window.history.replaceState` para inhabilitar el retroceso en el navegador.
+  4. **Fase 4 — Panel Administrador de Asistencias y Aforo (`app/asistencias/page.tsx`):**
+     - Vista completa para el Administrador con métricas de socios en sala ahora, total del día, porcentaje al día y detección de hora pico.
+     - Gráfico de barras interactivo con tooltip de horas (07:00 a 22:00) y comparativa de afluencia semanal (Lunes a Sábado).
+     - Tarjetas en tiempo real de socios entrenando en este momento con indicador de tiempo transcurrido y tiempo restante de sesión.
+     - Tabla histórica auditable con filtros por fecha (Hoy / Todos), buscador reactivo y exportador descargable a CSV.
+  5. **Fase 5 — Integración de Navegación y Dashboard (`components/sidebar.tsx`, `components/mobile-nav.tsx`, `app/page.tsx`):**
+     - Inclusión del enlace *"Asistencias"* en el menú de navegación del Administrador (`UserCheck`).
+     - Nueva tarjeta destacada *"En sala ahora"* en el Dashboard Inicio (`app/page.tsx`) con sensor de pulso verde y aforo activo menor a 1h 40m.
+     - Corrección de la regla de Hooks en `components/sidebar.tsx` (declaración de hooks previa a cualquier salida condicional).
+
+* **Archivos afectados / creados:**
+  - 📁 `lib/types.ts`: Tipo `MetodoAsistencia` e interfaz `RegistroAsistencia`.
+  - 📁 `lib/asistencia-utils.ts`: [NUEVO] Motor de cálculo de aforo, caducidad a 100 min, horas pico y sintetizador de audio.
+  - 📁 `lib/asistencias.test.ts`: [NUEVO] Suite de 11 tests unitarios certificando caducidad y cálculos.
+  - 📁 `lib/mock-data.ts`: Dataset de asistencias iniciales `ASISTENCIAS_MOCK`.
+  - 📁 `lib/store.tsx`: Integración de estado y callbacks en `useGymStore`.
+  - 📁 `lib/auth-utils.ts`: Declaración de `/asistencias` en `RUTAS_EXCLUSIVAS_ADMIN`.
+  - 📁 `components/app-shell.tsx`: Bypass seguro para ruta `/totem` en modo Kiosco público.
+  - 📁 `app/totem/page.tsx`: [NUEVO] Pantalla completa táctil para la tablet de recepción.
+  - 📁 `app/asistencias/page.tsx`: [NUEVO] Panel administrativo de asistencias, aforo y analítica.
+  - 📁 `app/page.tsx`: Widget de aforo en sala en el Dashboard principal.
+  - 📁 `components/sidebar.tsx` & `components/mobile-nav.tsx`: Navegación de Asistencias.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `108 passed (108)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **TypeScript (`npx tsc --noEmit`):**
+    - Diagnóstico: **0 errores de compilación**
+  - 🚀 **Next.js Production Build (`npm run build`):**
+    - Rutas compiladas: **13/13 rutas estáticas y dinámicas optimizadas** (incluyendo `/totem` y `/asistencias`).
+    - Estado: **Listo para producción local**
+
+---
+
+### 10. Refinamiento UX/UI: Espaciado de Tótem en PC, Controles en Fila Única, Estandarización Sentence Case, Tooltips Instantáneos, Temporizador de Descanso con Audio en Rutinas y Ampliación de Barra Móvil
+* **Fecha:** 24 de Septiembre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Espaciado y proporción del Tótem al 100% de zoom en PC:** El contenedor en pantalla de computadora se percibía apretado y angosto con demasiado espacio vacío lateral. Se requería mayor amplitud (`max-w-xl`), escalado de teclado numérico, visor ampliado y proporciones confortables sin perder la compatibilidad estricta con tablets sin scroll.
+  2. **Registro Histórico de Asistencias en Fila Única:** La barra de búsqueda por DNI/nombre quebraba visualmente a una segunda fila intermedia. Se integró junto con el selector de fecha y los filtros de estado de cuota en una única fila continua y limpia.
+  3. **Eliminación del emoticon de check en "Al día":** Retiro sistemático del caracter `✓` en todas las referencias de estado de cuenta ("Al día").
+  4. **Estandarización de Sentence Case en toda la interfaz:** Siguiendo las directrices profesionales de diseño UX/UI, todos los títulos, subtítulos y badges se convirtieron a mayúscula únicamente en la primera letra de la primera palabra (ej. *"Control de asistencias y aforo"*, *"Técnica por grupo muscular"*, *"Socios en sala ahora"*, *"Monitoreo en tiempo real"*).
+  5. **Tooltips Instantáneos en Botones:** Reemplazo de los tooltips nativos lentos del navegador por un componente reactivo ultraligero (`Tooltip`) con renderizado inmediato (0ms de delay) y diseño armónico con la paleta de ATLAS.
+  6. **Temporizador de Descanso Automático con Notificación Sonora en Rutina de Alumno:**
+     - Al tildar una serie como completada, se inicia automáticamente una cuenta regresiva regresiva del descanso configurado para dicho ejercicio.
+     - Barra flotante inferior con indicador digital en vivo, botón de pausar/reanudar, botón de +15s y botón de descarte.
+     - Al llegar a 0 segundos, emite una campana deportiva armónica con Web Audio API (`reproducirSonidoFinDescanso`) avisando al alumno que comience la siguiente serie.
+     - Eliminación de emojis de IA (`⚡ Bi-serie` -> `Bi-serie`, `🔥 Drop Set` -> `Drop Set`).
+  7. **Botón "Consultar al profesor":**
+     - Renombrado intuitivo de *"Centro de ayuda"* a *"Consultar al profesor"* para el perfil de alumno.
+     - Garantía de visibilidad en dispositivos móviles: incorporación directa del botón *"Profesor"* en la barra de navegación inferior móvil (`MobileNav`) abriendo el modal de contacto directo.
+  8. **Corrección de Solapamientos Responsive:** Corrección de `truncate`, `flex-wrap` y anchos mínimos en las tarjetas de ejercicios, tabla de series y badges en pantallas móviles estrechas.
+  9. **Espaciado del Logo y Portal del Alumno en Celular:** Agrupación unificada con `gap-3` en la cabecera de `app/page.tsx` para evitar que el logo de ATLAS y el badge azul colisionen o queden pegados.
+  10. **Ampliación de la Barra de Navegación Móvil (`MobileNav`):** Incremento de altura (`h-[72px]`), agrandado de íconos (`size-[22px]`) y tipografía (`text-[10.5px] sm:text-[11px] font-semibold`), ajustando el padding inferior de `AppShell` (`pb-24`) para evitar que el contenido quede tapado.
+
+* **Archivos modificados y creados:**
+  - 📁 `components/ui/tooltip.tsx`: [NUEVO] Componente de tooltip instantáneo y accesible sin delay.
+  - 📁 `lib/asistencia-utils.ts`: Nueva función `reproducirSonidoFinDescanso()` vía sintetizador Web Audio API.
+  - 📁 `app/totem/page.tsx`: Escala de contenedor (`max-w-xl`), botones agrandados, visor espaciado, sentence case y eliminación de `✓`.
+  - 📁 `app/asistencias/page.tsx`: Alineación en fila única para controles históricos, sentence case y tooltips instantáneos.
+  - 📁 `app/rutinas/page.tsx`: Temporizador de descanso automático con campana sonora, eliminación de emojis y ajuste responsive de series.
+  - 📁 `app/videoteca/page.tsx`: Estandarización a sentence case (*"Técnica por grupo muscular"*).
+  - 📁 `app/page.tsx`: Espaciado nítido entre logo ATLAS y "Portal del alumno", sentence case en títulos.
+  - 📁 `components/sidebar.tsx` & `components/modal-centro-ayuda.tsx`: Renombrado a *"Consultar al profesor"* y canales en sentence case.
+  - 📁 `components/mobile-nav.tsx`: Ampliación dimensional y acceso directo al botón de consulta para alumnos.
+  - 📁 `components/app-shell.tsx`: Ajuste de espacio inferior (`pb-24`) para la barra móvil ampliada.
+  - 📁 `lib/asistencias.test.ts`: Nueva prueba unitaria para `reproducirSonidoFinDescanso`.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `108 passed (108)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **Next.js Production Build (`npm run build`):**
+    - Estado: **Compilado con éxito sin errores en 13/13 rutas**
+
+---
+
+### 11. Refinamiento Global UX/UI, Persistencia de Borradores de Entrenamiento, Edición de Rutinas con Propagación en Vivo y Alerta de Sobreescritura
+* **Fecha:** 06 de Octubre de 2026
+* **Contexto de Negocio & Solicitud de Bruno:**
+  1. **Ajuste de Tótem ante cuota pendiente:** Cuando un usuario con cuota en estado `PENDIENTE` ingresa su DNI en el tótem, el cartel de advertencia ya no lo confunde diciendo que está vencido; ahora distingue expresamente el estado pendiente con indicaciones claras de regularización.
+  2. **Selector de descanso con mayor variedad:** La duración del descanso entre series al crear/editar rutinas ahora incluye un rango amplio y preciso de opciones (desde 15s hasta 300s / 5m).
+  3. **Homogeneización estética de modales:** Se unificó el estilo visual, paleta oscura, bordes `slate-800` y tipografías en todos los modales de la plataforma (*"Agregar alumno"*, *"Registrar pago"*, *"Crear Rutina"*, *"Nuevo Aviso"*).
+  4. **Persistencia de series marcadas ante cambio de día en la rutina:** Las series completadas en un día (ej. Día 1) se mantienen intactas en memoria si el alumno cambia accidentalmente de pestaña de día y regresa.
+  5. **Armonización de paleta y tipografía entre módulos:** Corrección de fondos en Alumnos, Finanzas e Inicio para unificar el azul oscuro identitario de ATLAS Gym, eliminando inconsistencias en tonos de títulos y tarjetas.
+  6. **Badges de estado con relleno sólido:** Las tarjetitas de `Pendiente`, `Al día` y `Vencido` ahora utilizan fondos rellenos sólidos y legibles en todas las vistas de alumnos y profesores.
+  7. **Limpieza visual de emojis y avisos:** Eliminación del emoji de bíceps en el portal del alumno, eliminación del emoji de tarjeta de crédito en datos bancarios y corrección de contraste en tarjetas de avisos.
+  8. **Restricción de series añadidas a voluntad:** Se deshabilitó la posibilidad de que el alumno agregue series por su cuenta sin autorización del plan del profesor.
+  9. **Fondo ambiental oscuro en el Login:** Se incorporó una imagen de fondo difuminada de gimnasio (`public/login-bg.jpg`) con viñeta y gradientes acordes a la estética oscura de ATLAS Gym.
+  10. **Eliminación del presente manual para profesores:** La asistencia se gestiona exclusivamente a través del Tótem de recepción; se retiró el botón de asistencia manual del panel de profesores.
+  11. **Visibilidad de badges Bi-serie / Drop Set en PC:** Se corrigieron los truncamientos visuales para que las etiquetas especiales se vean tanto en versión desktop como móvil.
+  12. **Desplazamiento horizontal en gráficos móviles de Asistencias:** Se agregó soporte para scroll táctil lateral (`overflow-x-auto`) en los gráficos de distribución horaria y semanal en celulares para evitar recortes.
+  13. **Persistencia de borradores de entrenamiento en tiempo real:**
+      - Las series marcadas parcialmente ya no se pierden al navegar entre secciones (*Mi Rutina* a *Mis Cuotas*, *Videoteca*, etc.) ni ante recargas de página o cierre involuntario de la app en celular.
+      - Se implementó almacenamiento persistente en tiempo real (`atlas_borrador_${alumnoId}_${rutinaId}_${fechaHoy}`) con purga automática de borradores obsoletos al cambiar de fecha de calendario.
+  14. **Edición de rutinas creadas y propagación automática a alumnos:**
+      - El profesor ahora puede editar cualquier rutina existente tocando el botón de edición (`Edit3`).
+      - Al guardar los cambios, la rutina se actualiza en el store y se refleja **automáticamente e instantáneamente en el portal de todos los alumnos que la tengan asignada**.
+  15. **Aviso de advertencia ante reasignación de rutina:**
+      - Si el profesor intenta asignar una rutina a un alumno que ya tiene otra asignada, se detecta el conflicto y se despliega un aviso destacado en ámbar solicitando confirmación explícita para evitar sobreescrituras accidentales.
+
+* **Archivos modificados y creados:**
+  - 📁 `lib/types.ts`: Ampliación de interfaces y contratos en el store para soportar edición de rutinas.
+  - 📁 `lib/store.tsx`: Incorporación de `actualizarRutina` y sincronización reactiva global.
+  - 📁 `lib/rutina-utils.ts`: Funciones de gestión de borradores (`obtenerBorradorEntrenamiento`, `limpiarBorradoresObsoletos`) y detección de conflictos (`detectarConflictosAsignacionRutina`).
+  - 📁 `lib/rutina-utils.test.ts`: Tests unitarios automatizados para persistencia de borradores y detección de conflictos de asignación.
+  - 📁 `app/rutinas/page.tsx`:
+    - Persistencia en tiempo real de entrenamientos en curso para alumnos.
+    - Botón de edición de rutina con modal reactivo pre-cargado.
+    - Modal de asignación con aviso de confirmación ante sobreescritura de planes activos.
+    - Corrección de badges Bi-serie / Drop Set y selector ampliado de tiempos de descanso.
+  - 📁 `app/login/page.tsx`: Imagen de fondo fotográfica ambiental con opacidad y blur balanceados.
+  - 📁 `app/alumnos/page.tsx` & `app/alumnos/[id]/page.tsx`: Eliminación del botón manual de presente para profesores y badges de series especiales.
+  - 📁 `app/asistencias/page.tsx`: Scroll táctil horizontal para gráficos de aforo en dispositivos móviles.
+  - 📁 `app/finanzas/page.tsx`: Eliminación del emoji de tarjeta de crédito y armonización de estados de cuota.
+  - 📁 `app/totem/page.tsx`: Ajuste del mensaje para cuotas pendientes en el tótem de entrada.
+  - 📁 `public/login-bg.jpg`: [NUEVO] Asset fotográfico de ambientación oscura para el Login.
+  - 📁 `reportes/BITACORA_BRUNO.md`: Documentación del Hito 11.
+
+* **Resultados de Verificación y Calidad Consolidados:**
+  - 🧪 **Vitest (`npm test`):**
+    - Archivos de prueba: `12 passed (12)`
+    - Tests ejecutados: `114 passed (114)`
+    - Estado: **100% APROBADO (0 fallos)**
+  - 🩺 **Next.js Production Build (`npm run build`):**
+    - Estado: **Compilación limpia y exitosa en 13/13 rutas estáticas y dinámicas**
+
+
+
 
 
 

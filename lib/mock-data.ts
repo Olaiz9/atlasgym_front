@@ -1,17 +1,20 @@
 // lib/mock-data.ts
 // Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
 // y los ids pasan a ser los que devuelva la base de datos real.
-import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento } from "./types";
-import { CATALOGO_EJERCICIOS_GIF } from "./catalogo-ejercicios";
+import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento, RegistroAsistencia } from "./types";
 
 
 export const ALUMNOS_MOCK: Alumno[] = [
-  { id: "a1", nombre: "Lucía Fernández", dni: "41890123", email: "lucia.fernandez@mail.com", celular: "2611234567", planId: "p1", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
-  { id: "a2", nombre: "Martín Torres", dni: "39456789", email: "martin.torres@mail.com", celular: "2612345678", planId: "p2", plan: "Full Access", fechaAlta: "2026-01-08", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
-  { id: "a3", nombre: "Sofía Ramírez", dni: "42123456", email: "sofia.ramirez@mail.com", celular: "2613456789", planId: "p3", plan: "Funcional", fechaAlta: "2026-05-22", activo: true, ultimaAsistencia: "2026-08-10", tieneRutina: false },
-  { id: "a4", nombre: "Diego Castro", dni: "38901234", email: "diego.castro@mail.com", celular: "2614567890", planId: "p1", plan: "Musculación", fechaAlta: "2026-07-01", activo: true, ultimaAsistencia: "2026-08-27", tieneRutina: true, rutinaId: "r2" },
-  { id: "a5", nombre: "Valentina Ríos", dni: "43567890", email: "valentina.rios@mail.com", celular: "2615678901", planId: "p2", plan: "Full Access", fechaAlta: "2026-06-15", activo: true, ultimaAsistencia: undefined, tieneRutina: false },
-  { id: "a6", nombre: "Esteban Morales", dni: "37890123", email: "esteban.m@mail.com", celular: "2619876543", planId: "p1", plan: "Musculación", fechaAlta: "2026-02-10", activo: false, ultimaAsistencia: "2026-05-12", tieneRutina: false },
+  { id: "a1", nombre: "Lucía Fernández", dni: "41890123", usuario: "lucia123", email: "lucia.fernandez@mail.com", celular: "2611234567", planId: "p1", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
+  { id: "a2", nombre: "Martín Torres", dni: "39456789", usuario: "martin789", email: "martin.torres@mail.com", celular: "2612345678", planId: "p2", plan: "Full Access", fechaAlta: "2026-01-08", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
+  { id: "a3", nombre: "Sofía Ramírez", dni: "42123456", usuario: "sofia456", email: "sofia.ramirez@mail.com", celular: "2613456789", planId: "p3", plan: "Funcional", fechaAlta: "2026-05-22", activo: true, ultimaAsistencia: "2026-08-10", tieneRutina: false },
+  { id: "a4", nombre: "Diego Castro", dni: "38901234", usuario: "diego234", email: "diego.castro@mail.com", celular: "2614567890", planId: "p1", plan: "Musculación", fechaAlta: "2026-07-01", activo: true, ultimaAsistencia: "2026-08-27", tieneRutina: true, rutinaId: "r2" },
+  { id: "a5", nombre: "Valentina Ríos", dni: "43567890", usuario: "valentina890", email: "valentina.rios@mail.com", celular: "2615678901", planId: "p2", plan: "Full Access", fechaAlta: "2026-06-15", activo: true, ultimaAsistencia: undefined, tieneRutina: false },
+  { id: "a6", nombre: "Esteban Morales", dni: "37890123", usuario: "esteban123", email: "esteban.m@mail.com", celular: "2619876543", planId: "p1", plan: "Musculación", fechaAlta: "2026-02-10", activo: false, ultimaAsistencia: "2026-05-12", tieneRutina: false },
+  { id: "a7", nombre: "Camila Morales", dni: "40123987", usuario: "camila987", email: "camila.morales@mail.com", celular: "2616789012", planId: "p3", plan: "Funcional", fechaAlta: "2026-04-10", activo: true, ultimaAsistencia: "2026-08-28", tieneRutina: false },
+  { id: "a8", nombre: "Gonzalo Romero", dni: "35987654", usuario: "gonzalo654", email: "gonzalo.romero@mail.com", celular: "2617890123", planId: "p1", plan: "Musculación", fechaAlta: "2026-02-18", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r2" },
+  { id: "a9", nombre: "Agustín Pellegrini", dni: "36456789", usuario: "agustin789", email: "agustin.p@mail.com", celular: "2618901234", planId: "p2", plan: "Full Access", fechaAlta: "2026-03-01", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
+  { id: "a10", nombre: "Julieta Navas", dni: "44123890", usuario: "julieta890", email: "julieta.navas@mail.com", celular: "2619012345", planId: "p3", plan: "Funcional", fechaAlta: "2026-06-20", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: false },
 ];
 
 export const PAGOS_MOCK: Pago[] = [
@@ -28,7 +31,7 @@ export const PAGOS_MOCK: Pago[] = [
 export const RUTINAS_MOCK: Rutina[] = [
   {
     id: "r1",
-    nombre: "Hipertrofia Nivel 2",
+    nombre: "Hipertrofia nivel 2",
     descripcion: "Rutina orientada a ganancia de masa muscular y fuerza en 3 días semanales.",
     objetivo: "Hipertrofia",
     esGenerica: true,
@@ -115,7 +118,6 @@ export const RUTINAS_MOCK: Rutina[] = [
 ];
 
 export const VIDEOS_TECNICA_MOCK: VideoTecnica[] = [
-  ...CATALOGO_EJERCICIOS_GIF,
   {
     id: "v1",
     titulo: "Press de Banca con Mancuernas",
@@ -368,4 +370,419 @@ export const SESIONES_MOCK: SesionEntrenamiento[] = [
     ],
   },
 ];
+
+// Helper para generar fechas dinámicas relativas a hoy (inmune a husos horarios)
+const calcFechaOffset = (diasAtras: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - diasAtras);
+  const yyyy = d.getFullYear();
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const ASISTENCIAS_MOCK: RegistroAsistencia[] = [
+  // --- ACTIVOS EN SALA HOY (>3 para carrusel y paginación) ---
+  {
+    id: "asist-act-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(0),
+    hora: "19:25",
+    timestamp: Date.now() - 18 * 60 * 1000, // Hace 18 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(0),
+    hora: "19:10",
+    timestamp: Date.now() - 32 * 60 * 1000, // Hace 32 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(0),
+    hora: "18:55",
+    timestamp: Date.now() - 48 * 60 * 1000, // Hace 48 min
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-4",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(0),
+    hora: "18:40",
+    timestamp: Date.now() - 62 * 60 * 1000, // Hace 62 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-5",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(0),
+    hora: "18:25",
+    timestamp: Date.now() - 77 * 60 * 1000, // Hace 77 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-6",
+    alumnoId: "a8",
+    alumnoNombre: "Gonzalo Romero",
+    alumnoDni: "35987654",
+    fecha: calcFechaOffset(0),
+    hora: "18:15",
+    timestamp: Date.now() - 88 * 60 * 1000, // Hace 88 min
+    estadoCuenta: "MOROSO",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+
+  // --- SESIONES COMPLETADAS HOY ---
+  {
+    id: "asist-hoy-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(0),
+    hora: "10:15",
+    timestamp: Date.now() - 8 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-2",
+    alumnoId: "a6",
+    alumnoNombre: "Esteban Morales",
+    alumnoDni: "37890123",
+    fecha: calcFechaOffset(0),
+    hora: "09:30",
+    timestamp: Date.now() - 9 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-3",
+    alumnoId: "a9",
+    alumnoNombre: "Agustín Pellegrini",
+    alumnoDni: "36456789",
+    fecha: calcFechaOffset(0),
+    hora: "08:15",
+    timestamp: Date.now() - 10 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-4",
+    alumnoId: "a10",
+    alumnoNombre: "Julieta Navas",
+    alumnoDni: "44123890",
+    fecha: calcFechaOffset(0),
+    hora: "11:45",
+    timestamp: Date.now() - 7 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // --- HISTORIAL DÍAS PREVIOS (ÚLTIMOS 7 DÍAS) ---
+  // Ayer (Día -1)
+  {
+    id: "asist-d1-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(1),
+    hora: "19:00",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(1),
+    hora: "19:30",
+    timestamp: Date.now() - 23 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(1),
+    hora: "18:00",
+    timestamp: Date.now() - 25 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-4",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(1),
+    hora: "09:00",
+    timestamp: Date.now() - 34 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-5",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(1),
+    hora: "18:45",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -2
+  {
+    id: "asist-d2-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(2),
+    hora: "18:30",
+    timestamp: Date.now() - 48 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-2",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(2),
+    hora: "18:00",
+    timestamp: Date.now() - 49 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-3",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(2),
+    hora: "20:00",
+    timestamp: Date.now() - 47 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-4",
+    alumnoId: "a9",
+    alumnoNombre: "Agustín Pellegrini",
+    alumnoDni: "36456789",
+    fecha: calcFechaOffset(2),
+    hora: "10:00",
+    timestamp: Date.now() - 57 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -3
+  {
+    id: "asist-d3-1",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(3),
+    hora: "19:15",
+    timestamp: Date.now() - 72 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-2",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(3),
+    hora: "19:45",
+    timestamp: Date.now() - 71 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-3",
+    alumnoId: "a8",
+    alumnoNombre: "Gonzalo Romero",
+    alumnoDni: "35987654",
+    fecha: calcFechaOffset(3),
+    hora: "20:10",
+    timestamp: Date.now() - 70 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-4",
+    alumnoId: "a6",
+    alumnoNombre: "Esteban Morales",
+    alumnoDni: "37890123",
+    fecha: calcFechaOffset(3),
+    hora: "08:30",
+    timestamp: Date.now() - 82 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -4
+  {
+    id: "asist-d4-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(4),
+    hora: "18:20",
+    timestamp: Date.now() - 96 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d4-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(4),
+    hora: "18:45",
+    timestamp: Date.now() - 95 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d4-3",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(4),
+    hora: "19:30",
+    timestamp: Date.now() - 94 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -5
+  {
+    id: "asist-d5-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(5),
+    hora: "09:30",
+    timestamp: Date.now() - 120 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d5-2",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(5),
+    hora: "19:00",
+    timestamp: Date.now() - 118 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d5-3",
+    alumnoId: "a10",
+    alumnoNombre: "Julieta Navas",
+    alumnoDni: "44123890",
+    fecha: calcFechaOffset(5),
+    hora: "19:40",
+    timestamp: Date.now() - 117 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -6
+  {
+    id: "asist-d6-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(6),
+    hora: "18:00",
+    timestamp: Date.now() - 144 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d6-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(6),
+    hora: "18:50",
+    timestamp: Date.now() - 143 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d6-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(6),
+    hora: "19:20",
+    timestamp: Date.now() - 142 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+];
+
+
 

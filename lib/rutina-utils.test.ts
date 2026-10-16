@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { buscarVideoParaEjercicio, formatPrevia } from "./rutina-utils";
-import { VideoTecnica, RegistroSerie } from "./types";
+import { VideoTecnica, RegistroSerie, Rutina } from "./types";
 
 const VIDEOS_TEST: VideoTecnica[] = [
   {
@@ -69,6 +69,120 @@ describe("rutina-utils", () => {
     it("formatea con peso 0 correctamente", () => {
       const serie: RegistroSerie = { serieNumero: 1, kg: 0, reps: 15, completada: true };
       expect(formatPrevia(serie)).toBe("0 kg × 15");
+    });
+  });
+
+  describe("borradores de entrenamiento", () => {
+    const mockStorage: Record<string, string> = {};
+
+    beforeEach(() => {
+      Object.keys(mockStorage).forEach((k) => delete mockStorage[k]);
+      vi.stubGlobal("localStorage", {
+        getItem: vi.fn((key: string) => mockStorage[key] ?? null),
+        setItem: vi.fn((key: string, val: string) => {
+          mockStorage[key] = val;
+        }),
+        removeItem: vi.fn((key: string) => {
+          delete mockStorage[key];
+        }),
+        clear: vi.fn(() => {
+          Object.keys(mockStorage).forEach((k) => delete mockStorage[k]);
+        }),
+        key: vi.fn((i: number) => Object.keys(mockStorage)[i] ?? null),
+        get length() {
+          return Object.keys(mockStorage).length;
+        },
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("genera la clave única de borrador esperada", async () => {
+      const { getClaveBorradorEntrenamiento } = await import("./rutina-utils");
+      expect(getClaveBorradorEntrenamiento("a1", "r-1", "2026-10-06")).toBe(
+        "atlas_borrador_a1_r-1_2026-10-06"
+      );
+    });
+
+    it("guarda y recupera un borrador activo", async () => {
+      const { obtenerBorradorEntrenamiento, getClaveBorradorEntrenamiento } = await import("./rutina-utils");
+      const key = getClaveBorradorEntrenamiento("a1", "r-1", "2026-10-06");
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          diaActivo: 1,
+          seriesPorDia: {
+            "d-1": {
+              "ej-1": [{ serieNumero: 1, kg: 50, reps: 12, completada: true }],
+            },
+          },
+        })
+      );
+
+      const borrador = obtenerBorradorEntrenamiento("a1", "r-1", "2026-10-06");
+      expect(borrador).not.toBeNull();
+      expect(borrador?.diaActivo).toBe(1);
+      expect(borrador?.seriesPorDia["d-1"]["ej-1"][0].completada).toBe(true);
+    });
+
+    it("limpia borradores viejos de días anteriores preservando los de hoy", async () => {
+      const { limpiarBorradoresObsoletos } = await import("./rutina-utils");
+      localStorage.setItem("atlas_borrador_a1_r-1_2026-10-05", JSON.stringify({ seriesPorDia: {} }));
+      localStorage.setItem("atlas_borrador_a1_r-1_2026-10-06", JSON.stringify({ seriesPorDia: {} }));
+      localStorage.setItem("otra_config", "persistente");
+
+      limpiarBorradoresObsoletos("2026-10-06");
+
+      expect(localStorage.getItem("atlas_borrador_a1_r-1_2026-10-05")).toBeNull();
+      expect(localStorage.getItem("atlas_borrador_a1_r-1_2026-10-06")).not.toBeNull();
+      expect(localStorage.getItem("otra_config")).toBe("persistente");
+    });
+  });
+
+  describe("detección de advertencias al asignar rutinas", () => {
+    const rutinasMock: Rutina[] = [
+      { id: "r1", nombre: "Hipertrofia 3 Días", objetivo: "Hipertrofia", esGenerica: true, dias: [] },
+      { id: "r2", nombre: "Fuerza 4 Días", objetivo: "Fuerza", esGenerica: true, dias: [] },
+      { id: "r3", nombre: "Adaptación Básica", objetivo: "Adaptación", esGenerica: true, dias: [] },
+    ];
+
+    const alumnosMock = [
+      { id: "a1", nombre: "Carlos Legado", rutinaId: "r1" },
+      { id: "a2", nombre: "Lucía Gómez", rutinaId: undefined },
+      { id: "a3", nombre: "Marcos Rojo", rutinaId: "r2" },
+    ];
+
+    it("detecta alumnos que ya poseen otra rutina activa distinta", async () => {
+      const { detectarConflictosAsignacionRutina } = await import("./rutina-utils");
+
+      // Asignar r3 a a1 (tiene r1), a2 (no tiene), y a3 (tiene r2)
+      const conflictos = detectarConflictosAsignacionRutina(
+        ["a1", "a2", "a3"],
+        rutinasMock,
+        alumnosMock,
+        "r3"
+      );
+
+      expect(conflictos.length).toBe(2);
+      expect(conflictos[0].alumnoNombre).toBe("Carlos Legado");
+      expect(conflictos[0].rutinaAnteriorNombre).toBe("Hipertrofia 3 Días");
+      expect(conflictos[1].alumnoNombre).toBe("Marcos Rojo");
+      expect(conflictos[1].rutinaAnteriorNombre).toBe("Fuerza 4 Días");
+    });
+
+    it("no genera conflicto si el alumno no tenía rutina o ya tenía la misma rutina asignada", async () => {
+      const { detectarConflictosAsignacionRutina } = await import("./rutina-utils");
+
+      const conflictos = detectarConflictosAsignacionRutina(
+        ["a1", "a2"],
+        rutinasMock,
+        alumnosMock,
+        "r1" // a1 ya tiene r1, a2 no tiene ninguna
+      );
+
+      expect(conflictos.length).toBe(0);
     });
   });
 });

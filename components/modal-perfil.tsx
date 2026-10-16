@@ -16,6 +16,8 @@ import {
   Save,
 } from 'lucide-react'
 import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES } from '@/lib/types'
+import { useToast } from '@/components/ui/toast'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface ModalPerfilProps {
   abierto: boolean
@@ -23,6 +25,8 @@ interface ModalPerfilProps {
 }
 
 export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
+  const { toast } = useToast()
+  useEscapeKey(onCerrar, abierto)
   const {
     usuarioActual,
     alumnos,
@@ -75,6 +79,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
       actualizarUsuarioActual({ celular })
     }
 
+    toast('Teléfono de contacto actualizado correctamente', 'success')
     setTimeout(() => {
       setGuardandoCelular(false)
       setCelularGuardado(true)
@@ -100,6 +105,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
       actualizarUsuarioActual({ password: passwordNueva } as any)
     }
 
+    toast('Contraseña modificada exitosamente', 'success')
     setPasswordGuardada(true)
     setPasswordNueva('')
     setPasswordConfirm('')
@@ -111,6 +117,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     if (actualizarUsuarioActual) {
       actualizarUsuarioActual({ fotoUrl: nuevaUrl })
     }
+    toast('Foto de perfil actualizada', 'success')
     setEditandoFoto(false)
   }
 
@@ -203,7 +210,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
               <div className="flex items-center justify-between">
                 <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
                   <CreditCard className="size-3.5 text-blue-400" />
-                  Membresía y Plan
+                  Membresía y plan
                 </span>
                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
                   {ESTADO_CUENTA_LABEL[estadoCuenta]}
@@ -212,7 +219,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
 
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Plan Actual</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold">Plan actual</span>
                   <span className="text-xs font-bold text-white mt-0.5 block">{alumnoDatos.plan}</span>
                 </div>
                 <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
@@ -277,7 +284,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
             <div className="flex items-center justify-between">
               <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
                 <Lock className="size-3.5 text-blue-400" />
-                Seguridad & Contraseña
+                Seguridad y contraseña
               </span>
               {passwordGuardada && (
                 <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">

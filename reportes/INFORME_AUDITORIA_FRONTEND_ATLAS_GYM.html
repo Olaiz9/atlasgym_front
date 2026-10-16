@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Informe de Auditoría Frontend - ATLAS GYM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @page {
+      margin: 12mm 15mm 12mm 15mm;
+      size: A4;
+    }
+    h1, h2, h3 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .card, tr, .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  </style>
+</head>
+<body class="p-8 max-w-4xl mx-auto text-slate-800">
+
+  <!-- Header Superior -->
+  <div class="flex items-center justify-between border-b-2 border-slate-900 pb-5 mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl shadow-md">
+        A
+      </div>
+      <div>
+        <span class="text-2xl font-black tracking-widest text-slate-900 block leading-tight">ATLAS GYM</span>
+        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Informe Técnico & Auditoría Integral Frontend</span>
+      </div>
+    </div>
+    <div class="text-right">
+      <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Fecha: <span class="text-slate-700 font-semibold">Septiembre 2026</span></span>
+      <span class="text-xs font-semibold text-slate-600">Entorno: Next.js 16 (App Router) + React 19</span>
+    </div>
+  </div>
+
+  <!-- Título Principal -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-black text-slate-900 border-b-2 border-blue-600 pb-3">
+      🔍 Auditoría Exhaustiva de Código, Rendimiento y UX
+    </h1>
+    <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+      Diagnóstico exhaustivo sobre el estado del frontend de la plataforma <strong>Atlas Gym</strong>: análisis de tamaño de bundle y empaquetado, arquitectura del estado global, bugs silenciosos en flujos de cuotas, brechas funcionales para gimnasios reales y hoja de ruta priorizada de optimizaciones.
+    </p>
+  </div>
+
+  <!-- Cuadro Resumen Estado Actual -->
+  <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+      <p class="text-[11px] font-bold uppercase text-blue-700">Tests Unitarios</p>
+      <p class="text-2xl font-black text-blue-900 mt-1">92 / 92</p>
+      <p class="text-[10px] text-blue-600 font-semibold">100% pasando (Vitest)</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+      <p class="text-[11px] font-bold uppercase text-amber-700">Chunk JS Inicial</p>
+      <p class="text-2xl font-black text-amber-900 mt-1">1.22 MB</p>
+      <p class="text-[10px] text-amber-600 font-semibold">Por catálogo estático</p>
+    </div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+      <p class="text-[11px] font-bold uppercase text-emerald-700">Ejercicios con GIFs</p>
+      <p class="text-2xl font-black text-emerald-900 mt-1">1.500+</p>
+      <p class="text-[10px] text-emerald-600 font-semibold">Mapeados en español</p>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+      <p class="text-[11px] font-bold uppercase text-slate-600">TypeScript</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">0 errores</p>
+      <p class="text-[10px] text-slate-500 font-semibold">Strict check limpio</p>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: QUÉ ESTÁ MAL / RIESGOS Y BUGS -->
+  <div class="mb-10">
+    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 mb-4 pb-1 border-b border-slate-200">
+      <span class="w-2.5 h-6 rounded-full bg-rose-600 inline-block"></span>
+      1. ¿Qué está mal o presenta riesgo técnico? (Bugs silenciosos)
+    </h2>
+
+    <div class="space-y-4">
+      <!-- Item 1.1 -->
+      <div class="border border-rose-200 rounded-xl p-4 bg-rose-50/40 avoid-break">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-rose-900">
+            1.1. Bundle Inicial de 1.2 MB por catálogo de 1.500 ejercicios estático
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-200 text-rose-800">Crítico / Performance</span>
+        </div>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          <strong>Causa:</strong> <code class="bg-white px-1 py-0.5 rounded border border-rose-200 font-mono">lib/data/exercises.json</code> (1.17 MB) se importa estáticamente en <code class="bg-white px-1 py-0.5 rounded border border-rose-200 font-mono">lib/catalogo-ejercicios.ts</code> y se vuelca en <code class="bg-white px-1 py-0.5 rounded border border-rose-200 font-mono">lib/store.tsx</code>.<br>
+          <strong>Efecto:</strong> El chunk generado por Turbopack pesa <strong>1.217.607 bytes (1.22 MB)</strong> (<code class="bg-white px-1 py-0.5 rounded font-mono text-[10px]">1e83lblvurgy9.js</code>), impactando negativamente en la velocidad de carga inicial. Además, el <code class="bg-white px-1 py-0.5 rounded font-mono">useEffect</code> escribe todo ese volumen en <code class="bg-white px-1 py-0.5 rounded font-mono">localStorage</code>, ocupando el 30% del límite total del navegador del cliente.<br>
+          <strong>Contradicción:</strong> Ya existe el endpoint <code class="bg-white px-1 py-0.5 rounded border border-rose-200 font-mono">app/api/ejercicios/route.ts</code> listo para filtrar y paginar, pero <strong>ningún componente del frontend lo está consultando</strong>.
+        </p>
+      </div>
+
+      <!-- Item 1.2 -->
+      <div class="border border-amber-200 rounded-xl p-4 bg-amber-50/40 avoid-break">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-amber-900">
+            1.2. Re-renders masivos por Context Monolítico (<code class="font-mono">lib/store.tsx</code>)
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">Arquitectura</span>
+        </div>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          <strong>Causa:</strong> <code class="bg-white px-1 py-0.5 rounded font-mono">useAppData()</code> contiene en un solo proveedor: alumnos, pagos, rutinas, videos, planes, avisos, sesiones y autenticación.<br>
+          <strong>Efecto:</strong> Cuando un alumno marca una serie como hecha en su rutina (<code class="bg-white px-1 py-0.5 rounded font-mono">guardarSesion</code>) o se modifica un aviso, <strong>todos los componentes que consumen el hook sufren re-render</strong> (Sidebar, AppShell, Notificaciones, etc.). Conviene desacoplar en contextos especializados (ej: <code class="bg-white px-1 py-0.5 rounded font-mono">AuthContext</code> vs <code class="bg-white px-1 py-0.5 rounded font-mono">GymDataContext</code>).
+        </p>
+      </div>
+
+      <!-- Item 1.3 -->
+      <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 avoid-break">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-slate-900">
+            1.3. Desajuste en el filtrado de cuotas mensuales (<code class="font-mono">app/finanzas/page.tsx</code>)
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Lógica de Negocio</span>
+        </div>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          <strong>Causa:</strong> La línea 324 filtra los pagos del mes con <code class="bg-white px-1 py-0.5 rounded font-mono">pagos.filter((p) => p.fecha.slice(0, 7) === mes)</code>. Esto filtra por la fecha de cobro (<code class="bg-white px-1 py-0.5 rounded font-mono">fecha</code>) y no por el mes correspondiente a la cuota (<code class="bg-white px-1 py-0.5 rounded font-mono">periodoMes</code>).<br>
+          <strong>Impacto:</strong> Si un alumno paga la cuota de Agosto el 2 de Septiembre, ese pago no aparece en la planilla de Agosto y se imputa a Septiembre. Además, el formulario para registrar pagos no permite elegir qué mes se abona; autoasigna la fecha del día.
+        </p>
+      </div>
+
+      <!-- Item 1.4 -->
+      <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 avoid-break">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-slate-900">
+            1.4. Búsqueda de Alumnos limitada exclusivamente a Nombre
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">UX Recepción</span>
+        </div>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          En <code class="bg-white px-1 py-0.5 rounded font-mono">app/alumnos/page.tsx</code>, el buscador solo evalúa <code class="bg-white px-1 py-0.5 rounded font-mono">a.nombre.toLowerCase()</code>. En la recepción de un gimnasio es habitual buscar por <strong>DNI</strong>, <strong>email</strong> o <strong>celular</strong>. Si se escribe el DNI, la tabla arroja 0 resultados.
+        </p>
+      </div>
+
+      <!-- Item 1.5 -->
+      <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 avoid-break">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-slate-900">
+            1.5. Disparidad en patrones de Modales y Accesibilidad (a11y)
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Accesibilidad</span>
+        </div>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          Existen 3 implementaciones distintas: <code class="bg-white px-1 py-0.5 rounded font-mono">&lt;dialog&gt;</code> con <code class="bg-white px-1 py-0.5 rounded font-mono">showModal()</code> (Alumno, Perfil, Aviso), <code class="bg-white px-1 py-0.5 rounded font-mono">&lt;dialog open&gt;</code> sin API modal (Planes), y <code class="bg-white px-1 py-0.5 rounded font-mono">&lt;div fixed&gt;</code> (Finanzas, Rutinas, Videoteca). Estos últimos no atrapan el foco del teclado ni cierran de forma estándar con la tecla <kbd class="bg-white px-1 py-0.5 rounded border border-slate-300 font-mono text-[10px]">Esc</kbd>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 2: QUÉ FALTA PARA UN GIMNASIO REAL -->
+  <div class="mb-10 avoid-break">
+    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 mb-4 pb-1 border-b border-slate-200">
+      <span class="w-2.5 h-6 rounded-full bg-blue-600 inline-block"></span>
+      2. ¿Qué funcionalidades faltan para la operación real?
+    </h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left border border-slate-200 rounded-xl overflow-hidden">
+        <thead class="bg-slate-100 text-slate-700 uppercase font-black tracking-wider text-[10px]">
+          <tr>
+            <th class="p-3">Funcionalidad</th>
+            <th class="p-3">Motivo / Necesidad Operativa</th>
+            <th class="p-3 text-center">Prioridad</th>
+            <th class="p-3 text-center">Esfuerzo</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr>
+            <td class="p-3 font-bold text-slate-900">Control de Asistencia en 1 Click</td>
+            <td class="p-3 text-slate-600">El modelo tiene <code class="font-mono">ultimaAsistencia</code>, pero no hay botón para marcar "Presente hoy" ni en la tabla de alumnos ni en su ficha.</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Alta</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Bajo</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-slate-900">Exportación a Excel / CSV</td>
+            <td class="p-3 text-slate-600">El administrador necesita descargar la planilla de pagos del mes y la lista de deudores para liquidaciones y rendición contable.</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Alta</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Bajo</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-slate-900">Generación Mensual de Cuotas</td>
+            <td class="p-3 text-slate-600">Al iniciar cada mes, el sistema debe emitir la cuota PENDIENTE a todos los socios activos para controlar moras el día 10 automáticamente.</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">Media</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Medio</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-slate-900">Toasts / Alertas de Feedback</td>
+            <td class="p-3 text-slate-600">Al dar de alta un alumno o registrar un cobro, los modales cierran sin confirmación visual explícita ("Pago registrado con éxito").</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">Media</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Bajo</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-slate-900">PWA Manifest Real</td>
+            <td class="p-3 text-slate-600">Existe un tutorial de instalación en el login, pero falta configurar <code class="font-mono">manifest.json</code> y los meta-tags para instalación nativa.</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px]">Media</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Bajo</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-slate-900">Filtro por Medio de Pago</td>
+            <td class="p-3 text-slate-600">Permitir al dueño filtrar ingresos por Efectivo, Transferencia o Mercado Pago para hacer el cierre de caja diario.</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px]">Deseable</span></td>
+            <td class="p-3 text-center font-semibold text-slate-500">Bajo</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 3: LIMPIEZA DE CÓDIGO Y ARQUITECTURA -->
+  <div class="mb-10 avoid-break">
+    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 mb-4 pb-1 border-b border-slate-200">
+      <span class="w-2.5 h-6 rounded-full bg-emerald-600 inline-block"></span>
+      3. ¿Qué código se debe limpiar para máxima velocidad y mantenibilidad?
+    </h2>
+
+    <div class="grid grid-cols-2 gap-4 text-xs">
+      <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+        <h4 class="font-bold text-slate-900 mb-1">Modularización de Archivos Gigantes</h4>
+        <p class="text-slate-600 leading-relaxed mb-2">
+          Archivos monolíticos que concentran demasiada lógica y deberían dividirse en submódulos:
+        </p>
+        <ul class="list-disc list-inside text-slate-700 space-y-1 font-mono text-[11px]">
+          <li><strong>app/rutinas/page.tsx</strong>: 1.870 líneas</li>
+          <li><strong>app/finanzas/page.tsx</strong>: 1.079 líneas</li>
+          <li><strong>app/videoteca/page.tsx</strong>: 635 líneas</li>
+          <li><strong>app/alumnos/page.tsx</strong>: 564 líneas</li>
+        </ul>
+      </div>
+
+      <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+        <h4 class="font-bold text-slate-900 mb-1">Componentes Duplicados</h4>
+        <p class="text-slate-600 leading-relaxed mb-2">
+          Elementos visuales idénticos declarados dos veces en vez de centralizarse:
+        </p>
+        <ul class="list-disc list-inside text-slate-700 space-y-1 text-[11px]">
+          <li><strong>MetricCard</strong>: Código duplicado en Alumnos y Finanzas. Centralizar en <code class="font-mono">components/ui/metric-card.tsx</code>.</li>
+          <li><strong>Badges de Estado</strong>: Estilos repetidos en 3 archivos.</li>
+          <li><strong>next/image</strong>: En <code class="font-mono">sidebar.tsx</code> reemplazar <code class="font-mono">&lt;img&gt;</code> para evitar layout shifts.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 4: HOJA DE RUTA RECOMENDADA -->
+  <div class="mb-10 avoid-break">
+    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 mb-4 pb-1 border-b border-slate-200">
+      <span class="w-2.5 h-6 rounded-full bg-purple-600 inline-block"></span>
+      4. Hoja de Ruta Sugerida (Roadmap)
+    </h2>
+
+    <div class="space-y-3 text-xs">
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200">
+        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+        <div>
+          <strong class="text-blue-950 font-bold block text-sm">Fase 1 — Optimización del Bundle y Activación de la API de Ejercicios</strong>
+          <p class="text-blue-800 mt-0.5">
+            Conectar el frontend al endpoint <code class="bg-blue-100 px-1 py-0.5 rounded font-mono">/api/ejercicios</code> para buscar y paginar bajo demanda. Desacoplar los 1.500 ejercicios del estado sincrónico de arranque. El bundle se reduce de 1.2 MB a ~200 KB y se liberan 1.5 MB de localStorage.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="w-6 h-6 rounded-full bg-slate-700 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+        <div>
+          <strong class="text-slate-900 font-bold block text-sm">Fase 2 — Correcciones Operativas (Alumnos & Finanzas)</strong>
+          <p class="text-slate-600 mt-0.5">
+            Extender el buscador de Alumnos a DNI, email y celular. Incorporar selector de mes en cobros (<code class="bg-white px-1 py-0.5 rounded font-mono">periodoMes</code>) y unificar el cierre con tecla <kbd class="bg-white px-1 py-0.5 rounded border border-slate-300 font-mono text-[10px]">Esc</kbd> en todos los modales.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="w-6 h-6 rounded-full bg-slate-700 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+        <div>
+          <strong class="text-slate-900 font-bold block text-sm">Fase 3 — Funcionalidades de Alto Valor para el Negocio</strong>
+          <p class="text-slate-600 mt-0.5">
+            Implementar el botón de asistencia rápida ("Presente hoy" en 1 click), exportación a planilla Excel/CSV para el contador y feedback con notificaciones toast.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="w-6 h-6 rounded-full bg-slate-700 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">4</span>
+        <div>
+          <strong class="text-slate-900 font-bold block text-sm">Fase 4 — Limpieza Arquitectónica y Modularización</strong>
+          <p class="text-slate-600 mt-0.5">
+            Dividir <code class="bg-white px-1 py-0.5 rounded font-mono">app/rutinas/page.tsx</code> (1.870 líneas) en componentes modulares limpios y centralizar componentes UI repetidos.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-slate-200 pt-4 flex items-center justify-between text-xs text-slate-400">
+    <p>Atlas Gym Platform · Documentación Técnica Interna</p>
+    <p>Listo para revisión con el equipo</p>
+  </div>
+
+</body>
+</html>

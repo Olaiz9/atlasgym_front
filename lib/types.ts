@@ -19,6 +19,7 @@ export interface Alumno {
   id: string;
   nombre: string;
   dni?: string;
+  usuario?: string;
   email?: string;
   celular?: string;
   planId?: string;
@@ -201,10 +202,10 @@ export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {
 };
 
 export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {
-  AL_DIA: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  PENDIENTE: "bg-amber-50 text-amber-700 border border-amber-200",
-  MOROSO: "bg-red-50 text-red-700 border border-red-200",
-  INACTIVO: "bg-slate-100 text-slate-500 border border-slate-200",
+  AL_DIA: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
+  PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+  MOROSO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
+  INACTIVO: "bg-slate-800 text-slate-400 border border-slate-700",
 };
 
 export type CategoriaAviso = "IMPORTANTE" | "NOVEDAD" | "HORARIO";
@@ -232,19 +233,36 @@ export const CATEGORIA_AVISO_STYLES: Record<
 > = {
   IMPORTANTE: {
     label: "Importante",
-    badge: "bg-rose-50 text-rose-700 border-rose-200",
+    badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",
     border: "border-rose-500",
   },
   NOVEDAD: {
     label: "Novedad",
-    badge: "bg-blue-50 text-blue-700 border-blue-200",
+    badge: "bg-blue-500/15 text-blue-400 border-blue-500/30",
     border: "border-blue-500",
   },
   HORARIO: {
     label: "Horarios",
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     border: "border-emerald-500",
   },
 };
+
+export type MetodoAsistencia = "DNI_TOTEM" | "MANUAL_ADMIN" | "QR";
+
+export interface RegistroAsistencia {
+  id: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  alumnoDni: string;
+  alumnoFotoUrl?: string;
+  fecha: string; // "YYYY-MM-DD"
+  hora: string;  // "HH:mm"
+  timestamp: number; // ms para cálculo preciso de aforo
+  estadoCuenta: EstadoCuenta;
+  planNombre: string;
+  metodo: MetodoAsistencia;
+}
+
 
 

@@ -9,6 +9,24 @@ export const soloNumeros = (valor: string) =>
 export const emailValido = (valor: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
 
+/**
+ * Genera automáticamente un nombre de usuario corto y fácil de recordar
+ * a partir del primer nombre y los últimos 3 dígitos del DNI (ej: "lucia910", "martin104").
+ */
+export function generarUsernameAlumno(nombre?: string, dni?: string): string {
+  const baseNombre = (nombre || "socio")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)[0]
+    .replace(/[^a-z0-9]/g, "") || "socio";
+
+  const digitosDni = (dni || "").replace(/\D/g, "");
+  const sufijo = digitosDni.length >= 3 ? digitosDni.slice(-3) : digitosDni;
+  return `${baseNombre}${sufijo}`;
+}
+
 export interface FormularioAlumnoData {
   nombre: string;
   dni?: string;
@@ -33,8 +51,6 @@ export function validarDatosAlumno(
     if (!emailValido(datos.email)) {
       errores.email = "Correo electrónico inválido";
     }
-  } else if (esNuevo) {
-    errores.email = "El correo electrónico es requerido";
   }
 
   if (datos.dni && datos.dni.trim().length > 0) {

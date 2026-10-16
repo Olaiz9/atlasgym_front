@@ -1,10 +1,10 @@
-﻿// lib/auth-utils.ts
+// lib/auth-utils.ts
 import { Rutina } from "./types";
 
 /**
  * Rutas a las que solo el ADMIN puede ingresar.
  */
-export const RUTAS_EXCLUSIVAS_ADMIN = ["/alumnos", "/planes"];
+export const RUTAS_EXCLUSIVAS_ADMIN = ["/alumnos", "/planes", "/asistencias"];
 
 /**
  * Determina si un usuario con determinado rol puede acceder a una ruta específica.
