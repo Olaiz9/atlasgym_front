@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
+import { soloLetras, soloNumeros, emailValido, validarDatosAlumno, generarUsernameAlumno } from '@/lib/validators'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/toast'
 import { useEscapeKey } from '@/lib/use-escape-key'
@@ -22,6 +22,10 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const planesActivos = planes.filter((p) => p.activo)
+  const usuarioAutogenerado =
+    formAlumno.nombre.trim().length >= 2 && formAlumno.dni.length >= 3
+      ? generarUsernameAlumno(formAlumno.nombre, formAlumno.dni)
+      : ''
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -66,7 +70,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
         <div className="flex items-start justify-between">
           <div>
             <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-white">Nuevo alumno</h2>
-            <p className="mt-1 text-xs text-slate-400">Agregá los datos personales para crear su perfil en ATLAS.</p>
+            <p className="mt-1 text-xs text-slate-400">Agregá los datos personales para crear su perfil y usuario automático en ATLAS.</p>
           </div>
           <button onClick={handleCerrar} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
             <X className="size-5" />
@@ -76,17 +80,18 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
           onSubmit={(e) => {
             e.preventDefault()
             if (!validarAlumno()) return
-            agregarAlumno({
+            const creado = agregarAlumno({
               nombre: formAlumno.nombre,
               dni: formAlumno.dni,
-              email: formAlumno.email,
+              usuario: generarUsernameAlumno(formAlumno.nombre, formAlumno.dni),
+              email: formAlumno.email.trim() || undefined,
               celular: formAlumno.celular,
               planId: formAlumno.planId || undefined,
               plan: formAlumno.plan,
               fechaAlta: fechaLocalHoy(),
               activo: true,
             })
-            toast(`Alumno "${formAlumno.nombre}" registrado exitosamente`, 'success')
+            toast(`Alumno "${formAlumno.nombre}" registrado (Usuario: ${creado.usuario})`, 'success')
             handleCerrar()
           }}
           className="mt-6 flex flex-col gap-4"
@@ -103,20 +108,6 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               placeholder="Ej. Martín Gómez"
             />
             {erroresAlumno.nombre && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.nombre}</span>}
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
-            Correo electrónico
-            <input
-              required
-              type="email"
-              value={formAlumno.email}
-              onChange={(e) => setFormAlumno({ ...formAlumno, email: e.target.value })}
-              maxLength={80}
-              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-500' : 'border-slate-700'}`}
-              placeholder="correo@ejemplo.com"
-            />
-            {erroresAlumno.email && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.email}</span>}
           </label>
 
           <div className="grid grid-cols-2 gap-3">
@@ -148,6 +139,31 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               {erroresAlumno.celular && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.celular}</span>}
             </label>
           </div>
+
+          {usuarioAutogenerado && (
+            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs text-blue-200">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-300">Usuario autogenerado:</span>
+                <span className="font-mono font-black text-blue-400 text-sm">{usuarioAutogenerado}</span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                El socio podrá iniciar sesión con este usuario o con su número de DNI.
+              </p>
+            </div>
+          )}
+
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+            Correo electrónico <span className="font-normal text-slate-500">(opcional)</span>
+            <input
+              type="email"
+              value={formAlumno.email}
+              onChange={(e) => setFormAlumno({ ...formAlumno, email: e.target.value })}
+              maxLength={80}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-500' : 'border-slate-700'}`}
+              placeholder="correo@ejemplo.com"
+            />
+            {erroresAlumno.email && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.email}</span>}
+          </label>
 
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
             Plan asignado

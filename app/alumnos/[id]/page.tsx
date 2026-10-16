@@ -214,11 +214,18 @@ function HeaderAlumno({
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <div className="flex items-center gap-2 text-slate-300">
           <CreditCard className="w-4 h-4 text-slate-500" />
-          {alumno.dni ? `DNI: ${alumno.dni}` : "Sin DNI"}
+          <span>
+            {alumno.dni ? `DNI: ${alumno.dni}` : "Sin DNI"}
+            {alumno.usuario && (
+              <span className="ml-2 inline-flex items-center rounded-md bg-blue-500/15 px-2 py-0.5 font-mono text-xs font-bold text-blue-400 border border-blue-500/30">
+                @{alumno.usuario}
+              </span>
+            )}
+          </span>
         </div>
         <div className="flex items-center gap-2 text-slate-300">
           <Mail className="w-4 h-4 text-slate-500" />
-          {alumno.email || "Sin email"}
+          {alumno.email || `Usuario: ${alumno.usuario || "Sin email"}`}
         </div>
         <div className="flex items-center gap-2 text-slate-300">
           <Phone className="w-4 h-4 text-slate-500" />

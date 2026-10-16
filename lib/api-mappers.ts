@@ -37,6 +37,7 @@ export interface BackendAlumnoDto {
   id: number;
   nombre: string;
   dni?: string | null;
+  usuario?: string | null;
   email?: string | null;
   celular?: string | null;
   planId?: number | null;
@@ -196,10 +197,22 @@ export function mapLoginResponseToUsuarioSesion(dto: BackendLoginResponse): Usua
 }
 
 export function mapAlumnoDtoToFront(dto: BackendAlumnoDto): Alumno {
+  const baseNombre = (dto.nombre || "socio")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)[0]
+    .replace(/[^a-z0-9]/g, "") || "socio";
+  const digitosDni = (dto.dni || "").replace(/\D/g, "");
+  const sufijo = digitosDni.length >= 3 ? digitosDni.slice(-3) : digitosDni;
+  const fallbackUsuario = `${baseNombre}${sufijo}`;
+
   return {
     id: String(dto.id),
     nombre: dto.nombre,
     dni: dto.dni || undefined,
+    usuario: dto.usuario || fallbackUsuario,
     email: dto.email || undefined,
     celular: dto.celular || undefined,
     planId: dto.planId != null ? String(dto.planId) : undefined,

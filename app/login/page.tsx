@@ -57,6 +57,12 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!email.trim() || !password) {
+      setError('Por favor ingresá tu usuario y contraseña para continuar.')
+      return
+    }
+
     setCargando(true)
 
     const resultado = await iniciarSesion(rol, email, password)
@@ -79,7 +85,7 @@ export default function LoginPage() {
       setEmail('admin@atlasgym.com')
       setPassword('admin123')
     } else {
-      setEmail('lucia.fernandez@mail.com')
+      setEmail('lucia910')
       setPassword('alumno123')
     }
   }
@@ -150,10 +156,10 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input Usuario / Email */}
+            {/* Input Usuario / DNI */}
             <div>
               <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                {rol === 'ADMIN' ? 'Correo electrónico' : 'Usuario o correo electrónico'}
+                {rol === 'ADMIN' ? 'Usuario o correo electrónico' : 'Nombre de usuario o DNI'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -164,7 +170,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'Ej. bruno9 o tu.email@ejemplo.com'}
+                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'Ej. lucia910 o tu DNI (39482910)'}
                   className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>

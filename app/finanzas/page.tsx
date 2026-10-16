@@ -853,8 +853,8 @@ function generarPassword() {
 
 function sugerirUsuarioAlumno(alumno?: Alumno): string {
   if (!alumno) return "";
-  if (alumno.email && alumno.email.includes("@")) {
-    return alumno.email.split("@")[0].trim().toLowerCase();
+  if (alumno.usuario && !alumno.usuario.includes("@")) {
+    return alumno.usuario;
   }
   const baseNombre = alumno.nombre
     .normalize("NFD")
@@ -863,7 +863,7 @@ function sugerirUsuarioAlumno(alumno?: Alumno): string {
     .trim()
     .split(/\s+/)[0]
     .replace(/[^a-z0-9]/g, "");
-  const sufijoDni = alumno.dni ? alumno.dni.replace(/\D/g, "").slice(-2) : "";
+  const sufijoDni = alumno.dni ? alumno.dni.replace(/\D/g, "").slice(-3) : "";
   return `${baseNombre}${sufijoDni}`;
 }
 

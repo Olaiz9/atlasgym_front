@@ -62,6 +62,7 @@ export default function AlumnosPage() {
       const coincideBusqueda =
         !q ||
         a.nombre.toLowerCase().includes(q) ||
+        (a.usuario && a.usuario.toLowerCase().includes(q)) ||
         (a.dni && a.dni.toLowerCase().includes(q)) ||
         (a.email && a.email.toLowerCase().includes(q)) ||
         (a.celular && a.celular.includes(q)) ||
@@ -97,6 +98,7 @@ export default function AlumnosPage() {
     const encabezados = [
       "ID",
       "Nombre",
+      "Usuario",
       "DNI",
       "Email",
       "Celular",
@@ -109,6 +111,7 @@ export default function AlumnosPage() {
     const filas = alumnosConEstado.map((a) => [
       a.id,
       a.nombre,
+      a.usuario || "-",
       a.dni || "-",
       a.email || "-",
       a.celular || "-",
@@ -253,6 +256,14 @@ export default function AlumnosPage() {
                       {alumno.nombre}
                       <ChevronRight className="w-3.5 h-3.5 opacity-40" />
                     </Link>
+                    {(alumno.usuario || alumno.dni) && (
+                      <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
+                        {alumno.usuario && (
+                          <span className="font-mono text-blue-400">@{alumno.usuario}</span>
+                        )}
+                        {alumno.dni && <span>DNI: {alumno.dni}</span>}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
                   <td className="px-6 py-4">

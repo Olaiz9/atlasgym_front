@@ -19,6 +19,7 @@ export interface Alumno {
   id: string;
   nombre: string;
   dni?: string;
+  usuario?: string;
   email?: string;
   celular?: string;
   planId?: string;

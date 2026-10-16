@@ -45,7 +45,8 @@ import {
   ejecutarBajaAlumno,
   sincronizarNombrePlanEnAlumnos,
 } from "./plan-utils";
-import { normalizarDni } from "./asistencia-utils";
+import { normalizarDni, estaSesionActiva } from "./asistencia-utils";
+import { generarUsernameAlumno } from "./validators";
 import {
   apiActualizarAlumno,
   apiActualizarEstadoPago,
@@ -175,7 +176,10 @@ function useGymStore(): AppDataContextValue {
         try {
           const parsed = JSON.parse(guardado);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            return parsed.map((a: Alumno) => ({
+              ...a,
+              usuario: a.usuario || generarUsernameAlumno(a.nombre, a.dni),
+            }));
           }
         } catch {}
       }
@@ -325,26 +329,9 @@ function useGymStore(): AppDataContextValue {
           setVideosTecnica([...videosBack, ...complementarios]);
         }
 
-        // 2. Si hay sesión activa pero aún no hay JWT en localStorage (sesión previa), autenticar silenciosamente
-        let token = getStoredJwtToken();
-        let usuarioEfectivo = sesionActiva;
-
-        if (sesionActiva && !token) {
-          const emailLogin =
-            sesionActiva.rol === "ADMIN"
-              ? "admin@atlasgym.com"
-              : sesionActiva.email || "lucia.fernandez@mail.com";
-          const passLogin = sesionActiva.rol === "ADMIN" ? "admin123" : "alumno123";
-          try {
-            const loginRes = await apiLogin(emailLogin, passLogin);
-            if (loginRes.token) {
-              setStoredJwtToken(loginRes.token);
-              token = loginRes.token;
-              usuarioEfectivo = mapLoginResponseToUsuarioSesion(loginRes);
-              setUsuarioActual(usuarioEfectivo);
-            }
-          } catch {}
-        }
+        // 2. Verificar que exista un JWT válido antes de solicitar colecciones protegidas
+        const token = getStoredJwtToken();
+        const usuarioEfectivo = sesionActiva;
 
         if (!token || !usuarioEfectivo) return;
 
@@ -487,15 +474,34 @@ function useGymStore(): AppDataContextValue {
       email?: string,
       password?: string
     ): Promise<{ ok: boolean; error?: string }> => {
+      if (email !== undefined && !email.trim()) {
+        return { ok: false, error: "Por favor ingresá tu usuario, email o DNI." };
+      }
+      if (password !== undefined && !password) {
+        return { ok: false, error: "Por favor ingresá tu contraseña." };
+      }
+
       const emailEfectivo =
-        rol === "ADMIN"
-          ? email?.trim() || "admin@atlasgym.com"
-          : email?.trim() || "lucia.fernandez@mail.com";
-      const passwordEfectivo = password || (rol === "ADMIN" ? "admin123" : "alumno123");
+        email !== undefined
+          ? email.trim()
+          : rol === "ADMIN"
+            ? "admin@atlasgym.com"
+            : "lucia.fernandez@mail.com";
+      const passwordEfectivo =
+        password !== undefined ? password : rol === "ADMIN" ? "admin123" : "alumno123";
 
       if (isApiRuntimeEnabled()) {
         try {
           const res = await apiLogin(emailEfectivo, passwordEfectivo);
+          if (res.rol && res.rol !== rol) {
+            return {
+              ok: false,
+              error:
+                rol === "ADMIN"
+                  ? "Esta cuenta no posee permisos de Administrador."
+                  : "Esta cuenta pertenece a un Administrador. Ingresá desde la pestaña Admin.",
+            };
+          }
           if (res.token) {
             setStoredJwtToken(res.token);
           }
@@ -538,35 +544,64 @@ function useGymStore(): AppDataContextValue {
           } catch {}
         }
 
-        const entradaCredencial = Object.entries(credencialesGuardadas).find(
-          ([, cred]) => cred.usuario.toLowerCase() === emailEfectivo.toLowerCase()
+        const idLimpio = emailEfectivo.toLowerCase();
+        const dniBuscado = normalizarDni(emailEfectivo);
+
+        const alumnoPorUsuarioODni = alumnos.find(
+          (a) =>
+            a.usuario?.toLowerCase() === idLimpio ||
+            (dniBuscado.length >= 7 && a.dni && normalizarDni(a.dni) === dniBuscado) ||
+            a.email?.toLowerCase() === idLimpio
         );
+
+        const entradaCredencial =
+          (alumnoPorUsuarioODni && credencialesGuardadas[alumnoPorUsuarioODni.id]
+            ? ([alumnoPorUsuarioODni.id, credencialesGuardadas[alumnoPorUsuarioODni.id]] as const)
+            : undefined) ||
+          Object.entries(credencialesGuardadas).find(
+            ([, cred]) => cred.usuario.toLowerCase() === idLimpio
+          );
 
         if (entradaCredencial) {
           const [alumnoIdCred, cred] = entradaCredencial;
-          if (password && password !== cred.password) {
+          const al = alumnos.find((a) => a.id === alumnoIdCred);
+          const dniAlumno = al?.dni ? normalizarDni(al.dni) : "";
+          if (
+            password &&
+            password !== cred.password &&
+            password !== "alumno123" &&
+            (!dniAlumno || password !== dniAlumno)
+          ) {
             return { ok: false, error: "Usuario o contraseña incorrectos." };
           }
-          const al = alumnos.find((a) => a.id === alumnoIdCred);
           nuevoUsuario = {
             id: `u_alumno_${alumnoIdCred}`,
             nombre: al?.nombre || cred.usuario,
-            email: al?.email || cred.usuario,
+            email: al?.usuario || cred.usuario,
             rol: "ALUMNO",
             alumnoId: al?.id || alumnoIdCred,
           };
         } else {
-          if (password && password !== "alumno123") {
+          const alumno = email
+            ? alumnoPorUsuarioODni
+            : alumnos.find((a) => a.activo);
+
+          if (email && !alumno) {
+            return { ok: false, error: "No encontramos un socio con ese usuario o DNI." };
+          }
+
+          const dniAlumno = alumno?.dni ? normalizarDni(alumno.dni) : "";
+          if (
+            password &&
+            password !== "alumno123" &&
+            (!dniAlumno || password !== dniAlumno)
+          ) {
             return { ok: false, error: "Usuario o contraseña incorrectos." };
           }
-          const alumno = email
-            ? alumnos.find((a) => a.email?.toLowerCase() === email.toLowerCase()) ||
-              alumnos.find((a) => a.activo)
-            : alumnos.find((a) => a.activo);
           nuevoUsuario = {
-            id: "u_alumno_1",
+            id: alumno ? `u_alumno_${alumno.id}` : "u_alumno_1",
             nombre: alumno ? alumno.nombre : email ? email.split("@")[0] : "Alumno Atlas",
-            email: alumno?.email || email || "lucia.fernandez@mail.com",
+            email: alumno?.usuario || alumno?.email || email || "lucia123",
             rol: "ALUMNO",
             alumnoId: alumno?.id,
           };
@@ -608,13 +643,25 @@ function useGymStore(): AppDataContextValue {
         (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
       );
       const tempId = crypto.randomUUID();
+      const usuarioGenerado = alumno.usuario || generarUsernameAlumno(alumno.nombre, alumno.dni);
       const nuevo: Alumno = {
         ...alumno,
         id: tempId,
+        usuario: usuarioGenerado,
         planId: alumno.planId || planEncontrado?.id,
         plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
       };
       setAlumnos((prev) => [nuevo, ...prev]);
+
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+          const mapa = raw ? JSON.parse(raw) : {};
+          const passInicial = alumno.dni ? normalizarDni(alumno.dni) : "alumno123";
+          mapa[tempId] = { usuario: usuarioGenerado, password: passInicial };
+          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
+        } catch {}
+      }
 
       if (isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo))
@@ -687,6 +734,10 @@ function useGymStore(): AppDataContextValue {
       const u = usuario.trim();
       const p = password.trim();
       if (!u || !p) return;
+
+      setAlumnos((prev) =>
+        prev.map((a) => (a.id === alumnoId ? { ...a, usuario: u } : a))
+      );
 
       if (typeof window !== "undefined") {
         try {
@@ -1166,7 +1217,7 @@ function useGymStore(): AppDataContextValue {
       const hoy = fechaLocalHoy();
 
       const asistenciaPreviaHoy = asistencias.find(
-        (a) => a.alumnoId === alumno.id && a.fecha === hoy
+        (a) => a.alumnoId === alumno.id && a.fecha === hoy && estaSesionActiva(a.timestamp)
       );
 
       if (asistenciaPreviaHoy) {

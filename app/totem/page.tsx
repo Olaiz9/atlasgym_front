@@ -5,7 +5,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useAppData } from '@/lib/store'
 import { normalizarDni, reproducirSonidoFeedback } from '@/lib/asistencia-utils'
-import { Alumno, EstadoCuenta } from '@/lib/types'
+import { apiCheckInTotem, isApiRuntimeEnabled } from '@/lib/api-client'
+import { fechaLocalHoy } from '@/lib/date-utils'
+import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
 import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck } from 'lucide-react'
 import { Tooltip } from '@/components/ui/tooltip'
 
@@ -96,7 +98,7 @@ export default function TotemPage() {
   }, [reiniciarAIdle])
 
   const manejarEnvio = useCallback(
-    (dniAEnviar?: string) => {
+    async (dniAEnviar?: string) => {
       const valorDni = normalizarDni(dniAEnviar || dni)
       if (!valorDni || procesando) return
 
@@ -115,7 +117,11 @@ export default function TotemPage() {
           alumno: res.alumno,
           estadoCuenta: res.estadoCuenta,
         })
-      } else if (res.yaRegistrado && res.alumno) {
+        iniciarAutoReset()
+        return
+      }
+
+      if (res.yaRegistrado && res.alumno) {
         setEstado('ALERTA')
         reproducirSonidoFeedback('ALERTA')
         setResultado({
@@ -124,15 +130,107 @@ export default function TotemPage() {
           motivo: res.motivo,
           esDuplicado: true,
         })
-      } else {
-        setEstado('ERROR')
-        reproducirSonidoFeedback('ERROR')
-        setResultado({
-          alumno: res.alumno,
-          motivo: res.motivo || 'DNI no encontrado en la base de socios.',
-        })
+        iniciarAutoReset()
+        return
       }
 
+      // Si el socio no estaba en la memoria local (ej: Tótem abierto sin sesión de Admin),
+      // consultar directamente al endpoint público del Backend (/api/asistencias/totem)
+      if (!res.alumno && isApiRuntimeEnabled()) {
+        try {
+          const backRes = await apiCheckInTotem(valorDni)
+          const alumnoRemoto: Alumno | undefined = backRes.nombreAlumno
+            ? {
+                id: String(backRes.alumnoId ?? valorDni),
+                nombre: backRes.nombreAlumno,
+                dni: backRes.alumnoDni || valorDni,
+                plan: backRes.planNombre || 'Pase Libre',
+                fechaAlta: fechaLocalHoy(),
+                activo: true,
+                tieneRutina: false,
+              }
+            : undefined
+
+          if (backRes.ok && alumnoRemoto) {
+            const estadoRemoto = backRes.estadoCuenta || 'AL_DIA'
+            const nuevaAsistencia: RegistroAsistencia = {
+              id: String(backRes.asistenciaId ?? `asist-${Date.now()}`),
+              alumnoId: alumnoRemoto.id,
+              alumnoNombre: alumnoRemoto.nombre,
+              alumnoDni: alumnoRemoto.dni || valorDni,
+              fecha: fechaLocalHoy(),
+              hora:
+                backRes.horaIngreso?.slice(0, 5) ||
+                new Date().toLocaleTimeString('es-AR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }),
+              timestamp: Date.now(),
+              estadoCuenta: estadoRemoto,
+              planNombre: alumnoRemoto.plan,
+              metodo: 'DNI_TOTEM',
+            }
+
+            try {
+              const raw = localStorage.getItem('atlas_asistencias_v2')
+              const prev: RegistroAsistencia[] = raw ? JSON.parse(raw) : []
+              const actualizadas = [nuevaAsistencia, ...prev]
+              localStorage.setItem('atlas_asistencias_v2', JSON.stringify(actualizadas))
+              if (typeof BroadcastChannel !== 'undefined') {
+                const bc = new BroadcastChannel('atlas_asistencias_channel')
+                bc.postMessage({ tipo: 'NUEVA_ASISTENCIA', asistencias: actualizadas })
+                bc.close()
+              }
+            } catch {}
+
+            if (estadoRemoto === 'AL_DIA') {
+              setEstado('EXITO')
+              reproducirSonidoFeedback('EXITO')
+            } else {
+              setEstado('ALERTA')
+              reproducirSonidoFeedback('ALERTA')
+            }
+            setResultado({
+              alumno: alumnoRemoto,
+              estadoCuenta: estadoRemoto,
+            })
+            iniciarAutoReset()
+            return
+          }
+
+          if (backRes.yaRegistrado && alumnoRemoto) {
+            setEstado('ALERTA')
+            reproducirSonidoFeedback('ALERTA')
+            setResultado({
+              alumno: alumnoRemoto,
+              estadoCuenta: backRes.estadoCuenta || 'AL_DIA',
+              motivo: backRes.motivo || 'Tu sesión de entrenamiento continúa activa.',
+              esDuplicado: true,
+            })
+            iniciarAutoReset()
+            return
+          }
+
+          if (backRes.motivo) {
+            setEstado('ERROR')
+            reproducirSonidoFeedback('ERROR')
+            setResultado({
+              alumno: alumnoRemoto,
+              motivo: backRes.motivo,
+            })
+            iniciarAutoReset()
+            return
+          }
+        } catch {}
+      }
+
+      setEstado('ERROR')
+      reproducirSonidoFeedback('ERROR')
+      setResultado({
+        alumno: res.alumno,
+        motivo: res.motivo || 'DNI no encontrado en la base de socios.',
+      })
       iniciarAutoReset()
     },
     [dni, procesando, registrarAsistenciaPorDni, iniciarAutoReset]
