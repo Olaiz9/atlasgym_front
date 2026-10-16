@@ -1,5 +1,14 @@
 // lib/auth-utils.ts
-import { Rutina } from "./types";
+import { Rutina, Alumno, UsuarioSesion } from "./types";
+
+export const CLAVE_ADMIN_DEFAULT = "admin123";
+export const CLAVE_ALUMNO_DEFAULT = "alumno123";
+
+export interface ValidacionCredencialesResult {
+  ok: boolean;
+  motivo?: string;
+  alumno?: Alumno;
+}
 
 /**
  * Rutas a las que solo el ADMIN puede ingresar.
@@ -31,7 +40,7 @@ export function resolverRutinaAlumno(
 /**
  * Valida las credenciales ingresadas para Admin o Alumno.
  * - Admin: valida email (ej. admin@atlasgym.com o configurado) y contraseña.
- * - Alumno: comprueba que el email pertenezca a un alumno registrado en el gimnasio.
+ * - Alumno: comprueba que el email/usuario/DNI pertenezca a un alumno registrado en el gimnasio.
  *   Si no existe, devuelve error claro sin fallback ciego (Auditoría C1).
  *   Si existe, comprueba contraseña personalizada o default (alumno123) (Auditoría C2 y A4).
  */
@@ -67,7 +76,10 @@ export function validarCredenciales(
 
   // Rol ALUMNO
   const alumnoEncontrado = alumnos.find(
-    (a) => (a.email || "").trim().toLowerCase() === emailNorm
+    (a) =>
+      (a.email || "").trim().toLowerCase() === emailNorm ||
+      (a.usuario || "").trim().toLowerCase() === emailNorm ||
+      (a.dni && a.dni.replace(/\D/g, "") === emailNorm.replace(/\D/g, "") && emailNorm.replace(/\D/g, "").length >= 6)
   );
 
   if (!alumnoEncontrado) {
@@ -77,7 +89,13 @@ export function validarCredenciales(
     };
   }
 
-  const claveEsperada = credenciales[emailNorm] || CLAVE_ALUMNO_DEFAULT;
+  const claveEsperada =
+    credenciales[emailNorm] ||
+    (alumnoEncontrado.email && credenciales[alumnoEncontrado.email.toLowerCase()]) ||
+    (alumnoEncontrado.usuario && credenciales[alumnoEncontrado.usuario.toLowerCase()]) ||
+    (alumnoEncontrado.dni && credenciales[alumnoEncontrado.dni]) ||
+    CLAVE_ALUMNO_DEFAULT;
+
   if (claveNorm !== claveEsperada) {
     return { ok: false, motivo: "Contraseña incorrecta para Alumno." };
   }
