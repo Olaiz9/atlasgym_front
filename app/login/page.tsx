@@ -55,28 +55,28 @@ export default function LoginPage() {
 
   useEscapeKey(cerrarModalTutorial, mostrarModalTutorial)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    const val = validarCredencialesStore(email, password, rol)
-    if (!val.ok) {
-      setError(val.motivo || 'Credenciales inválidas.')
+    if (!email.trim() || !password) {
+      setError('Por favor ingresá tu usuario y contraseña para continuar.')
       return
     }
 
     setCargando(true)
-    const loginRes = iniciarSesion(rol, email, recordarme)
-    if (!loginRes.ok) {
+
+    const resultado = await iniciarSesion(rol, email, password)
+    if (!resultado.ok) {
       setCargando(false)
-      setError(loginRes.motivo || 'Error al iniciar sesión.')
+      setError(resultado.error || 'Usuario o contraseña incorrectos.')
       return
     }
 
     setTimeout(() => {
       setCargando(false)
       router.push('/')
-    }, 400)
+    }, 300)
   }
 
   const handleQuickDemo = (demoRol: 'ADMIN' | 'ALUMNO') => {
@@ -86,7 +86,7 @@ export default function LoginPage() {
       setEmail('admin@atlasgym.com')
       setPassword('admin123')
     } else {
-      setEmail('lucia.fernandez@mail.com')
+      setEmail('lucia910')
       setPassword('alumno123')
     }
   }
@@ -100,11 +100,24 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
-      {/* Fondo con resplandores sutiles */}
-      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[600px] rounded-full bg-blue-600/15 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[500px] rounded-full bg-blue-500/10 blur-[140px]" />
+      {/* Imagen de fondo nítida y visible con atmósfera cinematográfica oscura */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <Image
+          src="/login-bg.jpg"
+          alt="Gimnasio Atlas"
+          fill
+          priority
+          className="object-cover object-center opacity-55 filter blur-[1.5px] scale-105"
+        />
+        {/* Capa de viñeta oscura para garantizar legibilidad óptima de la tarjeta */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/60 to-slate-950/90" />
+      </div>
 
-      <div className="relative w-full max-w-md">
+      {/* Fondo con resplandores sutiles */}
+      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[600px] rounded-full bg-blue-600/15 blur-[120px] z-0" />
+      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[500px] rounded-full bg-blue-500/10 blur-[140px] z-0" />
+
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo & Marca Superior */}
         <div className="mb-8 text-center flex flex-col items-center">
           <Image
@@ -151,20 +164,21 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input Email */}
+            {/* Input Usuario / DNI */}
             <div>
               <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                Correo electrónico
+                {rol === 'ADMIN' ? 'Usuario o correo electrónico' : 'Nombre de usuario o DNI'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                 <input
                   id="login-email"
-                  type="email"
+                  type="text"
+                  autoComplete="username"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'tu.email@ejemplo.com'}
+                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'Ej. lucia910 o tu DNI (39482910)'}
                   className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>

@@ -1,20 +1,13 @@
 // lib/auth-utils.ts
-import { Alumno, Rutina, UsuarioSesion } from "./types";
-
-export interface ValidacionCredencialesResult {
-  ok: boolean;
-  motivo?: string;
-  alumno?: Alumno;
-}
-
-export const CLAVE_ADMIN_DEFAULT = "admin123";
-export const CLAVE_ALUMNO_DEFAULT = "alumno123";
+import { Rutina } from "./types";
 
 /**
- * Controla si un usuario con determinado rol puede acceder a una ruta del sistema.
- * - ADMIN tiene acceso a todas las rutas.
- * - ALUMNO solo tiene acceso a sus vistas (/rutinas, /finanzas, /avisos, /videoteca, /).
- *   No tiene acceso a /alumnos ni /planes.
+ * Rutas a las que solo el ADMIN puede ingresar.
+ */
+export const RUTAS_EXCLUSIVAS_ADMIN = ["/alumnos", "/planes", "/asistencias"];
+
+/**
+ * Determina si un usuario con determinado rol puede acceder a una ruta específica.
  */
 export function puedeAccederRuta(ruta: string, rol: "ADMIN" | "ALUMNO"): boolean {
   if (rol === "ADMIN") return true;

@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Aviso, UsuarioSesion } from "./types";
 import { AVISOS_MOCK } from "./mock-data";
+import {
+  apiCrearAviso,
+  apiEliminarAviso,
+  apiMarcarAvisoLeido,
+  getStoredJwtToken,
+  isApiRuntimeEnabled,
+} from "./api-client";
+import {
+  mapAvisoDtoToFront,
+  mapAvisoFrontToRequestDto,
+  parseNumericId,
+} from "./api-mappers";
 
 export function useAvisosManager() {
   const [avisos, setAvisos] = useState<Aviso[]>(() => {
@@ -24,12 +36,25 @@ export function useAvisosManager() {
   }, [avisos]);
 
   const crearAviso = useCallback((aviso: Omit<Aviso, "id" | "leidoPor">) => {
+    const tempId = crypto.randomUUID();
     const nuevo: Aviso = {
       ...aviso,
-      id: crypto.randomUUID(),
+      id: tempId,
       leidoPor: [],
     };
     setAvisos((prev) => [nuevo, ...prev]);
+
+    if (isApiRuntimeEnabled() && getStoredJwtToken()) {
+      apiCrearAviso(mapAvisoFrontToRequestDto(aviso))
+        .then((creadoDto) => {
+          const mapeado = mapAvisoDtoToFront(creadoDto);
+          setAvisos((prev) =>
+            prev.map((av) => (av.id === tempId ? mapeado : av))
+          );
+        })
+        .catch(() => {});
+    }
+
     return nuevo;
   }, []);
 
@@ -42,10 +67,20 @@ export function useAvisosManager() {
         return av;
       })
     );
+
+    const numId = parseNumericId(avisoId);
+    if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      apiMarcarAvisoLeido(numId).catch(() => {});
+    }
   }, []);
 
   const eliminarAviso = useCallback((avisoId: string) => {
     setAvisos((prev) => prev.filter((av) => av.id !== avisoId));
+
+    const numId = parseNumericId(avisoId);
+    if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      apiEliminarAviso(numId).catch(() => {});
+    }
   }, []);
 
   const getAvisosParaUsuario = useCallback(
@@ -70,35 +105,19 @@ export function useAvisosManager() {
     [getAvisosParaUsuario]
   );
 
-  const marcarTodosAvisosLeidos = useCallback(
-    (usuarioOId: string | UsuarioSesion, alumnoIdOpcional?: string) => {
-      let usuarioId: string;
-      let alumnoId: string | undefined = alumnoIdOpcional;
-      let esAdmin = false;
-
-      if (typeof usuarioOId === "object" && usuarioOId !== null) {
-        usuarioId = usuarioOId.id;
-        alumnoId = usuarioOId.alumnoId;
-        esAdmin = usuarioOId.rol === "ADMIN";
-      } else {
-        usuarioId = usuarioOId;
-      }
-
-      setAvisos((prev) => {
-        const esAvisoAplicable = (av: Aviso) =>
-          esAdmin || av.paraTodos || (alumnoId && av.alumnoId === alumnoId) || (!alumnoId && !esAdmin);
-
-        const hayNoLeidos = prev.some(
-          (av) => esAvisoAplicable(av) && !av.leidoPor.includes(usuarioId)
-        );
-        if (!hayNoLeidos) return prev;
-
-        return prev.map((av) => {
-          if (esAvisoAplicable(av) && !av.leidoPor.includes(usuarioId)) {
-            return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
+  const marcarTodosAvisosLeidos = useCallback((usuarioId: string) => {
+    setAvisos((prev) => {
+      const hayNoLeidos = prev.some((av) => !av.leidoPor.includes(usuarioId));
+      if (!hayNoLeidos) return prev;
+      return prev.map((av) => {
+        if (!av.leidoPor.includes(usuarioId)) {
+          const numId = parseNumericId(av.id);
+          if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
+            apiMarcarAvisoLeido(numId).catch(() => {});
           }
-          return av;
-        });
+          return { ...av, leidoPor: [...av.leidoPor, usuarioId] };
+        }
+        return av;
       });
     },
     []
@@ -107,6 +126,7 @@ export function useAvisosManager() {
 
   return {
     avisos,
+    setAvisos,
     crearAviso,
     marcarAvisoLeido,
     marcarTodosAvisosLeidos,

@@ -16,11 +16,11 @@ export function MetricCard({
   tint,
 }: MetricCardProps) {
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl text-slate-900 border border-slate-200 cursor-default">
+    <article className="group relative overflow-hidden rounded-2xl bg-slate-900/60 p-6 shadow-sm backdrop-blur-md transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-slate-700/80 hover:shadow-xl text-slate-100 border border-slate-800 cursor-default">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">{value}</p>
+          <p className="text-sm font-bold text-slate-400">{label}</p>
+          <p className="mt-2 text-4xl font-black tracking-tight text-white">{value}</p>
           {sub && <p className="mt-3 text-xs font-bold text-slate-400">{sub}</p>}
         </div>
         <div className={`flex size-12 items-center justify-center rounded-2xl ${tint.bg} ${tint.text} transition-transform duration-300 group-hover:scale-110`}>

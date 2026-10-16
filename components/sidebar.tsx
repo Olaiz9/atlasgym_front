@@ -5,13 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell } from 'lucide-react'
+import { Users, WalletCards, Dumbbell, Package, LayoutDashboard, Settings, HelpCircle, ChevronLeft, LogOut, Video, Bell, UserCheck } from 'lucide-react'
 import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
 import { ModalPerfil } from '@/components/modal-perfil'
 
 const navItemsAdmin = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
   { label: 'Alumnos', href: '/alumnos', icon: Users },
+  { label: 'Asistencias', href: '/asistencias', icon: UserCheck },
   { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
   { label: 'Avisos', href: '/avisos', icon: Bell },
@@ -21,8 +22,8 @@ const navItemsAdmin = [
 
 const navItemsAlumno = [
   { label: 'Inicio', href: '/', icon: LayoutDashboard },
-  { label: 'Mi Rutina', href: '/rutinas', icon: Dumbbell },
-  { label: 'Mis Cuotas', href: '/finanzas', icon: WalletCards },
+  { label: 'Mi rutina', href: '/rutinas', icon: Dumbbell },
+  { label: 'Mis cuotas', href: '/finanzas', icon: WalletCards },
   { label: 'Avisos', href: '/avisos', icon: Bell },
   { label: 'Videoteca', href: '/videoteca', icon: Video },
 ]
@@ -52,7 +53,7 @@ function SidebarUserCard({
         <button
           type="button"
           onClick={onAbrirPerfil}
-          title={`Mi Perfil: ${usuario.nombre} (${rolLabel})`}
+          title={`Mi perfil: ${usuario.nombre} (${rolLabel})`}
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-all cursor-pointer overflow-hidden active:scale-95"
         >
           {usuario.fotoUrl ? (
@@ -62,15 +63,15 @@ function SidebarUserCard({
             iniciales
           )}
         </button>
-        <Link
-          href="/login"
+        <button
+          type="button"
           onClick={onCerrarSesion}
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
           className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90"
         >
           <LogOut className="size-4 shrink-0" />
-        </Link>
+        </button>
       </div>
     )
   }
@@ -96,15 +97,15 @@ function SidebarUserCard({
           <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
         </div>
       </button>
-      <Link
-        href="/login"
+      <button
+        type="button"
         onClick={onCerrarSesion}
         title="Cerrar sesión"
         aria-label="Cerrar sesión"
         className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-90 ml-1 shrink-0"
       >
         <LogOut className="size-4 shrink-0" />
-      </Link>
+      </button>
     </div>
   )
 }
@@ -112,12 +113,14 @@ function SidebarUserCard({
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname()
   const { usuarioActual, cerrarSesion, getCantidadAvisosNoLeidos } = useAppData()
+  const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [mostrarPerfil, setMostrarPerfil] = useState(false)
+  const [mostrarConfirmCerrar, setMostrarConfirmCerrar] = useState(false)
+
   if (!usuarioActual) return null
 
   const esAlumno = usuarioActual.rol === 'ALUMNO'
   const navItems = esAlumno ? navItemsAlumno : navItemsAdmin
-  const [mostrarAyuda, setMostrarAyuda] = useState(false)
-  const [mostrarPerfil, setMostrarPerfil] = useState(false)
   const cantNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   return (
@@ -164,7 +167,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <nav className="flex flex-col gap-2.5 pb-5 shrink-0" aria-label="Navegación principal">
             {!collapsed && (
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                {esAlumno ? 'Portal del Alumno' : 'Panel principal'}
+                {esAlumno ? 'Portal del alumno' : 'Panel principal'}
               </p>
             )}
             {navItems.map(({ label, href, icon: Icon }) => {
@@ -207,21 +210,61 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <div className="mt-auto shrink-0 flex flex-col gap-2.5 border-t border-slate-800/50 pt-5">
             <button
               onClick={() => setMostrarAyuda(true)}
-              title={collapsed ? 'Centro de ayuda' : undefined}
-              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 ${collapsed ? 'justify-center' : ''}`}
+              title={collapsed ? (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda') : undefined}
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
-              {!collapsed && 'Centro de ayuda'}
+              {!collapsed && (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda')}
             </button>
             <SidebarUserCard
               usuario={usuarioActual}
               collapsed={collapsed}
-              onCerrarSesion={cerrarSesion}
+              onCerrarSesion={() => setMostrarConfirmCerrar(true)}
               onAbrirPerfil={() => setMostrarPerfil(true)}
             />
           </div>
         </div>
       </aside>
+
+      {mostrarConfirmCerrar && (
+        <div
+          onClick={() => setMostrarConfirmCerrar(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 transition-opacity duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 mb-4">
+              <LogOut className="size-6" />
+            </div>
+            <h3 className="text-lg font-bold text-white">¿Cerrar sesión?</h3>
+            <p className="mt-2 text-sm text-slate-400">
+              Vas a salir de tu cuenta en ATLAS Gym. Podrás volver a iniciar sesión en cualquier momento.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmCerrar(false)}
+                className="h-10 rounded-xl border border-slate-700 px-5 text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmCerrar(false)
+                  cerrarSesion()
+                  window.location.href = '/login'
+                }}
+                className="h-10 rounded-xl bg-rose-600 px-5 text-xs font-bold text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500 transition-colors active:scale-95"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ModalCentroAyuda
         abierto={mostrarAyuda}
