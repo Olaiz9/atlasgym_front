@@ -13,11 +13,19 @@ import {
   ArrowRight,
   Smartphone,
   X,
-  HelpCircle,
   KeyRound,
   Copy,
   Check,
   MessageCircle,
+  ShieldCheck,
+  Clock,
+  ChevronRight,
+  DownloadCloud,
+  Share2,
+  MoreVertical,
+  PlusSquare,
+  CheckCircle2,
+  Zap,
 } from 'lucide-react'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 
@@ -93,7 +101,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-12">
       {/* Imagen de fondo nítida y visible con atmósfera cinematográfica oscura */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <Image
@@ -104,31 +112,39 @@ export default function LoginPage() {
           className="object-cover object-center opacity-55 filter blur-[1.5px] scale-105"
         />
         {/* Capa de viñeta oscura para garantizar legibilidad óptima de la tarjeta */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/60 to-slate-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/65 to-slate-950/90" />
       </div>
 
       {/* Fondo con resplandores sutiles */}
-      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[600px] rounded-full bg-blue-600/15 blur-[120px] z-0" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[500px] rounded-full bg-blue-500/10 blur-[140px] z-0" />
+      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[650px] rounded-full bg-blue-600/15 blur-[130px] z-0" />
+      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[550px] rounded-full bg-blue-500/10 blur-[150px] z-0" />
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-[490px]">
         {/* Logo & Marca Superior */}
-        <div className="mb-8 text-center flex flex-col items-center">
+        <div className="mb-7 text-center flex flex-col items-center">
           <Image
             src="/logo-atlas-blanco.png"
             alt="ATLAS GYM"
             width={240}
             height={135}
-            className="h-16 w-auto object-contain mb-3 drop-shadow-[0_10px_25px_rgba(37,99,235,0.2)]"
+            className="h-16 w-auto object-contain mb-3 drop-shadow-[0_10px_25px_rgba(37,99,235,0.25)]"
             priority
           />
-          <p className="mt-1 text-sm font-medium text-slate-400">
-            Plataforma integral de gestión y entrenamiento
-          </p>
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-950/40 px-3.5 py-1 text-[11px] font-semibold text-blue-300 backdrop-blur-md">
+            <span className="size-1.5 rounded-full bg-blue-400 animate-pulse" />
+            Portal Oficial de Gestión y Entrenamiento
+          </div>
         </div>
 
         {/* Tarjeta Principal de Login */}
-        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-800/90 bg-slate-900/80 p-7 sm:p-9 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-white tracking-tight">Ingresá a tu cuenta</h1>
+            <p className="mt-1 text-xs text-slate-400 leading-relaxed">
+              Accedé a tus rutinas personalizadas, estado de cuotas o gestión administrativa.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Input Usuario / DNI / Email */}
             <div>
@@ -145,7 +161,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Ej. admin@atlasgym.com, bruno272 o tu DNI"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
             </div>
@@ -171,7 +187,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
                 <button
                   type="button"
@@ -185,7 +201,7 @@ export default function LoginPage() {
             </div>
 
             {/* Recordar sesión */}
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-0.5">
               <input
                 id="recordar"
                 type="checkbox"
@@ -222,22 +238,38 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Botón ¿Cómo descargarlo en mi celular? */}
-          <div className="mt-6">
+          {/* Micro indicadores de seguridad y servicio (sin emojis) */}
+          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-[11px] text-slate-400">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2.5 border border-slate-800/40">
+              <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
+              <span className="leading-tight">Acceso seguro y protegido</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2.5 border border-slate-800/40">
+              <Clock className="size-4 text-blue-400 shrink-0" />
+              <span className="leading-tight">Disponible 24/7 online</span>
+            </div>
+          </div>
+
+          {/* Botón ¿Cómo anclarlo en mi celular? */}
+          <div className="mt-4">
             <button
               type="button"
               onClick={abrirModalTutorial}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 py-2.5 px-4 text-xs font-bold text-blue-300 hover:text-white transition-all duration-300 group cursor-pointer shadow-sm active:scale-[0.99]"
+              className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 py-3 px-4 text-xs font-semibold text-slate-300 hover:text-white transition-all duration-200 group cursor-pointer"
             >
-              <Smartphone className="size-4 text-blue-400 group-hover:scale-110 transition-transform duration-300 ease-out" />
-              <span>¿Cómo instalar la app en mi celular?</span>
-              <HelpCircle className="size-3.5 text-blue-400/80 group-hover:text-blue-300 ml-auto transition-colors" />
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
+                  <Smartphone className="size-4" />
+                </div>
+                <span>¿Cómo anclar ATLAS a la pantalla de tu celular?</span>
+              </div>
+              <ChevronRight className="size-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
             </button>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-xs font-medium text-slate-500">
+        <p className="mt-7 text-center text-xs font-medium text-slate-500">
           ATLAS Gym Platform · v2.5.0
         </p>
       </div>
@@ -271,7 +303,7 @@ export default function LoginPage() {
             {/* Cabecera del Tutorial */}
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">
               <Smartphone className="size-4" />
-              <span>Acceso Rápido al Móvil</span>
+              <span>Acceso rápido al móvil</span>
             </div>
             <h2 className="text-xl font-extrabold text-white tracking-tight">
               Instalá la app en tu teléfono
@@ -413,6 +445,9 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
+        </div>
+      )}
+
       {/* Modal Recuperación de Contraseña */}
       {mostrarModalRecuperar && (
         <div
