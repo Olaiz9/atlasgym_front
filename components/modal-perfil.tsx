@@ -32,7 +32,6 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     alumnos,
     actualizarAlumno,
     actualizarUsuarioActual,
-    actualizarPassword,
     getEstadoCuenta,
   } = useAppData()
 
@@ -43,7 +42,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
 
   // Estados de edición de celular
   const [celular, setCelular] = useState(
-    alumnoDatos?.celular || usuarioActual?.celular || ''
+    alumnoDatos?.celular || usuarioActual?.celular || '+54 9 261 555-1234'
   )
   const [guardandoCelular, setGuardandoCelular] = useState(false)
   const [celularGuardado, setCelularGuardado] = useState(false)
@@ -100,10 +99,6 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     if (passwordNueva !== passwordConfirm) {
       setErrorPassword('Las contraseñas ingresadas no coinciden.')
       return
-    }
-
-    if (actualizarPassword && usuarioActual.email) {
-      actualizarPassword(usuarioActual.email, passwordNueva)
     }
 
     if (actualizarUsuarioActual) {

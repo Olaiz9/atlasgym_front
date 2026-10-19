@@ -123,8 +123,6 @@ interface AppDataContextValue {
     password?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   cerrarSesion: () => void;
-  actualizarPassword: (email: string, nuevaPassword: string) => void;
-  validarCredencialesStore: (email: string, clave: string, rol: "ADMIN" | "ALUMNO") => ValidacionCredencialesResult;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
@@ -145,7 +143,7 @@ interface AppDataContextValue {
   eliminarPlan: (id: string) => { ok: boolean; motivo?: string };
   crearAviso: (aviso: Omit<Aviso, "id" | "leidoPor">) => Aviso;
   marcarAvisoLeido: (avisoId: string, usuarioId: string) => void;
-  marcarTodosAvisosLeidos: (usuarioOId: string | UsuarioSesion, alumnoIdOpcional?: string) => void;
+  marcarTodosAvisosLeidos: (usuarioId: string) => void;
   eliminarAviso: (avisoId: string) => void;
   getAvisosParaUsuario: (usuario: UsuarioSesion | null) => Aviso[];
   getCantidadAvisosNoLeidos: (usuario: UsuarioSesion | null) => number;
@@ -249,12 +247,12 @@ function useGymStore(): AppDataContextValue {
 
   const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion | null>(() => {
     if (typeof window !== "undefined") {
-      try {
-        const guardadoLocal = localStorage.getItem("atlas_sesion_v1");
-        if (guardadoLocal) return JSON.parse(guardadoLocal);
-        const guardadoSession = sessionStorage.getItem("atlas_sesion_v1");
-        if (guardadoSession) return JSON.parse(guardadoSession);
-      } catch {}
+      const guardado = localStorage.getItem("atlas_sesion_v1");
+      if (guardado) {
+        try {
+          return JSON.parse(guardado);
+        } catch {}
+      }
     }
     return null;
   });
@@ -623,10 +621,7 @@ function useGymStore(): AppDataContextValue {
     setUsuarioActual(null);
     setStoredJwtToken(null);
     if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("atlas_sesion_v1");
-        sessionStorage.removeItem("atlas_sesion_v1");
-      } catch {}
+      localStorage.removeItem("atlas_sesion_v1");
     }
   }, []);
 
@@ -1171,17 +1166,6 @@ function useGymStore(): AppDataContextValue {
     [sesionesEntrenamiento]
   );
 
-  // Devuelve la sesión guardada hoy (si existe) para recuperar el progreso del entrenamiento en curso
-  const getSesionHoy = useCallback(
-    (alumnoId: string, rutinaId: string, diaId: string): SesionEntrenamiento | undefined => {
-      const hoy = fechaLocalHoy();
-      return sesionesEntrenamiento.find(
-        (s) => s.alumnoId === alumnoId && s.rutinaId === rutinaId && s.diaId === diaId && s.fecha === hoy
-      );
-    },
-    [sesionesEntrenamiento]
-  );
-
   const getAlumno = useCallback((id: string) => alumnos.find((a) => a.id === id), [alumnos]);
 
   const getEstadoCuenta = useCallback(
@@ -1355,14 +1339,11 @@ function useGymStore(): AppDataContextValue {
       actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
-      actualizarPassword,
-      validarCredencialesStore,
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
       asignarCredencialesAlumno,
       marcarAsistenciaAlumno,
-      desmarcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,
       eliminarPago,
@@ -1410,14 +1391,11 @@ function useGymStore(): AppDataContextValue {
       actualizarUsuarioActual,
       iniciarSesion,
       cerrarSesion,
-      actualizarPassword,
-      validarCredencialesStore,
       agregarAlumno,
       actualizarAlumno,
       eliminarAlumno,
       asignarCredencialesAlumno,
       marcarAsistenciaAlumno,
-      desmarcarAsistenciaAlumno,
       agregarPago,
       actualizarEstadoPago,
       eliminarPago,

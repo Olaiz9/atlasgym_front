@@ -122,7 +122,6 @@ export function useAvisosManager() {
     });
   }, []);
 
-
   return {
     avisos,
     setAvisos,

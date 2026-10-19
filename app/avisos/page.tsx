@@ -19,7 +19,6 @@ import {
 import { useAppData } from '@/lib/store'
 import { Aviso, CATEGORIA_AVISO_STYLES, CategoriaAviso, CATEGORIA_AVISO_LABEL } from '@/lib/types'
 import { CONTACTO_ATLAS } from '@/lib/constants'
-import { WhatsAppIcon } from '@/components/icons/brand-icons'
 import { ModalNuevoAviso } from '@/components/modal-nuevo-aviso'
 import { Button } from '@/components/ui/button'
 
@@ -355,10 +354,10 @@ export default function AvisosPage() {
   } = useAppData()
 
   useEffect(() => {
-    if (usuarioActual) {
-      marcarTodosAvisosLeidos(usuarioActual)
+    if (usuarioActual?.id) {
+      marcarTodosAvisosLeidos(usuarioActual.id)
     }
-  }, [marcarTodosAvisosLeidos, usuarioActual])
+  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -414,7 +413,7 @@ export default function AvisosPage() {
       </header>
 
       {/* Contenido */}
-      <section aria-label="Listado de avisos" className="mx-auto max-w-5xl px-5 py-8 md:px-10">
+      <main className="mx-auto max-w-5xl px-5 py-8 md:px-10">
         <AvisosFiltrosBar
           esAdmin={esAdmin}
           filtroCategoria={filtroCategoria}
@@ -433,7 +432,7 @@ export default function AvisosPage() {
           onEliminar={(id) => eliminarAviso(id)}
           onMarcarLeido={(id) => marcarAvisoLeido(id, usuarioActual.id)}
         />
-      </section>
+      </main>
 
       {esAdmin && (
         <ModalNuevoAviso

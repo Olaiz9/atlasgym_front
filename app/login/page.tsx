@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { useEscapeKey } from '@/lib/use-escape-key'
-import { APP_VERSION } from '@/lib/constants'
 import {
   Mail,
   Lock,
@@ -28,7 +27,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter()
-  const { iniciarSesion, validarCredencialesStore } = useAppData()
+  const { iniciarSesion } = useAppData()
   const [rol, setRol] = useState<'ADMIN' | 'ALUMNO'>('ADMIN')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -89,13 +88,6 @@ export default function LoginPage() {
       setEmail('lucia910')
       setPassword('alumno123')
     }
-  }
-
-  const handleSelectAlumnoDemo = (mail: string) => {
-    setRol('ALUMNO')
-    setError('')
-    setEmail(mail)
-    setPassword('alumno123')
   }
 
   return (
@@ -259,11 +251,11 @@ export default function LoginPage() {
           {/* Botones de Acceso Rápido DEMO + Botón de Instalación Móvil */}
           <div className="mt-7 space-y-3">
             <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 p-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 mb-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 mb-3">
                 <Sparkles className="size-3.5 text-blue-400" />
                 Acceso rápido para probar (Demo):
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => handleQuickDemo('ADMIN')}
@@ -274,48 +266,31 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSelectAlumnoDemo('lucia.fernandez@mail.com')}
+                  onClick={() => handleQuickDemo('ALUMNO')}
                   className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-[color,background-color,border-color] duration-200 hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left cursor-pointer"
                 >
-                  🏋️ <strong>Lucía F.</strong>
-                  <span className="block text-[10px] text-slate-500 font-normal">lucia.fernandez@</span>
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/60 text-[10px]">
-                <span className="font-semibold text-slate-500 mr-1">Otros socios:</span>
-                <button
-                  type="button"
-                  onClick={() => handleSelectAlumnoDemo('carlos.gomez@mail.com')}
-                  className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 font-medium text-slate-400 hover:text-white hover:border-blue-500/40 transition-colors cursor-pointer"
-                >
-                  Carlos Gómez
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectAlumnoDemo('valentina.rossi@mail.com')}
-                  className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 font-medium text-slate-400 hover:text-white hover:border-blue-500/40 transition-colors cursor-pointer"
-                >
-                  Valentina Rossi
+                  🏋️ <strong>Alumno</strong>
+                  <span className="block text-[10px] text-slate-500 font-normal">lucia@mail.com</span>
                 </button>
               </div>
             </div>
 
-            {/* Botón ¿Cómo agregar un acceso directo en tu celular? (Auditoría M6) */}
+            {/* Botón ¿Cómo descargarlo en mi celular? */}
             <button
               type="button"
               onClick={abrirModalTutorial}
               className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 py-2.5 px-4 text-xs font-bold text-blue-300 hover:text-white transition-all duration-300 group cursor-pointer shadow-sm active:scale-[0.99]"
             >
               <Smartphone className="size-4 text-blue-400 group-hover:scale-110 transition-transform duration-300 ease-out" />
-              <span>¿Cómo agregar un acceso directo en tu celular?</span>
+              <span>¿Cómo instalar la app en mi celular?</span>
               <HelpCircle className="size-3.5 text-blue-400/80 group-hover:text-blue-300 ml-auto transition-colors" />
             </button>
           </div>
         </div>
 
-        {/* Footer (Auditoría M9) */}
+        {/* Footer */}
         <p className="mt-8 text-center text-xs font-medium text-slate-500">
-          ATLAS Gym Platform · {APP_VERSION}
+          ATLAS Gym Platform · v2.5.0
         </p>
       </div>
 
@@ -351,7 +326,7 @@ export default function LoginPage() {
               <span>Acceso Rápido al Móvil</span>
             </div>
             <h2 className="text-xl font-extrabold text-white tracking-tight">
-              Agregá un acceso directo en tu teléfono
+              Instalá la app en tu teléfono
             </h2>
             <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
               Anclá ATLAS Gym a la pantalla de inicio de tu celular para abrir tus rutinas con <strong>1 toque</strong> sin usar el navegador cada vez.

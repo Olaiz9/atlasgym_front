@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar, UserCheck } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL } from '@/lib/types'
-import { calcularVencimientoCuota, calcularConstanciaAlumno, ConstanciaAlumno } from '@/lib/date-utils'
-import { APP_VERSION } from '@/lib/constants'
+import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
@@ -96,13 +95,11 @@ function AlumnoCardsSection({
   estadoCuenta,
   rutina,
   fechaHoy,
-  constancia,
 }: {
   alumno: any
   estadoCuenta: string
   rutina: any
   fechaHoy?: Date | null
-  constancia: ConstanciaAlumno
 }) {
   const diaUno = rutina?.dias[0]
   const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
@@ -209,15 +206,10 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica, sesionesEntrenamiento } = useAppData()
+  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
-
-  const constancia = useMemo(() => {
-    if (!usuario.alumnoId) return { cantidadEntrenosMes: 0, textoVisita: 'Sin visitas registradas' }
-    return calcularConstanciaAlumno(usuario.alumnoId, sesionesEntrenamiento, alumno?.ultimaAsistencia, fechaHoy || undefined)
-  }, [usuario.alumnoId, sesionesEntrenamiento, alumno?.ultimaAsistencia, fechaHoy])
 
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuario)
   const avisosAlumno = getAvisosParaUsuario(usuario)
@@ -291,7 +283,6 @@ function HomeAlumno({
           estadoCuenta={estadoCuenta}
           rutina={rutina}
           fechaHoy={fechaHoy}
-          constancia={constancia}
         />
 
         {/* Sección: Videoteca Destacada */}
@@ -624,7 +615,7 @@ export default function Page() {
 
         <div className="mt-12 flex items-center justify-between border-t border-slate-800/50 pt-6 text-sm font-medium text-slate-500">
           <p>Última actualización hace 3 min</p>
-          <p>ATLAS Admin · {APP_VERSION}</p>
+          <p>ATLAS Admin · v2.4.0</p>
         </div>
       </div>
 

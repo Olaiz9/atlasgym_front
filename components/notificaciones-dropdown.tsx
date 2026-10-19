@@ -99,7 +99,7 @@ export function NotificacionesDropdown() {
 
   function handleMarcarTodasLeidas() {
     if (!usuarioActual) return
-    marcarTodosAvisosLeidos(usuarioActual)
+    marcarTodosAvisosLeidos(usuarioActual.id)
   }
 
   if (!usuarioActual) return null

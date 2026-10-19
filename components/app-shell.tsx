@@ -9,7 +9,6 @@ import { puedeAccederRuta } from '@/lib/auth-utils'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [montado, setMontado] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { usuarioActual } = useAppData()
@@ -21,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } else if (usuarioActual && !puedeAccederRuta(pathname, usuarioActual.rol)) {
       router.replace('/')
     }
-  }, [montado, usuarioActual, pathname, router])
+  }, [usuarioActual, pathname, router])
 
   if (pathname === '/login' || pathname === '/totem') {
     return (
