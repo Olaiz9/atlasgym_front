@@ -787,6 +787,12 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
 
+      if (usuarioApp?.trim()) {
+        setAlumnos((prev) =>
+          prev.map((a) => (a.id === pagoBase.alumnoId ? { ...a, usuario: usuarioApp.trim() } : a))
+        );
+      }
+
       setPagos((prev) => {
         const nuevosPagos = [nuevoPago, ...prev];
         const nuevoEstado = estadoCuentaDeAlumno(
