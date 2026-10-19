@@ -10,25 +10,20 @@ import {
   Lock,
   Eye,
   EyeOff,
-  ShieldCheck,
-  Dumbbell,
   ArrowRight,
-  Sparkles,
   Smartphone,
-  DownloadCloud,
-  Share2,
-  MoreVertical,
-  PlusSquare,
-  CheckCircle2,
-  Zap,
   X,
   HelpCircle,
+  KeyRound,
+  Copy,
+  Check,
+  MessageCircle,
 } from 'lucide-react'
+import { CONTACTO_ATLAS } from '@/lib/constants'
 
 export default function LoginPage() {
   const router = useRouter()
   const { iniciarSesion } = useAppData()
-  const [rol, setRol] = useState<'ADMIN' | 'ALUMNO'>('ADMIN')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -36,6 +31,8 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false)
   const [plataformaTutorial, setPlataformaTutorial] = useState<'ANDROID' | 'IOS'>('ANDROID')
   const [mostrarModalTutorial, setMostrarModalTutorial] = useState(false)
+  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false)
+  const [copiadoSoporte, setCopiadoSoporte] = useState(false)
   const [animandoCierre, setAnimandoCierre] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,23 +49,31 @@ export default function LoginPage() {
     }, 200)
   }
 
-  useEscapeKey(cerrarModalTutorial, mostrarModalTutorial)
+  const cerrarModalRecuperar = () => {
+    setMostrarModalRecuperar(false)
+    setCopiadoSoporte(false)
+  }
+
+  useEscapeKey(() => {
+    if (mostrarModalTutorial) cerrarModalTutorial()
+    if (mostrarModalRecuperar) cerrarModalRecuperar()
+  }, mostrarModalTutorial || mostrarModalRecuperar)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     if (!email.trim() || !password) {
-      setError('Por favor ingresá tu usuario y contraseña para continuar.')
+      setError('Por favor ingresá tu usuario, DNI o email y contraseña.')
       return
     }
 
     setCargando(true)
 
-    const resultado = await iniciarSesion(rol, email, password)
+    const resultado = await iniciarSesion(email.trim(), password)
     if (!resultado.ok) {
       setCargando(false)
-      setError(resultado.error || 'Usuario o contraseña incorrectos.')
+      setError(resultado.error || 'Credenciales inválidas.')
       return
     }
 
@@ -78,16 +83,13 @@ export default function LoginPage() {
     }, 300)
   }
 
-  const handleQuickDemo = (demoRol: 'ADMIN' | 'ALUMNO') => {
-    setRol(demoRol)
-    setError('')
-    if (demoRol === 'ADMIN') {
-      setEmail('admin@atlasgym.com')
-      setPassword('admin123')
-    } else {
-      setEmail('lucia910')
-      setPassword('alumno123')
-    }
+  const copiarMensajeSoporte = async () => {
+    const texto = `Hola ATLAS Gym, olvidé mi contraseña para ingresar a la plataforma ATLAS. ¿Podrían ayudarme a restablecerla? Mi usuario o DNI es: `
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiadoSoporte(true)
+      setTimeout(() => setCopiadoSoporte(false), 2500)
+    } catch {}
   }
 
   return (
@@ -127,39 +129,11 @@ export default function LoginPage() {
 
         {/* Tarjeta Principal de Login */}
         <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
-          {/* Selector de Rol */}
-          <div className="mb-6 grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-950/60 p-1.5 border border-slate-800/60">
-            <button
-              type="button"
-              onClick={() => setRol('ADMIN')}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-[color,background-color,box-shadow] duration-200 ${
-                rol === 'ADMIN'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="size-4" />
-              Dueño / Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => setRol('ALUMNO')}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-[color,background-color,box-shadow] duration-200 ${
-                rol === 'ALUMNO'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Dumbbell className="size-4" />
-              Alumno
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input Usuario / DNI */}
+            {/* Input Usuario / DNI / Email */}
             <div>
               <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                {rol === 'ADMIN' ? 'Usuario o correo electrónico' : 'Nombre de usuario o DNI'}
+                Usuario, DNI o correo electrónico
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -170,7 +144,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={rol === 'ADMIN' ? 'admin@atlasgym.com' : 'Ej. lucia910 o tu DNI (39482910)'}
+                  placeholder="Ej. admin@atlasgym.com, bruno272 o tu DNI"
                   className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/60 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
@@ -182,8 +156,8 @@ export default function LoginPage() {
                 <label htmlFor="login-password" className="text-xs font-bold text-slate-300">Contraseña</label>
                 <button
                   type="button"
-                  onClick={() => alert('Contactá al administrador para restablecer tu clave.')}
-                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                  onClick={() => setMostrarModalRecuperar(true)}
+                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -202,7 +176,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 cursor-pointer"
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -235,7 +209,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={cargando}
-              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
               {cargando ? (
                 <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -248,34 +222,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Botones de Acceso Rápido DEMO + Botón de Instalación Móvil */}
-          <div className="mt-7 space-y-3">
-            <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 p-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 mb-3">
-                <Sparkles className="size-3.5 text-blue-400" />
-                Acceso rápido para probar (Demo):
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('ADMIN')}
-                  className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-[color,background-color,border-color] duration-200 hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left cursor-pointer"
-                >
-                  👑 <strong>Admin</strong>
-                  <span className="block text-[10px] text-slate-500 font-normal">admin@atlasgym</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('ALUMNO')}
-                  className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-[color,background-color,border-color] duration-200 hover:border-blue-500/40 hover:bg-slate-800 hover:text-white text-left cursor-pointer"
-                >
-                  🏋️ <strong>Alumno</strong>
-                  <span className="block text-[10px] text-slate-500 font-normal">lucia@mail.com</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Botón ¿Cómo descargarlo en mi celular? */}
+          {/* Botón ¿Cómo descargarlo en mi celular? */}
+          <div className="mt-6">
             <button
               type="button"
               onClick={abrirModalTutorial}
@@ -463,6 +411,103 @@ export default function LoginPage() {
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="size-3 text-emerald-400" /> Sin ocupar memoria
               </span>
+            </div>
+          </div>
+      {/* Modal Recuperación de Contraseña */}
+      {mostrarModalRecuperar && (
+        <div
+          onClick={cerrarModalRecuperar}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 transition-opacity duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-2xl text-slate-100 animate-in fade-in zoom-in-95 duration-200"
+          >
+            {/* Botón cerrar */}
+            <button
+              type="button"
+              onClick={cerrarModalRecuperar}
+              className="absolute right-4 top-4 rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+              aria-label="Cerrar"
+            >
+              <X className="size-5" />
+            </button>
+
+            {/* Icono e Identificador */}
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400 mb-4 border border-blue-500/20">
+              <KeyRound className="size-6" />
+            </div>
+
+            <h3 className="text-xl font-extrabold text-white tracking-tight">
+              ¿Olvidaste tu contraseña?
+            </h3>
+            <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+              Por seguridad y para proteger tu plan y rutinas, la recuperación de credenciales se valida directamente con el equipo de administración de ATLAS Gym.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {/* Opción 1: Recepción */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-blue-500" />
+                  Presencial en recepción
+                </div>
+                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                  Acercate al mostrador con tu <strong>DNI</strong> para que el administrador te restablezca la clave en el instante.
+                </p>
+              </div>
+
+              {/* Opción 2: WhatsApp Oficial */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500" />
+                  Atención por WhatsApp
+                </div>
+                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                  Comunicate con nuestro canal oficial de soporte para coordinar tu restablecimiento de acceso.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <a
+                    href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
+                      'Hola ATLAS Gym, olvidé mi contraseña para ingresar a la plataforma ATLAS. ¿Podrían ayudarme a restablecerla? Mi nombre o DNI es: '
+                    )}`}
+                    target="atlas_whatsapp_tab"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-colors active:scale-95 cursor-pointer"
+                  >
+                    <MessageCircle className="size-4" />
+                    Abrir WhatsApp
+                  </a>
+                  <button
+                    type="button"
+                    onClick={copiarMensajeSoporte}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors active:scale-95 cursor-pointer"
+                  >
+                    {copiadoSoporte ? (
+                      <>
+                        <Check className="size-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">¡Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-3.5" />
+                        <span>Copiar texto</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Botón Cerrar */}
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={cerrarModalRecuperar}
+                className="w-full sm:w-auto h-11 rounded-xl bg-slate-800 hover:bg-slate-700 px-6 text-xs font-bold text-slate-200 transition-colors active:scale-95 cursor-pointer"
+              >
+                Entendido
+              </button>
             </div>
           </div>
         </div>

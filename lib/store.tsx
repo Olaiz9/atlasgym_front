@@ -118,9 +118,9 @@ interface AppDataContextValue {
   usuarioActual: UsuarioSesion | null;
   actualizarUsuarioActual: (cambios: Partial<UsuarioSesion>) => void;
   iniciarSesion: (
-    rol: "ADMIN" | "ALUMNO",
-    email?: string,
-    password?: string
+    rolOIdentificador?: "ADMIN" | "ALUMNO" | string,
+    emailOPassword?: string,
+    passwordOpcional?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
@@ -470,36 +470,52 @@ function useGymStore(): AppDataContextValue {
 
   const iniciarSesion = useCallback(
     async (
-      rol: "ADMIN" | "ALUMNO",
-      email?: string,
-      password?: string
+      arg1?: "ADMIN" | "ALUMNO" | string,
+      arg2?: string,
+      arg3?: string
     ): Promise<{ ok: boolean; error?: string }> => {
-      if (email !== undefined && !email.trim()) {
-        return { ok: false, error: "Por favor ingresá tu usuario, email o DNI." };
-      }
-      if (password !== undefined && !password) {
-        return { ok: false, error: "Por favor ingresá tu contraseña." };
-      }
+      let emailEfectivo = "";
+      let passwordEfectivo = "";
+      let rolFiltro: "ADMIN" | "ALUMNO" | undefined = undefined;
 
-      const emailEfectivo =
-        email !== undefined
-          ? email.trim()
-          : rol === "ADMIN"
+      if (arg3 !== undefined) {
+        // Llamada legada: iniciarSesion(rol, email, password)
+        rolFiltro = arg1 as "ADMIN" | "ALUMNO";
+        emailEfectivo =
+          arg2 !== undefined && arg2.trim()
+            ? arg2.trim()
+            : rolFiltro === "ADMIN"
             ? "admin@atlasgym.com"
             : "lucia.fernandez@mail.com";
-      const passwordEfectivo =
-        password !== undefined ? password : rol === "ADMIN" ? "admin123" : "alumno123";
+        passwordEfectivo =
+          arg3 !== undefined ? arg3 : rolFiltro === "ADMIN" ? "admin123" : "alumno123";
+      } else if (arg2 !== undefined) {
+        // Llamada unificada: iniciarSesion(identificador, password)
+        emailEfectivo = (arg1 || "").trim();
+        passwordEfectivo = arg2;
+      } else if (arg1 === "ADMIN" || arg1 === "ALUMNO") {
+        rolFiltro = arg1;
+        emailEfectivo = rolFiltro === "ADMIN" ? "admin@atlasgym.com" : "lucia.fernandez@mail.com";
+        passwordEfectivo = rolFiltro === "ADMIN" ? "admin123" : "alumno123";
+      }
+
+      if (!emailEfectivo) {
+        return { ok: false, error: "Por favor ingresá tu usuario, email o DNI." };
+      }
+      if (!passwordEfectivo) {
+        return { ok: false, error: "Por favor ingresá tu contraseña." };
+      }
 
       if (isApiRuntimeEnabled()) {
         try {
           const res = await apiLogin(emailEfectivo, passwordEfectivo);
-          if (res.rol && res.rol !== rol) {
+          if (rolFiltro && res.rol && res.rol !== rolFiltro) {
             return {
               ok: false,
               error:
-                rol === "ADMIN"
+                rolFiltro === "ADMIN"
                   ? "Esta cuenta no posee permisos de Administrador."
-                  : "Esta cuenta pertenece a un Administrador. Ingresá desde la pestaña Admin.",
+                  : "Esta cuenta pertenece a un Administrador.",
             };
           }
           if (res.token) {
@@ -529,83 +545,90 @@ function useGymStore(): AppDataContextValue {
       }
 
       // Fallback offline / tests
-      let nuevoUsuario: UsuarioSesion;
-      if (rol === "ADMIN") {
-        if (password && password !== "admin123") {
+      const idLimpio = emailEfectivo.toLowerCase();
+      const dniBuscado = normalizarDni(emailEfectivo);
+      const coincideAdmin =
+        idLimpio === "admin@atlasgym.com" ||
+        idLimpio === "admin" ||
+        rolFiltro === "ADMIN";
+
+      if (coincideAdmin && (!rolFiltro || rolFiltro === "ADMIN")) {
+        if (passwordEfectivo !== "admin123") {
           return { ok: false, error: "Contraseña incorrecta para Administrador." };
         }
-        nuevoUsuario = USUARIO_ADMIN_DEFAULT;
-      } else {
-        let credencialesGuardadas: Record<string, { usuario: string; password: string }> = {};
+        const nuevoUsuario = USUARIO_ADMIN_DEFAULT;
+        setUsuarioActual(nuevoUsuario);
         if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-            if (raw) credencialesGuardadas = JSON.parse(raw);
-          } catch {}
+          localStorage.setItem("atlas_sesion_v1", JSON.stringify(nuevoUsuario));
         }
+        return { ok: true };
+      }
 
-        const idLimpio = emailEfectivo.toLowerCase();
-        const dniBuscado = normalizarDni(emailEfectivo);
+      let credencialesGuardadas: Record<string, { usuario: string; password: string }> = {};
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+          if (raw) credencialesGuardadas = JSON.parse(raw);
+        } catch {}
+      }
 
-        const alumnoPorUsuarioODni = alumnos.find(
-          (a) =>
-            a.usuario?.toLowerCase() === idLimpio ||
-            (dniBuscado.length >= 7 && a.dni && normalizarDni(a.dni) === dniBuscado) ||
-            a.email?.toLowerCase() === idLimpio
+      const alumnoPorUsuarioODni = alumnos.find(
+        (a) =>
+          a.usuario?.toLowerCase() === idLimpio ||
+          (dniBuscado.length >= 7 && a.dni && normalizarDni(a.dni) === dniBuscado) ||
+          a.email?.toLowerCase() === idLimpio
+      );
+
+      const entradaCredencial =
+        (alumnoPorUsuarioODni && credencialesGuardadas[alumnoPorUsuarioODni.id]
+          ? ([alumnoPorUsuarioODni.id, credencialesGuardadas[alumnoPorUsuarioODni.id]] as const)
+          : undefined) ||
+        Object.entries(credencialesGuardadas).find(
+          ([, cred]) => cred.usuario.toLowerCase() === idLimpio
         );
 
-        const entradaCredencial =
-          (alumnoPorUsuarioODni && credencialesGuardadas[alumnoPorUsuarioODni.id]
-            ? ([alumnoPorUsuarioODni.id, credencialesGuardadas[alumnoPorUsuarioODni.id]] as const)
-            : undefined) ||
-          Object.entries(credencialesGuardadas).find(
-            ([, cred]) => cred.usuario.toLowerCase() === idLimpio
-          );
-
-        if (entradaCredencial) {
-          const [alumnoIdCred, cred] = entradaCredencial;
-          const al = alumnos.find((a) => a.id === alumnoIdCred);
-          const dniAlumno = al?.dni ? normalizarDni(al.dni) : "";
-          if (
-            password &&
-            password !== cred.password &&
-            password !== "alumno123" &&
-            (!dniAlumno || password !== dniAlumno)
-          ) {
-            return { ok: false, error: "Usuario o contraseña incorrectos." };
-          }
-          nuevoUsuario = {
-            id: `u_alumno_${alumnoIdCred}`,
-            nombre: al?.nombre || cred.usuario,
-            email: al?.usuario || cred.usuario,
-            rol: "ALUMNO",
-            alumnoId: al?.id || alumnoIdCred,
-          };
-        } else {
-          const alumno = email
-            ? alumnoPorUsuarioODni
-            : alumnos.find((a) => a.activo);
-
-          if (email && !alumno) {
-            return { ok: false, error: "No encontramos un socio con ese usuario o DNI." };
-          }
-
-          const dniAlumno = alumno?.dni ? normalizarDni(alumno.dni) : "";
-          if (
-            password &&
-            password !== "alumno123" &&
-            (!dniAlumno || password !== dniAlumno)
-          ) {
-            return { ok: false, error: "Usuario o contraseña incorrectos." };
-          }
-          nuevoUsuario = {
-            id: alumno ? `u_alumno_${alumno.id}` : "u_alumno_1",
-            nombre: alumno ? alumno.nombre : email ? email.split("@")[0] : "Alumno Atlas",
-            email: alumno?.usuario || alumno?.email || email || "lucia123",
-            rol: "ALUMNO",
-            alumnoId: alumno?.id,
-          };
+      let nuevoUsuario: UsuarioSesion;
+      if (entradaCredencial) {
+        const [alumnoIdCred, cred] = entradaCredencial;
+        const al = alumnos.find((a) => a.id === alumnoIdCred);
+        const dniAlumno = al?.dni ? normalizarDni(al.dni) : "";
+        if (
+          passwordEfectivo !== cred.password &&
+          passwordEfectivo !== "alumno123" &&
+          (!dniAlumno || passwordEfectivo !== dniAlumno)
+        ) {
+          return { ok: false, error: "Usuario o contraseña incorrectos." };
         }
+        nuevoUsuario = {
+          id: `u_alumno_${alumnoIdCred}`,
+          nombre: al?.nombre || cred.usuario,
+          email: al?.usuario || cred.usuario,
+          rol: "ALUMNO",
+          alumnoId: al?.id || alumnoIdCred,
+        };
+      } else {
+        const alumno = emailEfectivo
+          ? alumnoPorUsuarioODni
+          : alumnos.find((a) => a.activo);
+
+        if (emailEfectivo && !alumno) {
+          return { ok: false, error: "No encontramos un usuario o socio con esas credenciales." };
+        }
+
+        const dniAlumno = alumno?.dni ? normalizarDni(alumno.dni) : "";
+        if (
+          passwordEfectivo !== "alumno123" &&
+          (!dniAlumno || passwordEfectivo !== dniAlumno)
+        ) {
+          return { ok: false, error: "Usuario o contraseña incorrectos." };
+        }
+        nuevoUsuario = {
+          id: alumno ? `u_alumno_${alumno.id}` : "u_alumno_1",
+          nombre: alumno ? alumno.nombre : emailEfectivo.split("@")[0] || "Alumno Atlas",
+          email: alumno?.usuario || alumno?.email || emailEfectivo || "lucia123",
+          rol: "ALUMNO",
+          alumnoId: alumno?.id,
+        };
       }
 
       setUsuarioActual(nuevoUsuario);

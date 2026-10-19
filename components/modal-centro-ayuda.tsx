@@ -63,7 +63,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
 
           <a
             href={CONTACTO_ATLAS.whatsappUrl}
-            target="_blank"
+            target="atlas_whatsapp_tab"
             rel="noopener noreferrer"
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-emerald-500/50 hover:bg-slate-800/40 group"
           >

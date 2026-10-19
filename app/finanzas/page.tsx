@@ -14,6 +14,8 @@ import {
   Trash2,
   MessageCircle,
   Download,
+  Copy,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
@@ -245,7 +247,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
                 `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
               )}`}
-              target="_blank"
+              target="atlas_whatsapp_tab"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
             >
@@ -1205,6 +1207,16 @@ function SeccionNotificarWhatsapp({
 }) {
   const [mensaje, setMensaje] = useState("");
   const [credencialesGuardadas, setCredencialesGuardadas] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  const copiarMensaje = async () => {
+    if (!mensaje.trim()) return;
+    try {
+      await navigator.clipboard.writeText(mensaje);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {}
+  };
 
   const generarMensaje = () => {
     const texto =
@@ -1228,6 +1240,11 @@ function SeccionNotificarWhatsapp({
         .then(() => setCredencialesGuardadas(true))
         .catch(() => {});
     }
+    try {
+      navigator.clipboard.writeText(mensaje);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {}
     const url = construirLinkWhatsapp(celular, mensaje, "web");
     const ventana = window.open(url, "atlas_whatsapp_tab");
     if (ventana) ventana.focus();
@@ -1341,24 +1358,37 @@ function SeccionNotificarWhatsapp({
         />
       </Field>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <button
           type="button"
           onClick={generarMensaje}
-          className="flex-1 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-sm font-semibold hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
+          className="py-2.5 px-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-xs font-semibold hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95 cursor-pointer"
         >
           Generar mensaje
         </button>
         <button
           type="button"
+          onClick={copiarMensaje}
+          disabled={!mensaje.trim()}
+          className="flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-700 hover:text-white transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          title="Copiar texto para pegar si ya tenés WhatsApp Web abierto"
+        >
+          {copiado ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copiado ? "¡Copiado!" : "Copiar texto"}</span>
+        </button>
+        <button
+          type="button"
           onClick={enviarWhatsapp}
           disabled={!puedeEnviar}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-[color,background-color] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-950/20 cursor-pointer"
         >
           <MessageCircle className="w-4 h-4" />
           Enviar por WhatsApp
         </button>
       </div>
+      <p className="text-[11px] text-slate-400">
+        💡 Reutiliza la pestaña fijada de WhatsApp Web. Si ya tenés una conversación abierta, podés hacer clic en <strong>Copiar texto</strong> y pegarlo directamente con <kbd className="px-1 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300">Ctrl+V</kbd>.
+      </p>
     </div>
   );
 }

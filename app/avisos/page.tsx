@@ -95,7 +95,7 @@ function AvisoCardAlumno({
 
         <a
           href={whatsappMensaje}
-          target="_blank"
+          target="atlas_whatsapp_tab"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-400 transition-colors hover:bg-emerald-500/25"
         >

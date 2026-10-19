@@ -1909,7 +1909,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
       <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
         <a
           href={`${CONTACTO_ATLAS.whatsappUrl}?text=${mensajeWhatsapp}`}
-          target="_blank"
+          target="atlas_whatsapp_tab"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
         >
