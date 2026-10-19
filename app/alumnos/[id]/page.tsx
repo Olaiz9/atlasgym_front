@@ -192,8 +192,8 @@ function HeaderAlumno({
           </span>
           {alumno.celular && (
             <a
-              href={construirLinkWhatsapp(alumno.celular, mensajeWhatsApp)}
-              target="_blank"
+              href={construirLinkWhatsapp(alumno.celular, mensajeWhatsApp, "web")}
+              target="atlas_whatsapp_tab"
               rel="noopener noreferrer"
               aria-label={`Enviar WhatsApp a ${alumno.nombre}`}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-xs font-bold hover:bg-emerald-500/25 transition-colors border border-emerald-500/30 active:scale-95"

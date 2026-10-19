@@ -99,7 +99,14 @@ export function normalizarCelularArgentina(celular: string): string {
   return numero;
 }
 
-export function construirLinkWhatsapp(celular: string, mensaje: string): string {
+export function construirLinkWhatsapp(
+  celular: string,
+  mensaje: string,
+  preferencia: "app" | "web" = "app"
+): string {
   const numero = normalizarCelularArgentina(celular);
+  if (preferencia === "web") {
+    return `https://web.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`;
+  }
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }

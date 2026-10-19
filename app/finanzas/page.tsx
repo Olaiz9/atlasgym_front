@@ -1228,7 +1228,9 @@ function SeccionNotificarWhatsapp({
         .then(() => setCredencialesGuardadas(true))
         .catch(() => {});
     }
-    window.open(construirLinkWhatsapp(celular, mensaje), "_blank");
+    const url = construirLinkWhatsapp(celular, mensaje, "web");
+    const ventana = window.open(url, "atlas_whatsapp_tab");
+    if (ventana) ventana.focus();
   };
 
   return (

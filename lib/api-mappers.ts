@@ -38,6 +38,7 @@ export interface BackendAlumnoDto {
   nombre: string;
   dni?: string | null;
   usuario?: string | null;
+  username?: string | null;
   email?: string | null;
   celular?: string | null;
   planId?: number | null;
@@ -212,7 +213,7 @@ export function mapAlumnoDtoToFront(dto: BackendAlumnoDto): Alumno {
     id: String(dto.id),
     nombre: dto.nombre,
     dni: dto.dni || undefined,
-    usuario: dto.usuario || fallbackUsuario,
+    usuario: dto.usuario || dto.username || fallbackUsuario,
     email: dto.email || undefined,
     celular: dto.celular || undefined,
     planId: dto.planId != null ? String(dto.planId) : undefined,
