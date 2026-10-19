@@ -119,9 +119,8 @@ export function useAvisosManager() {
         }
         return av;
       });
-    },
-    []
-  );
+    });
+  }, []);
 
 
   return {
