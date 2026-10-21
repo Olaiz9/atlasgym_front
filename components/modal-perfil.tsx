@@ -69,11 +69,6 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     e.preventDefault()
     setGuardandoCelular(true)
 
-    // Si es alumno, actualizamos el registro de alumno en el store (se refleja en el panel del profesor)
-    if (esAlumno && usuarioActual.alumnoId) {
-      actualizarAlumno(usuarioActual.alumnoId, { celular })
-    }
-
     // Actualizamos la sesión del usuario
     if (actualizarUsuarioActual) {
       actualizarUsuarioActual({ celular })

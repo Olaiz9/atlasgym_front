@@ -95,6 +95,15 @@ export async function apiLogin(
   });
 }
 
+export async function apiActualizarPerfil(
+  cambios: Record<string, string | undefined>
+): Promise<BackendLoginResponse> {
+  return apiFetch<BackendLoginResponse>("/auth/perfil", {
+    method: "PUT",
+    body: JSON.stringify(cambios),
+  });
+}
+
 // ── Endpoints de Alumnos ────────────────────────────────────────────────────
 
 export async function apiGetAlumnos(): Promise<BackendAlumnoDto[]> {

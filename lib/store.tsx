@@ -49,6 +49,7 @@ import { normalizarDni, estaSesionActiva } from "./asistencia-utils";
 import { generarUsernameAlumno } from "./validators";
 import {
   apiActualizarAlumno,
+  apiActualizarPerfil,
   apiActualizarEstadoPago,
   apiActualizarPlan,
   apiActualizarRutina,
@@ -648,8 +649,35 @@ function useGymStore(): AppDataContextValue {
     }
   }, []);
 
-  const actualizarUsuarioActual = useCallback((cambios: Partial<UsuarioSesion>) => {
-    setUsuarioActual((prev) => (prev ? { ...prev, ...cambios } : null));
+  const actualizarUsuarioActual = useCallback((cambios: Partial<UsuarioSesion> & { password?: string }) => {
+    setUsuarioActual((prev) => {
+      if (!prev) return null;
+      const actualizado = { ...prev, ...cambios };
+      if (cambios.celular !== undefined && prev.alumnoId) {
+        setAlumnos((lista) =>
+          lista.map((a) => (a.id === prev.alumnoId ? { ...a, celular: cambios.celular } : a))
+        );
+      }
+      if (cambios.password && prev.alumnoId && typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
+          const mapa = raw ? JSON.parse(raw) : {};
+          const actual = mapa[prev.alumnoId] || { usuario: prev.email };
+          mapa[prev.alumnoId] = { ...actual, password: cambios.password };
+          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
+        } catch {}
+      }
+      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
+        const payload: Record<string, string | undefined> = {};
+        if (cambios.password) payload.password = cambios.password;
+        if (cambios.celular !== undefined) payload.celular = cambios.celular;
+        if (cambios.fotoUrl !== undefined) payload.fotoUrl = cambios.fotoUrl;
+        if (Object.keys(payload).length > 0) {
+          apiActualizarPerfil(payload).catch(() => {});
+        }
+      }
+      return actualizado;
+    });
   }, []);
 
   useEffect(() => {
