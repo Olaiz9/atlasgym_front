@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { soloLetras, soloNumeros, emailValido, validarDatosAlumno, generarUsernameAlumno } from '@/lib/validators'
+import { soloLetras, soloNumeros, emailValido, validarDatosAlumno } from '@/lib/validators'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/toast'
 import { useEscapeKey } from '@/lib/use-escape-key'
@@ -22,10 +22,6 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const planesActivos = planes.filter((p) => p.activo)
-  const usuarioAutogenerado =
-    formAlumno.nombre.trim().length >= 2 && formAlumno.dni.length >= 3
-      ? generarUsernameAlumno(formAlumno.nombre, formAlumno.dni)
-      : ''
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -80,10 +76,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
           onSubmit={(e) => {
             e.preventDefault()
             if (!validarAlumno()) return
-            const creado = agregarAlumno({
+            agregarAlumno({
               nombre: formAlumno.nombre,
               dni: formAlumno.dni,
-              usuario: generarUsernameAlumno(formAlumno.nombre, formAlumno.dni),
               email: formAlumno.email.trim() || undefined,
               celular: formAlumno.celular,
               planId: formAlumno.planId || undefined,
@@ -91,7 +86,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               fechaAlta: fechaLocalHoy(),
               activo: true,
             })
-            toast(`Alumno "${formAlumno.nombre}" registrado (Usuario: ${creado.usuario} - Clave inicial: DNI)`, 'success')
+            toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
             handleCerrar()
           }}
           className="mt-6 flex flex-col gap-4"
@@ -140,17 +135,12 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             </label>
           </div>
 
-          {usuarioAutogenerado && (
-            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs text-blue-200">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-300">Usuario autogenerado:</span>
-                <span className="font-mono font-black text-blue-400 text-sm">{usuarioAutogenerado}</span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                El socio podrá iniciar sesión con este usuario (o su DNI) y su número de DNI como contraseña inicial.
-              </p>
-            </div>
-          )}
+          <div className="rounded-xl border border-slate-800 bg-slate-800/40 px-4 py-2.5 text-xs text-slate-400">
+            <span className="font-semibold text-slate-300">Acceso a la plataforma ATLAS:</span>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              El usuario y la contraseña de la app se generarán en Finanzas al registrar su primer pago.
+            </p>
+          </div>
 
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
             Correo electrónico <span className="font-normal text-slate-500">(opcional)</span>

@@ -694,25 +694,14 @@ function useGymStore(): AppDataContextValue {
         (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
       );
       const tempId = crypto.randomUUID();
-      const usuarioGenerado = alumno.usuario || generarUsernameAlumno(alumno.nombre, alumno.dni);
       const nuevo: Alumno = {
         ...alumno,
         id: tempId,
-        usuario: usuarioGenerado,
+        usuario: alumno.usuario || undefined,
         planId: alumno.planId || planEncontrado?.id,
         plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
       };
       setAlumnos((prev) => [nuevo, ...prev]);
-
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          const passInicial = alumno.dni ? normalizarDni(alumno.dni) : "alumno123";
-          mapa[tempId] = { usuario: usuarioGenerado, password: passInicial };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
-      }
 
       if (isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo))
@@ -766,9 +755,15 @@ function useGymStore(): AppDataContextValue {
 
   const eliminarAlumno = useCallback(
     (id: string) => {
+      const tienePagos = pagos.some((p) => p.alumnoId === id);
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
-      setAlumnos(nuevosAlumnos);
+
+      if (!tienePagos) {
+        setAlumnos((prev) => prev.filter((a) => a.id !== id));
+      } else {
+        setAlumnos((prev) => prev.map((a) => (a.id === id ? { ...a, activo: false } : a)));
+      }
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 

@@ -58,7 +58,12 @@ export default function AlumnosPage() {
   const alumnosFiltrados = useMemo(() => {
     const q = busquedaDebounced.trim().toLowerCase();
     return alumnosConEstado.filter((a) => {
-      const coincideFiltro = filtro === "TODOS" || a.estadoCuenta === filtro;
+      const coincideFiltro =
+        filtro === "TODOS"
+          ? a.activo !== false && a.estadoCuenta !== "INACTIVO"
+          : filtro === "INACTIVO"
+          ? a.activo === false || a.estadoCuenta === "INACTIVO"
+          : a.activo !== false && a.estadoCuenta === filtro;
       const coincideBusqueda =
         !q ||
         a.nombre.toLowerCase().includes(q) ||
@@ -128,9 +133,14 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
+    const tienePagos = getPagosDeAlumno(alumnoAEliminar.id).length > 0;
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
-    toast(`Alumno "${nombre}" eliminado del sistema`, "info");
+    if (tienePagos) {
+      toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
+    } else {
+      toast(`Alumno "${nombre}" eliminado definitivamente`, "info");
+    }
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -430,13 +440,17 @@ function ModalConfirmarEliminar({
         <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
           <Trash2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-black text-white">¿Eliminar a {alumno.nombre}?</h2>
+        <h2 className="text-lg font-black text-white">
+          {tienePagos ? `¿Dar de baja a ${alumno.nombre}?` : `¿Eliminar a ${alumno.nombre}?`}
+        </h2>
         <p className="mt-1.5 text-sm text-slate-400">
-          Esta acción no se puede deshacer.
-          {tienePagos && (
+          {tienePagos ? (
             <>
-              {" "}Este alumno tiene pagos registrados en Finanzas — no se van a borrar, pero van a
-              quedar sin un alumno asociado.
+              Este socio cuenta con pagos registrados en Finanzas. Su acceso a la app será revocado y pasará a la pestaña <strong>Inactivos</strong> para preservar el historial contable.
+            </>
+          ) : (
+            <>
+              El socio no posee pagos ni historial deportivo. Se eliminará definitivamente de la base de datos.
             </>
           )}
         </p>
@@ -451,7 +465,7 @@ function ModalConfirmarEliminar({
             onClick={onConfirm}
             className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
           >
-            Eliminar
+            {tienePagos ? "Dar de baja" : "Eliminar definitivamente"}
           </button>
         </div>
       </div>
