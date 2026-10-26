@@ -25,7 +25,9 @@ interface ResultadoFeedback {
 export default function TotemPage() {
   const router = useRouter()
   const { registrarAsistenciaPorDni, usuarioActual } = useAppData()
-  const [terminalAutorizada, setTerminalAutorizada] = useState<boolean>(false)
+  const [montado, setMontado] = useState(false)
+  const [terminalAutorizada, setTerminalAutorizada] = useState(false)
+  const [bloqueadaManualmente, setBloqueadaManualmente] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [errorPin, setErrorPin] = useState(false)
   const [mensajeErrorPin, setMensajeErrorPin] = useState('')
@@ -45,16 +47,29 @@ export default function TotemPage() {
   const [procesando, setProcesando] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const inputPinRef = useRef<HTMLInputElement | null>(null)
+  const inputDniRef = useRef<HTMLInputElement | null>(null)
 
-  // Cargar estado de autorización del dispositivo
+  // Cargar estado de autorización del dispositivo al montar en cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('atlas_totem_terminal_autorizada') === 'true'
       setTerminalAutorizada(auth)
     }
+    setMontado(true)
   }, [])
 
-  const esAutorizada = terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN')
+  const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
+
+  // Auto-enfoque de inputs según pantalla activa
+  useEffect(() => {
+    if (!montado) return
+    if (!esAutorizada) {
+      inputPinRef.current?.focus()
+    } else if (estado === 'IDLE') {
+      inputDniRef.current?.focus()
+    }
+  }, [montado, esAutorizada, estado])
 
   const procesarNuevoPin = useCallback((nuevoPin: string) => {
     if (nuevoPin.length === 4) {
@@ -63,6 +78,7 @@ export default function TotemPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
         }
+        setBloqueadaManualmente(false)
         setTerminalAutorizada(true)
         setPinInput('')
         setErrorPin(false)
@@ -114,8 +130,11 @@ export default function TotemPage() {
       localStorage.removeItem('atlas_totem_terminal_autorizada')
     }
     setTerminalAutorizada(false)
+    setBloqueadaManualmente(true)
     setMostrarConfirmDesvincular(false)
     setPinInput('')
+    setDni('')
+    setEstado('IDLE')
   }
 
   // Reloj digital en vivo
@@ -317,9 +336,13 @@ export default function TotemPage() {
 
   // Manejo de teclado físico y lectores de DNI / códigos de barra por hardware
   useEffect(() => {
+    if (!montado) return
+
     if (!esAutorizada) {
       const manejarKeyPin = (e: KeyboardEvent) => {
         if (e.ctrlKey || e.altKey || e.metaKey) return
+        if (e.target instanceof HTMLInputElement) return
+
         if (/^[0-9]$/.test(e.key)) {
           e.preventDefault()
           manejarDigitoPin(e.key)
@@ -336,28 +359,36 @@ export default function TotemPage() {
     }
 
     const manejarKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement && e.key !== 'Enter' && e.key !== 'Escape') {
+        return
+      }
+
       if (estado !== 'IDLE') {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+          e.preventDefault()
           reiniciarAIdle()
         }
         return
       }
 
       if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()
         setDni((prev) => (prev.length < 9 ? prev + e.key : prev))
       } else if (e.key === 'Backspace') {
+        e.preventDefault()
         setDni((prev) => prev.slice(0, -1))
       } else if (e.key === 'Enter') {
         e.preventDefault()
         manejarEnvio()
       } else if (e.key === 'Escape' || e.key === 'Delete') {
+        e.preventDefault()
         setDni('')
       }
     }
 
     window.addEventListener('keydown', manejarKeyDown)
     return () => window.removeEventListener('keydown', manejarKeyDown)
-  }, [estado, manejarEnvio, reiniciarAIdle, esAutorizada, manejarDigitoPin, manejarBorrarPin, manejarLimpiarPin])
+  }, [montado, estado, manejarEnvio, reiniciarAIdle, esAutorizada, manejarDigitoPin, manejarBorrarPin, manejarLimpiarPin])
 
   const agregarDigito = (d: string) => {
     if (estado !== 'IDLE') return
@@ -387,6 +418,17 @@ export default function TotemPage() {
     return raw
   }
 
+  if (!montado) {
+    return (
+      <main className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500" />
+          <p className="text-xs text-slate-400 font-medium">Iniciando terminal ATLAS...</p>
+        </div>
+      </main>
+    )
+  }
+
   if (!esAutorizada) {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 select-none">
@@ -413,8 +455,35 @@ export default function TotemPage() {
             </p>
           </div>
 
+          {/* Input oculto accesible para teclado físico y lectores */}
+          <input
+            ref={inputPinRef}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            value={pinInput}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+              if (val.length > pinInputRef.current.length) {
+                const nuevoChar = val[val.length - 1]
+                manejarDigitoPin(nuevoChar)
+              } else if (val.length < pinInputRef.current.length) {
+                setPinInput(val)
+                setErrorPin(false)
+                setMensajeErrorPin('')
+              }
+            }}
+            className="sr-only"
+            autoFocus
+            aria-label="PIN de terminal"
+          />
+
           {/* Casilleros visibles de 4 dígitos */}
-          <div className="mt-6 flex justify-center gap-3">
+          <div
+            onClick={() => inputPinRef.current?.focus()}
+            className="mt-6 flex justify-center gap-3 cursor-pointer"
+          >
             {[0, 1, 2, 3].map((idx) => {
               const tieneValor = pinInput.length > idx
               return (
@@ -548,8 +617,27 @@ export default function TotemPage() {
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
             </div>
 
-            {/* VISOR DE DNI */}
-            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500">
+            {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
+            <div
+              onClick={() => inputDniRef.current?.focus()}
+              className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500 cursor-text"
+            >
+              <input
+                ref={inputDniRef}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={9}
+                value={dni}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 9)
+                  setDni(val)
+                }}
+                className="sr-only"
+                autoFocus
+                tabIndex={0}
+                aria-label="Ingresar DNI"
+              />
               <p className="text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
               <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center">
                 {dni ? (
@@ -789,6 +877,50 @@ export default function TotemPage() {
         </p>
         <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
+
+      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR */}
+      {mostrarConfirmDesvincular && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <div className="size-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3">
+                <Lock className="size-6" />
+              </div>
+              <h3 className="text-lg font-black text-white">Bloquear Terminal</h3>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                ¿Querés desvincular o bloquear esta terminal de recepción? Al hacerlo, se requerirá nuevamente el PIN de terminal para volver a habilitar el registro de asistencias.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={desvincularTerminal}
+                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Bloquear terminal ahora
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmDesvincular(false)
+                  router.push('/asistencias')
+                }}
+                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+              >
+                Ir al panel de asistencias
+              </button>
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmDesvincular(false)}
+                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                Cancelar y seguir en tótem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
