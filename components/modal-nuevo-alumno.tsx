@@ -91,7 +91,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               fechaAlta: fechaLocalHoy(),
               activo: true,
             })
-            toast(`Alumno "${formAlumno.nombre}" registrado (Usuario: ${creado.usuario})`, 'success')
+            toast(`Alumno "${formAlumno.nombre}" registrado (Usuario: ${creado.usuario} - Clave inicial: DNI)`, 'success')
             handleCerrar()
           }}
           className="mt-6 flex flex-col gap-4"
@@ -147,7 +147,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 <span className="font-mono font-black text-blue-400 text-sm">{usuarioAutogenerado}</span>
               </div>
               <p className="mt-0.5 text-[11px] text-slate-400">
-                El socio podrá iniciar sesión con este usuario o con su número de DNI.
+                El socio podrá iniciar sesión con este usuario (o su DNI) y su número de DNI como contraseña inicial.
               </p>
             </div>
           )}

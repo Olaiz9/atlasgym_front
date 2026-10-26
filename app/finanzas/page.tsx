@@ -441,10 +441,21 @@ export default function FinanzasPage() {
     toast("Planilla de finanzas exportada a CSV con éxito", "success");
   };
 
-  const handleNuevoPago = (
+  const handleNuevoPago = async (
     nuevo: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
   ) => {
     agregarPago(nuevo);
+    if (nuevo.alumnoId && nuevo.usuarioApp?.trim() && nuevo.passwordApp?.trim()) {
+      try {
+        await asignarCredencialesAlumno(
+          nuevo.alumnoId,
+          nuevo.usuarioApp.trim(),
+          nuevo.passwordApp.trim()
+        );
+      } catch (err) {
+        console.warn("No se pudieron sincronizar las credenciales con el backend:", err);
+      }
+    }
     setModalAbierto(false);
     if (nuevo.usuarioApp && nuevo.passwordApp) {
       toast(
