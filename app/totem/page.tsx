@@ -29,6 +29,12 @@ export default function TotemPage() {
   const [pinInput, setPinInput] = useState('')
   const [errorPin, setErrorPin] = useState(false)
   const [mensajeErrorPin, setMensajeErrorPin] = useState('')
+  const pinInputRef = useRef(pinInput)
+
+  useEffect(() => {
+    pinInputRef.current = pinInput
+  }, [pinInput])
+
   const [mostrarConfirmDesvincular, setMostrarConfirmDesvincular] = useState(false)
   const [dni, setDni] = useState('')
   const [estado, setEstado] = useState<EstadoTotem>('IDLE')
@@ -45,37 +51,63 @@ export default function TotemPage() {
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('atlas_totem_terminal_autorizada') === 'true'
       setTerminalAutorizada(auth)
-      window.history.replaceState(null, '', '/totem')
     }
   }, [])
 
   const esAutorizada = terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN')
 
-  const manejarDigitoPin = useCallback((digito: string) => {
-    setPinInput((prev) => {
-      if (prev.length >= 4) return prev
-      const nuevo = prev + digito
-      setErrorPin(false)
-
-      if (nuevo.length === 4) {
-        const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
-        if (nuevo === pinEsperado) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
-          }
-          setTerminalAutorizada(true)
-          return ''
-        } else {
-          setErrorPin(true)
-          setMensajeErrorPin('PIN incorrecto. Consulte al administrador.')
-          setTimeout(() => {
-            setPinInput('')
-          }, 600)
+  const procesarNuevoPin = useCallback((nuevoPin: string) => {
+    if (nuevoPin.length === 4) {
+      const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+      if (nuevoPin === pinEsperado) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
         }
+        setTerminalAutorizada(true)
+        setPinInput('')
+        setErrorPin(false)
+        setMensajeErrorPin('')
+      } else {
+        setErrorPin(true)
+        setMensajeErrorPin('PIN incorrecto. Consulte al administrador.')
+        setTimeout(() => {
+          setPinInput('')
+          setErrorPin(false)
+          setMensajeErrorPin('')
+        }, 900)
       }
-      return nuevo
-    })
+    }
   }, [])
+
+  const manejarDigitoPin = useCallback((digito: string) => {
+    const actual = pinInputRef.current
+    if (actual.length >= 4) return
+    const nuevo = actual + digito
+    setPinInput(nuevo)
+    setErrorPin(false)
+    setMensajeErrorPin('')
+    procesarNuevoPin(nuevo)
+  }, [procesarNuevoPin])
+
+  const manejarBorrarPin = useCallback(() => {
+    setPinInput((prev) => prev.slice(0, -1))
+    setErrorPin(false)
+    setMensajeErrorPin('')
+  }, [])
+
+  const manejarLimpiarPin = useCallback(() => {
+    setPinInput('')
+    setErrorPin(false)
+    setMensajeErrorPin('')
+  }, [])
+
+  const volverAlInicio = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/'
+    } else {
+      router.push('/')
+    }
+  }, [router])
 
   const desvincularTerminal = () => {
     if (typeof window !== 'undefined') {
@@ -287,14 +319,16 @@ export default function TotemPage() {
   useEffect(() => {
     if (!esAutorizada) {
       const manejarKeyPin = (e: KeyboardEvent) => {
-        if (e.key >= '0' && e.key <= '9') {
+        if (e.ctrlKey || e.altKey || e.metaKey) return
+        if (/^[0-9]$/.test(e.key)) {
+          e.preventDefault()
           manejarDigitoPin(e.key)
         } else if (e.key === 'Backspace') {
-          setPinInput((prev) => prev.slice(0, -1))
-          setErrorPin(false)
+          e.preventDefault()
+          manejarBorrarPin()
         } else if (e.key === 'Escape') {
-          setPinInput('')
-          setErrorPin(false)
+          e.preventDefault()
+          manejarLimpiarPin()
         }
       }
       window.addEventListener('keydown', manejarKeyPin)
@@ -323,7 +357,7 @@ export default function TotemPage() {
 
     window.addEventListener('keydown', manejarKeyDown)
     return () => window.removeEventListener('keydown', manejarKeyDown)
-  }, [estado, manejarEnvio, reiniciarAIdle, esAutorizada, manejarDigitoPin])
+  }, [estado, manejarEnvio, reiniciarAIdle, esAutorizada, manejarDigitoPin, manejarBorrarPin, manejarLimpiarPin])
 
   const agregarDigito = (d: string) => {
     if (estado !== 'IDLE') return
@@ -357,7 +391,7 @@ export default function TotemPage() {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 select-none">
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 size-[650px] rounded-full bg-blue-600/15 blur-[140px] z-0" />
-        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-slate-800 bg-slate-900/90 p-7 text-slate-100 shadow-2xl backdrop-blur-md">
+        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-slate-800 bg-slate-900/95 p-7 text-slate-100 shadow-2xl backdrop-blur-md">
           <div className="flex flex-col items-center text-center">
             <Image
               src="/logo-atlas-blanco.png"
@@ -370,7 +404,7 @@ export default function TotemPage() {
             <div className="size-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 shadow-inner">
               <ShieldCheck className="size-6" />
             </div>
-            <h1 className="text-xl font-black text-white">Terminal de Recepción</h1>
+            <h1 className="text-xl font-black text-white tracking-tight">Terminal de Recepción</h1>
             <span className="mt-1 text-[11px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
               Modo Kiosco Protegido
             </span>
@@ -379,59 +413,67 @@ export default function TotemPage() {
             </p>
           </div>
 
+          {/* Casilleros visibles de 4 dígitos */}
           <div className="mt-6 flex justify-center gap-3">
             {[0, 1, 2, 3].map((idx) => {
-              const lleno = pinInput.length > idx
+              const tieneValor = pinInput.length > idx
               return (
                 <div
                   key={idx}
-                  className={`size-4 rounded-full border-2 transition-all duration-200 ${
-                    lleno
-                      ? 'border-blue-400 bg-blue-500 shadow-md shadow-blue-500/50 scale-110'
-                      : errorPin
-                      ? 'border-rose-500 bg-rose-500/20'
-                      : 'border-slate-700 bg-slate-800'
+                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-all duration-200 select-none ${
+                    errorPin
+                      ? 'border-rose-500 bg-rose-500/15 text-rose-400 scale-95'
+                      : tieneValor
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/25 scale-105'
+                      : 'border-slate-800 bg-slate-950/70 text-slate-600'
                   }`}
-                />
+                >
+                  {tieneValor ? '●' : ''}
+                </div>
               )
             })}
           </div>
 
-          {errorPin && (
+          {errorPin ? (
             <p className="mt-3 text-center text-xs font-bold text-rose-400 animate-in fade-in duration-150">
               {mensajeErrorPin || 'PIN de terminal incorrecto'}
             </p>
+          ) : (
+            <p className="mt-3 text-center text-[11px] text-slate-500">
+              Ingresá los 4 dígitos (PIN por defecto: 1234)
+            </p>
           )}
 
+          {/* Teclado numérico en pantalla */}
           <div className="mt-6 grid grid-cols-3 gap-2.5">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => manejarDigitoPin(n)}
-                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/60 text-xl font-bold text-white shadow-sm hover:bg-slate-700/80 active:scale-95 transition-all"
+                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
               >
                 {n}
               </button>
             ))}
             <button
               type="button"
-              onClick={() => { setPinInput(''); setErrorPin(false); }}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-900 text-xs font-black uppercase text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all"
+              onClick={manejarLimpiarPin}
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
             >
               Borrar
             </button>
             <button
               type="button"
               onClick={() => manejarDigitoPin('0')}
-              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/60 text-xl font-bold text-white shadow-sm hover:bg-slate-700/80 active:scale-95 transition-all"
+              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
             >
               0
             </button>
             <button
               type="button"
-              onClick={() => { setPinInput((prev) => prev.slice(0, -1)); setErrorPin(false); }}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-900 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all"
+              onClick={manejarBorrarPin}
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
               aria-label="Retroceso"
             >
               <Delete className="size-5" />
@@ -441,8 +483,8 @@ export default function TotemPage() {
           <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
             <button
               type="button"
-              onClick={() => router.push('/')}
-              className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+              onClick={volverAlInicio}
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer py-2 px-4 rounded-xl hover:bg-slate-800/60"
             >
               ← Volver al inicio de ATLAS
             </button>
