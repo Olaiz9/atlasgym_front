@@ -755,21 +755,19 @@ function useGymStore(): AppDataContextValue {
 
   const eliminarAlumno = useCallback(
     (id: string) => {
-      const tienePagos = pagos.some((p) => p.alumnoId === id);
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
 
-      if (!tienePagos) {
-        setAlumnos((prev) => prev.filter((a) => a.id !== id));
-      } else {
-        setAlumnos((prev) => prev.map((a) => (a.id === id ? { ...a, activo: false } : a)));
-      }
+      // El alumno se elimina 100% de la lista de alumnos
+      setAlumnos((prev) => prev.filter((a) => a.id !== id));
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 
       const numId = parseNumericId(id);
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiDarDeBajaAlumno(numId).catch(() => {});
+        apiDarDeBajaAlumno(numId).catch((err) => {
+          console.error("Error al eliminar alumno en backend:", err);
+        });
       }
     },
     [alumnos, pagos, rutinas]

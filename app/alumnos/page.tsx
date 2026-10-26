@@ -133,14 +133,9 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
-    const tienePagos = getPagosDeAlumno(alumnoAEliminar.id).length > 0;
     eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
-    if (tienePagos) {
-      toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
-    } else {
-      toast(`Alumno "${nombre}" eliminado definitivamente`, "info");
-    }
+    toast(`Alumno "${nombre}" eliminado del sistema`, "info");
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -440,19 +435,9 @@ function ModalConfirmarEliminar({
         <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
           <Trash2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-black text-white">
-          {tienePagos ? `¿Dar de baja a ${alumno.nombre}?` : `¿Eliminar a ${alumno.nombre}?`}
-        </h2>
+        <h2 className="text-lg font-black text-white">¿Eliminar a {alumno.nombre}?</h2>
         <p className="mt-1.5 text-sm text-slate-400">
-          {tienePagos ? (
-            <>
-              Este socio cuenta con pagos registrados en Finanzas. Su acceso a la app será revocado y pasará a la pestaña <strong>Inactivos</strong> para preservar el historial contable.
-            </>
-          ) : (
-            <>
-              El socio no posee pagos ni historial deportivo. Se eliminará definitivamente de la base de datos.
-            </>
-          )}
+          Esta acción eliminará al alumno de la lista. Sus pagos históricos se conservarán en Finanzas.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -465,7 +450,7 @@ function ModalConfirmarEliminar({
             onClick={onConfirm}
             className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
           >
-            {tienePagos ? "Dar de baja" : "Eliminar definitivamente"}
+            Eliminar alumno
           </button>
         </div>
       </div>
