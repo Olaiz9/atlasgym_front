@@ -1,4 +1,4 @@
-﻿// lib/plan-utils.ts
+// lib/plan-utils.ts
 import { Plan, Alumno, Pago, Rutina } from "./types";
 
 /**
@@ -60,8 +60,8 @@ export function ejecutarBajaAlumno(
   const nombreHistorico = alumnoBaja?.nombre || "Alumno Atlas";
 
   const nuevosPagos = pagos.map((p) => {
-    if (p.alumnoId === alumnoId && !p.alumnoNombreHistorico) {
-      return { ...p, alumnoNombreHistorico: nombreHistorico };
+    if (p.alumnoId === alumnoId) {
+      return { ...p, alumnoNombreHistorico: p.alumnoNombreHistorico || nombreHistorico, alumnoActivo: false };
     }
     return p;
   });

@@ -114,6 +114,7 @@ export interface Pago {
   id: string;
   alumnoId: string;
   alumnoNombreHistorico?: string;
+  alumnoActivo?: boolean | null;
   planId?: string;
   plan: string;
   monto: number;
