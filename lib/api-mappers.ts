@@ -63,7 +63,9 @@ export interface BackendPlanDto {
 export interface BackendPagoDto {
   id: number;
   alumnoId: number | null;
-  alumnoNombre: string;
+  alumnoNombre?: string;
+  alumnoNombreHistorico?: string;
+  alumnoActivo?: boolean | null;
   planNombre: string;
   monto: number;
   fecha: string;
@@ -284,7 +286,8 @@ export function mapPagoDtoToFront(dto: BackendPagoDto): Pago {
   return {
     id: String(dto.id),
     alumnoId: dto.alumnoId != null ? String(dto.alumnoId) : "",
-    alumnoNombreHistorico: dto.alumnoNombre,
+    alumnoNombreHistorico: dto.alumnoNombreHistorico || dto.alumnoNombre,
+    alumnoActivo: dto.alumnoActivo,
     plan: dto.planNombre || "Sin plan",
     monto: Number(dto.monto),
     fecha: dto.fecha,

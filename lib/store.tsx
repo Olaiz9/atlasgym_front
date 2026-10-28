@@ -126,7 +126,7 @@ interface AppDataContextValue {
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
-  eliminarAlumno: (id: string) => void;
+  eliminarAlumno: (id: string, definitivo?: boolean) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
   agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
@@ -343,7 +343,7 @@ function useGymStore(): AppDataContextValue {
           apiGetAsistencias().catch(() => null),
         ]);
 
-        if (alumnosDto && alumnosDto.length > 0) {
+        if (alumnosDto) {
           setAlumnos(alumnosDto.map(mapAlumnoDtoToFront));
         }
 
@@ -740,6 +740,12 @@ function useGymStore(): AppDataContextValue {
         })
       );
 
+      if (cambios.activo !== undefined) {
+        setPagos((prev) =>
+          prev.map((p) => (p.alumnoId === id ? { ...p, alumnoActivo: cambios.activo } : p))
+        );
+      }
+
       const numId = parseNumericId(id);
       if (numId != null && alumnoActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarAlumno(numId, mapAlumnoFrontToRequestDto(alumnoActualizado))
@@ -754,19 +760,32 @@ function useGymStore(): AppDataContextValue {
   );
 
   const eliminarAlumno = useCallback(
-    (id: string) => {
+    (id: string, definitivo?: boolean) => {
+      const alumnoTarget = alumnos.find((a) => a.id === id);
+      const estadoTarget = alumnoTarget
+        ? estadoCuentaDeAlumno(id, pagos, alumnoTarget.fechaAlta, alumnoTarget.activo)
+        : "INACTIVO";
+      const esEliminacionDefinitiva =
+        definitivo === true ||
+        (alumnoTarget ? alumnoTarget.activo === false || estadoTarget === "INACTIVO" : true);
+
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
 
-      // El alumno se elimina 100% de la lista de alumnos
-      setAlumnos((prev) => prev.filter((a) => a.id !== id));
+      if (esEliminacionDefinitiva) {
+        // Paso 2: Eliminación definitiva desde Inactivos (remueve de la lista)
+        setAlumnos((prev) => prev.filter((a) => a.id !== id));
+      } else {
+        // Paso 1: Baja administrativa (pasa a Inactivos)
+        setAlumnos(nuevosAlumnos);
+      }
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 
       const numId = parseNumericId(id);
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiDarDeBajaAlumno(numId).catch((err) => {
-          console.error("Error al eliminar alumno en backend:", err);
+        apiDarDeBajaAlumno(numId, esEliminacionDefinitiva).catch((err) => {
+          console.error("Error al procesar baja/eliminación de alumno en backend:", err);
         });
       }
     },

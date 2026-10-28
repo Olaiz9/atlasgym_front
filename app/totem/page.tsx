@@ -509,7 +509,7 @@ export default function TotemPage() {
             </p>
           ) : (
             <p className="mt-3 text-center text-[11px] text-slate-500">
-              Ingresá los 4 dígitos (PIN por defecto: 1234)
+              Ingresá el código de autorización de 4 dígitos
             </p>
           )}
 

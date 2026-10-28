@@ -133,9 +133,15 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
-    eliminarAlumno(alumnoAEliminar.id);
+    const esInactivo =
+      alumnoAEliminar.activo === false || getEstadoCuenta(alumnoAEliminar.id) === "INACTIVO";
+    eliminarAlumno(alumnoAEliminar.id, esInactivo);
     setAlumnoAEliminar(null);
-    toast(`Alumno "${nombre}" eliminado del sistema`, "info");
+    if (esInactivo) {
+      toast(`Alumno "${nombre}" eliminado definitivamente del sistema`, "info");
+    } else {
+      toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
+    }
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -300,20 +306,46 @@ export default function AlumnosPage() {
                       {ESTADO_CUENTA_LABEL[alumno.estadoCuenta]}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                  <td className="px-6 py-4 text-right flex items-center justify-end gap-1.5">
+                    {(alumno.activo === false || alumno.estadoCuenta === "INACTIVO") && (
+                      <button
+                        onClick={() => {
+                          actualizarAlumno(alumno.id, { activo: true });
+                          toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
+                        }}
+                        title={`Reactivar a ${alumno.nombre}`}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
+                      >
+                        Reactivar
+                      </button>
+                    )}
                     <button
                       onClick={() => setAlumnoAEditar(alumno)}
                       aria-label={`Editar a ${alumno.nombre}`}
+                      title="Editar ficha"
                       className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setAlumnoAEliminar(alumno)}
-                      aria-label={`Eliminar a ${alumno.nombre}`}
+                      aria-label={
+                        alumno.activo === false || alumno.estadoCuenta === "INACTIVO"
+                          ? `Eliminar definitivamente a ${alumno.nombre}`
+                          : `Dar de baja a ${alumno.nombre}`
+                      }
+                      title={
+                        alumno.activo === false || alumno.estadoCuenta === "INACTIVO"
+                          ? "Eliminar definitivamente del sistema"
+                          : "Dar de baja (enviar a Inactivos)"
+                      }
                       className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {alumno.activo === false || alumno.estadoCuenta === "INACTIVO" ? (
+                        <Trash2 className="w-4 h-4" />
+                      ) : (
+                        <UserX className="w-4 h-4" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -401,7 +433,9 @@ export default function AlumnosPage() {
       {alumnoAEliminar && (
         <ModalConfirmarEliminar
           alumno={alumnoAEliminar}
-          tienePagos={getPagosDeAlumno(alumnoAEliminar.id).length > 0}
+          esInactivo={
+            alumnoAEliminar.activo === false || getEstadoCuenta(alumnoAEliminar.id) === "INACTIVO"
+          }
           onCancel={() => setAlumnoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />
@@ -414,12 +448,12 @@ export default function AlumnosPage() {
 // ---------- Modal: confirmar eliminación ----------
 function ModalConfirmarEliminar({
   alumno,
-  tienePagos,
+  esInactivo,
   onCancel,
   onConfirm,
 }: {
   alumno: Alumno;
-  tienePagos: boolean;
+  esInactivo: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -432,12 +466,22 @@ function ModalConfirmarEliminar({
         onClick={(e) => e.stopPropagation()}
         className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
-          <Trash2 className="w-6 h-6" />
+        <div
+          className={`flex size-12 items-center justify-center rounded-2xl mb-4 ${
+            esInactivo
+              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+              : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+          }`}
+        >
+          {esInactivo ? <Trash2 className="w-6 h-6" /> : <UserX className="w-6 h-6" />}
         </div>
-        <h2 className="text-lg font-black text-white">¿Eliminar a {alumno.nombre}?</h2>
+        <h2 className="text-lg font-black text-white">
+          {esInactivo ? `¿Eliminar definitivamente a ${alumno.nombre}?` : `¿Dar de baja a ${alumno.nombre}?`}
+        </h2>
         <p className="mt-1.5 text-sm text-slate-400">
-          Esta acción eliminará al alumno de la lista. Sus pagos históricos se conservarán en Finanzas.
+          {esInactivo
+            ? "Esta acción eliminará al alumno de forma permanente del sistema y no volverá a aparecer en Inactivos. Sus pagos históricos se conservarán intactos en Finanzas."
+            : "El socio pasará a la pestaña de Inactivos por si regresa en el futuro. Si más adelante querés eliminarlo de forma permanente, podrás hacerlo desde Inactivos."}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -448,9 +492,13 @@ function ModalConfirmarEliminar({
           </button>
           <button
             onClick={onConfirm}
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
+            className={`h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 ${
+              esInactivo
+                ? "bg-rose-600 shadow-rose-600/20 hover:bg-rose-500"
+                : "bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
+            }`}
           >
-            Eliminar alumno
+            {esInactivo ? "Eliminar definitivamente" : "Dar de baja"}
           </button>
         </div>
       </div>

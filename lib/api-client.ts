@@ -129,8 +129,12 @@ export async function apiActualizarAlumno(
   });
 }
 
-export async function apiDarDeBajaAlumno(id: number): Promise<void> {
-  return apiFetch<void>(`/alumnos/${id}`, {
+export async function apiDarDeBajaAlumno(
+  id: number,
+  definitivo: boolean = false
+): Promise<void> {
+  const query = definitivo ? "?definitivo=true" : "";
+  return apiFetch<void>(`/alumnos/${id}${query}`, {
     method: "DELETE",
   });
 }
