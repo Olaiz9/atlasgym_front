@@ -321,6 +321,7 @@ export default function PlanesPage() {
                   >
                     <option value="Libre">Libre (Lunes a Sábado)</option>
                     <option value="5 días por semana">5 días por semana</option>
+                    <option value="4 días por semana">4 días por semana</option>
                     <option value="3 días por semana">3 días por semana</option>
                     <option value="2 días por semana">2 días por semana</option>
                   </select>

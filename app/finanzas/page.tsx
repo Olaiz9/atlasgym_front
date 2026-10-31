@@ -11,18 +11,47 @@ import {
   X,
   Search,
   ChevronDown,
-  Trash2,
+  Ban,
+  CheckCircle2,
   MessageCircle,
   Download,
   Copy,
   Check,
+  Wallet,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { formatFechaAR, calcularVencimientoCuota, fechaLocalHoy, periodoMesActual } from "@/lib/date-utils";
+import {
+  formatFechaAR,
+  calcularVencimientoCuota,
+  fechaLocalHoy,
+  periodoMesActual,
+  sumarMesesPeriodo,
+} from "@/lib/date-utils";
 import { CONTACTO_ATLAS } from "@/lib/constants";
-import { EstadoPago, Pago, ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES, UsuarioSesion, Alumno, Plan } from "@/lib/types";
+import {
+  EstadoPago,
+  Pago,
+  ESTADO_CUENTA_LABEL,
+  ESTADO_CUENTA_STYLES,
+  UsuarioSesion,
+  Alumno,
+  Plan,
+  EstadoCuenta,
+  obtenerMaxPeriodoCubiertoAlumno,
+  obtenerPeriodoFinCubierto,
+  obtenerMontoRecaudadoPago,
+  obtenerSaldoPendientePago,
+  calcularArqueoCajaLocal,
+  verificarSolapamientoPeriodoPago,
+} from "@/lib/types";
 import { construirLinkWhatsapp } from "@/lib/validators";
+import {
+  construirUrlWaMe,
+  mensajeRecordatorioCuotaWhatsapp,
+  tieneCelularWhatsappValido,
+} from "@/lib/whatsapp-utils";
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
@@ -32,15 +61,34 @@ import { descargarCSV } from "@/lib/export-utils";
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
   { label: "Todos", value: "TODOS" },
   { label: "Pagados", value: "PAGADO" },
+  { label: "Señas parciales", value: "PARCIAL" },
   { label: "Pendientes", value: "PENDIENTE" },
   { label: "Vencidos", value: "VENCIDO" },
+  { label: "Anulados", value: "ANULADO" },
+];
+
+const OPCIONES_VIGENCIA_MESES: { value: number; label: string }[] = [
+  { value: 1, label: "1 mes (Mensual)" },
+  { value: 2, label: "2 meses (Bimestral)" },
+  { value: 3, label: "3 meses (Trimestral)" },
+  { value: 6, label: "6 meses (Semestral)" },
+  { value: 12, label: "12 meses (Anual)" },
 ];
 
 const ESTADO_STYLES: Record<EstadoPago, string> = {
   PAGADO: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
+  PARCIAL: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
   PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
   VENCIDO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
+  ANULADO: "bg-slate-800 text-slate-400 border border-slate-700",
 };
+
+const MOTIVOS_ANULACION_RAPIDOS = [
+  "Importe mal tipeado",
+  "Período / mes equivocado",
+  "Socio equivocado",
+  "Medio de pago erróneo",
+];
 
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -97,6 +145,7 @@ function SelectorMes({
 
 function formatearMes(mesStr: string) {
   const [anio, mesNum] = mesStr.split("-").map(Number);
+  if (!anio || !mesNum) return mesStr;
   const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
@@ -134,8 +183,9 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
     );
   }
 
-  const misPagos = getPagosDeAlumno(alumno.id);
+  const misPagos = getPagosDeAlumno(alumno.id).filter((p) => p.estado !== "ANULADO");
   const estadoCuenta = getEstadoCuenta(alumno.id);
+  const maxPeriodoCubierto = obtenerMaxPeriodoCubiertoAlumno(misPagos);
 
   const ultimoPago = misPagos[0];
   const planEncontrado = planes.find(
@@ -151,7 +201,6 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
-      {/* Header Alumno */}
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
           Portal del alumno
@@ -164,9 +213,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         </p>
       </div>
 
-      {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {/* Estado de Cuenta */}
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado de mi cuota</p>
           <div className="mt-3 flex items-center gap-2">
@@ -182,14 +229,13 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             {estadoCuenta === "AL_DIA"
               ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
               : estadoCuenta === "PENDIENTE"
-              ? "Tenés una cuota en proceso de pago para este mes."
+              ? "Tu cuota del mes figura pendiente de abono o con saldo parcial a completar."
               : estadoCuenta === "MOROSO"
               ? "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."
               : "Tu membresía se encuentra inactiva. Acercate a recepción para regularizar tu cuenta."}
           </p>
         </div>
 
-        {/* Plan Actual */}
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mi plan actual</p>
           <p className="mt-2 text-2xl font-black text-white">{alumno?.plan || "Musculación"}</p>
@@ -198,21 +244,19 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
           </p>
         </div>
 
-        {/* Próximo Vencimiento */}
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximo vencimiento</p>
           <p className="mt-2 text-2xl font-black text-white">
             {calcularVencimientoCuota(
               estadoCuenta,
               new Date(),
-              ultimoPago?.periodoMes || ultimoPago?.fecha?.slice(0, 7)
+              maxPeriodoCubierto
             )}
           </p>
           <p className="mt-1 text-xs text-slate-500 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
         </div>
       </div>
 
-      {/* Datos para pagar / Transferencia */}
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 text-white shadow-xl backdrop-blur-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -258,7 +302,6 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         </div>
       </div>
 
-      {/* Historial de mis pagos */}
       <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden text-slate-100 shadow-sm backdrop-blur-md">
         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
           <div>
@@ -279,27 +322,46 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               </tr>
             </thead>
             <tbody>
-              {misPagos.map((pago) => (
-                <tr key={pago.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors">
-                  <td className="px-6 py-4 font-bold text-white">{pago.plan}</td>
-                  <td className="px-6 py-4 font-black text-white">
-                    ${pago.monto.toLocaleString("es-AR")}
-                  </td>
-                  <td className="px-6 py-4 text-slate-400 font-medium">
-                    {formatFechaAR(pago.fecha)}
-                  </td>
-                  <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        ESTADO_STYLES[pago.estado]
-                      }`}
-                    >
-                      {pago.estado}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {misPagos.map((pago) => {
+                const esParcial = pago.estado === "PARCIAL";
+                const abonado = obtenerMontoRecaudadoPago(pago);
+                const saldo = obtenerSaldoPendientePago(pago);
+                return (
+                  <tr key={pago.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{pago.plan}</span>
+                        {(pago.cantidadMeses ?? 1) > 1 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                            ×{pago.cantidadMeses} meses
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-black text-white">
+                      ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
+                      {esParcial && (
+                        <div className="text-[11px] font-bold text-amber-400">
+                          Resta ${saldo.toLocaleString("es-AR")}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">
+                      {formatFechaAR(pago.fecha)}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          ESTADO_STYLES[pago.estado]
+                        }`}
+                      >
+                        {esParcial ? "SEÑA PARCIAL" : pago.estado}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
               {misPagos.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
@@ -323,9 +385,11 @@ export default function FinanzasPage() {
     pagos,
     agregarPago,
     actualizarEstadoPago,
-    eliminarPago,
+    completarSaldoPago,
+    anularPago,
     asignarCredencialesAlumno,
     getAlumno,
+    getEstadoCuenta,
     usuarioActual,
   } = useAppData();
   const { toast } = useToast();
@@ -337,7 +401,9 @@ export default function FinanzasPage() {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [pagoAEliminar, setPagoAEliminar] = useState<Pago | null>(null);
+  const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
+  const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
+  const [fechaArqueo, setFechaArqueo] = useState<string>(() => fechaLocalHoy());
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [elementosPorPagina, setElementosPorPagina] = useState(15);
@@ -347,35 +413,53 @@ export default function FinanzasPage() {
     return pagos.filter((p) => (p.periodoMes || p.fecha.slice(0, 7)) === mes);
   }, [pagos, mes, verTodos]);
 
+  const arqueoDelDia = useMemo(
+    () => calcularArqueoCajaLocal(pagos, fechaArqueo),
+    [pagos, fechaArqueo]
+  );
+
   const metrica = useMemo(() => {
-    const ingresosDelMes = pagosDelMes
-      .filter((p) => p.estado === "PAGADO")
-      .reduce((acc, p) => acc + p.monto, 0);
-    const pendientes = pagosDelMes.filter((p) => p.estado === "PENDIENTE");
+    const ingresosDelMes = pagosDelMes.reduce(
+      (acc, p) => acc + obtenerMontoRecaudadoPago(p),
+      0
+    );
+    const pendientesYParciales = pagosDelMes.filter(
+      (p) => p.estado === "PENDIENTE" || p.estado === "PARCIAL"
+    );
     const vencidos = pagosDelMes.filter((p) => p.estado === "VENCIDO");
-    const morosos = new Set(vencidos.map((p) => p.alumnoId)).size;
+    const morososSocios = alumnos.filter(
+      (a) => a.activo && getEstadoCuenta(a.id) === "MOROSO"
+    ).length;
 
     return {
       ingresosDelMes,
-      pendientesMonto: pendientes.reduce((acc, p) => acc + p.monto, 0),
-      pendientesCount: pendientes.length,
-      vencidosMonto: vencidos.reduce((acc, p) => acc + p.monto, 0),
+      pendientesMonto: pendientesYParciales.reduce(
+        (acc, p) => acc + obtenerSaldoPendientePago(p),
+        0
+      ),
+      pendientesCount: pendientesYParciales.length,
+      vencidosMonto: vencidos.reduce(
+        (acc, p) => acc + obtenerSaldoPendientePago(p),
+        0
+      ),
       vencidosCount: vencidos.length,
-      morosos,
+      morosos: morososSocios,
     };
-  }, [pagosDelMes]);
+  }, [pagosDelMes, alumnos, getEstadoCuenta]);
 
   const pagosFiltrados = useMemo(() => {
     const q = busquedaDebounced.trim().toLowerCase();
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
-      const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
+      const coincideMetodo =
+        filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
       const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? p.alumnoNombreHistorico ?? "";
       const coincideBusqueda =
         !q ||
         nombreAlumno.toLowerCase().includes(q) ||
         p.plan.toLowerCase().includes(q) ||
-        p.metodo.toLowerCase().includes(q);
+        p.metodo.toLowerCase().includes(q) ||
+        (p.registradoPor && p.registradoPor.toLowerCase().includes(q));
       return coincideFiltro && coincideMetodo && coincideBusqueda;
     });
   }, [pagosDelMes, filtro, filtroMetodo, busquedaDebounced, getAlumno]);
@@ -390,12 +474,12 @@ export default function FinanzasPage() {
     return pagosFiltrados.slice(inicio, inicio + elementosPorPagina);
   }, [pagosFiltrados, paginaActual, elementosPorPagina]);
 
-  // Soporte para cerrar modales con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setModalAbierto(false);
-        setPagoAEliminar(null);
+        setPagoAAnular(null);
+        setPagoACompletar(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -406,7 +490,6 @@ export default function FinanzasPage() {
     return null;
   }
 
-  // Si el usuario conectado es un ALUMNO, le mostramos su vista privada de cuotas
   if (usuarioActual.rol === "ALUMNO") {
     return <VistaCuotasAlumno usuario={usuarioActual} />;
   }
@@ -416,24 +499,39 @@ export default function FinanzasPage() {
       "ID",
       "Alumno",
       "Plan",
-      "Monto",
+      "Monto Total Cuota",
+      "Monto Abonado",
+      "Saldo Pendiente",
       "Fecha Pago",
       "Periodo Mes",
+      "Meses Cubiertos",
+      "Periodo Fin Cubierto",
       "Método",
       "Estado",
+      "Cobrado Por",
+      "Anulado Por",
+      "Motivo Anulación",
     ];
     const filas = pagosDelMes.map((p) => {
       const alumno = getAlumno(p.alumnoId);
       const nombre = alumno?.nombre ?? p.alumnoNombreHistorico ?? "Desconocido";
+      const inicioPeriodo = p.periodoMes || p.fecha.slice(0, 7);
       return [
         p.id,
         nombre,
         p.plan,
         p.monto.toString(),
+        obtenerMontoRecaudadoPago(p).toString(),
+        obtenerSaldoPendientePago(p).toString(),
         p.fecha,
-        p.periodoMes || p.fecha.slice(0, 7),
+        inicioPeriodo,
+        String(p.cantidadMeses ?? 1),
+        obtenerPeriodoFinCubierto(p) || inicioPeriodo,
         p.metodo,
         p.estado,
+        p.registradoPor || "-",
+        p.anuladoPor || "-",
+        p.motivoAnulacion || "-",
       ];
     });
     const sufijo = verTodos ? "historico_completo" : mes;
@@ -451,16 +549,33 @@ export default function FinanzasPage() {
         `Pago registrado y credenciales activadas para "${nuevo.usuarioApp}"`,
         "success"
       );
+    } else if (nuevo.estado === "PARCIAL" || (nuevo.montoAbonado && nuevo.montoAbonado < nuevo.monto)) {
+      toast("Seña parcial registrada. Queda saldo pendiente a completar.", "success");
     } else {
       toast("Pago registrado con éxito", "success");
     }
   };
 
-  const confirmarEliminar = () => {
-    if (!pagoAEliminar) return;
-    eliminarPago(pagoAEliminar.id);
-    setPagoAEliminar(null);
-    toast("Pago eliminado del registro", "info");
+  const confirmarAnulacion = async (motivo: string) => {
+    if (!pagoAAnular) return;
+    const res = await anularPago(pagoAAnular.id, motivo);
+    if (res.ok) {
+      setPagoAAnular(null);
+      toast("Comprobante anulado y preservado en auditoría de caja", "info");
+    } else {
+      toast(res.error || "No se pudo anular el comprobante", "error");
+    }
+  };
+
+  const confirmarCompletarSaldo = async (metodo: string) => {
+    if (!pagoACompletar) return;
+    const res = await completarSaldoPago(pagoACompletar.id, metodo);
+    if (res.ok) {
+      setPagoACompletar(null);
+      toast("Saldo completado: cuota acreditada como PAGADA", "success");
+    } else {
+      toast(res.error || "No se pudo completar el saldo", "error");
+    }
   };
 
   return (
@@ -469,11 +584,11 @@ export default function FinanzasPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Finanzas</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Finanzas y Caja</h1>
             <p className="text-sm text-slate-400 mt-1">
               {verTodos
-                ? "Viendo el historial completo de pagos."
-                : `Viendo ${formatearMes(mes)} — cada mes arranca con una planilla limpia.`}
+                ? "Viendo el historial completo auditado de cobros, señas y anulaciones."
+                : `Viendo ${formatearMes(mes)} — caja trazable con señas parciales y anulaciones auditadas.`}
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap w-full sm:w-auto">
@@ -532,15 +647,15 @@ export default function FinanzasPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           icon={<DollarSign className="size-6" />}
-          label={verTodos ? "Ingresos totales" : "Ingresos del mes"}
+          label={verTodos ? "Ingresos netos totales" : "Ingresos del mes"}
           value={`$${metrica.ingresosDelMes.toLocaleString("es-AR")}`}
           tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
         />
         <MetricCard
           icon={<Clock className="size-6" />}
-          label="Cuotas pendientes"
+          label="Saldos y cuotas pendientes"
           value={`$${metrica.pendientesMonto.toLocaleString("es-AR")}`}
-          sub={`${metrica.pendientesCount} cuotas`}
+          sub={`${metrica.pendientesCount} comprobantes`}
           tint={{ bg: "bg-amber-500/15 border border-amber-500/30", text: "text-amber-400", bar: "bg-amber-500" }}
         />
         <MetricCard
@@ -552,10 +667,121 @@ export default function FinanzasPage() {
         />
         <MetricCard
           icon={<Users className="size-6" />}
-          label="Alumnos morosos"
+          label="Socios morosos hoy"
           value={`${metrica.morosos}`}
           tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
         />
+      </div>
+
+      {/* Panel de Arqueo de Caja del Día */}
+      <div className="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 sm:p-6 text-slate-100 shadow-sm backdrop-blur-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-white">
+                Arqueo de Caja del Día
+              </h2>
+              <p className="text-xs text-slate-400">
+                Efectivo físico en cajón, transferencias y desglose nominal por operador ({formatFechaAR(fechaArqueo)}).
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              aria-label="Fecha de arqueo de caja"
+              value={fechaArqueo}
+              onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
+              className="h-9 px-3 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-slate-200 outline-none focus:border-blue-500"
+            />
+            {fechaArqueo !== fechaLocalHoy() && (
+              <button
+                type="button"
+                onClick={() => setFechaArqueo(fechaLocalHoy())}
+                className="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700"
+              >
+                Hoy
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3.5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+              Efectivo en cajón
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              ${arqueoDelDia.totalEfectivo.toLocaleString("es-AR")}
+            </p>
+          </div>
+          <div className="rounded-xl bg-blue-500/10 border border-blue-500/25 p-3.5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+              Transferencias / MP
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              ${arqueoDelDia.totalTransferencia.toLocaleString("es-AR")}
+            </p>
+          </div>
+          <div className="rounded-xl bg-purple-500/10 border border-purple-500/25 p-3.5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
+              Tarjeta
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              ${arqueoDelDia.totalTarjeta.toLocaleString("es-AR")}
+            </p>
+          </div>
+          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3.5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Total recaudado ({arqueoDelDia.cantidadCobros})
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              ${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-300 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+              Por operador:
+            </span>
+            {arqueoDelDia.porOperador.length === 0 ? (
+              <span className="text-slate-500 italic">Sin cobros registrados en esta fecha</span>
+            ) : (
+              arqueoDelDia.porOperador.map((op) => (
+                <span
+                  key={op.operador}
+                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-semibold"
+                >
+                  {op.operador}:{" "}
+                  <strong className="text-emerald-400">
+                    ${op.totalRecaudado.toLocaleString("es-AR")}
+                  </strong>{" "}
+                  ({op.cantidadOperaciones})
+                </span>
+              ))
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {arqueoDelDia.cantidadParciales > 0 && (
+              <span className="text-sky-300 font-semibold">
+                {arqueoDelDia.cantidadParciales} seña(s) con $
+                {arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar
+              </span>
+            )}
+            {arqueoDelDia.cantidadAnulados > 0 && (
+              <span className="text-rose-400 font-semibold">
+                {arqueoDelDia.cantidadAnulados} anulado(s) ($
+                {arqueoDelDia.montoAnulado.toLocaleString("es-AR")} excluidos de caja)
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Tarjeta principal: filtros + tabla */}
@@ -580,7 +806,6 @@ export default function FinanzasPage() {
 
             <div className="h-5 w-px bg-slate-800 hidden sm:block" />
 
-            {/* Filtro por método de pago */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-slate-400 mr-1">Método:</span>
               {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
@@ -605,7 +830,7 @@ export default function FinanzasPage() {
               aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar alumno..."
+              placeholder="Buscar socio u operador..."
               className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
@@ -616,10 +841,10 @@ export default function FinanzasPage() {
             <thead>
               <tr className="text-left text-slate-400 border-b border-slate-800">
                 <th className="font-bold px-6 py-3.5">Alumno</th>
-                <th className="font-bold px-6 py-3.5">Plan</th>
-                <th className="font-bold px-6 py-3.5">Monto</th>
+                <th className="font-bold px-6 py-3.5">Plan / Período</th>
+                <th className="font-bold px-6 py-3.5">Importe</th>
                 <th className="font-bold px-6 py-3.5">Fecha</th>
-                <th className="font-bold px-6 py-3.5">Método</th>
+                <th className="font-bold px-6 py-3.5">Método / Operador</th>
                 <th className="font-bold px-6 py-3.5">Estado</th>
                 <th className="font-bold px-6 py-3.5 text-right">Acciones</th>
               </tr>
@@ -627,10 +852,23 @@ export default function FinanzasPage() {
             <tbody>
               {pagosPaginados.map((pago) => {
                 const alumno = getAlumno(pago.alumnoId);
+                const esAnulado = pago.estado === "ANULADO";
+                const esParcial = pago.estado === "PARCIAL";
+                const abonado = obtenerMontoRecaudadoPago(pago);
+                const saldo = obtenerSaldoPendientePago(pago);
+                const requiereRecordatorio =
+                  pago.estado === "PARCIAL" ||
+                  pago.estado === "PENDIENTE" ||
+                  pago.estado === "VENCIDO";
+                const puedeWhatsapp =
+                  requiereRecordatorio && alumno && tieneCelularWhatsappValido(alumno.celular);
+
                 return (
                   <tr
                     key={pago.id}
-                    className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
+                    className={`border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors ${
+                      esAnulado ? "opacity-60 bg-slate-950/30" : ""
+                    }`}
                   >
                     <td className="px-6 py-4 font-bold text-white">
                       {alumno ? (
@@ -642,40 +880,126 @@ export default function FinanzasPage() {
                           {pago.alumnoNombreHistorico || "Alumno Atlas"} (Baja)
                         </span>
                       )}
+                      {esAnulado && pago.motivoAnulacion && (
+                        <div className="text-[11px] font-medium text-rose-400/90 mt-0.5">
+                          Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}: {pago.motivoAnulacion}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.plan}</td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{pago.plan}</span>
+                        {(pago.cantidadMeses ?? 1) > 1 && (
+                          <span
+                            title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                          >
+                            ×{pago.cantidadMeses} meses
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Período: {pago.periodoMes || pago.fecha.slice(0, 7)}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 font-black text-white">
-                      ${pago.monto.toLocaleString("es-AR")}
+                      <span className={esAnulado ? "line-through text-slate-500" : ""}>
+                        ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
+                      </span>
+                      {esParcial && (
+                        <div className="text-[11px] font-bold text-amber-400 mt-0.5">
+                          Resta ${saldo.toLocaleString("es-AR")} (total ${pago.monto.toLocaleString("es-AR")})
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-slate-400 font-medium">
                       {formatFechaAR(pago.fecha)}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">
+                      <div>{pago.metodo}</div>
+                      {pago.registradoPor && (
+                        <div className="text-[11px] text-slate-500">
+                          Por: {pago.registradoPor}
+                        </div>
+                      )}
+                      {pago.comprobante && (
+                        <div className="text-[11px] text-sky-400/90 truncate max-w-[180px]" title={pago.comprobante}>
+                          {pago.comprobante}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
-                      <div className="relative inline-block">
-                        <select
-                          aria-label="Cambiar estado del pago"
-                          value={pago.estado}
-                          onChange={(e) =>
-                            actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
-                          }
-                          className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+                      {esAnulado || esParcial ? (
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_STYLES[pago.estado]}`}
                         >
-                          <option value="PAGADO" className="bg-slate-900 text-white">PAGADO</option>
-                          <option value="PENDIENTE" className="bg-slate-900 text-white">PENDIENTE</option>
-                          <option value="VENCIDO" className="bg-slate-900 text-white">VENCIDO</option>
-                        </select>
-                        <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
-                      </div>
+                          {esParcial ? "SEÑA PARCIAL" : "ANULADO"}
+                        </span>
+                      ) : (
+                        <div className="relative inline-block">
+                          <select
+                            aria-label="Cambiar estado del pago"
+                            value={pago.estado}
+                            onChange={(e) =>
+                              actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
+                            }
+                            className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+                          >
+                            <option value="PAGADO" className="bg-slate-900 text-white">PAGADO</option>
+                            <option value="PENDIENTE" className="bg-slate-900 text-white">PENDIENTE</option>
+                            <option value="VENCIDO" className="bg-slate-900 text-white">VENCIDO</option>
+                          </select>
+                          <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => setPagoAEliminar(pago)}
-                        aria-label={`Eliminar pago de ${alumno?.nombre ?? "alumno"}`}
-                        className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="inline-flex items-center justify-end gap-1">
+                        {esParcial && (
+                          <button
+                            type="button"
+                            onClick={() => setPagoACompletar(pago)}
+                            title={`Completar saldo restante ($${saldo.toLocaleString("es-AR")})`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 text-xs font-bold transition-colors active:scale-95"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Completar</span>
+                          </button>
+                        )}
+                        {puedeWhatsapp && alumno?.celular && (
+                          <a
+                            href={construirUrlWaMe(
+                              alumno.celular,
+                              mensajeRecordatorioCuotaWhatsapp({
+                                nombre: alumno.nombre,
+                                plan: pago.plan,
+                                estadoPago: pago.estado,
+                                saldoPendiente: saldo,
+                                montoTotal: pago.monto,
+                                periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
+                              })
+                            )}
+                            target="atlas_whatsapp_tab"
+                            rel="noopener noreferrer"
+                            title={`Enviar recordatorio 1-clic por WhatsApp a ${alumno.nombre}`}
+                            aria-label={`Recordar por WhatsApp a ${alumno.nombre}`}
+                            className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/15 transition-colors active:scale-90"
+                          >
+                            <WhatsAppIcon className="w-4 h-4 fill-current" />
+                          </a>
+                        )}
+                        {!esAnulado && (
+                          <button
+                            type="button"
+                            onClick={() => setPagoAAnular(pago)}
+                            title="Anular comprobante con motivo auditado"
+                            aria-label={`Anular comprobante de ${alumno?.nombre ?? "alumno"}`}
+                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
+                          >
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -746,27 +1070,37 @@ export default function FinanzasPage() {
         <ModalRegistrarPago
           alumnos={alumnos}
           planes={planes}
+          pagos={pagos}
+          getEstadoCuenta={getEstadoCuenta}
           onClose={() => setModalAbierto(false)}
           onSubmit={handleNuevoPago}
           onAsignarCredenciales={asignarCredencialesAlumno}
         />
       )}
 
-      {pagoAEliminar && (
-        <ModalConfirmarEliminar
-          pago={pagoAEliminar}
-          nombreAlumno={getAlumno(pagoAEliminar.alumnoId)?.nombre ?? pagoAEliminar.alumnoNombreHistorico ?? "este alumno"}
-          onCancel={() => setPagoAEliminar(null)}
-          onConfirm={confirmarEliminar}
+      {pagoAAnular && (
+        <ModalAnularPago
+          pago={pagoAAnular}
+          nombreAlumno={getAlumno(pagoAAnular.alumnoId)?.nombre ?? pagoAAnular.alumnoNombreHistorico ?? "este socio"}
+          onCancel={() => setPagoAAnular(null)}
+          onConfirm={confirmarAnulacion}
+        />
+      )}
+
+      {pagoACompletar && (
+        <ModalCompletarSaldo
+          pago={pagoACompletar}
+          nombreAlumno={getAlumno(pagoACompletar.alumnoId)?.nombre ?? pagoACompletar.alumnoNombreHistorico ?? "este socio"}
+          onCancel={() => setPagoACompletar(null)}
+          onConfirm={confirmarCompletarSaldo}
         />
       )}
     </div>
   );
 }
 
-
-// ---------- Modal: confirmar eliminación ----------
-function ModalConfirmarEliminar({
+// ---------- Modal: Anulación auditada con motivo obligatorio ----------
+function ModalAnularPago({
   pago,
   nombreAlumno,
   onCancel,
@@ -775,8 +1109,116 @@ function ModalConfirmarEliminar({
   pago: Pago;
   nombreAlumno: string;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (motivo: string) => void;
 }) {
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (motivo.trim().length < 4) {
+      setError("Indicá brevemente el motivo de anulación para la auditoría de caja.");
+      return;
+    }
+    onConfirm(motivo.trim());
+  };
+
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+    >
+      <form
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4"
+      >
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30">
+          <Ban className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-black text-white">Anular comprobante de caja</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            El comprobante de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
+            <span className="font-semibold text-emerald-400">
+              ${obtenerMontoRecaudadoPago(pago).toLocaleString("es-AR")}
+            </span>{" "}
+            no se borrará: quedará registrado como <strong>ANULADO</strong> con tu usuario, fecha y motivo, descontándose de la recaudación y habilitando recobrar ese período.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {MOTIVOS_ANULACION_RAPIDOS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => {
+                setMotivo(preset);
+                setError("");
+              }}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+
+        <Field label="Motivo de anulación (obligatorio)">
+          <input
+            aria-label="Motivo de anulación"
+            value={motivo}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Ej: Importe mal tipeado, se recobra por monto real"
+            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-rose-500 text-white placeholder-slate-500 text-sm"
+            autoFocus
+          />
+        </Field>
+
+        {error && (
+          <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-colors"
+          >
+            Confirmar anulación
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ---------- Modal: Completar saldo de seña parcial ----------
+function ModalCompletarSaldo({
+  pago,
+  nombreAlumno,
+  onCancel,
+  onConfirm,
+}: {
+  pago: Pago;
+  nombreAlumno: string;
+  onCancel: () => void;
+  onConfirm: (metodo: string) => void;
+}) {
+  const [metodo, setMetodo] = useState(pago.metodo || "Efectivo");
+  const abonado = obtenerMontoRecaudadoPago(pago);
+  const saldo = obtenerSaldoPendientePago(pago);
+
   return (
     <div
       onClick={onCancel}
@@ -784,28 +1226,48 @@ function ModalConfirmarEliminar({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4"
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-4">
-          <Trash2 className="w-6 h-6" />
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <CheckCircle2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-black text-white">¿Eliminar este pago?</h2>
-        <p className="mt-1.5 text-sm text-slate-400">
-          Vas a eliminar el pago de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
-          <span className="font-semibold text-emerald-400">${pago.monto.toLocaleString("es-AR")}</span>. Esta acción no se puede deshacer.
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
+        <div>
+          <h2 className="text-lg font-black text-white">Completar saldo pendiente</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            <span className="font-semibold text-white">{nombreAlumno}</span> dejó una seña de{" "}
+            <strong className="text-slate-200">${abonado.toLocaleString("es-AR")}</strong>. Resta cobrar{" "}
+            <strong className="text-emerald-400">${saldo.toLocaleString("es-AR")}</strong> para acreditar la cuota de{" "}
+            <strong>{pago.periodoMes || pago.fecha.slice(0, 7)}</strong> como <strong>PAGADA</strong>.
+          </p>
+        </div>
+
+        <Field label="Medio de pago del saldo restante">
+          <select
+            aria-label="Medio de pago del saldo"
+            value={metodo}
+            onChange={(e) => setMetodo(e.target.value)}
+            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 text-white text-sm"
+          >
+            <option className="bg-slate-900 text-white">Efectivo</option>
+            <option className="bg-slate-900 text-white">Transferencia</option>
+            <option className="bg-slate-900 text-white">Tarjeta</option>
+          </select>
+        </Field>
+
+        <div className="flex justify-end gap-3 pt-2">
           <button
+            type="button"
             onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-[color,background-color] duration-200 active:scale-95"
+            type="button"
+            onClick={() => onConfirm(metodo)}
+            className="h-11 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-colors"
           >
-            Eliminar
+            Acreditar ${saldo.toLocaleString("es-AR")}
           </button>
         </div>
       </div>
@@ -814,9 +1276,10 @@ function ModalConfirmarEliminar({
 }
 
 // ---------- Helpers de WhatsApp ----------
-function mensajePagoTemplate(nombre: string, plan: string, monto: string) {
+function mensajePagoTemplate(nombre: string, plan: string, monto: string, cantidadMeses: number = 1) {
   const montoFmt = monto ? `$${Number(monto).toLocaleString("es-AR")}` : "$0";
-  return `Hola ${nombre || "!"}! ✅ Registramos tu pago de ${montoFmt} correspondiente al plan ${plan || "tu plan"} en ATLAS. ¡Gracias por seguir entrenando con nosotros! 💪`;
+  const sufijoMeses = cantidadMeses > 1 ? ` (${cantidadMeses} meses)` : "";
+  return `Hola ${nombre || "!"}! ✅ Registramos tu pago de ${montoFmt} correspondiente al plan ${plan || "tu plan"}${sufijoMeses} en ATLAS. ¡Gracias por seguir entrenando con nosotros! 💪`;
 }
 
 function mensajeBienvenidaTemplate(nombre: string, usuario: string, password: string) {
@@ -841,7 +1304,6 @@ function generarPassword() {
     ...Array.from(rnd.slice(4), (b) => all[b % all.length]),
   ];
 
-  // Fisher-Yates shuffle con entropía criptográfica
   const shuffleBytes = new Uint8Array(chars.length);
   crypto.getRandomValues(shuffleBytes);
   for (let i = chars.length - 1; i > 0; i--) {
@@ -874,12 +1336,16 @@ function sugerirUsuarioAlumno(alumno?: Alumno): string {
 function ModalRegistrarPago({
   alumnos,
   planes,
+  pagos,
+  getEstadoCuenta,
   onClose,
   onSubmit,
   onAsignarCredenciales,
 }: {
   alumnos: Alumno[];
   planes: Plan[];
+  pagos: Pago[];
+  getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   onClose: () => void;
   onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
@@ -901,12 +1367,15 @@ function ModalRegistrarPago({
   const inicial = obtenerPlanYPrecio(primerAlumno);
 
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
+  const [esSeniaParcial, setEsSeniaParcial] = useState(false);
+  const [montoSenia, setMontoSenia] = useState("");
   const [form, setForm] = useState({
     alumnoId: primerAlumno?.id ?? "",
     plan: inicial.planNombre,
     monto: inicial.planPrecio,
     fecha: fechaLocalHoy(),
     periodoMes: mesActualISO(),
+    cantidadMeses: 1,
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
@@ -924,6 +1393,27 @@ function ModalRegistrarPago({
       (a.dni && a.dni.includes(busquedaAlumno.trim()))
   );
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
+  const estadoCuentaSeleccionado = form.alumnoId ? getEstadoCuenta(form.alumnoId) : "AL_DIA";
+
+  const mesActual = mesActualISO();
+  const mesAnterior = sumarMesesPeriodo(mesActual, -1);
+
+  const periodoInicioEfectivo = form.periodoMes || form.fecha.slice(0, 7);
+  const periodoFinEfectivo =
+    form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo)
+      ? sumarMesesPeriodo(periodoInicioEfectivo, form.cantidadMeses - 1)
+      : periodoInicioEfectivo;
+
+  const pagoSolapado = useMemo(
+    () =>
+      verificarSolapamientoPeriodoPago(
+        form.alumnoId,
+        periodoInicioEfectivo,
+        form.cantidadMeses,
+        pagos
+      ),
+    [form.alumnoId, periodoInicioEfectivo, form.cantidadMeses, pagos]
+  );
 
   const handleAlumnoChange = (nuevoId: string) => {
     const alumno = alumnos.find((a) => a.id === nuevoId);
@@ -937,9 +1427,50 @@ function ModalRegistrarPago({
       alumnoId: nuevoId,
       plan: infoPlan.planNombre,
       monto: infoPlan.planPrecio,
+      cantidadMeses: 1,
     }));
+    setEsSeniaParcial(false);
+    setMontoSenia("");
     setCelular(alumno.celular ?? "");
     setUsuarioApp(sugerirUsuarioAlumno(alumno));
+    setErrorValidacion("");
+  };
+
+  const aplicarImputacionMoroso = (periodo: string, meses: number) => {
+    const planObj = planes.find(
+      (p) =>
+        (alumnoSeleccionado?.planId && p.id === alumnoSeleccionado.planId) ||
+        p.nombre.trim().toLowerCase() === form.plan.trim().toLowerCase()
+    );
+    setForm((prev) => ({
+      ...prev,
+      periodoMes: periodo,
+      cantidadMeses: meses,
+      monto: planObj && planObj.precio > 0 ? String(planObj.precio * meses) : prev.monto,
+    }));
+    setErrorValidacion("");
+  };
+
+  const handleCantidadMesesChange = (nuevosMeses: number) => {
+    const planObj = planes.find(
+      (p) =>
+        (alumnoSeleccionado?.planId && p.id === alumnoSeleccionado.planId) ||
+        p.nombre.trim().toLowerCase() === form.plan.trim().toLowerCase()
+    );
+    setForm((prev) => {
+      let nuevoMonto = prev.monto;
+      if (planObj && planObj.precio > 0) {
+        const montoActual = Number(prev.monto);
+        if (!prev.monto || montoActual === planObj.precio * prev.cantidadMeses) {
+          nuevoMonto = String(planObj.precio * nuevosMeses);
+        }
+      }
+      return {
+        ...prev,
+        cantidadMeses: nuevosMeses,
+        monto: nuevoMonto,
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -950,13 +1481,36 @@ function ModalRegistrarPago({
       return;
     }
     if (isNaN(montoNum) || montoNum <= 0) {
-      setErrorValidacion("El monto debe ser un valor numérico mayor a 0");
+      setErrorValidacion("El monto total de la cuota debe ser mayor a $0");
       return;
     }
     if (!form.fecha || !/^\d{4}-\d{2}-\d{2}$/.test(form.fecha)) {
       setErrorValidacion("Ingresá una fecha válida (YYYY-MM-DD)");
       return;
     }
+    if (pagoSolapado) {
+      setErrorValidacion(
+        pagoSolapado.estado === "PARCIAL"
+          ? `Este socio ya tiene una seña parcial en ${pagoSolapado.periodoMes}. Usá "Completar" en la tabla o anulala primero.`
+          : `Este socio ya tiene acreditado el período ${pagoSolapado.periodoMes}. Si necesitás corregirlo, anulá primero el comprobante anterior.`
+      );
+      return;
+    }
+
+    let montoAbonadoNum: number | undefined = undefined;
+    let estadoFinal: EstadoPago = form.estado;
+    if (esSeniaParcial) {
+      const seniaNum = Number(montoSenia);
+      if (isNaN(seniaNum) || seniaNum <= 0 || seniaNum >= montoNum) {
+        setErrorValidacion(
+          "El importe de la seña parcial debe ser mayor a $0 y menor al valor total de la cuota."
+        );
+        return;
+      }
+      montoAbonadoNum = seniaNum;
+      estadoFinal = "PARCIAL";
+    }
+
     if (tipoMensaje === "bienvenida" && (!usuarioApp.trim() || !passwordApp.trim())) {
       setErrorValidacion(
         "Para Primera inscripción, completá el Usuario y generá una Contraseña segura."
@@ -974,9 +1528,12 @@ function ModalRegistrarPago({
 
     onSubmit({
       ...form,
+      estado: estadoFinal,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
       monto: montoNum,
-      periodoMes: form.periodoMes || form.fecha.slice(0, 7),
+      ...(montoAbonadoNum !== undefined ? { montoAbonado: montoAbonadoNum } : {}),
+      periodoMes: periodoInicioEfectivo,
+      cantidadMeses: form.cantidadMeses,
       ...(incluyeCredenciales
         ? {
             usuarioApp: usuarioApp.trim(),
@@ -1044,12 +1601,57 @@ function ModalRegistrarPago({
                 >
                   {alumnosFiltrados.map((a) => (
                     <option key={a.id} value={a.id} className="py-1 bg-slate-900 text-white">
-                      {a.nombre} {a.dni ? `(${a.dni})` : ''}
+                      {a.nombre} {a.dni ? `(${a.dni})` : ""}
                     </option>
                   ))}
                 </select>
               )}
             </Field>
+
+            {/* Asistente de imputación para socios MOROSOS */}
+            {estadoCuentaSeleccionado === "MOROSO" && (
+              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-3.5 space-y-2">
+                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  Socio moroso: elegí cómo imputar este cobro
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => aplicarImputacionMoroso(mesAnterior, 1)}
+                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                      form.periodoMes === mesAnterior && form.cantidadMeses === 1
+                        ? "bg-amber-500/25 border-amber-400 text-white"
+                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    1. Saldar solo mes adeudado ({mesAnterior})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => aplicarImputacionMoroso(mesAnterior, 2)}
+                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                      form.periodoMes === mesAnterior && form.cantidadMeses === 2
+                        ? "bg-amber-500/25 border-amber-400 text-white"
+                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    2. Ponerse al día: deuda + mes actual (2 meses)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => aplicarImputacionMoroso(mesActual, 1)}
+                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                      form.periodoMes === mesActual && form.cantidadMeses === 1
+                        ? "bg-amber-500/25 border-amber-400 text-white"
+                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    3. Reactivar desde mes actual ({mesActual})
+                  </button>
+                </div>
+              </div>
+            )}
 
             <Field label="Plan">
               <input
@@ -1062,7 +1664,7 @@ function ModalRegistrarPago({
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Monto">
+              <Field label="Valor total cuota ($)">
                 <input
                   aria-label="Monto"
                   type="number"
@@ -1091,16 +1693,83 @@ function ModalRegistrarPago({
               </Field>
             </div>
 
-            <Field label="Mes que abona (Período)">
-              <input
-                aria-label="Mes que abona"
-                type="month"
-                value={form.periodoMes}
-                onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                required
-              />
-            </Field>
+            {/* Opción de Seña / Entrega Parcial */}
+            <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-3.5 space-y-2.5">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={esSeniaParcial}
+                  onChange={(e) => setEsSeniaParcial(e.target.checked)}
+                  className="size-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-slate-200">
+                  Dejó una seña / entrega parcial (resta completar saldo)
+                </span>
+              </label>
+
+              {esSeniaParcial && (
+                <div className="space-y-1.5 pt-1">
+                  <Field label="Importe entregado hoy ($)">
+                    <input
+                      aria-label="Importe entregado hoy"
+                      type="number"
+                      value={montoSenia}
+                      onChange={(e) => setMontoSenia(e.target.value)}
+                      placeholder="Ej: 10000"
+                      className="w-full px-3.5 py-2 bg-slate-800/80 border border-sky-500/40 rounded-xl outline-none focus:border-sky-400 text-white text-sm"
+                    />
+                  </Field>
+                  {Number(form.monto) > 0 && Number(montoSenia) > 0 && Number(montoSenia) < Number(form.monto) && (
+                    <p className="text-[11px] font-bold text-sky-300">
+                      Quedará un saldo pendiente de $
+                      {(Number(form.monto) - Number(montoSenia)).toLocaleString("es-AR")}.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Mes que abona (Período)">
+                <input
+                  aria-label="Mes que abona"
+                  type="month"
+                  value={form.periodoMes}
+                  onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
+                  required
+                />
+              </Field>
+              <Field label="Vigencia / Meses">
+                <select
+                  aria-label="Vigencia / Meses"
+                  value={form.cantidadMeses}
+                  onChange={(e) => handleCantidadMesesChange(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
+                >
+                  {OPCIONES_VIGENCIA_MESES.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            {pagoSolapado && (
+              <p className="text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+                ⚠️ Este socio ya registra un comprobante ({pagoSolapado.estado}) que cubre{" "}
+                <strong>{pagoSolapado.periodoMes}</strong>. Para evitar cobros duplicados, seleccioná otro período o anulá el anterior.
+              </p>
+            )}
+
+            {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
+              <p className="text-[11px] font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
+                Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta{" "}
+                {formatearMes(periodoFinEfectivo)} (próximo vencimiento:{" "}
+                {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
+              </p>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Método">
@@ -1116,13 +1785,17 @@ function ModalRegistrarPago({
               </Field>
               <Field label="Estado">
                 <select
-                  value={form.estado}
+                  disabled={esSeniaParcial}
+                  value={esSeniaParcial ? "PARCIAL" : form.estado}
                   onChange={(e) =>
                     setForm({ ...form, estado: e.target.value as EstadoPago })
                   }
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm disabled:opacity-60"
                 >
                   <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
+                  {esSeniaParcial && (
+                    <option value="PARCIAL" className="bg-slate-900 text-white">Seña parcial</option>
+                  )}
                   <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
                   <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
                 </select>
@@ -1139,15 +1812,15 @@ function ModalRegistrarPago({
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
             >
-              Guardar pago
+              {esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
             </button>
 
-            {/* ---------- Notificación por WhatsApp ---------- */}
             <SeccionNotificarWhatsapp
               alumnoId={form.alumnoId}
               alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
               plan={form.plan}
-              monto={form.monto}
+              monto={esSeniaParcial && montoSenia ? montoSenia : form.monto}
+              cantidadMeses={form.cantidadMeses}
               celular={celular}
               onCelularChange={setCelular}
               tipoMensaje={tipoMensaje}
@@ -1181,6 +1854,7 @@ function SeccionNotificarWhatsapp({
   alumnoNombre,
   plan,
   monto,
+  cantidadMeses,
   celular,
   onCelularChange,
   tipoMensaje,
@@ -1195,6 +1869,7 @@ function SeccionNotificarWhatsapp({
   alumnoNombre: string;
   plan: string;
   monto: string;
+  cantidadMeses: number;
   celular: string;
   onCelularChange: (cel: string) => void;
   tipoMensaje: "pago" | "bienvenida";
@@ -1221,7 +1896,7 @@ function SeccionNotificarWhatsapp({
   const generarMensaje = () => {
     const texto =
       tipoMensaje === "pago"
-        ? mensajePagoTemplate(alumnoNombre, plan, monto)
+        ? mensajePagoTemplate(alumnoNombre, plan, monto, cantidadMeses)
         : mensajeBienvenidaTemplate(alumnoNombre, usuarioApp, passwordApp);
     setMensaje(texto);
     if (tipoMensaje === "bienvenida" && alumnoId && usuarioApp.trim() && passwordApp.trim()) {
@@ -1245,7 +1920,7 @@ function SeccionNotificarWhatsapp({
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2500);
     } catch {}
-    const url = construirLinkWhatsapp(celular, mensaje, "web");
+    const url = construirLinkWhatsapp(celular, mensaje, "app");
     const ventana = window.open(url, "atlas_whatsapp_tab");
     if (ventana) ventana.focus();
   };
@@ -1307,7 +1982,7 @@ function SeccionNotificarWhatsapp({
                   setCredencialesGuardadas(false);
                 }}
                 className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                placeholder="Ej. lucia.fernandez"
+                placeholder="Ej. lucia910"
               />
             </Field>
             <Field label="Contraseña">
@@ -1386,9 +2061,6 @@ function SeccionNotificarWhatsapp({
           Enviar por WhatsApp
         </button>
       </div>
-      <p className="text-[11px] text-slate-400">
-        💡 Reutiliza la pestaña fijada de WhatsApp Web. Si ya tenés una conversación abierta, podés hacer clic en <strong>Copiar texto</strong> y pegarlo directamente con <kbd className="px-1 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300">Ctrl+V</kbd>.
-      </p>
     </div>
   );
 }

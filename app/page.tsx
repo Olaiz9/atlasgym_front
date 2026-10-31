@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar, UserCheck } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { ESTADO_CUENTA_LABEL } from '@/lib/types'
+import { ESTADO_CUENTA_LABEL, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago } from '@/lib/types'
 import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
@@ -366,10 +366,10 @@ export default function Page() {
   const sociosEnSala = useMemo(() => {
     return filtrarAsistenciasActivas(asistencias)
   }, [asistencias])
-  const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO')
-  const totalPendiente = pagosPendientes.reduce((acc, p) => acc + p.monto, 0)
+  const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.estado === 'PARCIAL')
+  const totalPendiente = pagosPendientes.reduce((acc, p) => acc + obtenerSaldoPendientePago(p), 0)
   const pagosOrdenados = useMemo(
-    () => [...pagos].sort((a, b) => b.fecha.localeCompare(a.fecha)),
+    () => [...pagos.filter((p) => p.estado === 'PAGADO' || p.estado === 'PARCIAL')].sort((a, b) => b.fecha.localeCompare(a.fecha)),
     [pagos]
   );
   const alumnosMap = useMemo(
@@ -389,7 +389,7 @@ export default function Page() {
           id: p.id,
           name: nombre,
           plan: p.plan,
-          amount: `$${p.monto.toLocaleString('es-AR')}`,
+          amount: `$${obtenerMontoRecaudadoPago(p).toLocaleString('es-AR')}`,
           time: p.fecha,
           initials: (al ? al.nombre : (p.alumnoNombreHistorico || 'AT'))
             .split(' ')

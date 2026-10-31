@@ -31,6 +31,7 @@ export interface BackendLoginResponse {
   rol: "ADMIN" | "ALUMNO";
   alumnoId: number | null;
   fotoUrl: string | null;
+  requiereCambioPassword?: boolean | null;
 }
 
 export interface BackendAlumnoDto {
@@ -63,14 +64,22 @@ export interface BackendPlanDto {
 export interface BackendPagoDto {
   id: number;
   alumnoId: number | null;
-  alumnoNombre: string;
+  alumnoNombre?: string | null;
+  alumnoNombreHistorico?: string | null;
   planNombre: string;
   monto: number;
+  montoAbonado?: number | null;
+  saldoPendiente?: number | null;
   fecha: string;
   metodo: string;
   estado: string;
   periodoMes?: string | null;
+  cantidadMeses?: number | null;
   comprobante?: string | null;
+  registradoPor?: string | null;
+  anuladoPor?: string | null;
+  fechaAnulacion?: string | null;
+  motivoAnulacion?: string | null;
 }
 
 export interface BackendEjercicioDto {
@@ -113,6 +122,9 @@ export interface BackendAsistenciaDto {
   hora: string;
   metodo?: MetodoAsistencia | null;
   estadoCuenta?: EstadoCuenta | null;
+  asistenciasSemana?: number | null;
+  limiteDiasSemana?: number | null;
+  excedeLimiteSemanal?: boolean | null;
 }
 
 export interface BackendTotemCheckInDto {
@@ -126,6 +138,9 @@ export interface BackendTotemCheckInDto {
   planNombre?: string | null;
   estadoCuenta?: EstadoCuenta | null;
   horaIngreso?: string | null;
+  asistenciasSemana?: number | null;
+  limiteDiasSemana?: number | null;
+  excedeLimiteSemanal?: boolean | null;
 }
 
 export interface BackendVideoTecnicaDto {
@@ -194,6 +209,7 @@ export function mapLoginResponseToUsuarioSesion(dto: BackendLoginResponse): Usua
     rol: dto.rol,
     alumnoId: dto.alumnoId != null ? String(dto.alumnoId) : undefined,
     fotoUrl: dto.fotoUrl || undefined,
+    requiereCambioPassword: Boolean(dto.requiereCambioPassword),
   };
 }
 
@@ -275,22 +291,51 @@ export function mapMetodoPagoToBack(metodo?: string | null): string {
 
 export function mapEstadoPagoToFront(estado?: string | null): EstadoPago {
   const e = (estado || "").toUpperCase();
+  if (e === "PARCIAL") return "PARCIAL";
+  if (e === "ANULADO") return "ANULADO";
   if (e === "PENDIENTE") return "PENDIENTE";
   if (e === "VENCIDO" || e === "MOROSO") return "VENCIDO";
   return "PAGADO";
 }
 
 export function mapPagoDtoToFront(dto: BackendPagoDto): Pago {
+  const meses =
+    dto.cantidadMeses != null && Number(dto.cantidadMeses) > 0
+      ? Math.floor(Number(dto.cantidadMeses))
+      : 1;
+  const estado = mapEstadoPagoToFront(dto.estado);
+  const monto = Number(dto.monto);
+  const montoAbonado =
+    dto.montoAbonado != null
+      ? Number(dto.montoAbonado)
+      : estado === "PAGADO"
+      ? monto
+      : 0;
+  const saldoPendiente =
+    dto.saldoPendiente != null
+      ? Number(dto.saldoPendiente)
+      : estado === "PAGADO" || estado === "ANULADO"
+      ? 0
+      : Math.max(0, monto - montoAbonado);
+
   return {
     id: String(dto.id),
     alumnoId: dto.alumnoId != null ? String(dto.alumnoId) : "",
-    alumnoNombreHistorico: dto.alumnoNombre,
+    alumnoNombreHistorico: dto.alumnoNombreHistorico || dto.alumnoNombre || undefined,
     plan: dto.planNombre || "Sin plan",
-    monto: Number(dto.monto),
+    monto,
+    montoAbonado,
+    saldoPendiente,
     fecha: dto.fecha,
     metodo: mapMetodoPagoToFront(dto.metodo),
-    estado: mapEstadoPagoToFront(dto.estado),
+    estado,
     periodoMes: dto.periodoMes || dto.fecha?.slice(0, 7),
+    cantidadMeses: meses,
+    comprobante: dto.comprobante || undefined,
+    registradoPor: dto.registradoPor || undefined,
+    anuladoPor: dto.anuladoPor || undefined,
+    fechaAnulacion: dto.fechaAnulacion || undefined,
+    motivoAnulacion: dto.motivoAnulacion || undefined,
   };
 }
 
@@ -298,13 +343,21 @@ export function mapPagoFrontToRequestDto(
   pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
 ) {
   const periodo = pago.periodoMes || pago.fecha?.slice(0, 7) || new Date().toISOString().slice(0, 7);
+  const meses =
+    pago.cantidadMeses != null && Number(pago.cantidadMeses) > 0
+      ? Math.min(Math.floor(Number(pago.cantidadMeses)), 24)
+      : 1;
   return {
     alumnoId: parseNumericId(pago.alumnoId) ?? 1,
     planId: parseNumericId(pago.planId),
     monto: Number(pago.monto),
+    montoAbonado: pago.montoAbonado != null ? Number(pago.montoAbonado) : null,
     metodo: mapMetodoPagoToBack(pago.metodo),
     periodoMes: periodo,
-    comprobante: null,
+    fecha: pago.fecha || null,
+    estado: pago.estado || "PAGADO",
+    cantidadMeses: meses,
+    comprobante: pago.comprobante || null,
     usuarioApp: pago.usuarioApp?.trim() || null,
     passwordApp: pago.passwordApp?.trim() || null,
   };
@@ -406,6 +459,9 @@ export function mapAsistenciaDtoToFront(dto: BackendAsistenciaDto): RegistroAsis
     estadoCuenta: dto.estadoCuenta || "AL_DIA",
     planNombre: dto.planNombre || "Pase Libre",
     metodo: dto.metodo || "DNI_TOTEM",
+    asistenciasSemana: dto.asistenciasSemana ?? undefined,
+    limiteDiasSemana: dto.limiteDiasSemana !== undefined ? dto.limiteDiasSemana : undefined,
+    excedeLimiteSemanal: dto.excedeLimiteSemanal ?? undefined,
   };
 }
 

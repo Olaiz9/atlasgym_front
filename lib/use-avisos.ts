@@ -14,13 +14,17 @@ import {
   parseNumericId,
 } from "./api-mappers";
 
-export function useAvisosManager() {
+export function useAvisosManager(onErrorSync?: (mensaje: string) => void) {
   const [avisos, setAvisos] = useState<Aviso[]>(() => {
     if (typeof window !== "undefined") {
+      const sincronizado = localStorage.getItem("atlas_backend_synced_v1") === "1";
       const guardado = localStorage.getItem("atlas_avisos_v2");
       if (guardado) {
         try {
-          return JSON.parse(guardado);
+          const parsed = JSON.parse(guardado);
+          if (Array.isArray(parsed) && (parsed.length > 0 || sincronizado)) {
+            return parsed;
+          }
         } catch {}
       }
     }
@@ -35,28 +39,35 @@ export function useAvisosManager() {
     }
   }, [avisos]);
 
-  const crearAviso = useCallback((aviso: Omit<Aviso, "id" | "leidoPor">) => {
-    const tempId = crypto.randomUUID();
-    const nuevo: Aviso = {
-      ...aviso,
-      id: tempId,
-      leidoPor: [],
-    };
-    setAvisos((prev) => [nuevo, ...prev]);
+  const crearAviso = useCallback(
+    (aviso: Omit<Aviso, "id" | "leidoPor">) => {
+      const tempId = crypto.randomUUID();
+      const nuevo: Aviso = {
+        ...aviso,
+        id: tempId,
+        leidoPor: [],
+      };
+      setAvisos((prev) => [nuevo, ...prev]);
 
-    if (isApiRuntimeEnabled() && getStoredJwtToken()) {
-      apiCrearAviso(mapAvisoFrontToRequestDto(aviso))
-        .then((creadoDto) => {
-          const mapeado = mapAvisoDtoToFront(creadoDto);
-          setAvisos((prev) =>
-            prev.map((av) => (av.id === tempId ? mapeado : av))
-          );
-        })
-        .catch(() => {});
-    }
+      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
+        apiCrearAviso(mapAvisoFrontToRequestDto(aviso))
+          .then((creadoDto) => {
+            const mapeado = mapAvisoDtoToFront(creadoDto);
+            setAvisos((prev) =>
+              prev.map((av) => (av.id === tempId ? mapeado : av))
+            );
+          })
+          .catch((err: unknown) => {
+            setAvisos((prev) => prev.filter((av) => av.id !== tempId));
+            const detalle = err instanceof Error ? err.message : "Error de conexión";
+            onErrorSync?.(`No se pudo publicar el aviso en el servidor (${detalle}).`);
+          });
+      }
 
-    return nuevo;
-  }, []);
+      return nuevo;
+    },
+    [onErrorSync]
+  );
 
   const marcarAvisoLeido = useCallback((avisoId: string, usuarioId: string) => {
     setAvisos((prev) =>
@@ -74,14 +85,27 @@ export function useAvisosManager() {
     }
   }, []);
 
-  const eliminarAviso = useCallback((avisoId: string) => {
-    setAvisos((prev) => prev.filter((av) => av.id !== avisoId));
+  const eliminarAviso = useCallback(
+    (avisoId: string) => {
+      let avisoRespaldo: Aviso | undefined;
+      setAvisos((prev) => {
+        avisoRespaldo = prev.find((av) => av.id === avisoId);
+        return prev.filter((av) => av.id !== avisoId);
+      });
 
-    const numId = parseNumericId(avisoId);
-    if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-      apiEliminarAviso(numId).catch(() => {});
-    }
-  }, []);
+      const numId = parseNumericId(avisoId);
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
+        apiEliminarAviso(numId).catch((err: unknown) => {
+          if (avisoRespaldo) {
+            setAvisos((prev) => [avisoRespaldo!, ...prev]);
+          }
+          const detalle = err instanceof Error ? err.message : "Error de conexión";
+          onErrorSync?.(`No se pudo eliminar el aviso en el servidor (${detalle}).`);
+        });
+      }
+    },
+    [onErrorSync]
+  );
 
   const getAvisosParaUsuario = useCallback(
     (usuario: UsuarioSesion | null) => {

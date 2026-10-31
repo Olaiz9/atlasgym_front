@@ -4,11 +4,43 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useAppData } from '@/lib/store'
-import { normalizarDni, reproducirSonidoFeedback } from '@/lib/asistencia-utils'
-import { apiCheckInTotem, isApiRuntimeEnabled } from '@/lib/api-client'
+import {
+  normalizarDni,
+  recortarAsistenciasParaCacheLocal,
+  reproducirSonidoFeedback,
+} from '@/lib/asistencia-utils'
+import {
+  apiCheckInTotem,
+  apiGetTotemPadronCache,
+  apiSyncTotemOutbox,
+  esErrorDeRed,
+  esFallbackOfflineDemoPermitido,
+  getStoredJwtToken,
+  getStoredTotemSecret,
+  isApiRuntimeEnabled,
+  setStoredTotemSecret,
+} from '@/lib/api-client'
+import {
+  encolarEventoOutboxTotem,
+  guardarPadronCacheTotem,
+  leerOutboxTotem,
+  leerPadronCacheTotem,
+  removerEventosSincronizadosOutbox,
+  resolverCheckInOfflineConPadron,
+} from '@/lib/totem-offline'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
-import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck } from 'lucide-react'
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Delete,
+  Check,
+  RotateCcw,
+  ShieldCheck,
+  KeyRound,
+  CloudUpload,
+} from 'lucide-react'
 import { Tooltip } from '@/components/ui/tooltip'
 
 type EstadoTotem = 'IDLE' | 'EXITO' | 'ALERTA' | 'ERROR'
@@ -18,6 +50,7 @@ interface ResultadoFeedback {
   estadoCuenta?: EstadoCuenta
   motivo?: string
   esDuplicado?: boolean
+  tituloError?: string
 }
 
 export default function TotemPage() {
@@ -29,8 +62,79 @@ export default function TotemPage() {
   const [horaActual, setHoraActual] = useState('')
   const [fechaActual, setFechaActual] = useState('')
   const [procesando, setProcesando] = useState(false)
+  const [pendientesOutbox, setPendientesOutbox] = useState(0)
+  const [padronSincronizadoCount, setPadronSincronizadoCount] = useState(0)
+  const [modalVinculacionAbierto, setModalVinculacionAbierto] = useState(false)
+  const [claveTerminalInput, setClaveTerminalInput] = useState('')
+  const [mensajeVinculacion, setMensajeVinculacion] = useState<string | null>(null)
+  const sincronizandoOutboxRef = useRef(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const sincronizarPadronCache = useCallback(async () => {
+    if (!isApiRuntimeEnabled()) return false
+    if (!getStoredTotemSecret() && !getStoredJwtToken()) return false
+    try {
+      const items = await apiGetTotemPadronCache()
+      if (Array.isArray(items)) {
+        guardarPadronCacheTotem(items)
+        setPadronSincronizadoCount(items.length)
+        return true
+      }
+    } catch {}
+    return false
+  }, [])
+
+  const vaciarColaOutbox = useCallback(async () => {
+    if (!isApiRuntimeEnabled() || sincronizandoOutboxRef.current) return
+    const cola = leerOutboxTotem()
+    setPendientesOutbox(cola.length)
+    if (cola.length === 0) return
+
+    sincronizandoOutboxRef.current = true
+    try {
+      const res = await apiSyncTotemOutbox(
+        cola.map((e) => ({
+          clientEventId: e.clientEventId,
+          dni: e.dni,
+          fecha: e.fecha,
+          hora: e.hora,
+        }))
+      )
+      if (Array.isArray(res?.clientEventIdsProcesados)) {
+        const restantes = removerEventosSincronizadosOutbox(res.clientEventIdsProcesados)
+        setPendientesOutbox(restantes.length)
+      }
+    } catch {
+      // Sigue offline; reintentará automáticamente al recuperar conectividad
+    } finally {
+      sincronizandoOutboxRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const cacheExistente = leerPadronCacheTotem()
+    if (cacheExistente) setPadronSincronizadoCount(cacheExistente.length)
+    setPendientesOutbox(leerOutboxTotem().length)
+    setClaveTerminalInput(getStoredTotemSecret())
+
+    sincronizarPadronCache()
+    vaciarColaOutbox()
+
+    const onOnline = () => {
+      vaciarColaOutbox()
+      sincronizarPadronCache()
+    }
+    window.addEventListener('online', onOnline)
+
+    const intvOutbox = setInterval(vaciarColaOutbox, 15000)
+    const intvPadron = setInterval(sincronizarPadronCache, 300000)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      clearInterval(intvOutbox)
+      clearInterval(intvPadron)
+    }
+  }, [sincronizarPadronCache, vaciarColaOutbox])
 
   // Reemplazar historial del navegador para prevenir volver atrás con botón del navegador
   useEffect(() => {
@@ -103,7 +207,219 @@ export default function TotemPage() {
       if (!valorDni || procesando) return
 
       setProcesando(true)
-      const res = registrarAsistenciaPorDni(valorDni)
+
+      // 1. Fuente primaria de verdad: Backend Spring Boot / MySQL (/api/asistencias/totem).
+      // Garantiza que una tablet dedicada de Tótem consulte siempre el estado real de cuota
+      // y registre el ingreso en la base central sin depender de sesiones locales.
+      if (isApiRuntimeEnabled()) {
+        try {
+          const backRes = await apiCheckInTotem(valorDni)
+          const alumnoRemoto: Alumno | undefined = backRes.nombreAlumno
+            ? {
+                id: String(backRes.alumnoId ?? valorDni),
+                nombre: backRes.nombreAlumno,
+                dni: backRes.alumnoDni || valorDni,
+                plan: backRes.planNombre || 'Pase Libre',
+                fechaAlta: fechaLocalHoy(),
+                activo: true,
+                tieneRutina: false,
+              }
+            : undefined
+
+          if (backRes.ok && alumnoRemoto) {
+            const estadoRemoto = backRes.estadoCuenta || 'AL_DIA'
+            const nuevaAsistencia: RegistroAsistencia = {
+              id: String(backRes.asistenciaId ?? `asist-${Date.now()}`),
+              alumnoId: alumnoRemoto.id,
+              alumnoNombre: alumnoRemoto.nombre,
+              alumnoDni: alumnoRemoto.dni || valorDni,
+              fecha: fechaLocalHoy(),
+              hora:
+                backRes.horaIngreso?.slice(0, 5) ||
+                new Date().toLocaleTimeString('es-AR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                  timeZone: 'America/Argentina/Buenos_Aires',
+                }),
+              timestamp: Date.now(),
+              estadoCuenta: estadoRemoto,
+              planNombre: alumnoRemoto.plan,
+              metodo: 'DNI_TOTEM',
+              asistenciasSemana: backRes.asistenciasSemana ?? undefined,
+              limiteDiasSemana:
+                backRes.limiteDiasSemana !== undefined ? backRes.limiteDiasSemana : undefined,
+              excedeLimiteSemanal: backRes.excedeLimiteSemanal ?? undefined,
+            }
+
+            try {
+              const raw = localStorage.getItem('atlas_asistencias_v2')
+              const prev: RegistroAsistencia[] = raw ? JSON.parse(raw) : []
+              const sinDuplicado = prev.filter((item) => item.id !== nuevaAsistencia.id)
+              const actualizadas = recortarAsistenciasParaCacheLocal(
+                [nuevaAsistencia, ...sinDuplicado],
+                fechaLocalHoy(),
+                7,
+                500
+              )
+              localStorage.setItem('atlas_asistencias_v2', JSON.stringify(actualizadas))
+              if (typeof BroadcastChannel !== 'undefined') {
+                const bc = new BroadcastChannel('atlas_asistencias_channel')
+                bc.postMessage({ tipo: 'NUEVA_ASISTENCIA', asistencias: actualizadas })
+                bc.close()
+              }
+            } catch {}
+
+            vaciarColaOutbox()
+
+            if (estadoRemoto === 'AL_DIA') {
+              setEstado('EXITO')
+              reproducirSonidoFeedback('EXITO')
+            } else {
+              setEstado('ALERTA')
+              reproducirSonidoFeedback('ALERTA')
+            }
+            setResultado({
+              alumno: alumnoRemoto,
+              estadoCuenta: estadoRemoto,
+            })
+            iniciarAutoReset()
+            return
+          }
+
+          if (backRes.yaRegistrado && alumnoRemoto) {
+            setEstado('ALERTA')
+            reproducirSonidoFeedback('ALERTA')
+            setResultado({
+              alumno: alumnoRemoto,
+              estadoCuenta: backRes.estadoCuenta || 'AL_DIA',
+              motivo: backRes.motivo || 'Tu sesión de entrenamiento continúa activa.',
+              esDuplicado: true,
+            })
+            iniciarAutoReset()
+            return
+          }
+
+          setEstado('ERROR')
+          reproducirSonidoFeedback('ERROR')
+          setResultado({
+            alumno: alumnoRemoto,
+            motivo: backRes.motivo || 'DNI no encontrado en la base de socios.',
+          })
+          iniciarAutoReset()
+          return
+        } catch (err: unknown) {
+          // Si el servidor respondió con un error HTTP explícito (ej: 403 clave de tótem o 429 límite),
+          // mostrar el motivo real en lugar de simular falsamente "DNI no encontrado".
+          if (!esErrorDeRed(err)) {
+            const detalle =
+              err instanceof Error && err.message
+                ? err.message
+                : 'No se pudo procesar el ingreso en este momento.'
+            if (detalle.includes('no autorizado') || detalle.includes('HTTP 403')) {
+              setModalVinculacionAbierto(true)
+            }
+            setEstado('ERROR')
+            reproducirSonidoFeedback('ERROR')
+            setResultado({
+              tituloError: 'Terminal pendiente de autorización',
+              motivo: detalle,
+            })
+            iniciarAutoReset()
+            return
+          }
+          // Solo si hay corte de red / backend apagado, caemos al padrón offline real + cola Outbox
+        }
+      }
+
+      // 2. Respaldo offline real usando el padrón mínimo sincronizado desde MySQL + cola Outbox idempotente
+      const padronCache = leerPadronCacheTotem()
+      if (padronCache !== null) {
+        let asistenciasLocales: RegistroAsistencia[] = []
+        try {
+          const raw = localStorage.getItem('atlas_asistencias_v2')
+          if (raw) asistenciasLocales = JSON.parse(raw)
+        } catch {}
+
+        const resOffline = resolverCheckInOfflineConPadron(
+          valorDni,
+          padronCache,
+          asistenciasLocales,
+          Date.now(),
+          fechaLocalHoy()
+        )
+
+        if (resOffline.ok && resOffline.alumno && resOffline.asistenciaLocal && resOffline.eventoOutbox) {
+          const colaActualizada = encolarEventoOutboxTotem(resOffline.eventoOutbox)
+          setPendientesOutbox(colaActualizada.length)
+
+          try {
+            const actualizadas = recortarAsistenciasParaCacheLocal(
+              [resOffline.asistenciaLocal, ...asistenciasLocales],
+              fechaLocalHoy(),
+              7,
+              500
+            )
+            localStorage.setItem('atlas_asistencias_v2', JSON.stringify(actualizadas))
+            if (typeof BroadcastChannel !== 'undefined') {
+              const bc = new BroadcastChannel('atlas_asistencias_channel')
+              bc.postMessage({ tipo: 'NUEVA_ASISTENCIA', asistencias: actualizadas })
+              bc.close()
+            }
+          } catch {}
+
+          if (resOffline.estadoCuenta === 'AL_DIA') {
+            setEstado('EXITO')
+            reproducirSonidoFeedback('EXITO')
+          } else {
+            setEstado('ALERTA')
+            reproducirSonidoFeedback('ALERTA')
+          }
+          setResultado({
+            alumno: resOffline.alumno,
+            estadoCuenta: resOffline.estadoCuenta,
+          })
+          iniciarAutoReset()
+          return
+        }
+
+        if (resOffline.yaRegistrado && resOffline.alumno) {
+          setEstado('ALERTA')
+          reproducirSonidoFeedback('ALERTA')
+          setResultado({
+            alumno: resOffline.alumno,
+            estadoCuenta: resOffline.estadoCuenta,
+            motivo: resOffline.motivo,
+            esDuplicado: true,
+          })
+          iniciarAutoReset()
+          return
+        }
+
+        setEstado('ERROR')
+        reproducirSonidoFeedback('ERROR')
+        setResultado({
+          alumno: resOffline.alumno,
+          motivo: resOffline.motivo || 'DNI no encontrado en el padrón sincronizado.',
+        })
+        iniciarAutoReset()
+        return
+      }
+
+      if (!esFallbackOfflineDemoPermitido({ yaSincronizadoConBackend: false })) {
+        setEstado('ERROR')
+        reproducirSonidoFeedback('ERROR')
+        setResultado({
+          tituloError: 'Sin conexión con el servidor central',
+          motivo:
+            'No hay conexión de red y esta terminal aún no sincronizó el padrón offline. Vinculá la clave de terminal cuando vuelva la red.',
+        })
+        iniciarAutoReset()
+        return
+      }
+
+      // 3. Respaldo exclusivamente para entorno de desarrollo local sin backend / Vitest
+      const res = registrarAsistenciaPorDni(valorDni, { omitirApiRemota: true })
 
       if (res.ok && res.alumno) {
         if (res.estadoCuenta === 'AL_DIA') {
@@ -134,97 +450,6 @@ export default function TotemPage() {
         return
       }
 
-      // Si el socio no estaba en la memoria local (ej: Tótem abierto sin sesión de Admin),
-      // consultar directamente al endpoint público del Backend (/api/asistencias/totem)
-      if (!res.alumno && isApiRuntimeEnabled()) {
-        try {
-          const backRes = await apiCheckInTotem(valorDni)
-          const alumnoRemoto: Alumno | undefined = backRes.nombreAlumno
-            ? {
-                id: String(backRes.alumnoId ?? valorDni),
-                nombre: backRes.nombreAlumno,
-                dni: backRes.alumnoDni || valorDni,
-                plan: backRes.planNombre || 'Pase Libre',
-                fechaAlta: fechaLocalHoy(),
-                activo: true,
-                tieneRutina: false,
-              }
-            : undefined
-
-          if (backRes.ok && alumnoRemoto) {
-            const estadoRemoto = backRes.estadoCuenta || 'AL_DIA'
-            const nuevaAsistencia: RegistroAsistencia = {
-              id: String(backRes.asistenciaId ?? `asist-${Date.now()}`),
-              alumnoId: alumnoRemoto.id,
-              alumnoNombre: alumnoRemoto.nombre,
-              alumnoDni: alumnoRemoto.dni || valorDni,
-              fecha: fechaLocalHoy(),
-              hora:
-                backRes.horaIngreso?.slice(0, 5) ||
-                new Date().toLocaleTimeString('es-AR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false,
-                }),
-              timestamp: Date.now(),
-              estadoCuenta: estadoRemoto,
-              planNombre: alumnoRemoto.plan,
-              metodo: 'DNI_TOTEM',
-            }
-
-            try {
-              const raw = localStorage.getItem('atlas_asistencias_v2')
-              const prev: RegistroAsistencia[] = raw ? JSON.parse(raw) : []
-              const actualizadas = [nuevaAsistencia, ...prev]
-              localStorage.setItem('atlas_asistencias_v2', JSON.stringify(actualizadas))
-              if (typeof BroadcastChannel !== 'undefined') {
-                const bc = new BroadcastChannel('atlas_asistencias_channel')
-                bc.postMessage({ tipo: 'NUEVA_ASISTENCIA', asistencias: actualizadas })
-                bc.close()
-              }
-            } catch {}
-
-            if (estadoRemoto === 'AL_DIA') {
-              setEstado('EXITO')
-              reproducirSonidoFeedback('EXITO')
-            } else {
-              setEstado('ALERTA')
-              reproducirSonidoFeedback('ALERTA')
-            }
-            setResultado({
-              alumno: alumnoRemoto,
-              estadoCuenta: estadoRemoto,
-            })
-            iniciarAutoReset()
-            return
-          }
-
-          if (backRes.yaRegistrado && alumnoRemoto) {
-            setEstado('ALERTA')
-            reproducirSonidoFeedback('ALERTA')
-            setResultado({
-              alumno: alumnoRemoto,
-              estadoCuenta: backRes.estadoCuenta || 'AL_DIA',
-              motivo: backRes.motivo || 'Tu sesión de entrenamiento continúa activa.',
-              esDuplicado: true,
-            })
-            iniciarAutoReset()
-            return
-          }
-
-          if (backRes.motivo) {
-            setEstado('ERROR')
-            reproducirSonidoFeedback('ERROR')
-            setResultado({
-              alumno: alumnoRemoto,
-              motivo: backRes.motivo,
-            })
-            iniciarAutoReset()
-            return
-          }
-        } catch {}
-      }
-
       setEstado('ERROR')
       reproducirSonidoFeedback('ERROR')
       setResultado({
@@ -233,12 +458,13 @@ export default function TotemPage() {
       })
       iniciarAutoReset()
     },
-    [dni, procesando, registrarAsistenciaPorDni, iniciarAutoReset]
+    [dni, procesando, registrarAsistenciaPorDni, iniciarAutoReset, vaciarColaOutbox]
   )
 
   // Manejo de teclado físico y lectores de DNI / códigos de barra por hardware
   useEffect(() => {
     const manejarKeyDown = (e: KeyboardEvent) => {
+      if (modalVinculacionAbierto) return
       if (estado !== 'IDLE') {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
           reiniciarAIdle()
@@ -260,7 +486,7 @@ export default function TotemPage() {
 
     window.addEventListener('keydown', manejarKeyDown)
     return () => window.removeEventListener('keydown', manejarKeyDown)
-  }, [estado, manejarEnvio, reiniciarAIdle])
+  }, [estado, manejarEnvio, reiniciarAIdle, modalVinculacionAbierto])
 
   const agregarDigito = (d: string) => {
     if (estado !== 'IDLE') return
@@ -314,6 +540,17 @@ export default function TotemPage() {
             <p className="text-xl sm:text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
             <p className="text-[11px] font-medium text-slate-400 capitalize">{fechaActual}</p>
           </div>
+          {pendientesOutbox > 0 && (
+            <button
+              type="button"
+              onClick={() => vaciarColaOutbox()}
+              title="Reintentar sincronización de ingresos registrados sin Internet"
+              className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-1.5 text-amber-300 text-[11px] font-bold cursor-pointer"
+            >
+              <CloudUpload className="size-3.5 shrink-0" />
+              <span>{pendientesOutbox} pend. sync</span>
+            </button>
+          )}
           <div className="flex items-center gap-2 rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-1.5 shadow-sm">
             <span className="relative flex size-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -406,7 +643,7 @@ export default function TotemPage() {
               }`}
             >
               <Check className="size-5 md:size-6" />
-              <span>Registrar entrada</span>
+              <span>{procesando ? 'Verificando...' : 'Registrar entrada'}</span>
             </button>
           </div>
         )}
@@ -528,7 +765,7 @@ export default function TotemPage() {
           </div>
         )}
 
-        {/* ESTADO 4: ERROR (DNI NO ENCONTRADO O INACTIVO) */}
+        {/* ESTADO 4: ERROR (DNI NO ENCONTRADO, INACTIVO O ERROR DE TERMINAL) */}
         {estado === 'ERROR' && (
           <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-rose-950/40 animate-in zoom-in-95 duration-200">
             <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 mb-3 shadow-lg shadow-rose-500/20">
@@ -536,7 +773,9 @@ export default function TotemPage() {
             </div>
 
             <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso no registrado</p>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">No identificamos tu DNI</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+              {resultado?.tituloError || 'No identificamos tu DNI'}
+            </h2>
             <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1 max-w-sm mx-auto">
               {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está inactivo.'}
             </p>
@@ -569,12 +808,81 @@ export default function TotemPage() {
 
       {/* PIE DE PÁGINA KIOSCO */}
       <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-[11px] sm:text-xs text-slate-500 shrink-0">
-        <p className="flex items-center gap-1.5">
-          <ShieldCheck className="size-3.5 text-blue-500" />
-          <span>Terminal kiosco protegida por ATLAS GYM</span>
-        </p>
+        <div className="flex items-center gap-2.5">
+          <p className="flex items-center gap-1.5">
+            <ShieldCheck className="size-3.5 text-blue-500" />
+            <span>Terminal kiosco protegida por ATLAS GYM</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setClaveTerminalInput(getStoredTotemSecret())
+              setMensajeVinculacion(null)
+              setModalVinculacionAbierto(true)
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
+            title="Configurar clave local de terminal (solo administradores)"
+          >
+            <KeyRound className="size-3" />
+            <span>
+              {padronSincronizadoCount > 0
+                ? `Offline listo (${padronSincronizadoCount})`
+                : 'Vincular terminal'}
+            </span>
+          </button>
+        </div>
         <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
+
+      {modalVinculacionAbierto && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+            <div className="flex items-center gap-2 text-white font-black text-base mb-1">
+              <KeyRound className="size-4 text-blue-400" />
+              <span>Vincular tablet física del Tótem</span>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Guardá localmente en este dispositivo la clave <code className="text-slate-200">ATLAS_TOTEM_SECRET</code> para autorizar fichajes y descargar el padrón mínimo offline sin exponer el secreto en Internet.
+            </p>
+            <input
+              type="password"
+              value={claveTerminalInput}
+              onChange={(e) => setClaveTerminalInput(e.target.value)}
+              placeholder="Clave secreta de terminal..."
+              className="w-full h-10 rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none focus:border-blue-500 mb-3"
+            />
+            {mensajeVinculacion && (
+              <p className="text-xs text-emerald-400 font-semibold mb-3">{mensajeVinculacion}</p>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setModalVinculacionAbierto(false)}
+                className="h-9 px-3 rounded-xl border border-slate-700 text-xs font-bold text-slate-300 hover:bg-slate-800 cursor-pointer"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setStoredTotemSecret(claveTerminalInput)
+                  const ok = await sincronizarPadronCache()
+                  await vaciarColaOutbox()
+                  setMensajeVinculacion(
+                    ok
+                      ? 'Terminal vinculada y padrón offline sincronizado.'
+                      : 'Clave guardada localmente en este dispositivo.'
+                  )
+                  setTimeout(() => setModalVinculacionAbierto(false), 900)
+                }}
+                className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white cursor-pointer"
+              >
+                Guardar y sincronizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

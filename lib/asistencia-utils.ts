@@ -1,11 +1,115 @@
 // lib/asistencia-utils.ts
-import { RegistroAsistencia } from "./types";
-import { fechaLocalHoy, parsearFechaLocal } from "./date-utils";
+import { Alumno, Plan, RegistroAsistencia } from "./types";
+import { fechaLocalHoy, parsearFechaLocal, restarDiasFechaLocal } from "./date-utils";
 
 export interface OpcionDiaFiltro {
   fecha: string; // "YYYY-MM-DD"
   etiqueta: string; // "Hoy", "Ayer", "Lun 21/09"
   diaNombre: string; // "Lunes 21 Sep"
+}
+
+export interface CupoSemanalAsistencia {
+  asistenciasSemana: number;
+  limiteDiasSemana: number | null;
+  excedeLimiteSemanal: boolean;
+}
+
+/**
+ * Extrae el límite numérico de días por semana del plan (ej: "3 días por semana" -> 3).
+ * Retorna null si el plan es "Libre", "Full", "Ilimitado" o no define tope semanal.
+ * 100% isomórfico con AsistenciaService.extraerLimiteDiasSemana en Spring Boot.
+ */
+export function extraerLimiteDiasSemana(diasPorSemana?: string | null): number | null {
+  if (!diasPorSemana || !diasPorSemana.trim()) {
+    return null;
+  }
+  const limpio = diasPorSemana.trim().toLowerCase();
+  if (limpio.includes("libre") || limpio.includes("ilimitad") || limpio.includes("full")) {
+    return null;
+  }
+  const match = limpio.match(/([1-7])/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+/**
+ * Devuelve la fecha "YYYY-MM-DD" del lunes correspondiente a la semana ISO (Lunes a Domingo)
+ * de la fecha indicada, operando estrictamente en calendario local.
+ */
+export function inicioSemanaLunes(fechaStr: string): string {
+  const base = parsearFechaLocal(fechaStr);
+  const diaSemana = base.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  const offsetAlLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate() - offsetAlLunes,
+    12,
+    0,
+    0
+  );
+  const yyyy = lunes.getFullYear();
+  const mm = String(lunes.getMonth() + 1).padStart(2, "0");
+  const dd = String(lunes.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Calcula cuántos días distintos asistió un alumno en la semana ISO (Lunes..fecha de asistencia)
+ * y determina si superó la frecuencia semanal contratada en su plan (sin bloquearle el ingreso).
+ * Un doble turno el mismo día cuenta como 1 único día asistido.
+ */
+export function calcularCupoSemanalAsistencia(
+  asistencia: RegistroAsistencia,
+  todasAsistencias: RegistroAsistencia[],
+  planes: Plan[] = [],
+  alumnos: Alumno[] = []
+): CupoSemanalAsistencia {
+  const alumno = alumnos.find((a) => a.id === asistencia.alumnoId);
+  const plan =
+    (alumno?.planId ? planes.find((p) => p.id === alumno.planId) : undefined) ||
+    planes.find(
+      (p) =>
+        p.nombre.trim().toLowerCase() ===
+        (alumno?.plan || asistencia.planNombre || "").trim().toLowerCase()
+    );
+
+  const limiteDiasSemana =
+    plan != null
+      ? extraerLimiteDiasSemana(plan.diasPorSemana)
+      : asistencia.limiteDiasSemana !== undefined
+      ? asistencia.limiteDiasSemana
+      : extraerLimiteDiasSemana(asistencia.planNombre);
+
+  const lunesStr = inicioSemanaLunes(asistencia.fecha);
+  const fechasDistintas = new Set<string>();
+  if (asistencia.fecha) {
+    fechasDistintas.add(asistencia.fecha);
+  }
+  for (const reg of todasAsistencias) {
+    if (
+      reg.alumnoId === asistencia.alumnoId &&
+      reg.fecha >= lunesStr &&
+      reg.fecha <= asistencia.fecha
+    ) {
+      fechasDistintas.add(reg.fecha);
+    }
+  }
+
+  const asistenciasSemana = Math.max(
+    fechasDistintas.size,
+    asistencia.asistenciasSemana ?? 0
+  );
+  const excedeLimiteSemanal =
+    limiteDiasSemana != null && asistenciasSemana > limiteDiasSemana;
+
+  return {
+    asistenciasSemana,
+    limiteDiasSemana,
+    excedeLimiteSemanal,
+  };
 }
 
 /**
@@ -313,3 +417,108 @@ export function reproducirSonidoFinDescanso(): void {
   }
 }
 
+/**
+ * Ordena asistencias de más reciente a más antigua de forma determinística.
+ */
+function ordenarAsistenciasDesc(lista: RegistroAsistencia[]): RegistroAsistencia[] {
+  return [...lista].sort((a, b) => {
+    if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+    if (b.fecha !== a.fecha) return b.fecha.localeCompare(a.fecha);
+    if (b.hora !== a.hora) return b.hora.localeCompare(a.hora);
+    return b.id.localeCompare(a.id);
+  });
+}
+
+function listasAsistenciasEquivalentes(
+  a: RegistroAsistencia[],
+  b: RegistroAsistencia[]
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.fecha !== y.fecha ||
+      x.hora !== y.hora ||
+      x.estadoCuenta !== y.estadoCuenta ||
+      x.asistenciasSemana !== y.asistenciasSemana ||
+      x.excedeLimiteSemanal !== y.excedeLimiteSemanal
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Fusiona en O(N) los fichajes frescos de una fecha específica (ej: ?fecha=hoy cada 5 s)
+ * preservando intactos los registros de días anteriores y registros locales offline pendientes.
+ * Devuelve la misma referencia `previas` si no hubo cambios reales (evita re-renders y escrituras inútiles).
+ */
+export function fusionarAsistenciasDeFecha(
+  previas: RegistroAsistencia[],
+  nuevasDeFecha: RegistroAsistencia[],
+  fechaObjetivo: string
+): RegistroAsistencia[] {
+  const otrasFechas = previas.filter((r) => r.fecha !== fechaObjetivo);
+  const dnisEnServidorFecha = new Set(
+    nuevasDeFecha.map((r) => normalizarDni(r.alumnoDni)).filter(Boolean)
+  );
+  const localesPendientesMismaFecha = previas.filter(
+    (r) =>
+      r.fecha === fechaObjetivo &&
+      r.id.startsWith("asist-local-") &&
+      !dnisEnServidorFecha.has(normalizarDni(r.alumnoDni))
+  );
+
+  const porId = new Map<string, RegistroAsistencia>();
+  for (const r of [...otrasFechas, ...localesPendientesMismaFecha, ...nuevasDeFecha]) {
+    porId.set(r.id, r);
+  }
+
+  const resultado = ordenarAsistenciasDesc(Array.from(porId.values()));
+  if (listasAsistenciasEquivalentes(previas, resultado)) {
+    return previas;
+  }
+  return resultado;
+}
+
+/**
+ * Fusiona un rango histórico [desde..hasta] consultado bajo demanda con el estado en memoria.
+ */
+export function fusionarAsistenciasDeRango(
+  previas: RegistroAsistencia[],
+  nuevasEnRango: RegistroAsistencia[],
+  desde: string,
+  hasta: string
+): RegistroAsistencia[] {
+  const fueraDeRango = previas.filter((r) => r.fecha < desde || r.fecha > hasta);
+  const porId = new Map<string, RegistroAsistencia>();
+  for (const r of [...fueraDeRango, ...nuevasEnRango]) {
+    porId.set(r.id, r);
+  }
+  const resultado = ordenarAsistenciasDesc(Array.from(porId.values()));
+  if (listasAsistenciasEquivalentes(previas, resultado)) {
+    return previas;
+  }
+  return resultado;
+}
+
+/**
+ * Recorta la colección de asistencias antes de persistirla en localStorage ("atlas_asistencias_v2")
+ * a una ventana móvil de `maxDias` (por defecto 7 días) y un máximo de `maxRegistros` (500),
+ * eliminando por completo el riesgo de QuotaExceededError tras meses de operación real.
+ */
+export function recortarAsistenciasParaCacheLocal(
+  asistencias: RegistroAsistencia[],
+  fechaHoyStr: string = fechaLocalHoy(),
+  maxDias: number = 7,
+  maxRegistros: number = 500
+): RegistroAsistencia[] {
+  const fechaMinima = restarDiasFechaLocal(fechaHoyStr, Math.max(0, maxDias));
+  const recientes = ordenarAsistenciasDesc(
+    asistencias.filter((a) => !a.fecha || a.fecha >= fechaMinima)
+  );
+  return recientes.slice(0, Math.max(1, maxRegistros));
+}

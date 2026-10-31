@@ -10,10 +10,16 @@ import {
   calcularDistribucionSemanal,
   obtenerUltimos7Dias,
   reproducirSonidoFinDescanso,
+  extraerLimiteDiasSemana,
+  inicioSemanaLunes,
+  calcularCupoSemanalAsistencia,
+  fusionarAsistenciasDeFecha,
+  fusionarAsistenciasDeRango,
+  recortarAsistenciasParaCacheLocal,
   DURACION_SESION_MINUTOS,
   DURACION_SESION_MS,
 } from './asistencia-utils'
-import { RegistroAsistencia } from './types'
+import { Alumno, Plan, RegistroAsistencia } from './types'
 
 describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
   describe('normalizarDni', () => {
@@ -277,6 +283,183 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
 
       expect(vencidos).toHaveLength(1)
       expect(vencidos[0].alumnoNombre).toBe('Carla Vencida')
+    })
+  })
+
+  describe('control de cupo de días semanales por plan (sin bloqueo en puerta)', () => {
+    it('extrae correctamente el tope semanal de días o null para planes libres', () => {
+      expect(extraerLimiteDiasSemana('2 días por semana')).toBe(2)
+      expect(extraerLimiteDiasSemana('3 días')).toBe(3)
+      expect(extraerLimiteDiasSemana('4 días por semana')).toBe(4)
+      expect(extraerLimiteDiasSemana('5 días por semana')).toBe(5)
+      expect(extraerLimiteDiasSemana('Libre')).toBeNull()
+      expect(extraerLimiteDiasSemana('Pase Full')).toBeNull()
+      expect(extraerLimiteDiasSemana('Ilimitado')).toBeNull()
+      expect(extraerLimiteDiasSemana('')).toBeNull()
+      expect(extraerLimiteDiasSemana(null)).toBeNull()
+    })
+
+    it('calcula el lunes de la semana ISO sin corrimientos por huso horario', () => {
+      expect(inicioSemanaLunes('2026-10-26')).toBe('2026-10-26') // Lunes
+      expect(inicioSemanaLunes('2026-10-30')).toBe('2026-10-26') // Viernes
+      expect(inicioSemanaLunes('2026-11-01')).toBe('2026-10-26') // Domingo
+    })
+
+    it('deduplica doble turno el mismo día y alerta al superar los días semanales del plan', () => {
+      const planes: Plan[] = [
+        { id: 'p3', nombre: 'Plan 3 Días', precio: 20000, diasPorSemana: '3 días por semana', activo: true },
+        { id: 'plibre', nombre: 'Pase Libre', precio: 28000, diasPorSemana: 'Libre', activo: true },
+      ]
+      const alumnos: Alumno[] = [
+        {
+          id: 'a1',
+          nombre: 'Camila Morales',
+          dni: '40111222',
+          planId: 'p3',
+          plan: 'Plan 3 Días',
+          fechaAlta: '2026-09-01',
+          activo: true,
+          tieneRutina: true,
+        },
+      ]
+
+      // Lunes doble turno (mañana y noche) + Miércoles + Jueves = 3 días distintos -> NO excede
+      const lunManana: RegistroAsistencia = {
+        id: 'as1',
+        alumnoId: 'a1',
+        alumnoNombre: 'Camila Morales',
+        alumnoDni: '40111222',
+        fecha: '2026-10-26',
+        hora: '09:00',
+        timestamp: 1000,
+        estadoCuenta: 'AL_DIA',
+        planNombre: 'Plan 3 Días',
+        metodo: 'DNI_TOTEM',
+      }
+      const lunNoche: RegistroAsistencia = {
+        ...lunManana,
+        id: 'as2',
+        hora: '20:00',
+        timestamp: 2000,
+      }
+      const miercoles: RegistroAsistencia = {
+        ...lunManana,
+        id: 'as3',
+        fecha: '2026-10-28',
+        timestamp: 3000,
+      }
+      const jueves: RegistroAsistencia = {
+        ...lunManana,
+        id: 'as4',
+        fecha: '2026-10-29',
+        timestamp: 4000,
+      }
+      const viernesCuartoDia: RegistroAsistencia = {
+        ...lunManana,
+        id: 'as5',
+        fecha: '2026-10-30',
+        timestamp: 5000,
+      }
+
+      const historialHastaJueves = [jueves, miercoles, lunNoche, lunManana]
+      const cupoJueves = calcularCupoSemanalAsistencia(jueves, historialHastaJueves, planes, alumnos)
+      expect(cupoJueves.limiteDiasSemana).toBe(3)
+      expect(cupoJueves.asistenciasSemana).toBe(3)
+      expect(cupoJueves.excedeLimiteSemanal).toBe(false)
+
+      const historialConViernes = [viernesCuartoDia, ...historialHastaJueves]
+      const cupoViernes = calcularCupoSemanalAsistencia(viernesCuartoDia, historialConViernes, planes, alumnos)
+      expect(cupoViernes.limiteDiasSemana).toBe(3)
+      expect(cupoViernes.asistenciasSemana).toBe(4)
+      expect(cupoViernes.excedeLimiteSemanal).toBe(true)
+    })
+  })
+
+  describe('Etapa 2 - Polling escalable O(Hoy), fusión por rango y cuota segura de localStorage', () => {
+    const baseAyer: RegistroAsistencia = {
+      id: '10',
+      alumnoId: 'a1',
+      alumnoNombre: 'Socio Ayer',
+      alumnoDni: '30111222',
+      fecha: '2026-10-30',
+      hora: '19:00',
+      timestamp: 1000,
+      estadoCuenta: 'AL_DIA',
+      planNombre: 'Pase Libre',
+      metodo: 'DNI_TOTEM',
+    }
+    const hoy1: RegistroAsistencia = {
+      ...baseAyer,
+      id: '20',
+      alumnoNombre: 'Socio Hoy',
+      alumnoDni: '35222333',
+      fecha: '2026-10-31',
+      hora: '09:00',
+      timestamp: 2000,
+    }
+    const localOfflineHoy: RegistroAsistencia = {
+      ...baseAyer,
+      id: 'asist-local-999',
+      alumnoNombre: 'Socio Offline Pendiente',
+      alumnoDni: '40999888',
+      fecha: '2026-10-31',
+      hora: '09:10',
+      timestamp: 2500,
+    }
+
+    it('fusionarAsistenciasDeFecha conserva días previos, preserva locales offline pendientes y mantiene igualdad referencial sin cambios', () => {
+      const estadoInicial = [localOfflineHoy, hoy1, baseAyer]
+      // Si el servidor devuelve hoy1 sin cambios, mantiene la misma referencia para no re-renderizar ni tocar localStorage
+      const sinCambios = fusionarAsistenciasDeFecha(estadoInicial, [hoy1], '2026-10-31')
+      expect(sinCambios).toBe(estadoInicial)
+
+      // Si llega un nuevo ingreso de hoy desde otra tablet, se fusiona manteniendo baseAyer y el offline pendiente
+      const hoy2: RegistroAsistencia = {
+        ...hoy1,
+        id: '21',
+        alumnoDni: '41777666',
+        hora: '10:30',
+        timestamp: 3000,
+      }
+      const actualizado = fusionarAsistenciasDeFecha(estadoInicial, [hoy1, hoy2], '2026-10-31')
+      expect(actualizado).toHaveLength(4)
+      expect(actualizado[0].id).toBe('21')
+      expect(actualizado.some((r) => r.id === '10')).toBe(true)
+      expect(actualizado.some((r) => r.id === 'asist-local-999')).toBe(true)
+    })
+
+    it('fusionarAsistenciasDeRango incorpora consultas históricas sin borrar días fuera de esa ventana', () => {
+      const historicoSeptiembre: RegistroAsistencia = {
+        ...baseAyer,
+        id: '1',
+        fecha: '2026-09-15',
+        timestamp: 500,
+      }
+      const combinado = fusionarAsistenciasDeRango(
+        [hoy1, baseAyer],
+        [historicoSeptiembre],
+        '2026-09-01',
+        '2026-09-30'
+      )
+      expect(combinado).toHaveLength(3)
+      expect(combinado[0].id).toBe('20')
+      expect(combinado[2].id).toBe('1')
+    })
+
+    it('recortarAsistenciasParaCacheLocal limita a 7 días y máximo de registros para impedir QuotaExceededError', () => {
+      const coleccionGrande: RegistroAsistencia[] = []
+      for (let i = 0; i < 650; i++) {
+        coleccionGrande.push({
+          ...hoy1,
+          id: `reg-${i}`,
+          fecha: i < 550 ? '2026-10-31' : '2026-09-01',
+          timestamp: 10000 + i,
+        })
+      }
+      const recortada = recortarAsistenciasParaCacheLocal(coleccionGrande, '2026-10-31', 7, 500)
+      expect(recortada).toHaveLength(500)
+      expect(recortada.every((r) => r.fecha >= '2026-10-24')).toBe(true)
+      expect(recortada[0].timestamp).toBeGreaterThan(recortada[499].timestamp)
     })
   })
 })
