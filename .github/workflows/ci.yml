@@ -132,6 +132,8 @@ jobs:
             fi
             sleep 2
           done
+          # Las ultimas lineas de error del log quedan como anotaciones visibles en el resumen.
+          grep -E 'ERROR|Exception|Caused by' ../backend-e2e.log | tail -n 8 | while read -r l; do echo "::error title=backend::${l:0:300}"; done
           echo "::error::El backend no arranco a tiempo"; tail -n 80 ../backend-e2e.log; exit 1
 
       - uses: actions/setup-node@v5

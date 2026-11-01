@@ -19,7 +19,10 @@ export default defineConfig({
   retries: enCI ? 1 : 0,
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  reporter: enCI ? [['list'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'on-failure' }]],
+  // En CI, el reporter "github" muestra cada falla como anotacion en el resumen de la corrida.
+  reporter: enCI
+    ? [['github'], ['list'], ['html', { open: 'never' }]]
+    : [['list'], ['html', { open: 'on-failure' }]],
   use: {
     baseURL: process.env.E2E_FRONT_URL ?? 'http://localhost:3000',
     locale: 'es-AR',
