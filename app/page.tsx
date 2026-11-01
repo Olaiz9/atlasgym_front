@@ -12,7 +12,7 @@ import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
-import { filtrarAsistenciasActivas } from '@/lib/asistencia-utils'
+import { calcularConstanciaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
 
 
 function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
@@ -95,11 +95,13 @@ function AlumnoCardsSection({
   estadoCuenta,
   rutina,
   fechaHoy,
+  constancia,
 }: {
   alumno: any
   estadoCuenta: string
   rutina: any
   fechaHoy?: Date | null
+  constancia: ConstanciaAlumno
 }) {
   const diaUno = rutina?.dias[0]
   const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
@@ -178,9 +180,13 @@ function AlumnoCardsSection({
         <div className="flex items-start justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Mi constancia</span>
-            <p className="mt-2 text-2xl font-black text-white">12 entrenos</p>
+            <p className="mt-2 text-2xl font-black text-white">
+              {constancia.entrenosMes} {constancia.entrenosMes === 1 ? 'entreno' : 'entrenos'}
+            </p>
             <p className="mt-1 text-sm font-semibold text-slate-400">registrados este mes</p>
-            <p className="mt-4 text-xs font-medium text-slate-500">Última visita: Hace 2 días</p>
+            <p className="mt-4 text-xs font-medium text-slate-500">
+              {constancia.ultimaVisita ? `Última visita: ${constancia.ultimaVisita}` : 'Todavía no registraste ingresos'}
+            </p>
           </div>
           <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white shadow-sm shrink-0">
             <Sparkles className="size-7" />
@@ -206,8 +212,12 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
+  const { alumnos, asistencias, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
+  const constancia = useMemo(
+    () => calcularConstanciaAlumno(asistencias, alumno?.id),
+    [asistencias, alumno?.id]
+  )
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
 
@@ -283,6 +293,7 @@ function HomeAlumno({
           estadoCuenta={estadoCuenta}
           rutina={rutina}
           fechaHoy={fechaHoy}
+          constancia={constancia}
         />
 
         {/* Sección: Videoteca Destacada */}
@@ -356,7 +367,7 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual, alumnos, pagos, rutinas, asistencias, getCantidadAvisosNoLeidos } = useAppData()
+  const { usuarioActual, alumnos, pagos, planes, rutinas, asistencias, getCantidadAvisosNoLeidos, getEstadoCuenta } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
@@ -366,8 +377,25 @@ export default function Page() {
   const sociosEnSala = useMemo(() => {
     return filtrarAsistenciasActivas(asistencias)
   }, [asistencias])
-  const pagosPendientes = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.estado === 'PARCIAL')
-  const totalPendiente = pagosPendientes.reduce((acc, p) => acc + obtenerSaldoPendientePago(p), 0)
+  // Lo que se debe = saldos de comprobantes abiertos (señas, pendientes, vencidos) + la cuota del plan
+  // de cada socio activo PENDIENTE/MOROSO que no tiene ningún comprobante abierto (el caso más común:
+  // todavía no pagó nada este mes, así que no existe comprobante que sumar).
+  const { totalPendiente, sociosQueDeben } = useMemo(() => {
+    const abiertos = pagos.filter((p) => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO' || p.estado === 'PARCIAL')
+    let total = abiertos.reduce((acc, p) => acc + obtenerSaldoPendientePago(p), 0)
+    const conComprobanteAbierto = new Set(abiertos.map((p) => p.alumnoId))
+    const deudores = new Set(conComprobanteAbierto)
+    for (const a of alumnos) {
+      if (!a.activo) continue
+      const estado = getEstadoCuenta(a.id)
+      if (estado !== 'PENDIENTE' && estado !== 'MOROSO') continue
+      deudores.add(a.id)
+      if (!conComprobanteAbierto.has(a.id)) {
+        total += planes.find((pl) => pl.id === a.planId)?.precio ?? 0
+      }
+    }
+    return { totalPendiente: total, sociosQueDeben: deudores.size }
+  }, [pagos, alumnos, planes, getEstadoCuenta])
   const pagosOrdenados = useMemo(
     () => [...pagos.filter((p) => p.estado === 'PAGADO' || p.estado === 'PARCIAL')].sort((a, b) => b.fecha.localeCompare(a.fecha)),
     [pagos]
@@ -548,7 +576,7 @@ export default function Page() {
                 <p className="mt-2 text-4xl font-black tracking-tight text-white">${totalPendiente.toLocaleString('es-AR')}</p>
                 <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-400">
                   <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  {pagosPendientes.length} pendientes <span className="font-medium text-slate-500">requieren atención</span>
+                  {sociosQueDeben} {sociosQueDeben === 1 ? 'socio' : 'socios'} <span className="font-medium text-slate-500">con cuota impaga</span>
                 </p>
               </div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white shadow-sm">
@@ -557,7 +585,7 @@ export default function Page() {
             </div>
             <div
               className="absolute bottom-0 left-0 h-1.5 bg-rose-500 transition-[width] duration-500"
-              style={{ width: `${pagos.length > 0 ? Math.round((pagosPendientes.length / pagos.length) * 100) : 0}%` }}
+              style={{ width: `${alumnosActivos > 0 ? Math.min(100, Math.round((sociosQueDeben / alumnosActivos) * 100)) : 0}%` }}
             />
           </Link>
         </section>
@@ -614,7 +642,7 @@ export default function Page() {
         </section>
 
         <div className="mt-12 flex items-center justify-between border-t border-slate-800/50 pt-6 text-sm font-medium text-slate-500">
-          <p>Última actualización hace 3 min</p>
+          <p>Datos sincronizados con el servidor del gimnasio</p>
           <p>ATLAS Admin · v2.4.0</p>
         </div>
       </div>

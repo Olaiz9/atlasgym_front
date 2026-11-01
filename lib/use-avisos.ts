@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Aviso, UsuarioSesion } from "./types";
 import { AVISOS_MOCK } from "./mock-data";
+import { permiteDatosDeEjemplo } from "./api-client";
 import {
   apiCrearAviso,
   apiEliminarAviso,
@@ -28,7 +29,7 @@ export function useAvisosManager(onErrorSync?: (mensaje: string) => void) {
         } catch {}
       }
     }
-    return AVISOS_MOCK;
+    return permiteDatosDeEjemplo() ? AVISOS_MOCK : [];
   });
 
   useEffect(() => {

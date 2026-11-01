@@ -29,7 +29,7 @@ import {
   periodoMesActual,
   sumarMesesPeriodo,
 } from "@/lib/date-utils";
-import { CONTACTO_ATLAS } from "@/lib/constants";
+import { CONTACTO_ATLAS, DATOS_PAGO_ATLAS } from "@/lib/constants";
 import {
   EstadoPago,
   Pago,
@@ -194,7 +194,8 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
   const planMonto = planEncontrado ? planEncontrado.precio : (ultimoPago ? ultimoPago.monto : 15000);
 
   const copiarAlias = () => {
-    navigator.clipboard.writeText("ATLAS.GYM.MP");
+    if (!DATOS_PAGO_ATLAS.alias) return;
+    navigator.clipboard.writeText(DATOS_PAGO_ATLAS.alias);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
   };
@@ -263,6 +264,8 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
               Datos para abonar tu cuota
             </span>
+            {DATOS_PAGO_ATLAS.alias ? (
+            <>
             <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
               Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
@@ -271,7 +274,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
                 <span className="text-xs text-slate-400 font-semibold">Alias:</span>
-                <span className="text-sm font-mono font-black text-blue-400">ATLAS.GYM.MP</span>
+                <span className="text-sm font-mono font-black text-blue-400">{DATOS_PAGO_ATLAS.alias}</span>
                 <button
                   type="button"
                   onClick={copiarAlias}
@@ -280,10 +283,21 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
                   {copiado ? "¡Copiado! ✓" : "Copiar"}
                 </button>
               </div>
-              <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
-                <span className="text-slate-400">Titular:</span> <strong>Atlas Gimnasio SRL</strong>
-              </div>
+              {DATOS_PAGO_ATLAS.titular && (
+                <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
+                  <span className="text-slate-400">Titular:</span> <strong>{DATOS_PAGO_ATLAS.titular}</strong>
+                </div>
+              )}
             </div>
+            </>
+            ) : (
+            <>
+            <h2 className="text-xl font-black">Abonás en recepción</h2>
+            <p className="text-sm text-slate-400 mt-1 max-w-xl">
+              Consultá en recepción o por WhatsApp los medios de pago disponibles (efectivo, transferencia o tarjeta).
+            </p>
+            </>
+            )}
           </div>
 
           <div className="shrink-0">

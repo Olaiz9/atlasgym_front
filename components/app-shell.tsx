@@ -27,6 +27,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [confirmarPassword, setConfirmarPassword] = useState('')
   const [errorCambioClave, setErrorCambioClave] = useState<string | null>(null)
   const [guardandoClave, setGuardandoClave] = useState(false)
+  // La sesión vive en localStorage (solo existe en el navegador): hasta montar, renderizamos lo mismo
+  // que el servidor (el spinner) para evitar el error de hidratación de React.
+  const [montado, setMontado] = useState(false)
+  useEffect(() => setMontado(true), [])
 
   useEffect(() => {
     if (ultimoErrorSync) {
@@ -52,12 +56,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!usuarioActual) {
+  if (!montado || !usuarioActual) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500" />
-          <p className="text-xs text-slate-400 font-medium">Redirigiendo al inicio de sesión...</p>
+          <p className="text-xs text-slate-400 font-medium">{montado ? 'Redirigiendo al inicio de sesión...' : 'Cargando...'}</p>
         </div>
       </div>
     )

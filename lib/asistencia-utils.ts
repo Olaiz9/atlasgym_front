@@ -522,3 +522,39 @@ export function recortarAsistenciasParaCacheLocal(
   );
   return recientes.slice(0, Math.max(1, maxRegistros));
 }
+
+export interface ConstanciaAlumno {
+  /** Días distintos con ingreso registrado en el mes calendario de `hoy`. */
+  entrenosMes: number;
+  /** "Hoy", "Ayer", "Hace N días" o null si no hay ingresos registrados. */
+  ultimaVisita: string | null;
+}
+
+/**
+ * Constancia real del alumno a partir de sus asistencias (tótem / registro manual),
+ * para la tarjeta "Mi constancia" del portal. Cuenta días distintos (dos check-ins el mismo
+ * día = 1 entreno) e ignora fechas futuras.
+ */
+export function calcularConstanciaAlumno(
+  asistencias: RegistroAsistencia[],
+  alumnoId: string | undefined,
+  hoy: string = fechaLocalHoy()
+): ConstanciaAlumno {
+  if (!alumnoId) return { entrenosMes: 0, ultimaVisita: null };
+  const prefijoMes = hoy.slice(0, 7);
+  const dias = new Set<string>();
+  let ultima: string | null = null;
+  for (const a of asistencias) {
+    if (a.alumnoId !== alumnoId || !a.fecha || a.fecha > hoy) continue;
+    if (a.fecha.startsWith(prefijoMes)) dias.add(a.fecha);
+    if (!ultima || a.fecha > ultima) ultima = a.fecha;
+  }
+  let ultimaVisita: string | null = null;
+  if (ultima) {
+    const diff = Math.round(
+      (parsearFechaLocal(hoy).getTime() - parsearFechaLocal(ultima).getTime()) / 86_400_000
+    );
+    ultimaVisita = diff <= 0 ? "Hoy" : diff === 1 ? "Ayer" : `Hace ${diff} días`;
+  }
+  return { entrenosMes: dias.size, ultimaVisita };
+}

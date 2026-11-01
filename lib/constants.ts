@@ -11,3 +11,15 @@ export const CONTACTO_ATLAS = {
   instagram: "@atlasgymoficial_",
   instagramUrl: "https://www.instagram.com/atlasgymoficial_/",
 };
+
+/**
+ * Datos de cobro por transferencia del gimnasio. Se configuran por entorno (se leen al hacer el build):
+ *   NEXT_PUBLIC_PAGO_ALIAS=alias.real.del.gym
+ *   NEXT_PUBLIC_PAGO_TITULAR=Nombre del titular de la cuenta
+ * Si no hay alias configurado, la app NO muestra ningún alias (nunca uno inventado): los alumnos
+ * ven "consultá en recepción" y los recordatorios de WhatsApp omiten la línea de transferencia.
+ */
+export const DATOS_PAGO_ATLAS = {
+  alias: (process.env.NEXT_PUBLIC_PAGO_ALIAS ?? "").trim(),
+  titular: (process.env.NEXT_PUBLIC_PAGO_TITULAR ?? "").trim(),
+};

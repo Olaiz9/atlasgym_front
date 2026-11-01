@@ -93,8 +93,10 @@ import {
   apiRegistrarPago,
   esErrorDeRed,
   esFallbackOfflineDemoPermitido,
+  EVENTO_SESION_EXPIRADA,
   getStoredJwtToken,
   isApiRuntimeEnabled,
+  permiteDatosDeEjemplo,
   RespuestaImportacionMasivaDto,
   setStoredJwtToken,
 } from "./api-client";
@@ -119,6 +121,22 @@ import {
 } from "./api-mappers";
 
 const BACKEND_SYNCED_KEY = "atlas_backend_synced_v1";
+
+/** Datos personales/contables cacheados en el navegador que se borran al cerrar sesión. */
+const CLAVES_CACHE_SESION = [
+  "atlas_sesion_v1",
+  "atlas_alumnos_v1",
+  "atlas_pagos_v1",
+  "atlas_rutinas_v1",
+  "atlas_historial_v1",
+  "atlas_asistencias_v1",
+  "atlas_asistencias_v2",
+  "atlas_avisos_v2",
+  "atlas_credenciales_alumnos_v1",
+  // Claves de versiones anteriores que ya nadie lee (pueden contener datos de demo).
+  "atlas_sesion",
+  "atlas_avisos_v1",
+];
 
 function estaSincronizadoConBackend(): boolean {
   if (typeof window === "undefined") return false;
@@ -301,7 +319,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return ALUMNOS_MOCK;
+    return permiteDatosDeEjemplo() ? ALUMNOS_MOCK : [];
   });
 
   const [pagos, setPagos] = useState<Pago[]>(() => {
@@ -317,7 +335,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return PAGOS_MOCK;
+    return permiteDatosDeEjemplo() ? PAGOS_MOCK : [];
   });
 
   const [rutinas, setRutinas] = useState<Rutina[]>(() => {
@@ -333,7 +351,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return RUTINAS_MOCK;
+    return permiteDatosDeEjemplo() ? RUTINAS_MOCK : [];
   });
 
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(() => {
@@ -371,13 +389,21 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return PLANES_MOCK;
+    return permiteDatosDeEjemplo() ? PLANES_MOCK : [];
   });
 
   const [usuarioActual, setUsuarioActual] = useState<UsuarioSesion | null>(() => {
     if (typeof window !== "undefined") {
       const guardado = localStorage.getItem("atlas_sesion_v1");
       if (guardado) {
+        // Una sesión guardada sin JWT (restos de modo demo o de un token ya borrado) no vale:
+        // sin token el backend rechaza todo y la UI quedaría mostrando datos cacheados.
+        if (isApiRuntimeEnabled() && !permiteDatosDeEjemplo() && !getStoredJwtToken()) {
+          try {
+            localStorage.removeItem("atlas_sesion_v1");
+          } catch {}
+          return null;
+        }
         try {
           return JSON.parse(guardado);
         } catch {}
@@ -399,7 +425,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return SESIONES_MOCK;
+    return permiteDatosDeEjemplo() ? SESIONES_MOCK : [];
   });
 
   const [asistencias, setAsistencias] = useState<RegistroAsistencia[]>(() => {
@@ -424,7 +450,7 @@ function useGymStore(): AppDataContextValue {
         } catch {}
       }
     }
-    return ASISTENCIAS_MOCK;
+    return permiteDatosDeEjemplo() ? ASISTENCIAS_MOCK : [];
   });
 
   const {
@@ -866,10 +892,30 @@ function useGymStore(): AppDataContextValue {
   const cerrarSesion = useCallback(() => {
     setUsuarioActual(null);
     setStoredJwtToken(null);
+    // No dejar en el dispositivo (ni en memoria) el padrón, la caja o el historial del usuario
+    // anterior: el próximo que inicie sesión ve solo lo que el backend le devuelva a él.
+    setAlumnos([]);
+    setPagos([]);
+    setRutinas([]);
+    setSesionesEntrenamiento([]);
+    setAsistencias([]);
+    setAvisos([]);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("atlas_sesion_v1");
+      for (const clave of CLAVES_CACHE_SESION) {
+        try {
+          localStorage.removeItem(clave);
+        } catch {}
+      }
     }
-  }, []);
+  }, [setAvisos]);
+
+  // JWT vencido o inválido (401 desde apiFetch) -> cerrar sesión y volver al login.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const alExpirar = () => cerrarSesion();
+    window.addEventListener(EVENTO_SESION_EXPIRADA, alExpirar);
+    return () => window.removeEventListener(EVENTO_SESION_EXPIRADA, alExpirar);
+  }, [cerrarSesion]);
 
   const guardarPerfilUsuario = useCallback(
     async (

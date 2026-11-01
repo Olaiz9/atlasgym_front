@@ -75,4 +75,21 @@ describe("Etapa 6 — Kit de Día Cero (Importador CSV Masivo y WhatsApp 1-Clic)
     expect(bienvenida).toContain("camila222");
     expect(bienvenida).toContain("42111222");
   });
+
+  it("los recordatorios nunca inventan un alias: lo omiten si no está configurado y usan el real si lo está", () => {
+    const casos = [
+      { estadoPago: "PARCIAL" as const, saldoPendiente: 5000 },
+      { estadoCuenta: "MOROSO" as const },
+      { estadoCuenta: "PENDIENTE" as const },
+    ];
+    for (const caso of casos) {
+      const sinAlias = mensajeRecordatorioCuotaWhatsapp({ nombre: "Camila Sosa", aliasPago: "", ...caso });
+      expect(sinAlias).not.toMatch(/alias/i);
+      expect(sinAlias).toContain("recepción");
+
+      const conAlias = mensajeRecordatorioCuotaWhatsapp({ nombre: "Camila Sosa", aliasPago: "gym.real.mp", ...caso });
+      expect(conAlias).toContain("gym.real.mp");
+      expect(conAlias).not.toContain("ATLAS.GYM.MP");
+    }
+  });
 });

@@ -3,6 +3,7 @@
 // compatibles tanto desde el celular de los dueños como desde PC / WhatsApp Web.
 
 import { EstadoCuenta, EstadoPago } from "./types";
+import { DATOS_PAGO_ATLAS } from "./constants";
 
 /**
  * Normaliza números celulares argentinos hacia formato internacional WhatsApp (549 + código área sin 0 + número sin 15).
@@ -89,15 +90,20 @@ export function mensajeRecordatorioCuotaWhatsapp(params: {
   saldoPendiente?: number;
   montoTotal?: number;
   periodoMes?: string;
+  /** Alias de transferencia; por defecto el configurado en NEXT_PUBLIC_PAGO_ALIAS. Vacío = no se menciona alias. */
+  aliasPago?: string;
 }): string {
   const primerNombre = extraerPrimerNombre(params.nombre);
+  const alias = (params.aliasPago ?? DATOS_PAGO_ATLAS.alias).trim();
   const planTxt = params.plan && params.plan !== "Sin plan" ? params.plan : "tu plan";
   const periodoTxt = params.periodoMes ? ` (${params.periodoMes})` : "";
 
   if (params.estadoPago === "PARCIAL" && params.saldoPendiente && params.saldoPendiente > 0) {
     return `Hola ${primerNombre}! Te escribimos de ATLAS Gym para recordarte que queda un saldo pendiente de $${params.saldoPendiente.toLocaleString(
       "es-AR"
-    )} para completar tu cuota${periodoTxt} de ${planTxt}. Podés abonarlo en recepción o transferir al alias ATLAS.GYM.MP. ¡Gracias!`;
+    )} para completar tu cuota${periodoTxt} de ${planTxt}. Podés abonarlo en recepción${
+      alias ? ` o transferir al alias ${alias}` : ""
+    }. ¡Gracias!`;
   }
 
   if (params.estadoCuenta === "MOROSO" || params.estadoPago === "VENCIDO") {
@@ -107,7 +113,11 @@ export function mensajeRecordatorioCuotaWhatsapp(params: {
         : params.montoTotal && params.montoTotal > 0
         ? ` ($${params.montoTotal.toLocaleString("es-AR")})`
         : "";
-    return `Hola ${primerNombre}! Te escribimos de ATLAS Gym porque tu cuota${periodoTxt} de ${planTxt}${montoRef} figura vencida. Podés regularizarla por transferencia al alias ATLAS.GYM.MP enviando el comprobante por acá o directamente en recepción. ¡Te esperamos!`;
+    return `Hola ${primerNombre}! Te escribimos de ATLAS Gym porque tu cuota${periodoTxt} de ${planTxt}${montoRef} figura vencida. ${
+      alias
+        ? `Podés regularizarla por transferencia al alias ${alias} enviando el comprobante por acá o directamente en recepción.`
+        : "Podés regularizarla directamente en recepción."
+    } ¡Te esperamos!`;
   }
 
   const montoTxt =
@@ -117,7 +127,9 @@ export function mensajeRecordatorioCuotaWhatsapp(params: {
       ? ` por $${params.montoTotal.toLocaleString("es-AR")}`
       : "";
 
-  return `Hola ${primerNombre}! Te recordamos desde ATLAS Gym que del 1 al 10 fue la ventana de pago y tu cuota${periodoTxt} de ${planTxt}${montoTxt} figura pendiente. Podés transferir al alias ATLAS.GYM.MP o abonar en recepción. ¡Nos vemos entrenando!`;
+  return `Hola ${primerNombre}! Te recordamos desde ATLAS Gym que del 1 al 10 fue la ventana de pago y tu cuota${periodoTxt} de ${planTxt}${montoTxt} figura pendiente. ${
+    alias ? `Podés transferir al alias ${alias} o abonar en recepción.` : "Podés abonarla en recepción."
+  } ¡Nos vemos entrenando!`;
 }
 
 export function mensajeCredencialesBienvenidaWhatsapp(params: {

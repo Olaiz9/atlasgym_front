@@ -91,6 +91,20 @@ export function isApiRuntimeEnabled(): boolean {
 }
 
 /**
+ * Datos de ejemplo (lib/mock-data.ts): SOLO en tests (Vitest) o con NEXT_PUBLIC_ALLOW_OFFLINE_DEMO=true.
+ * En el navegador real la app arranca vacía y muestra únicamente lo que devuelve el backend:
+ * un dueño o un alumno nunca deben ver socios, pagos o asistencias inventados.
+ */
+export function permiteDatosDeEjemplo(): boolean {
+  if (typeof process === "undefined") return false;
+  if (process.env?.VITEST) return true;
+  return process.env.NEXT_PUBLIC_ALLOW_OFFLINE_DEMO === "true";
+}
+
+/** Evento global que dispara apiFetch cuando el backend rechaza el JWT guardado (vencido o inválido). */
+export const EVENTO_SESION_EXPIRADA = "atlas:sesion-expirada";
+
+/**
  * Determina si está permitido caer al modo demo local sin backend durante el login.
  * En producción (o una vez que el navegador ya sincronizó datos reales desde MySQL),
  * NUNCA abre una sesión fantasma local con "admin123".
@@ -173,6 +187,14 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
+    // JWT vencido (24 hs) o firmado con otro secreto: cerrar la sesión local en vez de seguir
+    // mostrando datos cacheados como si el usuario estuviera logueado.
+    if (response.status === 401 && token && !endpoint.startsWith("/auth/login")) {
+      setStoredJwtToken(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+      }
+    }
     if (response.headers.get("x-atlas-upstream-offline") === "1") {
       throw new Error(
         "BACKEND_UNREACHABLE: No se pudo conectar con el servidor central del gimnasio."
