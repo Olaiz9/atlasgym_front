@@ -293,8 +293,16 @@ export async function apiAsignarCredencialesAlumno(
   });
 }
 
-export async function apiBlanquearClaveAlumno(id: number): Promise<BackendAlumnoDto> {
-  return apiFetch<BackendAlumnoDto>(`/alumnos/${id}/blanquear-clave`, {
+/** Respuesta de "Generar clave temporal": la clave viaja en texto plano solo esta vez. */
+export interface ClaveTemporalDto {
+  alumno: BackendAlumnoDto;
+  usuario: string;
+  claveTemporal: string;
+}
+
+/** Genera una clave temporal al azar para el socio (primer acceso u olvido de clave). */
+export async function apiBlanquearClaveAlumno(id: number): Promise<ClaveTemporalDto> {
+  return apiFetch<ClaveTemporalDto>(`/alumnos/${id}/blanquear-clave`, {
     method: "POST",
   });
 }

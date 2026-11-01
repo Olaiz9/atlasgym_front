@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     e.preventDefault()
     setErrorCambioClave(null)
     if (!passwordActual.trim()) {
-      setErrorCambioClave('Ingresá tu contraseña inicial (tu DNI sin puntos).')
+      setErrorCambioClave('Ingresá la contraseña provisoria que te pasó el gimnasio.')
       return
     }
     if (nuevaPassword.trim().length < 6) {
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return
     }
     if (nuevaPassword.trim() === passwordActual.trim()) {
-      setErrorCambioClave('Elegí una contraseña personal distinta a tu DNI.')
+      setErrorCambioClave('Elegí una contraseña personal distinta a la provisoria.')
       return
     }
     if (nuevaPassword.trim() !== confirmarPassword.trim()) {
@@ -127,19 +127,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span>Actualizá tu contraseña inicial</span>
             </div>
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Estás ingresando con tu contraseña provisoria (DNI). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.
+              Estás ingresando con tu contraseña provisoria (la que te pasó el gimnasio, o tu DNI si te cargaron desde la planilla). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.
             </p>
 
             <div className="space-y-3 mb-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                  Contraseña actual (DNI sin puntos)
+                  Contraseña provisoria actual
                 </label>
                 <input
                   type="password"
                   value={passwordActual}
                   onChange={(e) => setPasswordActual(e.target.value)}
-                  placeholder="Tu DNI actual..."
+                  placeholder="Clave provisoria..."
                   className="w-full h-10 rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>

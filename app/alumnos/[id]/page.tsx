@@ -206,6 +206,7 @@ function HeaderAlumno({
   estadoCuenta,
   montoPlan,
   blanqueando,
+  credencialTemporal,
   onEditar,
   onBlanquearClave,
 }: {
@@ -213,6 +214,8 @@ function HeaderAlumno({
   estadoCuenta: EstadoCuenta;
   montoPlan?: number;
   blanqueando: boolean;
+  /** Clave recién generada por el servidor: se muestra una sola vez, para pasársela al socio. */
+  credencialTemporal?: { usuario: string; clave: string };
   onEditar: () => void;
   onBlanquearClave: () => void;
 }) {
@@ -235,15 +238,15 @@ function HeaderAlumno({
         })
       : `Hola ${alumno.nombre.split(" ")[0]}! Te escribimos desde ATLAS Gym. ¡Que tengas una excelente semana de entrenamiento!`;
 
-  const claveInicialRef = alumno.dni ? alumno.dni.replace(/\D/g, "") : "tu DNI";
-  const usuarioRef = alumno.usuario || alumno.dni || "-";
   const urlPortal = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
-  const mensajeAccesoWhatsApp = mensajeCredencialesBienvenidaWhatsapp({
-    nombre: alumno.nombre,
-    usuario: usuarioRef,
-    claveInicial: claveInicialRef,
-    urlPortal,
-  });
+  const mensajeAccesoWhatsApp = credencialTemporal
+    ? mensajeCredencialesBienvenidaWhatsapp({
+        nombre: alumno.nombre,
+        usuario: credencialTemporal.usuario,
+        claveInicial: credencialTemporal.clave,
+        urlPortal,
+      })
+    : "";
 
   return (
     <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6 md:p-8 text-white shadow-sm">
@@ -273,27 +276,17 @@ function HeaderAlumno({
                 <MessageSquare className="w-3.5 h-3.5" />
                 {estadoCuenta === "MOROSO" || estadoCuenta === "PENDIENTE" ? "Recordar cuota" : "WhatsApp"}
               </a>
-              <a
-                href={construirUrlWaMe(alumno.celular, mensajeAccesoWhatsApp)}
-                target="atlas_whatsapp_tab"
-                rel="noopener noreferrer"
-                title="Enviar usuario y clave inicial (DNI) por WhatsApp"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-300 text-xs font-bold hover:bg-blue-500/25 transition-colors border border-blue-500/30 active:scale-95"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Enviar acceso
-              </a>
             </>
           )}
           <button
             type="button"
             disabled={blanqueando}
             onClick={onBlanquearClave}
-            title="Restablece la contraseña al DNI del socio y le solicita elegir una nueva clave privada al ingresar"
+            title="Genera una clave al azar para darle acceso al socio (o si olvidó la suya). Se le pedirá elegir una propia al ingresar."
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/15 text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition-colors border border-amber-500/30 active:scale-95 disabled:opacity-50"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            {blanqueando ? "Blanqueando..." : "Blanquear clave a DNI"}
+            {blanqueando ? "Generando..." : "Generar clave temporal"}
           </button>
           <button
             onClick={onEditar}
@@ -304,6 +297,38 @@ function HeaderAlumno({
           </button>
         </div>
       </div>
+
+      {credencialTemporal && (
+        <section
+          aria-label="Clave temporal generada"
+          className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm"
+        >
+          <p className="font-bold text-amber-200">Acceso para {alumno.nombre.split(" ")[0]}</p>
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-slate-200">
+            <span>
+              Usuario: <strong data-testid="usuario-socio" className="font-mono">{credencialTemporal.usuario}</strong>
+            </span>
+            <span>
+              Clave temporal: <strong data-testid="clave-temporal" className="font-mono">{credencialTemporal.clave}</strong>
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            Pasásela al socio ahora: por seguridad no se vuelve a mostrar. En su primer ingreso va a tener que
+            elegir una clave propia. Si la pierde, generá otra.
+          </p>
+          {celularValido && alumno.celular && (
+            <a
+              href={construirUrlWaMe(alumno.celular, mensajeAccesoWhatsApp)}
+              target="atlas_whatsapp_tab"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-300 text-xs font-bold hover:bg-blue-500/25 transition-colors border border-blue-500/30 active:scale-95"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Enviar acceso por WhatsApp
+            </a>
+          )}
+        </section>
+      )}
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <div className="flex items-center gap-2 text-slate-300">
@@ -392,6 +417,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
   const { toast } = useToast();
   const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
   const [blanqueando, setBlanqueando] = useState(false);
+  const [credencialTemporal, setCredencialTemporal] = useState<{ usuario: string; clave: string }>();
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
     return (
@@ -430,13 +456,11 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
     setBlanqueando(true);
     const res = await blanquearClaveAlumno(alumno.id);
     setBlanqueando(false);
-    if (res.ok) {
-      toast(
-        `Contraseña de ${alumno.nombre} restablecida a su DNI (${res.claveTemporal}). Se le pedirá cambiarla al ingresar.`,
-        "success"
-      );
+    if (res.ok && res.claveTemporal) {
+      setCredencialTemporal({ usuario: res.usuario || alumno.usuario || "-", clave: res.claveTemporal });
+      toast(`Clave temporal generada para ${alumno.nombre}. Pasásela ahora: no se vuelve a mostrar.`, "success");
     } else {
-      toast(res.error || "No se pudo blanquear la contraseña", "error");
+      toast(res.error || "No se pudo generar la clave temporal", "error");
     }
   };
 
@@ -453,6 +477,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
         estadoCuenta={estadoCuenta}
         montoPlan={planObj?.precio}
         blanqueando={blanqueando}
+        credencialTemporal={credencialTemporal}
         onEditar={() => setModalEditarAbierto(true)}
         onBlanquearClave={handleBlanquearClave}
       />

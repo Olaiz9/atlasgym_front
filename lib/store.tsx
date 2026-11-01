@@ -236,7 +236,9 @@ interface AppDataContextValue {
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string, definitivo?: boolean) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
-  blanquearClaveAlumno: (alumnoId: string) => Promise<{ ok: boolean; claveTemporal?: string; error?: string }>;
+  blanquearClaveAlumno: (
+    alumnoId: string
+  ) => Promise<{ ok: boolean; usuario?: string; claveTemporal?: string; error?: string }>;
   importarAlumnosMasivo: (
     filas: FilaImportacionAlumno[]
   ) => Promise<{ ok: boolean; resumen?: RespuestaImportacionMasivaDto; error?: string }>;
@@ -1118,25 +1120,31 @@ function useGymStore(): AppDataContextValue {
   const blanquearClaveAlumno = useCallback(
     async (
       alumnoId: string
-    ): Promise<{ ok: boolean; claveTemporal?: string; error?: string }> => {
+    ): Promise<{ ok: boolean; usuario?: string; claveTemporal?: string; error?: string }> => {
       const alumno = alumnos.find((a) => a.id === alumnoId);
-      const dniLimpio = alumno?.dni ? normalizarDni(alumno.dni) : "";
-      const claveTemporal = dniLimpio || "alumno123";
       const numId = parseNumericId(alumnoId);
 
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         try {
+          // El servidor genera la clave al azar y la devuelve solo en esta respuesta.
           const dto = await apiBlanquearClaveAlumno(numId);
-          const mapeado = mapAlumnoDtoToFront(dto);
+          const mapeado = mapAlumnoDtoToFront(dto.alumno);
           setAlumnos((prev) => prev.map((a) => (a.id === alumnoId ? { ...a, ...mapeado } : a)));
+          return { ok: true, usuario: dto.usuario, claveTemporal: dto.claveTemporal };
         } catch (err: unknown) {
-          const msg = formatearMensajeErrorSync("blanquear la contraseña del socio", err);
+          const msg = formatearMensajeErrorSync("generar la clave temporal del socio", err);
           reportarErrorSync(msg);
           return { ok: false, error: msg };
         }
       }
 
-      return { ok: true, claveTemporal };
+      // Modo demo sin servidor: el login de demo acepta el DNI.
+      const dniLimpio = alumno?.dni ? normalizarDni(alumno.dni) : "";
+      return {
+        ok: true,
+        usuario: alumno?.usuario || alumno?.dni,
+        claveTemporal: dniLimpio || "alumno123",
+      };
     },
     [alumnos, reportarErrorSync]
   );
