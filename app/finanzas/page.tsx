@@ -19,6 +19,7 @@ import {
   Check,
   Wallet,
   ShieldCheck,
+  Landmark,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
@@ -29,7 +30,7 @@ import {
   periodoMesActual,
   sumarMesesPeriodo,
 } from "@/lib/date-utils";
-import { CONTACTO_ATLAS, DATOS_PAGO_ATLAS } from "@/lib/constants";
+import { CONTACTO_ATLAS } from "@/lib/constants";
 import {
   EstadoPago,
   Pago,
@@ -160,7 +161,7 @@ function mesActualISO() {
 
 // ---------- Vista dedicada para el Alumno (Mis Cuotas) ----------
 function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
-  const { alumnos, getPagosDeAlumno, getEstadoCuenta, planes } = useAppData();
+  const { alumnos, getPagosDeAlumno, getEstadoCuenta, planes, datosCobro } = useAppData();
   const [copiado, setCopiado] = useState(false);
 
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined;
@@ -194,8 +195,8 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
   const planMonto = planEncontrado ? planEncontrado.precio : (ultimoPago ? ultimoPago.monto : 15000);
 
   const copiarAlias = () => {
-    if (!DATOS_PAGO_ATLAS.alias) return;
-    navigator.clipboard.writeText(DATOS_PAGO_ATLAS.alias);
+    if (!datosCobro.alias) return;
+    navigator.clipboard.writeText(datosCobro.alias);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
   };
@@ -264,7 +265,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
               Datos para abonar tu cuota
             </span>
-            {DATOS_PAGO_ATLAS.alias ? (
+            {datosCobro.alias ? (
             <>
             <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
@@ -274,7 +275,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
                 <span className="text-xs text-slate-400 font-semibold">Alias:</span>
-                <span className="text-sm font-mono font-black text-blue-400">{DATOS_PAGO_ATLAS.alias}</span>
+                <span className="text-sm font-mono font-black text-blue-400">{datosCobro.alias}</span>
                 <button
                   type="button"
                   onClick={copiarAlias}
@@ -283,9 +284,9 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
                   {copiado ? "¡Copiado! ✓" : "Copiar"}
                 </button>
               </div>
-              {DATOS_PAGO_ATLAS.titular && (
+              {datosCobro.titular && (
                 <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
-                  <span className="text-slate-400">Titular:</span> <strong>{DATOS_PAGO_ATLAS.titular}</strong>
+                  <span className="text-slate-400">Titular:</span> <strong>{datosCobro.titular}</strong>
                 </div>
               )}
             </div>
@@ -405,8 +406,11 @@ export default function FinanzasPage() {
     getAlumno,
     getEstadoCuenta,
     usuarioActual,
+    datosCobro,
+    guardarDatosCobro,
   } = useAppData();
   const { toast } = useToast();
+  const [modalDatosCobro, setModalDatosCobro] = useState(false);
 
   const [mes, setMes] = useState<string>(() => mesActualISO());
   const [verTodos, setVerTodos] = useState(false);
@@ -606,6 +610,22 @@ export default function FinanzasPage() {
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap w-full sm:w-auto">
+            <button
+              onClick={() => setModalDatosCobro(true)}
+              title={
+                datosCobro.alias
+                  ? `Alias vigente: ${datosCobro.alias}. Tocá para cambiarlo.`
+                  : "Cargá el alias de transferencia que ven los alumnos"
+              }
+              className={`flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95 ${
+                datosCobro.alias
+                  ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700"
+                  : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40"
+              }`}
+            >
+              <Landmark className="w-4 h-4 shrink-0" />
+              <span className="truncate">{datosCobro.alias ? "Datos de cobro" : "Cargar alias"}</span>
+            </button>
             <button
               onClick={exportarCSVFinanzas}
               title="Exportar planilla actual a archivo CSV / Excel"
@@ -991,6 +1011,7 @@ export default function FinanzasPage() {
                                 saldoPendiente: saldo,
                                 montoTotal: pago.monto,
                                 periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
+                                aliasPago: datosCobro.alias,
                               })
                             )}
                             target="atlas_whatsapp_tab"
@@ -1101,6 +1122,28 @@ export default function FinanzasPage() {
         />
       )}
 
+      {modalDatosCobro && (
+        <ModalDatosCobro
+          aliasActual={datosCobro.alias}
+          titularActual={datosCobro.titular}
+          actualizadoPor={datosCobro.actualizadoPor}
+          actualizadoEn={datosCobro.actualizadoEn}
+          onCancel={() => setModalDatosCobro(false)}
+          onGuardar={async (datos) => {
+            const res = await guardarDatosCobro(datos);
+            if (res.ok) {
+              setModalDatosCobro(false);
+              toast(
+                datos.alias.trim()
+                  ? "Datos de cobro actualizados: los alumnos ya ven el nuevo alias."
+                  : "Alias quitado: los alumnos verán que abonan en recepción.",
+                "success"
+              );
+            }
+            return res;
+          }}
+        />
+      )}
       {pagoACompletar && (
         <ModalCompletarSaldo
           pago={pagoACompletar}
@@ -1285,6 +1328,113 @@ function ModalCompletarSaldo({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ModalDatosCobro({
+  aliasActual,
+  titularActual,
+  actualizadoPor,
+  actualizadoEn,
+  onCancel,
+  onGuardar,
+}: {
+  aliasActual: string;
+  titularActual: string;
+  actualizadoPor?: string;
+  actualizadoEn?: string;
+  onCancel: () => void;
+  onGuardar: (datos: { alias: string; titular: string }) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [alias, setAlias] = useState(aliasActual);
+  const [titular, setTitular] = useState(titularActual);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setGuardando(true);
+    const res = await onGuardar({ alias, titular });
+    setGuardando(false);
+    if (!res.ok) setError(res.error || "No se pudieron guardar los datos.");
+  };
+
+  const fechaCambio = actualizadoEn
+    ? new Date(actualizadoEn).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })
+    : null;
+
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+    >
+      <form
+        onSubmit={guardar}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4"
+      >
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/30">
+          <Landmark className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-black text-white">Datos de cobro por transferencia</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Es lo que ven los alumnos en <strong className="text-slate-200">Mis cuotas</strong> y lo que se
+            incluye en los recordatorios por WhatsApp. Si lo dejás vacío, se les indica abonar en recepción.
+          </p>
+        </div>
+
+        <Field label="Alias o CBU/CVU">
+          <input
+            aria-label="Alias de transferencia"
+            value={alias}
+            onChange={(e) => setAlias(e.target.value)}
+            placeholder="ej: atlas.gym.mp"
+            autoComplete="off"
+            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 text-white text-sm font-mono"
+          />
+        </Field>
+        <Field label="Titular de la cuenta (opcional)">
+          <input
+            aria-label="Titular de la cuenta"
+            value={titular}
+            onChange={(e) => setTitular(e.target.value)}
+            placeholder="Nombre que aparece al transferir"
+            autoComplete="off"
+            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 text-white text-sm"
+          />
+        </Field>
+
+        {actualizadoPor && fechaCambio && (
+          <p className="text-xs text-slate-500">
+            Último cambio: {actualizadoPor} · {fechaCambio}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-rose-400">
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={guardando}
+            className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-colors disabled:opacity-60"
+          >
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

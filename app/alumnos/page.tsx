@@ -67,6 +67,7 @@ export default function AlumnosPage() {
     getPagosDeAlumno,
     planes,
     usuarioActual,
+    datosCobro,
   } = useAppData();
   const { toast } = useToast();
 
@@ -306,6 +307,7 @@ export default function AlumnosPage() {
                       plan: alumno.plan,
                       estadoCuenta: alumno.estadoCuenta,
                       montoTotal: planObj?.precio,
+                      aliasPago: datosCobro.alias,
                     })
                   : mensajeCredencialesBienvenidaWhatsapp({
                       nombre: alumno.nombre,

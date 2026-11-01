@@ -145,6 +145,14 @@ export interface Pago {
   movimientos?: MovimientoCaja[];
 }
 
+/** Datos de transferencia del gimnasio (editables por los titulares desde Finanzas). */
+export interface DatosCobro {
+  alias: string;
+  titular: string;
+  actualizadoPor?: string;
+  actualizadoEn?: string;
+}
+
 export interface MovimientoCaja {
   id?: string;
   tipo: "PAGO_TOTAL" | "SENIA" | "SALDO" | "AJUSTE" | string;

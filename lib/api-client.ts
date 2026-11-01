@@ -424,6 +424,27 @@ export async function apiGetArqueoCaja(
   return apiFetch(`/pagos/arqueo${qs}`);
 }
 
+export interface BackendConfiguracionCobroDto {
+  alias?: string | null;
+  titular?: string | null;
+  actualizadoPor?: string | null;
+  actualizadoEn?: string | null;
+}
+
+export async function apiGetConfiguracionCobro(): Promise<BackendConfiguracionCobroDto> {
+  return apiFetch<BackendConfiguracionCobroDto>("/configuracion/cobro");
+}
+
+export async function apiActualizarConfiguracionCobro(datos: {
+  alias: string;
+  titular: string;
+}): Promise<BackendConfiguracionCobroDto> {
+  return apiFetch<BackendConfiguracionCobroDto>("/configuracion/cobro", {
+    method: "PUT",
+    body: JSON.stringify(datos),
+  });
+}
+
 export async function apiEliminarPago(id: number): Promise<void> {
   return apiFetch<void>(`/pagos/${id}`, {
     method: "DELETE",

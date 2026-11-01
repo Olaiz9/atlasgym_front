@@ -222,6 +222,7 @@ function HeaderAlumno({
     .slice(0, 2)
     .join("");
 
+  const { datosCobro } = useAppData();
   const celularValido = tieneCelularWhatsappValido(alumno.celular);
   const mensajeWhatsApp =
     estadoCuenta === "MOROSO" || estadoCuenta === "PENDIENTE"
@@ -230,6 +231,7 @@ function HeaderAlumno({
           plan: alumno.plan,
           estadoCuenta,
           montoTotal: montoPlan,
+          aliasPago: datosCobro.alias,
         })
       : `Hola ${alumno.nombre.split(" ")[0]}! Te escribimos desde ATLAS Gym. ¡Que tengas una excelente semana de entrenamiento!`;
 

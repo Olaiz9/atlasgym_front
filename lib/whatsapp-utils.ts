@@ -3,7 +3,6 @@
 // compatibles tanto desde el celular de los dueños como desde PC / WhatsApp Web.
 
 import { EstadoCuenta, EstadoPago } from "./types";
-import { DATOS_PAGO_ATLAS } from "./constants";
 
 /**
  * Normaliza números celulares argentinos hacia formato internacional WhatsApp (549 + código área sin 0 + número sin 15).
@@ -90,11 +89,11 @@ export function mensajeRecordatorioCuotaWhatsapp(params: {
   saldoPendiente?: number;
   montoTotal?: number;
   periodoMes?: string;
-  /** Alias de transferencia; por defecto el configurado en NEXT_PUBLIC_PAGO_ALIAS. Vacío = no se menciona alias. */
+  /** Alias de transferencia vigente (Finanzas -> Datos de cobro). Vacío = no se menciona alias. */
   aliasPago?: string;
 }): string {
   const primerNombre = extraerPrimerNombre(params.nombre);
-  const alias = (params.aliasPago ?? DATOS_PAGO_ATLAS.alias).trim();
+  const alias = (params.aliasPago ?? "").trim();
   const planTxt = params.plan && params.plan !== "Sin plan" ? params.plan : "tu plan";
   const periodoTxt = params.periodoMes ? ` (${params.periodoMes})` : "";
 

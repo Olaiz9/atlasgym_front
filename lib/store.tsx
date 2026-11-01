@@ -29,6 +29,7 @@ import {
   Aviso,
   SesionEntrenamiento,
   RegistroAsistencia,
+  DatosCobro,
   movimientosDeCaja,
   obtenerSaldoPendientePago,
 } from "./types";
@@ -69,6 +70,8 @@ import {
   apiAsignarRutina,
   apiCheckInTotem,
   apiCompletarSaldoPago,
+  apiGetConfiguracionCobro,
+  apiActualizarConfiguracionCobro,
   apiCrearAlumno,
   apiCrearPlan,
   apiCrearRutina,
@@ -240,6 +243,8 @@ interface AppDataContextValue {
   agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   completarSaldoPago: (id: string, metodo?: string) => Promise<{ ok: boolean; error?: string }>;
+  datosCobro: DatosCobro;
+  guardarDatosCobro: (datos: { alias: string; titular: string }) => Promise<{ ok: boolean; error?: string }>;
   anularPago: (id: string, motivo: string) => Promise<{ ok: boolean; error?: string }>;
   eliminarPago: (id: string) => void;
   agregarRutina: (rutina: Omit<Rutina, "id">) => Rutina;
@@ -414,6 +419,8 @@ function useGymStore(): AppDataContextValue {
     return null;
   });
 
+  const [datosCobro, setDatosCobro] = useState<DatosCobro>({ alias: "", titular: "" });
+
   const [sesionesEntrenamiento, setSesionesEntrenamiento] = useState<SesionEntrenamiento[]>(() => {
     if (typeof window !== "undefined") {
       const sincronizado = estaSincronizadoConBackend();
@@ -546,6 +553,18 @@ function useGymStore(): AppDataContextValue {
         const usuarioEfectivo = sesionActiva;
 
         if (!token || !usuarioEfectivo) return;
+
+        // Datos de cobro vigentes (alias editable por los titulares)
+        apiGetConfiguracionCobro()
+          .then((cfg) =>
+            setDatosCobro({
+              alias: cfg?.alias || "",
+              titular: cfg?.titular || "",
+              actualizadoPor: cfg?.actualizadoPor || undefined,
+              actualizadoEn: cfg?.actualizadoEn || undefined,
+            })
+          )
+          .catch(() => {});
 
         // 3. Cargar colecciones protegidas desde MySQL (ventana inicial acotada a últimos 30 días en asistencias)
         const hoyHydrate = fechaLocalHoy();
@@ -1460,6 +1479,30 @@ function useGymStore(): AppDataContextValue {
     [sincronizarEstadoEnAsistenciasHoy, reportarErrorSync]
   );
 
+  const guardarDatosCobro = useCallback(
+    async (datos: { alias: string; titular: string }): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        const cfg = await apiActualizarConfiguracionCobro({
+          alias: datos.alias.trim(),
+          titular: datos.titular.trim(),
+        });
+        setDatosCobro({
+          alias: cfg?.alias || "",
+          titular: cfg?.titular || "",
+          actualizadoPor: cfg?.actualizadoPor || undefined,
+          actualizadoEn: cfg?.actualizadoEn || undefined,
+        });
+        return { ok: true };
+      } catch (err: unknown) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : "No se pudieron guardar los datos de cobro.",
+        };
+      }
+    },
+    []
+  );
+
   const completarSaldoPago = useCallback(
     async (id: string, metodo?: string): Promise<{ ok: boolean; error?: string }> => {
       let pagoRespaldo: Pago | undefined;
@@ -2187,6 +2230,8 @@ function useGymStore(): AppDataContextValue {
       agregarPago,
       actualizarEstadoPago,
       completarSaldoPago,
+      datosCobro,
+      guardarDatosCobro,
       anularPago,
       eliminarPago,
       agregarRutina,
@@ -2248,6 +2293,8 @@ function useGymStore(): AppDataContextValue {
       agregarPago,
       actualizarEstadoPago,
       completarSaldoPago,
+      datosCobro,
+      guardarDatosCobro,
       anularPago,
       eliminarPago,
       agregarRutina,
