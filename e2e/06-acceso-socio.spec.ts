@@ -36,8 +36,8 @@ test('el titular genera una clave temporal y el socio entra y la reemplaza por u
   await expect(page.getByText('Actualizá tu contraseña inicial')).toBeVisible()
   const nuevaClave = 'MiClave2026!'
   await page.getByPlaceholder('Clave provisoria...').fill(claveTemporal)
-  await page.getByPlaceholder('Nueva contraseña...').fill(nuevaClave)
-  await page.getByPlaceholder('Repetí la nueva contraseña...').fill(nuevaClave)
+  await page.getByPlaceholder('Nueva contraseña...', { exact: true }).fill(nuevaClave)
+  await page.getByPlaceholder('Repetí la nueva contraseña...', { exact: true }).fill(nuevaClave)
   await page.getByRole('button', { name: 'Guardar nueva clave' }).click()
   await expect(page.getByText('Actualizá tu contraseña inicial')).toBeHidden()
 
