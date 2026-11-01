@@ -17,3 +17,6 @@ node_modules
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# informe de cobertura de tests (npm run test:coverage)
+coverage/
