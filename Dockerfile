@@ -1,35 +1,3 @@
-# ETAPA 1: Dependencias
-# ==========================================
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# ==========================================
-# ETAPA 2: Compilación (Build)
-# ==========================================
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Desactivar telemetría de Next.js durante la compilación
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
-# Argumento para URL de API en producción (por defecto relativa o al backend)
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-
-RUN npm run build
-
-# ==========================================
-# ETAPA 3: Imagen Final de Producción (Runner)
-# ==========================================
-=======
 # ============================================================================
 # ATLAS Gym Frontend - Multi-Stage Production Dockerfile (Next.js Standalone)
 # ============================================================================
