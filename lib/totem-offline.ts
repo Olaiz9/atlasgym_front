@@ -222,3 +222,39 @@ export function resolverCheckInOfflineConPadron(
     eventoOutbox,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Verificación real de la clave del tótem contra el backend
+// ---------------------------------------------------------------------------
+
+export type ResultadoVerificacionTotem =
+  | { estado: "VALIDA"; padron: TotemPadronCacheItem[] }
+  | { estado: "INVALIDA" }
+  | { estado: "SIN_CONEXION" };
+
+/**
+ * Prueba una clave de terminal pidiendo el padrón mínimo SOLO con el header X-Totem-Secret
+ * (sin el JWT de una sesión de admin abierta en el mismo navegador, que enmascararía una
+ * clave incorrecta). 200 = clave válida; 401/403 = clave incorrecta; otro caso = sin conexión.
+ */
+export async function verificarClaveTerminal(
+  secreto: string,
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<ResultadoVerificacionTotem> {
+  const clave = (secreto || "").trim();
+  if (!clave) return { estado: "INVALIDA" };
+  try {
+    const res = await fetchImpl(`${baseUrl}/asistencias/totem/padron-cache`, {
+      method: "GET",
+      headers: { "X-Totem-Secret": clave, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (res.status === 401 || res.status === 403) return { estado: "INVALIDA" };
+    if (!res.ok) return { estado: "SIN_CONEXION" };
+    const data = await res.json().catch(() => null);
+    return { estado: "VALIDA", padron: Array.isArray(data) ? (data as TotemPadronCacheItem[]) : [] };
+  } catch {
+    return { estado: "SIN_CONEXION" };
+  }
+}

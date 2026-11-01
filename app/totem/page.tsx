@@ -10,12 +10,11 @@ import {
   reproducirSonidoFeedback,
 } from '@/lib/asistencia-utils'
 import {
+  API_BASE_URL,
   apiCheckInTotem,
-  apiGetTotemPadronCache,
   apiSyncTotemOutbox,
   esErrorDeRed,
   esFallbackOfflineDemoPermitido,
-  getStoredJwtToken,
   getStoredTotemSecret,
   isApiRuntimeEnabled,
   setStoredTotemSecret,
@@ -27,6 +26,7 @@ import {
   leerPadronCacheTotem,
   removerEventosSincronizadosOutbox,
   resolverCheckInOfflineConPadron,
+  verificarClaveTerminal,
 } from '@/lib/totem-offline'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
@@ -67,21 +67,31 @@ export default function TotemPage() {
   const [modalVinculacionAbierto, setModalVinculacionAbierto] = useState(false)
   const [claveTerminalInput, setClaveTerminalInput] = useState('')
   const [mensajeVinculacion, setMensajeVinculacion] = useState<string | null>(null)
+  const [errorVinculacion, setErrorVinculacion] = useState<string | null>(null)
+  const [verificandoClave, setVerificandoClave] = useState(false)
+  // Estado REAL de la terminal (antes decía "Terminal activa" siempre, aunque la clave fuera incorrecta)
+  const [estadoTerminal, setEstadoTerminal] = useState<
+    'VERIFICANDO' | 'VINCULADA' | 'CLAVE_INVALIDA' | 'SIN_CONEXION' | 'SIN_VINCULAR'
+  >('VERIFICANDO')
   const sincronizandoOutboxRef = useRef(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const sincronizarPadronCache = useCallback(async () => {
     if (!isApiRuntimeEnabled()) return false
-    if (!getStoredTotemSecret() && !getStoredJwtToken()) return false
-    try {
-      const items = await apiGetTotemPadronCache()
-      if (Array.isArray(items)) {
-        guardarPadronCacheTotem(items)
-        setPadronSincronizadoCount(items.length)
-        return true
-      }
-    } catch {}
+    const secreto = getStoredTotemSecret()
+    if (!secreto) {
+      setEstadoTerminal('SIN_VINCULAR')
+      return false
+    }
+    const res = await verificarClaveTerminal(secreto, API_BASE_URL)
+    if (res.estado === 'VALIDA') {
+      guardarPadronCacheTotem(res.padron)
+      setPadronSincronizadoCount(res.padron.length)
+      setEstadoTerminal('VINCULADA')
+      return true
+    }
+    setEstadoTerminal(res.estado === 'INVALIDA' ? 'CLAVE_INVALIDA' : 'SIN_CONEXION')
     return false
   }, [])
 
@@ -104,9 +114,16 @@ export default function TotemPage() {
       if (Array.isArray(res?.clientEventIdsProcesados)) {
         const restantes = removerEventosSincronizadosOutbox(res.clientEventIdsProcesados)
         setPendientesOutbox(restantes.length)
+        // El servidor aceptó la cola con nuestra clave: hay conexión y la terminal es válida
+        setEstadoTerminal('VINCULADA')
       }
-    } catch {
-      // Sigue offline; reintentará automáticamente al recuperar conectividad
+    } catch (err: unknown) {
+      // Sigue offline (reintenta solo) o el servidor rechazó la clave
+      if (esErrorDeRed(err)) {
+        setEstadoTerminal('SIN_CONEXION')
+      } else if (err instanceof Error && (err.message.includes('no autorizado') || err.message.includes('HTTP 403'))) {
+        setEstadoTerminal('CLAVE_INVALIDA')
+      }
     } finally {
       sincronizandoOutboxRef.current = false
     }
@@ -116,8 +133,6 @@ export default function TotemPage() {
     const cacheExistente = leerPadronCacheTotem()
     if (cacheExistente) setPadronSincronizadoCount(cacheExistente.length)
     setPendientesOutbox(leerOutboxTotem().length)
-    setClaveTerminalInput(getStoredTotemSecret())
-
     sincronizarPadronCache()
     vaciarColaOutbox()
 
@@ -317,7 +332,7 @@ export default function TotemPage() {
                 ? err.message
                 : 'No se pudo procesar el ingreso en este momento.'
             if (detalle.includes('no autorizado') || detalle.includes('HTTP 403')) {
-              setModalVinculacionAbierto(true)
+              setEstadoTerminal('CLAVE_INVALIDA')
             }
             setEstado('ERROR')
             reproducirSonidoFeedback('ERROR')
@@ -329,6 +344,7 @@ export default function TotemPage() {
             return
           }
           // Solo si hay corte de red / backend apagado, caemos al padrón offline real + cola Outbox
+          setEstadoTerminal('SIN_CONEXION')
         }
       }
 
@@ -551,13 +567,29 @@ export default function TotemPage() {
               <span>{pendientesOutbox} pend. sync</span>
             </button>
           )}
-          <div className="flex items-center gap-2 rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-1.5 shadow-sm">
-            <span className="relative flex size-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-bold text-slate-300">Terminal activa</span>
-          </div>
+          {(() => {
+            const badge = {
+              VERIFICANDO: { texto: 'Verificando…', punto: 'bg-slate-400', ping: false, borde: 'border-slate-800' },
+              VINCULADA: { texto: 'Terminal vinculada', punto: 'bg-emerald-500', ping: true, borde: 'border-slate-800' },
+              SIN_CONEXION: { texto: 'Sin conexión · modo offline', punto: 'bg-amber-400', ping: false, borde: 'border-amber-500/40' },
+              CLAVE_INVALIDA: { texto: 'Clave de terminal inválida', punto: 'bg-rose-500', ping: false, borde: 'border-rose-500/50' },
+              SIN_VINCULAR: { texto: 'Terminal sin vincular', punto: 'bg-rose-500', ping: false, borde: 'border-rose-500/50' },
+            }[estadoTerminal]
+            return (
+              <div
+                role="status"
+                className={`flex items-center gap-2 rounded-xl bg-slate-900/90 border ${badge.borde} px-3 py-1.5 shadow-sm`}
+              >
+                <span className="relative flex size-2.5">
+                  {badge.ping && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  )}
+                  <span className={`relative inline-flex rounded-full size-2.5 ${badge.punto}`}></span>
+                </span>
+                <span className="text-xs font-bold text-slate-300">{badge.texto}</span>
+              </div>
+            )
+          })()}
         </div>
       </header>
 
@@ -816,8 +848,9 @@ export default function TotemPage() {
           <button
             type="button"
             onClick={() => {
-              setClaveTerminalInput(getStoredTotemSecret())
+              setClaveTerminalInput('')
               setMensajeVinculacion(null)
+              setErrorVinculacion(null)
               setModalVinculacionAbierto(true)
             }}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
@@ -842,7 +875,7 @@ export default function TotemPage() {
               <span>Vincular tablet física del Tótem</span>
             </div>
             <p className="text-xs text-slate-400 mb-4">
-              Guardá localmente en este dispositivo la clave <code className="text-slate-200">ATLAS_TOTEM_SECRET</code> para autorizar fichajes y descargar el padrón mínimo offline sin exponer el secreto en Internet.
+              Solo para los titulares: ingresá la clave <code className="text-slate-200">ATLAS_TOTEM_SECRET</code>. Se verifica con el servidor antes de guardarla; una clave incorrecta nunca reemplaza a la que ya funciona.
             </p>
             <input
               type="password"
@@ -854,6 +887,9 @@ export default function TotemPage() {
             {mensajeVinculacion && (
               <p className="text-xs text-emerald-400 font-semibold mb-3">{mensajeVinculacion}</p>
             )}
+            {errorVinculacion && (
+              <p role="alert" className="text-xs text-rose-400 font-semibold mb-3">{errorVinculacion}</p>
+            )}
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -864,20 +900,35 @@ export default function TotemPage() {
               </button>
               <button
                 type="button"
+                disabled={verificandoClave || !claveTerminalInput.trim()}
                 onClick={async () => {
+                  setMensajeVinculacion(null)
+                  setErrorVinculacion(null)
+                  setVerificandoClave(true)
+                  const res = await verificarClaveTerminal(claveTerminalInput, API_BASE_URL)
+                  setVerificandoClave(false)
+                  if (res.estado === 'INVALIDA') {
+                    setErrorVinculacion('Clave incorrecta. No se modificó la configuración del tótem.')
+                    return
+                  }
+                  if (res.estado === 'SIN_CONEXION') {
+                    setErrorVinculacion(
+                      'Sin conexión con el servidor: no se puede verificar la clave. Probá de nuevo cuando vuelva Internet.'
+                    )
+                    return
+                  }
                   setStoredTotemSecret(claveTerminalInput)
-                  const ok = await sincronizarPadronCache()
+                  setClaveTerminalInput('')
+                  guardarPadronCacheTotem(res.padron)
+                  setPadronSincronizadoCount(res.padron.length)
+                  setEstadoTerminal('VINCULADA')
                   await vaciarColaOutbox()
-                  setMensajeVinculacion(
-                    ok
-                      ? 'Terminal vinculada y padrón offline sincronizado.'
-                      : 'Clave guardada localmente en este dispositivo.'
-                  )
+                  setMensajeVinculacion('Terminal vinculada y padrón offline sincronizado.')
                   setTimeout(() => setModalVinculacionAbierto(false), 900)
                 }}
-                className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Guardar y sincronizar
+                {verificandoClave ? 'Verificando…' : 'Verificar y vincular'}
               </button>
             </div>
           </div>
