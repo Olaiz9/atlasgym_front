@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Atrapa restos de conflictos de merge (<<<<<<<, =======, >>>>>>>) en cualquier archivo,
       # incluso en los que ningun test ejecuta (ej.: Dockerfile).
@@ -29,10 +29,11 @@ jobs:
             exit 1
           fi
 
-      # Misma version de Node que la imagen de produccion (node:20-alpine).
-      - uses: actions/setup-node@v4
+      # Misma version de Node que la imagen de produccion (node:24-alpine).
+      # Vitest 5 y jsdom 30 exigen Node 22 o superior; Node 20 ya no tiene soporte.
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
 
       - name: Instalar dependencias
@@ -52,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Solo verifica que la imagen de produccion se construya; no la publica en ningun lado.
       - name: Construir imagen
         run: docker build -t atlasgym-front:ci .
