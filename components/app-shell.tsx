@@ -39,8 +39,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [ultimoErrorSync, limpiarErrorSync, toast])
 
+  // Rutas que se ven sin iniciar sesión y sin el menú: el tótem (usa su propia clave de
+  // terminal) y la política de privacidad (la ley exige que se pueda leer libremente).
+  const rutaPublica = pathname === '/totem' || pathname === '/privacidad'
+
   useEffect(() => {
-    if (pathname === '/totem') {
+    if (rutaPublica) {
       return
     }
     if (!usuarioActual && pathname !== '/login') {
@@ -48,9 +52,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } else if (usuarioActual && !puedeAccederRuta(pathname, usuarioActual.rol)) {
       router.replace('/')
     }
-  }, [usuarioActual, pathname, router])
+  }, [usuarioActual, pathname, router, rutaPublica])
 
-  if (pathname === '/login' || pathname === '/totem') {
+  if (pathname === '/login' || rutaPublica) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30">
         {children}

@@ -7,6 +7,15 @@ test.describe('Acceso de los titulares', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 
+  test('la política de privacidad se puede leer desde el login sin iniciar sesión', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('link', { name: 'Política de privacidad' }).click()
+    await expect(page).toHaveURL(/\/privacidad/)
+    await expect(page.getByRole('heading', { name: 'Política de privacidad' })).toBeVisible()
+    // Leyenda obligatoria de la Ley 25.326 (Disposición 10/2008)
+    await expect(page.getByText(/AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA/)).toBeVisible()
+  })
+
   test('una clave incorrecta muestra un error y no deja entrar', async ({ page }) => {
     await iniciarSesion(page, E2E.titular.email, 'clave-equivocada')
     await expect(page.getByText(/credenciales|inválid|incorrect/i)).toBeVisible()

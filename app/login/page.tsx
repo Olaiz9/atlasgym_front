@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { useEscapeKey } from '@/lib/use-escape-key'
@@ -270,7 +271,10 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-7 text-center text-xs font-medium text-slate-500">
-          ATLAS Gym Platform · v2.5.0
+          ATLAS Gym Platform · v2.5.0 ·{' '}
+          <Link href="/privacidad" className="underline underline-offset-2 hover:text-slate-300">
+            Política de privacidad
+          </Link>
         </p>
       </div>
 
