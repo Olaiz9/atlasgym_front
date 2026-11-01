@@ -20,7 +20,7 @@ test('la tablet del tótem se vincula y un socio registra su entrada con el DNI'
   }
   await clave.fill(E2E.totemSecret)
   await page.getByRole('button', { name: 'Verificar y vincular' }).click()
-  await expect(page.getByText('Terminal vinculada')).toBeVisible()
+  await expect(page.getByText('Terminal vinculada', { exact: true })).toBeVisible()
 
   // Un DNI que no existe se rechaza
   await page.getByLabel('Ingresar DNI').fill('11111111')

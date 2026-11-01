@@ -48,7 +48,13 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await expect(page.getByText(nombre).first()).toBeVisible()
 
   // Y aparece en el arqueo de caja del día, en efectivo y a nombre del titular
-  const arqueo = page.getByText('Arqueo de Caja del Día').locator('xpath=ancestor::*[self::section or self::div][1]/..')
-  await expect(arqueo.getByText(E2E.titular.nombre).first()).toBeVisible()
-  await expect(arqueo.getByText(`$${pesos(precio)}`).first()).toBeVisible()
+  // (el panel es el bloque más chico que contiene el título y la línea "Por operador")
+  const arqueo = page
+    .locator('div')
+    .filter({ has: page.getByRole('heading', { name: 'Arqueo de Caja del Día' }) })
+    .filter({ hasText: 'Por operador:' })
+    .last()
+  await expect(arqueo.getByText(`${E2E.titular.nombre}:`)).toBeVisible()
+  const efectivo = arqueo.locator('div').filter({ hasText: 'Efectivo en cajón' }).last()
+  await expect(efectivo).toContainText(`$${pesos(precio)}`)
 })
