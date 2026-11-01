@@ -4,12 +4,10 @@ import { useState } from 'react'
 import { useAppData } from '@/lib/store'
 import {
   X,
-  User,
   Phone,
   Lock,
   Camera,
   CheckCircle2,
-  Shield,
   CreditCard,
   Calendar,
   AlertCircle,
@@ -30,7 +28,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
   const {
     usuarioActual,
     alumnos,
-    actualizarAlumno,
+    guardarPerfilUsuario,
     actualizarUsuarioActual,
     getEstadoCuenta,
   } = useAppData()
@@ -42,19 +40,22 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
 
   // Estados de edición de celular
   const [celular, setCelular] = useState(
-    alumnoDatos?.celular || usuarioActual?.celular || '+54 9 261 555-1234'
+    alumnoDatos?.celular || usuarioActual?.celular || ''
   )
   const [guardandoCelular, setGuardandoCelular] = useState(false)
   const [celularGuardado, setCelularGuardado] = useState(false)
 
   // Estados de cambio de contraseña
+  const [passwordActual, setPasswordActual] = useState('')
   const [passwordNueva, setPasswordNueva] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [errorPassword, setErrorPassword] = useState('')
+  const [guardandoPassword, setGuardandoPassword] = useState(false)
   const [passwordGuardada, setPasswordGuardada] = useState(false)
 
   // Estados de foto de perfil
   const [fotoUrl, setFotoUrl] = useState(usuarioActual?.fotoUrl || '')
+  const [errorFoto, setErrorFoto] = useState('')
   const [editandoFoto, setEditandoFoto] = useState(false)
 
   if (!abierto || !usuarioActual) return null
@@ -65,53 +66,100 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     .slice(0, 2)
     .join('')
 
-  const handleGuardarCelular = (e: React.FormEvent) => {
+  const handleGuardarCelular = async (e: React.FormEvent) => {
     e.preventDefault()
     setGuardandoCelular(true)
 
-    // Actualizamos la sesión del usuario
-    if (actualizarUsuarioActual) {
-      actualizarUsuarioActual({ celular })
+    if (guardarPerfilUsuario) {
+      const res = await guardarPerfilUsuario({ celular })
+      setGuardandoCelular(false)
+      if (!res.ok) {
+        toast(res.error || 'No se pudo actualizar el teléfono de contacto', 'error')
+        return
+      }
+    } else {
+      actualizarUsuarioActual?.({ celular })
+      setGuardandoCelular(false)
     }
 
     toast('Teléfono de contacto actualizado correctamente', 'success')
-    setTimeout(() => {
-      setGuardandoCelular(false)
-      setCelularGuardado(true)
-      setTimeout(() => setCelularGuardado(false), 3000)
-    }, 400)
+    setCelularGuardado(true)
+    setTimeout(() => setCelularGuardado(false), 3000)
   }
 
-  const handleGuardarPassword = (e: React.FormEvent) => {
+  const handleGuardarPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorPassword('')
 
+    if (!passwordActual.trim()) {
+      setErrorPassword('Por seguridad, debés ingresar tu contraseña actual.')
+      return
+    }
+
     if (passwordNueva.length < 6) {
-      setErrorPassword('La contraseña debe tener al menos 6 caracteres.')
+      setErrorPassword('La nueva contraseña debe tener al menos 6 caracteres.')
       return
     }
 
     if (passwordNueva !== passwordConfirm) {
-      setErrorPassword('Las contraseñas ingresadas no coinciden.')
+      setErrorPassword('Las contraseñas nuevas ingresadas no coinciden.')
       return
     }
 
-    if (actualizarUsuarioActual) {
-      actualizarUsuarioActual({ password: passwordNueva } as any)
+    setGuardandoPassword(true)
+    if (guardarPerfilUsuario) {
+      const res = await guardarPerfilUsuario({
+        password: passwordNueva,
+        passwordActual: passwordActual.trim(),
+      })
+      setGuardandoPassword(false)
+      if (!res.ok) {
+        const msg = res.error || 'La contraseña actual ingresada es incorrecta.'
+        setErrorPassword(msg)
+        toast(msg, 'error')
+        return
+      }
+    } else {
+      actualizarUsuarioActual?.({
+        password: passwordNueva,
+        passwordActual: passwordActual.trim(),
+      })
+      setGuardandoPassword(false)
     }
 
     toast('Contraseña modificada exitosamente', 'success')
     setPasswordGuardada(true)
+    setPasswordActual('')
     setPasswordNueva('')
     setPasswordConfirm('')
     setTimeout(() => setPasswordGuardada(false), 3000)
   }
 
-  const handleGuardarFoto = (nuevaUrl: string) => {
-    setFotoUrl(nuevaUrl)
-    if (actualizarUsuarioActual) {
-      actualizarUsuarioActual({ fotoUrl: nuevaUrl })
+  const handleGuardarFoto = async (nuevaUrl: string) => {
+    setErrorFoto('')
+    const limpia = nuevaUrl.trim()
+    if (
+      limpia &&
+      !limpia.toLowerCase().startsWith('https://') &&
+      !limpia.toLowerCase().startsWith('http://') &&
+      !limpia.startsWith('/')
+    ) {
+      setErrorFoto('La URL de la foto debe comenzar con https://, http:// o /')
+      return
     }
+
+    if (guardarPerfilUsuario) {
+      const res = await guardarPerfilUsuario({ fotoUrl: limpia })
+      if (!res.ok) {
+        setErrorFoto(res.error || 'No se pudo actualizar la foto de perfil.')
+        toast(res.error || 'No se pudo actualizar la foto de perfil.', 'error')
+        return
+      }
+    } else {
+      actualizarUsuarioActual?.({ fotoUrl: limpia })
+    }
+
+    setFotoUrl(limpia)
     toast('Foto de perfil actualizada', 'success')
     setEditandoFoto(false)
   }
@@ -177,7 +225,10 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
         {/* Selector de Foto / Avatar */}
         {editandoFoto && (
           <div className="p-4 bg-slate-950/60 border-b border-slate-800 space-y-2 text-xs">
-            <p className="font-bold text-slate-300">Seleccioná un avatar o pegá el enlace de tu foto:</p>
+            <p className="font-bold text-slate-300">Seleccioná un avatar o pegá el enlace seguro de tu foto:</p>
+            {errorFoto && (
+              <p className="text-rose-400 text-[11px] font-semibold">{errorFoto}</p>
+            )}
             <div className="flex items-center gap-2">
               <input
                 type="url"
@@ -296,6 +347,14 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
               </div>
             )}
 
+            <input
+              type="password"
+              value={passwordActual}
+              onChange={(e) => setPasswordActual(e.target.value)}
+              placeholder="Contraseña actual (obligatoria para cambiar clave)"
+              className="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500"
+            />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 type="password"
@@ -315,10 +374,10 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
 
             <button
               type="submit"
-              disabled={!passwordNueva}
+              disabled={!passwordNueva || !passwordActual || guardandoPassword}
               className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-bold text-xs transition-colors cursor-pointer"
             >
-              Actualizar contraseña
+              {guardandoPassword ? 'Verificando y actualizando...' : 'Actualizar contraseña'}
             </button>
           </form>
         </div>

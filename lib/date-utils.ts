@@ -35,19 +35,35 @@ export function formatFechaAR(fechaStr: string): string {
 }
 
 /**
+ * Calcula la diferencia con signo en días naturales de calendario entre una fecha "YYYY-MM-DD"
+ * y una fecha de referencia (equivalente a ChronoUnit.DAYS.between(desde, hasta)).
+ */
+export function calcularDiferenciaDiasCalendario(
+  desdeFechaStr: string,
+  hastaReferencia: Date = new Date()
+): number {
+  if (!desdeFechaStr) return 0;
+  const desde = parsearFechaLocal(desdeFechaStr);
+  const hastaNormalizado = new Date(
+    hastaReferencia.getFullYear(),
+    hastaReferencia.getMonth(),
+    hastaReferencia.getDate()
+  ).getTime();
+  const desdeNormalizado = new Date(
+    desde.getFullYear(),
+    desde.getMonth(),
+    desde.getDate()
+  ).getTime();
+
+  return Math.floor((hastaNormalizado - desdeNormalizado) / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Calcula la diferencia en días naturales de calendario entre hoy y una fecha "YYYY-MM-DD".
  */
 export function calcularDiasDesde(fechaStr: string): number {
   if (!fechaStr) return 0;
-  const fecha = parsearFechaLocal(fechaStr);
-  const hoy = new Date();
-
-  // Normalizar a medianoche local para comparar días de calendario limpios
-  const hoyNormalizado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
-  const fechaNormalizada = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
-
-  const diffMs = hoyNormalizado - fechaNormalizada;
-  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  return Math.max(0, calcularDiferenciaDiasCalendario(fechaStr, new Date()));
 }
 
 /**
@@ -74,12 +90,53 @@ export function fechaLocalHoy(referencia: Date = new Date()): string {
 }
 
 /**
+ * Resta (o suma si es negativo) días naturales a una fecha "YYYY-MM-DD" en calendario local
+ * sin deriva de huso horario UTC.
+ */
+export function restarDiasFechaLocal(fechaStr: string, diasARestar: number): string {
+  const base = parsearFechaLocal(fechaStr);
+  const ajustada = new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate() - diasARestar,
+    12,
+    0,
+    0
+  );
+  return fechaLocalHoy(ajustada);
+}
+
+/**
  * Devuelve el período mensual en formato "YYYY-MM" (ej: "2026-09").
  */
 export function periodoMesActual(referencia: Date = new Date()): string {
   const anio = referencia.getFullYear();
   const mes = (referencia.getMonth() + 1).toString().padStart(2, "0");
   return `${anio}-${mes}`;
+}
+
+/**
+ * Suma (o resta) meses a un período "YYYY-MM" sin usar Date UTC.
+ */
+export function sumarMesesPeriodo(periodoYYYYMM: string, mesesASumar: number): string {
+  if (!periodoYYYYMM || !periodoYYYYMM.includes("-")) return periodoYYYYMM;
+  const [anio, mes] = periodoYYYYMM.split("-").map(Number);
+  if (isNaN(anio) || isNaN(mes)) return periodoYYYYMM;
+  const totalMeses = anio * 12 + (mes - 1) + mesesASumar;
+  const nuevoAnio = Math.floor(totalMeses / 12);
+  const nuevoMes = (((totalMeses % 12) + 12) % 12) + 1;
+  return `${nuevoAnio}-${String(nuevoMes).padStart(2, "0")}`;
+}
+
+/**
+ * Calcula cuántos meses calendario hay entre dos períodos "YYYY-MM"
+ * (equivalente a ChronoUnit.MONTHS.between(desde, hasta)).
+ */
+export function diferenciaMesesPeriodo(desdeYYYYMM: string, hastaYYYYMM: string): number {
+  const [dAnio, dMes] = desdeYYYYMM.split("-").map(Number);
+  const [hAnio, hMes] = hastaYYYYMM.split("-").map(Number);
+  if (isNaN(dAnio) || isNaN(dMes) || isNaN(hAnio) || isNaN(hMes)) return 0;
+  return (hAnio - dAnio) * 12 + (hMes - dMes);
 }
 
 /**
@@ -118,4 +175,3 @@ export function calcularVencimientoCuota(
   const nombreMesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
   return `10 de ${nombreMesCap}`;
 }
-

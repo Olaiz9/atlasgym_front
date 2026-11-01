@@ -73,26 +73,32 @@ describe("API Mappers (Spring Boot DTO <-> Frontend Model)", () => {
     expect(req.rutinaId).toBe(1);
   });
 
-  it("mapea AsistenciaResponseDto con alumnoDni y planNombre", () => {
+  it("mapea AsistenciaResponseDto con alumnoDni, planNombre y control de cupo semanal", () => {
     const asist = mapAsistenciaDtoToFront({
       id: 10,
       alumnoId: 2,
       nombreAlumno: "Lucía Fernández",
       alumnoDni: "39482910",
-      planNombre: "Plan Full Pass",
+      planNombre: "Plan 3 Días",
       fecha: "2026-10-12",
       hora: "20:52:08",
       metodo: "DNI_TOTEM",
       estadoCuenta: "AL_DIA",
+      asistenciasSemana: 4,
+      limiteDiasSemana: 3,
+      excedeLimiteSemanal: true,
     });
 
     expect(asist.id).toBe("10");
     expect(asist.alumnoId).toBe("2");
     expect(asist.alumnoNombre).toBe("Lucía Fernández");
     expect(asist.alumnoDni).toBe("39482910");
-    expect(asist.planNombre).toBe("Plan Full Pass");
+    expect(asist.planNombre).toBe("Plan 3 Días");
     expect(asist.hora).toBe("20:52");
     expect(asist.estadoCuenta).toBe("AL_DIA");
+    expect(asist.asistenciasSemana).toBe(4);
+    expect(asist.limiteDiasSemana).toBe(3);
+    expect(asist.excedeLimiteSemanal).toBe(true);
   });
 
   it("mapea Rutina bidireccionalmente conservando tipos de serie (BI_SERIE, DROP_SET)", () => {
@@ -134,24 +140,30 @@ describe("API Mappers (Spring Boot DTO <-> Frontend Model)", () => {
     expect(backReq.dias[0].ejercicios[0].serie).toBe(4);
   });
 
-  it("mapea Pagos, Planes, Videoteca, Avisos y Sesiones correctamente", () => {
+  it("mapea Pagos (incluyendo alumnoNombreHistorico, fecha, estado y cantidadMeses), Planes, Videoteca, Avisos y Sesiones", () => {
     const pago = mapPagoDtoToFront({
       id: 7,
       alumnoId: 2,
-      alumnoNombre: "Lucía Fernández",
+      alumnoNombreHistorico: "Lucía Fernández",
       planNombre: "Plan Full Pass",
-      monto: 28000,
-      fecha: "2026-10-10",
+      monto: 75000,
+      fecha: "2026-10-05",
       metodo: "TRANSFERENCIA",
-      estado: "PAGADO",
+      estado: "PENDIENTE",
       periodoMes: "2026-10",
+      cantidadMeses: 3,
     });
+    expect(pago.alumnoNombreHistorico).toBe("Lucía Fernández");
     expect(pago.metodo).toBe("Transferencia");
-    expect(pago.estado).toBe("PAGADO");
+    expect(pago.estado).toBe("PENDIENTE");
+    expect(pago.cantidadMeses).toBe(3);
 
     const pagoReq = mapPagoFrontToRequestDto(pago);
     expect(pagoReq.metodo).toBe("TRANSFERENCIA");
     expect(pagoReq.alumnoId).toBe(2);
+    expect(pagoReq.fecha).toBe("2026-10-05");
+    expect(pagoReq.estado).toBe("PENDIENTE");
+    expect(pagoReq.cantidadMeses).toBe(3);
 
     const plan = mapPlanDtoToFront({
       id: 3,

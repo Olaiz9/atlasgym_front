@@ -11,9 +11,11 @@ import {
   formatearTiempoEnSala,
   calcularMinutosTranscurridos,
   obtenerUltimos7Dias,
+  calcularCupoSemanalAsistencia,
+  CupoSemanalAsistencia,
   DURACION_SESION_MINUTOS,
 } from '@/lib/asistencia-utils'
-import { fechaLocalHoy } from '@/lib/date-utils'
+import { fechaLocalHoy, restarDiasFechaLocal } from '@/lib/date-utils'
 import {
   Users,
   Clock,
@@ -35,7 +37,15 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { RegistroAsistencia, EstadoCuenta } from '@/lib/types'
 
 export default function AsistenciasPage() {
-  const { asistencias, eliminarAsistencia, getEstadoCuenta } = useAppData()
+  const {
+    asistencias,
+    planes,
+    alumnos,
+    eliminarAsistencia,
+    getEstadoCuenta,
+    refrescarAsistencias,
+    cargarHistorialAsistenciasRango,
+  } = useAppData()
   const hoyFechaStr = fechaLocalHoy()
   const ultimos7Dias = useMemo(() => obtenerUltimos7Dias(hoyFechaStr), [hoyFechaStr])
 
@@ -45,10 +55,50 @@ export default function AsistenciasPage() {
   const [paginaSala, setPaginaSala] = useState(0)
 
   // Filtros de registro histórico
-  const [filtroFechaHistorial, setFiltroFechaHistorial] = useState<string>('HOY') // 'HOY' | 'TODOS' | 'YYYY-MM-DD'
-  const [filtroEstadoHistorial, setFiltroEstadoHistorial] = useState<'TODOS' | 'AL_DIA' | 'PENDIENTE' | 'VENCIDO'>('TODOS')
+  const [filtroFechaHistorial, setFiltroFechaHistorial] = useState<string>('HOY') // 'HOY' | 'TODOS' | 'RANGO_PERSONALIZADO' | 'YYYY-MM-DD'
+  const [rangoDesde, setRangoDesde] = useState<string>(() => restarDiasFechaLocal(hoyFechaStr, 30))
+  const [rangoHasta, setRangoHasta] = useState<string>(hoyFechaStr)
+  const [consultandoRango, setConsultandoRango] = useState(false)
+  const [filtroEstadoHistorial, setFiltroEstadoHistorial] = useState<
+    'TODOS' | 'AL_DIA' | 'PENDIENTE' | 'VENCIDO' | 'EXCEDIDOS'
+  >('TODOS')
   const [busquedaHistorial, setBusquedaHistorial] = useState('')
   const [asistenciaAEliminar, setAsistenciaAEliminar] = useState<RegistroAsistencia | null>(null)
+
+  // Sincronización multi-dispositivo en vivo (tablet Tótem -> celulares/PC de los dueños cada 5s)
+  useEffect(() => {
+    if (!refrescarAsistencias) return
+    refrescarAsistencias()
+
+    const poll = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        refrescarAsistencias()
+      }
+    }, 5000)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refrescarAsistencias()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+
+    return () => {
+      clearInterval(poll)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [refrescarAsistencias])
+
+  // Mapa precalculado de cupo de días semanales por registro de asistencia
+  const cupoPorAsistenciaId = useMemo(() => {
+    const mapa = new Map<string, CupoSemanalAsistencia>()
+    for (const asist of asistencias) {
+      mapa.set(asist.id, calcularCupoSemanalAsistencia(asist, asistencias, planes, alumnos))
+    }
+    return mapa
+  }, [asistencias, planes, alumnos])
 
   const renderBadgeEstadoCuota = (estado: EstadoCuenta | string, small: boolean = false) => {
     if (estado === 'AL_DIA') {
@@ -90,6 +140,49 @@ export default function AsistenciasPage() {
     )
   }
 
+  const renderBadgeCupoSemanal = (cupo: CupoSemanalAsistencia | undefined, small: boolean = false) => {
+    if (!cupo) return null
+    if (cupo.excedeLimiteSemanal && cupo.limiteDiasSemana != null) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 font-bold ${
+            small
+              ? 'text-[10px] px-2 py-0.5 rounded'
+              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+          } bg-orange-500/15 text-orange-300 border border-orange-500/40`}
+          title={`El plan habilita ${cupo.limiteDiasSemana} días por semana y ya registró ${cupo.asistenciasSemana} días distintos esta semana`}
+        >
+          <AlertTriangle className="size-3 shrink-0 text-orange-400" />
+          Excedió plan ({cupo.asistenciasSemana}/{cupo.limiteDiasSemana} d.)
+        </span>
+      )
+    }
+    if (cupo.limiteDiasSemana != null) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 font-semibold ${
+            small
+              ? 'text-[10px] px-2 py-0.5 rounded'
+              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+          } bg-slate-800/90 text-slate-300 border border-slate-700`}
+        >
+          {cupo.asistenciasSemana}/{cupo.limiteDiasSemana} días sem.
+        </span>
+      )
+    }
+    return (
+      <span
+        className={`inline-flex items-center gap-1 font-medium ${
+          small
+            ? 'text-[10px] px-2 py-0.5 rounded'
+            : 'text-[11px] px-2.5 py-0.5 rounded-full'
+        } bg-slate-800/50 text-slate-400 border border-slate-800`}
+      >
+        Libre ({cupo.asistenciasSemana} d.)
+      </span>
+    )
+  }
+
   const [ahoraMs, setAhoraMs] = useState(Date.now())
 
   // Ticker en vivo cada 3 segundos para refrescar tiempos relativos y aforo
@@ -115,6 +208,22 @@ export default function AsistenciasPage() {
   const asistenciasHoy = useMemo(() => {
     return asistencias.filter((a) => a.fecha === hoyFechaStr)
   }, [asistencias, hoyFechaStr])
+
+  // Socios que hoy asistieron superando los días semanales de su plan (deduplicados por alumnoId)
+  const alertasExcesoSemanalHoy = useMemo(() => {
+    const vistos = new Set<string>()
+    const resultado: { asistencia: RegistroAsistencia; cupo: CupoSemanalAsistencia }[] = []
+    for (const a of asistenciasHoy) {
+      const claveSocio = a.alumnoId || a.alumnoDni || a.id
+      if (vistos.has(claveSocio)) continue
+      const cupo = cupoPorAsistenciaId.get(a.id)
+      if (cupo?.excedeLimiteSemanal) {
+        vistos.add(claveSocio)
+        resultado.push({ asistencia: a, cupo })
+      }
+    }
+    return resultado
+  }, [asistenciasHoy, cupoPorAsistenciaId])
 
   // 2. Socios activamente entrenando en sala (< 1h 40m = 100 min)
   const sociosEnSala = useMemo(() => {
@@ -182,11 +291,13 @@ export default function AsistenciasPage() {
     return Math.round((alDia / asistenciasHoy.length) * 100)
   }, [asistenciasHoy, getEstadoCuenta])
 
-  // Lista filtrada para la tabla de historial (con filtro de fecha y estado de cuota en vivo para hoy)
+  // Lista filtrada para la tabla de historial (con filtro de fecha, estado de cuota y exceso de plan)
   const listaFiltrada = useMemo(() => {
     let base = asistencias
     if (filtroFechaHistorial === 'HOY') {
       base = base.filter((a) => a.fecha === hoyFechaStr)
+    } else if (filtroFechaHistorial === 'RANGO_PERSONALIZADO') {
+      base = base.filter((a) => a.fecha >= rangoDesde && a.fecha <= rangoHasta)
     } else if (filtroFechaHistorial !== 'TODOS') {
       base = base.filter((a) => a.fecha === filtroFechaHistorial)
     }
@@ -203,6 +314,8 @@ export default function AsistenciasPage() {
         const est = obtenerEstado(a)
         return est !== 'AL_DIA' && est !== 'PENDIENTE'
       })
+    } else if (filtroEstadoHistorial === 'EXCEDIDOS') {
+      base = base.filter((a) => cupoPorAsistenciaId.get(a.id)?.excedeLimiteSemanal === true)
     }
 
     const q = busquedaHistorial.trim().toLowerCase()
@@ -213,20 +326,49 @@ export default function AsistenciasPage() {
         a.alumnoDni.toLowerCase().includes(q) ||
         a.planNombre.toLowerCase().includes(q)
     )
-  }, [asistencias, filtroFechaHistorial, filtroEstadoHistorial, busquedaHistorial, hoyFechaStr])
+  }, [
+    asistencias,
+    filtroFechaHistorial,
+    rangoDesde,
+    rangoHasta,
+    filtroEstadoHistorial,
+    busquedaHistorial,
+    hoyFechaStr,
+    getEstadoCuenta,
+    cupoPorAsistenciaId,
+  ])
 
   const exportarCSV = () => {
     if (listaFiltrada.length === 0) return
-    const headers = ['Fecha', 'Hora', 'Alumno', 'DNI', 'Plan', 'Estado Cuota', 'Metodo']
-    const rows = listaFiltrada.map((a) => [
-      a.fecha,
-      a.hora,
-      `"${a.alumnoNombre}"`,
-      a.alumnoDni,
-      `"${a.planNombre}"`,
-      a.estadoCuenta,
-      a.metodo,
-    ])
+    const headers = [
+      'Fecha',
+      'Hora',
+      'Alumno',
+      'DNI',
+      'Plan',
+      'Cupo Semanal',
+      'Excede Plan',
+      'Estado Cuota',
+      'Metodo',
+    ]
+    const rows = listaFiltrada.map((a) => {
+      const cupo = cupoPorAsistenciaId.get(a.id)
+      const etiquetaCupo =
+        cupo?.limiteDiasSemana != null
+          ? `${cupo.asistenciasSemana}/${cupo.limiteDiasSemana}`
+          : `Libre (${cupo?.asistenciasSemana ?? 1})`
+      return [
+        a.fecha,
+        a.hora,
+        `"${a.alumnoNombre}"`,
+        a.alumnoDni,
+        `"${a.planNombre}"`,
+        `"${etiquetaCupo}"`,
+        cupo?.excedeLimiteSemanal ? 'SI' : 'NO',
+        a.estadoCuenta,
+        a.metodo,
+      ]
+    })
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement('a')
@@ -250,7 +392,7 @@ export default function AsistenciasPage() {
             Control de asistencias y aforo
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Registro instantáneo de ingresos por DNI, socios en sala y analítica de horarios pico.
+            Registro instantáneo de ingresos por DNI, socios en sala, control de días por plan y analítica de horarios pico.
           </p>
         </div>
 
@@ -338,6 +480,57 @@ export default function AsistenciasPage() {
           <p className="mt-2 text-[11px] text-slate-500">Franja con mayor concurrencia ({etiquetaDiaGrafico}).</p>
         </div>
       </section>
+
+      {/* ALERTA DE SOCIOS QUE SUPERARON LOS DÍAS SEMANALES DE SU PLAN */}
+      {alertasExcesoSemanalHoy.length > 0 && (
+        <section
+          role="region"
+          aria-label="Avisos de cupo semanal superado"
+          className="mb-8 rounded-2xl border border-orange-500/40 bg-gradient-to-r from-orange-950/50 via-amber-950/30 to-slate-900/80 p-4 sm:p-5 shadow-lg shadow-orange-950/20"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-extrabold text-orange-200">
+                  Aviso de asistencia por encima del plan contratado ({alertasExcesoSemanalHoy.length})
+                </h2>
+                <p className="text-xs text-orange-200/80 mt-0.5">
+                  El tótem permitió el ingreso con normalidad, pero estos socios ya superaron los días semanales que les corresponden:
+                </p>
+                <ul className="mt-2.5 flex flex-wrap gap-2">
+                  {alertasExcesoSemanalHoy.map(({ asistencia, cupo }) => (
+                    <li
+                      key={asistencia.id}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-950/75 border border-orange-500/30 px-3 py-1.5 text-xs"
+                    >
+                      <span className="font-bold text-white">{asistencia.alumnoNombre}</span>
+                      <span className="text-slate-400">({asistencia.planNombre})</span>
+                      <span className="font-black text-orange-300">
+                        {cupo.asistenciasSemana} de {cupo.limiteDiasSemana} días esta semana
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500">{asistencia.hora} hs</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFiltroFechaHistorial('HOY')
+                setFiltroEstadoHistorial('EXCEDIDOS')
+              }}
+              className="self-start shrink-0 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400/40 px-3.5 py-2 text-xs font-bold text-orange-200 transition-colors cursor-pointer"
+            >
+              Filtrar en historial
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* SECCIÓN ANALÍTICA: HORARIOS PICO Y DÍAS */}
       <section className="grid gap-6 lg:grid-cols-3 mb-10">
@@ -569,14 +762,26 @@ export default function AsistenciasPage() {
               const minutosTranscurridos = calcularMinutosTranscurridos(s.timestamp, ahoraMs)
               const minutosRestantes = Math.max(0, DURACION_SESION_MINUTOS - minutosTranscurridos)
               const estadoSocio = getEstadoCuenta ? getEstadoCuenta(s.alumnoId) : s.estadoCuenta
+              const cupo = cupoPorAsistenciaId.get(s.id)
+              const excedeSemana = cupo?.excedeLimiteSemanal === true
 
               return (
                 <div
                   key={s.id}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-sm flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                  className={`rounded-2xl border p-4 shadow-sm flex items-center justify-between gap-3 transition-colors ${
+                    excedeSemana
+                      ? 'border-orange-500/50 bg-orange-950/20 hover:border-orange-400/70'
+                      : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 text-sm font-black border border-blue-500/20">
+                    <span
+                      className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-black border ${
+                        excedeSemana
+                          ? 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                          : 'bg-blue-600/20 text-blue-400 border-blue-500/20'
+                      }`}
+                    >
                       {s.alumnoNombre
                         .split(' ')
                         .map((n) => n[0])
@@ -586,11 +791,13 @@ export default function AsistenciasPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-white">{s.alumnoNombre}</p>
                       <p className="text-xs text-slate-400 font-medium">DNI: {s.alumnoDni}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
                           {s.planNombre}
                         </span>
                         {renderBadgeEstadoCuota(estadoSocio, true)}
+                        {(excedeSemana || cupo?.limiteDiasSemana != null) &&
+                          renderBadgeCupoSemanal(cupo, true)}
                       </div>
                     </div>
                   </div>
@@ -609,13 +816,13 @@ export default function AsistenciasPage() {
         )}
       </section>
 
-      {/* SECCIÓN: HISTORIAL DE INGRESOS (FEED AUDITABLE CON FILTRO POR DÍA Y ESTADO DE CUOTA) */}
+      {/* SECCIÓN: HISTORIAL DE INGRESOS (FEED AUDITABLE CON FILTRO POR DÍA, ESTADO DE CUOTA Y CUPO SEMANAL) */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-base font-bold text-white">Registro histórico de accesos</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Auditoría completa filtrable por día (última semana) y estado de cuota.
+              Auditoría completa filtrable por día (última semana), estado de cuota y exceso de días semanales.
             </p>
           </div>
 
@@ -637,11 +844,48 @@ export default function AsistenciasPage() {
                     {d.etiqueta} - {d.diaNombre}
                   </option>
                 ))}
-                <option value="TODOS">Todos ({asistencias.length})</option>
+                <option value="TODOS">Últimos cargados ({asistencias.length})</option>
+                <option value="RANGO_PERSONALIZADO">Consultar rango histórico...</option>
               </select>
             </div>
 
-            {/* Filtro de Estado de Cuota (Todos, Al día, Pendiente, Vencido) */}
+            {filtroFechaHistorial === 'RANGO_PERSONALIZADO' && (
+              <div className="flex items-center gap-1.5 shrink-0 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1">
+                <input
+                  type="date"
+                  value={rangoDesde}
+                  onChange={(e) => setRangoDesde(e.target.value)}
+                  aria-label="Fecha desde"
+                  className="bg-transparent text-xs text-slate-200 outline-none"
+                />
+                <span className="text-slate-500 text-xs">a</span>
+                <input
+                  type="date"
+                  value={rangoHasta}
+                  onChange={(e) => setRangoHasta(e.target.value)}
+                  aria-label="Fecha hasta"
+                  className="bg-transparent text-xs text-slate-200 outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={consultandoRango}
+                  onClick={async () => {
+                    if (!cargarHistorialAsistenciasRango) return
+                    setConsultandoRango(true)
+                    try {
+                      await cargarHistorialAsistenciasRango(rangoDesde, rangoHasta)
+                    } finally {
+                      setConsultandoRango(false)
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+                >
+                  {consultandoRango ? 'Cargando...' : 'Consultar'}
+                </button>
+              </div>
+            )}
+
+            {/* Filtro de Estado de Cuota y Exceso de Plan */}
             <div className="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 shrink-0">
               <button
                 type="button"
@@ -687,6 +931,18 @@ export default function AsistenciasPage() {
               >
                 Vencido
               </button>
+              <button
+                type="button"
+                onClick={() => setFiltroEstadoHistorial('EXCEDIDOS')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                  filtroEstadoHistorial === 'EXCEDIDOS'
+                    ? 'bg-orange-600 text-white'
+                    : 'text-orange-300/90 hover:text-orange-200'
+                }`}
+              >
+                <AlertTriangle className="size-3" />
+                Excedidos plan
+              </button>
             </div>
 
             {/* Buscador por nombre o DNI */}
@@ -712,6 +968,7 @@ export default function AsistenciasPage() {
                 <th className="py-3 px-3">Alumno</th>
                 <th className="py-3 px-3">DNI</th>
                 <th className="py-3 px-3">Plan</th>
+                <th className="py-3 px-3">Cupo semanal</th>
                 <th className="py-3 px-3">Estado cuota</th>
                 <th className="py-3 px-3">Tiempo en sala</th>
                 <th className="py-3 px-3 text-right">Acción</th>
@@ -720,15 +977,24 @@ export default function AsistenciasPage() {
             <tbody className="divide-y divide-slate-800/60">
               {listaFiltrada.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-xs text-slate-500 font-medium">
+                  <td colSpan={8} className="py-8 text-center text-xs text-slate-500 font-medium">
                     No se encontraron registros de asistencia para los filtros seleccionados.
                   </td>
                 </tr>
               ) : (
                 listaFiltrada.map((asist) => {
                   const activa = filtrarAsistenciasActivas([asist], ahoraMs).length > 0
+                  const cupo = cupoPorAsistenciaId.get(asist.id)
+                  const excedeFila = cupo?.excedeLimiteSemanal === true
                   return (
-                    <tr key={asist.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr
+                      key={asist.id}
+                      className={`transition-colors ${
+                        excedeFila
+                          ? 'bg-orange-950/15 hover:bg-orange-950/25'
+                          : 'hover:bg-slate-800/30'
+                      }`}
+                    >
                       <td className="py-3.5 px-3 font-mono text-xs text-slate-300">
                         {asist.fecha} · <span className="font-bold text-white">{asist.hora} hs</span>
                       </td>
@@ -742,8 +1008,14 @@ export default function AsistenciasPage() {
                         {asist.planNombre}
                       </td>
                       <td className="py-3.5 px-3">
+                        {renderBadgeCupoSemanal(cupo)}
+                      </td>
+                      <td className="py-3.5 px-3">
                         {(() => {
-                          const estadoFila = (asist.fecha === hoyFechaStr && getEstadoCuenta) ? getEstadoCuenta(asist.alumnoId) : asist.estadoCuenta
+                          const estadoFila =
+                            asist.fecha === hoyFechaStr && getEstadoCuenta
+                              ? getEstadoCuenta(asist.alumnoId)
+                              : asist.estadoCuenta
                           return renderBadgeEstadoCuota(estadoFila)
                         })()}
                       </td>

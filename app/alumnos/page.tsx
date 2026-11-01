@@ -2,7 +2,24 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Users, UserCheck, UserX, AlertCircle, Clock, Dumbbell, Plus, Search, Trash2, Pencil, ChevronRight, Download, Check } from "lucide-react";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  AlertCircle,
+  Clock,
+  Dumbbell,
+  Plus,
+  Search,
+  Trash2,
+  Pencil,
+  ChevronRight,
+  Download,
+  Upload,
+  X,
+  FileSpreadsheet,
+  CheckCircle2,
+} from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { formatDiasIngreso } from "@/lib/date-utils";
@@ -10,9 +27,21 @@ import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { AccesoRestringido } from "@/components/acceso-restringido";
 import { MetricCard } from "@/components/ui/metric-card";
+import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
 import { descargarCSV } from "@/lib/export-utils";
+import {
+  PLANTILLA_CSV_DIA_CERO,
+  parsearCsvPadronAlumnos,
+  FilaImportacionAlumno,
+} from "@/lib/csv-import";
+import {
+  construirUrlWaMe,
+  mensajeCredencialesBienvenidaWhatsapp,
+  mensajeRecordatorioCuotaWhatsapp,
+  tieneCelularWhatsappValido,
+} from "@/lib/whatsapp-utils";
 import {
   Alumno,
   EstadoCuenta,
@@ -29,13 +58,23 @@ const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
 ];
 
 export default function AlumnosPage() {
-  const { alumnos, actualizarAlumno, eliminarAlumno, getEstadoCuenta, getPagosDeAlumno, planes, usuarioActual } =
-    useAppData();
+  const {
+    alumnos,
+    actualizarAlumno,
+    eliminarAlumno,
+    importarAlumnosMasivo,
+    getEstadoCuenta,
+    getPagosDeAlumno,
+    planes,
+    usuarioActual,
+    datosCobro,
+  } = useAppData();
   const { toast } = useToast();
 
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<EstadoCuenta | "TODOS">("TODOS");
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [alumnoAEditar, setAlumnoAEditar] = useState<Alumno | null>(null);
   const [alumnoAEliminar, setAlumnoAEliminar] = useState<Alumno | null>(null);
 
@@ -86,11 +125,11 @@ export default function AlumnosPage() {
     return alumnosFiltrados.slice(inicio, inicio + elementosPorPagina);
   }, [alumnosFiltrados, paginaActual, elementosPorPagina]);
 
-  // Soporte para cerrar modales con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setModalAbierto(false);
+        setModalImportarAbierto(false);
         setAlumnoAEditar(null);
         setAlumnoAEliminar(null);
       }
@@ -133,8 +172,8 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
-    const esInactivo =
-      alumnoAEliminar.activo === false || getEstadoCuenta(alumnoAEliminar.id) === "INACTIVO";
+    // Ya dado de baja (activo === false) => paso 2: borrado definitivo. INACTIVO por deuda NO cuenta.
+    const esInactivo = alumnoAEliminar.activo === false;
     eliminarAlumno(alumnoAEliminar.id, esInactivo);
     setAlumnoAEliminar(null);
     if (esInactivo) {
@@ -153,6 +192,8 @@ export default function AlumnosPage() {
     );
   }
 
+  const urlPortal = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
+
   return (
     <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
       {/* Header */}
@@ -163,7 +204,15 @@ export default function AlumnosPage() {
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap">
+          <button
+            onClick={() => setModalImportarAbierto(true)}
+            title="Importar padrón masivo desde Excel / CSV"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+          >
+            <Upload className="w-4 h-4 text-blue-400" />
+            Importar CSV
+          </button>
           <button
             onClick={exportarCSVAlumnos}
             title="Exportar listado a archivo CSV / Excel"
@@ -254,107 +303,150 @@ export default function AlumnosPage() {
               </tr>
             </thead>
             <tbody>
-              {alumnosPaginados.map((alumno) => (
-                <tr
-                  key={alumno.id}
-                  className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
-                >
-                  <td className="px-6 py-4 font-bold text-white">
-                    <Link
-                      href={`/alumnos/${alumno.id}`}
-                      className="hover:text-blue-400 hover:underline underline-offset-2 flex items-center gap-1.5"
-                    >
-                      {alumno.nombre}
-                      <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-                    </Link>
-                    {(alumno.usuario || alumno.dni) && (
-                      <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
-                        {alumno.usuario && (
-                          <span className="font-mono text-blue-400">@{alumno.usuario}</span>
-                        )}
-                        {alumno.dni && <span>DNI: {alumno.dni}</span>}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
-                  <td className="px-6 py-4">
-                    {alumno.tieneRutina ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                        <Dumbbell className="w-3 h-3" />
-                        Asignada
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60">
-                        Sin rutina
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-slate-300 font-medium">
-                    {alumno.ultimaAsistencia ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {formatDiasIngreso(alumno.ultimaAsistencia)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-500 text-xs italic">Sin registros</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_CUENTA_STYLES[alumno.estadoCuenta]}`}
-                    >
-                      {ESTADO_CUENTA_LABEL[alumno.estadoCuenta]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right flex items-center justify-end gap-1.5">
-                    {(alumno.activo === false || alumno.estadoCuenta === "INACTIVO") && (
-                      <button
-                        onClick={() => {
-                          actualizarAlumno(alumno.id, { activo: true });
-                          toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
-                        }}
-                        title={`Reactivar a ${alumno.nombre}`}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
+              {alumnosPaginados.map((alumno) => {
+                const tieneWa = tieneCelularWhatsappValido(alumno.celular);
+                const debeCuota =
+                  alumno.estadoCuenta === "MOROSO" || alumno.estadoCuenta === "PENDIENTE";
+                const planObj = planes.find(
+                  (p) =>
+                    p.id === alumno.planId ||
+                    p.nombre.toLowerCase() === (alumno.plan || "").toLowerCase()
+                );
+                const mensajeWa = debeCuota
+                  ? mensajeRecordatorioCuotaWhatsapp({
+                      nombre: alumno.nombre,
+                      plan: alumno.plan,
+                      estadoCuenta: alumno.estadoCuenta,
+                      montoTotal: planObj?.precio,
+                      aliasPago: datosCobro.alias,
+                    })
+                  : mensajeCredencialesBienvenidaWhatsapp({
+                      nombre: alumno.nombre,
+                      usuario: alumno.usuario || alumno.dni || "-",
+                      claveInicial: alumno.dni ? alumno.dni.replace(/\D/g, "") : "tu DNI",
+                      urlPortal,
+                    });
+
+                return (
+                  <tr
+                    key={alumno.id}
+                    className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-bold text-white">
+                      <Link
+                        href={`/alumnos/${alumno.id}`}
+                        className="hover:text-blue-400 hover:underline underline-offset-2 flex items-center gap-1.5"
                       >
-                        Reactivar
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setAlumnoAEditar(alumno)}
-                      aria-label={`Editar a ${alumno.nombre}`}
-                      title="Editar ficha"
-                      className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setAlumnoAEliminar(alumno)}
-                      aria-label={
-                        alumno.activo === false || alumno.estadoCuenta === "INACTIVO"
-                          ? `Eliminar definitivamente a ${alumno.nombre}`
-                          : `Dar de baja a ${alumno.nombre}`
-                      }
-                      title={
-                        alumno.activo === false || alumno.estadoCuenta === "INACTIVO"
-                          ? "Eliminar definitivamente del sistema"
-                          : "Dar de baja (enviar a Inactivos)"
-                      }
-                      className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                    >
-                      {alumno.activo === false || alumno.estadoCuenta === "INACTIVO" ? (
-                        <Trash2 className="w-4 h-4" />
-                      ) : (
-                        <UserX className="w-4 h-4" />
+                        {alumno.nombre}
+                        <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                      </Link>
+                      {(alumno.usuario || alumno.dni) && (
+                        <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
+                          {alumno.usuario && (
+                            <span className="font-mono text-blue-400">@{alumno.usuario}</span>
+                          )}
+                          {alumno.dni && <span>DNI: {alumno.dni}</span>}
+                        </div>
                       )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
+                    <td className="px-6 py-4">
+                      {alumno.tieneRutina ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                          <Dumbbell className="w-3 h-3" />
+                          Asignada
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60">
+                          Sin rutina
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-300 font-medium">
+                      {alumno.ultimaAsistencia ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          {formatDiasIngreso(alumno.ultimaAsistencia)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 text-xs italic">Sin registros</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_CUENTA_STYLES[alumno.estadoCuenta]}`}
+                      >
+                        {ESTADO_CUENTA_LABEL[alumno.estadoCuenta]}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1">
+                        {tieneWa && alumno.celular && (
+                          <a
+                            href={construirUrlWaMe(alumno.celular, mensajeWa)}
+                            target="atlas_whatsapp_tab"
+                            rel="noopener noreferrer"
+                            title={
+                              debeCuota
+                                ? `Recordar cuota por WhatsApp a ${alumno.nombre}`
+                                : `Enviar acceso del portal por WhatsApp a ${alumno.nombre}`
+                            }
+                            aria-label={`WhatsApp a ${alumno.nombre}`}
+                            className={`p-2 rounded-lg transition-colors active:scale-90 ${
+                              debeCuota
+                                ? "text-emerald-400 hover:bg-emerald-500/15"
+                                : "text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+                            }`}
+                          >
+                            <WhatsAppIcon className="w-4 h-4 fill-current" />
+                          </a>
+                        )}
+                        {alumno.activo === false && (
+                          <button
+                            onClick={() => {
+                              actualizarAlumno(alumno.id, { activo: true });
+                              toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
+                            }}
+                            title={`Reactivar a ${alumno.nombre}`}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
+                          >
+                            Reactivar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setAlumnoAEditar(alumno)}
+                          aria-label={`Editar a ${alumno.nombre}`}
+                          title="Editar ficha"
+                          className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setAlumnoAEliminar(alumno)}
+                          aria-label={
+                            alumno.activo === false
+                              ? `Eliminar definitivamente a ${alumno.nombre}`
+                              : `Dar de baja a ${alumno.nombre}`
+                          }
+                          title={
+                            alumno.activo === false
+                              ? "Eliminar definitivamente del sistema"
+                              : "Dar de baja (enviar a Inactivos)"
+                          }
+                          className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
+                        >
+                          {alumno.activo === false ? <Trash2 className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {alumnosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
                     {alumnos.length === 0
-                      ? "Todavía no hay alumnos cargados. Arrancá agregando el primero."
+                      ? "Todavía no hay alumnos cargados. Podés importar tu planilla Excel en segundos con 'Importar CSV'."
                       : "No se encontraron alumnos con ese criterio."}
                   </td>
                 </tr>
@@ -417,6 +509,24 @@ export default function AlumnosPage() {
         onClose={() => setModalAbierto(false)}
       />
 
+      {modalImportarAbierto && (
+        <ModalImportarAlumnosCsv
+          onClose={() => setModalImportarAbierto(false)}
+          onImportar={async (filas) => {
+            const res = await importarAlumnosMasivo(filas);
+            if (res.ok && res.resumen) {
+              toast(
+                `Importación completada: ${res.resumen.creados} nuevos, ${res.resumen.actualizados} actualizados y ${res.resumen.pagosInicialesRegistrados} cuotas iniciales cargadas.`,
+                "success"
+              );
+              setModalImportarAbierto(false);
+            } else {
+              toast(res.error || "No se pudo completar la importación", "error");
+            }
+          }}
+        />
+      )}
+
       {alumnoAEditar && (
         <ModalEditarAlumno
           alumno={alumnoAEditar}
@@ -433,9 +543,7 @@ export default function AlumnosPage() {
       {alumnoAEliminar && (
         <ModalConfirmarEliminar
           alumno={alumnoAEliminar}
-          esInactivo={
-            alumnoAEliminar.activo === false || getEstadoCuenta(alumnoAEliminar.id) === "INACTIVO"
-          }
+          esInactivo={alumnoAEliminar.activo === false}
           onCancel={() => setAlumnoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />
@@ -444,8 +552,218 @@ export default function AlumnosPage() {
   );
 }
 
+// ---------- Modal: Importador Masivo CSV ("Día Cero") ----------
+function ModalImportarAlumnosCsv({
+  onClose,
+  onImportar,
+}: {
+  onClose: () => void;
+  onImportar: (filas: FilaImportacionAlumno[]) => Promise<void>;
+}) {
+  const [textoCsv, setTextoCsv] = useState("");
+  const [importando, setImportando] = useState(false);
 
-// ---------- Modal: confirmar eliminación ----------
+  const resultado = useMemo(
+    () => (textoCsv.trim() ? parsearCsvPadronAlumnos(textoCsv) : null),
+    [textoCsv]
+  );
+
+  const descargarPlantilla = () => {
+    const blob = new Blob(["\uFEFF" + PLANTILLA_CSV_DIA_CERO], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "plantilla_dia_cero_atlas_gym.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setTextoCsv(reader.result);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  const ejecutarImportacion = async () => {
+    if (!resultado || resultado.filasValidas.length === 0) return;
+    setImportando(true);
+    try {
+      await onImportar(resultado.filasValidas);
+    } finally {
+      setImportando(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto space-y-5"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/30">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">
+                Importar padrón de socios (CSV / Excel)
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Cargá cientos de socios de una sola vez con su plan y último mes abonado. Su clave inicial será su DNI.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="text-slate-400 hover:text-white rounded-full p-1.5 hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-950/70 border border-slate-800 p-4">
+          <div className="text-xs text-slate-300 space-y-0.5">
+            <p className="font-bold text-white">Columnas soportadas (separadas por ; o ,):</p>
+            <p className="text-slate-400">
+              <strong>Nombre</strong> y <strong>DNI</strong> (obligatorias) · Celular · Email · Plan ·{" "}
+              <strong>Ultimo_Mes_Pago</strong> (ej: <code className="text-blue-400">2026-10</code> o{" "}
+              <code className="text-blue-400">10/2026</code>)
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={descargarPlantilla}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-blue-300 border border-slate-700 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Descargar plantilla
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <label className="block">
+            <span className="text-xs font-bold text-slate-400 mb-1.5 block">
+              1. Seleccioná tu archivo .CSV exportado de Excel o Google Sheets
+            </span>
+            <input
+              type="file"
+              accept=".csv,.txt,text/csv"
+              onChange={handleArchivo}
+              className="block w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer bg-slate-950/60 border border-slate-800 rounded-xl p-2"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-bold text-slate-400 mb-1.5 block">
+              O pegá directamente las filas acá:
+            </span>
+            <textarea
+              rows={4}
+              value={textoCsv}
+              onChange={(e) => setTextoCsv(e.target.value)}
+              placeholder={"Nombre;DNI;Celular;Plan;Ultimo_Mes_Pago\nCamila Sosa;42111222;1144556677;Pase Libre;2026-10"}
+              className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl outline-none focus:border-blue-500 text-xs font-mono text-slate-200 placeholder-slate-600"
+            />
+          </label>
+        </div>
+
+        {resultado && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {resultado.filasValidas.length} socio(s) válidos listos para importar
+              </span>
+              {resultado.erroresFila.length > 0 && (
+                <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                  {resultado.erroresFila.length} fila(s) con observaciones
+                </span>
+              )}
+            </div>
+
+            {resultado.erroresFila.length > 0 && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-200 space-y-1 max-h-28 overflow-y-auto">
+                {resultado.erroresFila.slice(0, 6).map((err, idx) => (
+                  <p key={idx}>• {err}</p>
+                ))}
+              </div>
+            )}
+
+            {resultado.filasValidas.length > 0 && (
+              <div className="rounded-xl border border-slate-800 overflow-x-auto max-h-52">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-950 text-slate-400 text-left border-b border-slate-800">
+                      <th className="px-3 py-2 font-bold">Nombre</th>
+                      <th className="px-3 py-2 font-bold">DNI</th>
+                      <th className="px-3 py-2 font-bold">Celular</th>
+                      <th className="px-3 py-2 font-bold">Plan</th>
+                      <th className="px-3 py-2 font-bold">Últ. mes pago</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultado.filasValidas.slice(0, 8).map((f, idx) => (
+                      <tr key={idx} className="border-b border-slate-800/60 last:border-0">
+                        <td className="px-3 py-2 font-semibold text-white">{f.nombre}</td>
+                        <td className="px-3 py-2 font-mono text-slate-300">{f.dni}</td>
+                        <td className="px-3 py-2 text-slate-400">{f.celular || "-"}</td>
+                        <td className="px-3 py-2 text-slate-300">{f.planNombre || "Por defecto"}</td>
+                        <td className="px-3 py-2 font-mono text-emerald-400">
+                          {f.ultimoPeriodoPago || "Sin pago previo"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {resultado.filasValidas.length > 8 && (
+                  <p className="px-3 py-2 text-[11px] text-slate-500 bg-slate-950/50">
+                    + {resultado.filasValidas.length - 8} socio(s) adicionales en el lote.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!resultado || resultado.filasValidas.length === 0 || importando}
+            onClick={ejecutarImportacion}
+            className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {importando
+              ? "Importando padrón..."
+              : `Importar ${resultado?.filasValidas.length ?? 0} socio(s)`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Modal: confirmar baja ----------
 function ModalConfirmarEliminar({
   alumno,
   esInactivo,
@@ -505,6 +823,3 @@ function ModalConfirmarEliminar({
     </div>
   );
 }
-
-
-

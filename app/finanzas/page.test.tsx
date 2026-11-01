@@ -13,6 +13,7 @@ vi.mock("@/lib/store", () => ({
     usuarioActual: { id: "admin", nombre: "Admin", rol: "ADMIN" },
     agregarPago: vi.fn(), actualizarEstadoPago: vi.fn(), eliminarPago: vi.fn(),
     asignarCredencialesAlumno: vi.fn(),
+    datosCobro: { alias: "", titular: "" }, guardarDatosCobro: vi.fn(),
   }),
 }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
@@ -25,6 +26,6 @@ describe("Finanzas del administrador", () => {
     expect(within(fila).getByText("Alumno dado de baja")).toBeInTheDocument();
     expect(within(fila).getByText("$20.000")).toBeInTheDocument();
     expect(within(fila).getByRole("combobox")).toHaveValue("PAGADO");
-    expect(screen.getByText("Ingresos totales")).toBeInTheDocument();
+    expect(screen.getByText("Ingresos netos totales")).toBeInTheDocument();
   });
 });
