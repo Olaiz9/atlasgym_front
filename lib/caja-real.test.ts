@@ -128,4 +128,36 @@ describe("Etapa 5 — Caja Real Argentina (Señas Parciales, Anulación Auditada
       { operador: "Matías (Dueño)", totalRecaudado: 10000, cantidadOperaciones: 1 },
     ]);
   });
+
+  it("seña y saldo cobrados en días y por titulares distintos cuentan cada uno en su día, método y titular", () => {
+    const pago: Pago = {
+      id: "77",
+      alumnoId: "a1",
+      plan: "Musculación",
+      monto: 20000,
+      montoAbonado: 20000,
+      saldoPendiente: 0,
+      fecha: "2026-10-28",
+      metodo: "Efectivo",
+      estado: "PAGADO",
+      registradoPor: "Titular 1",
+      movimientos: [
+        { tipo: "SENIA", monto: 8000, metodo: "Efectivo", fecha: "2026-10-28", registradoPor: "Titular 1" },
+        { tipo: "SALDO", monto: 12000, metodo: "Transferencia", fecha: "2026-10-31", registradoPor: "Titular 2" },
+      ],
+    };
+
+    const diaSenia = calcularArqueoCajaLocal([pago], "2026-10-28");
+    expect(diaSenia.totalRecaudado).toBe(8000);
+    expect(diaSenia.totalEfectivo).toBe(8000);
+    expect(diaSenia.totalTransferencia).toBe(0);
+    expect(diaSenia.porOperador).toEqual([{ operador: "Titular 1", totalRecaudado: 8000, cantidadOperaciones: 1 }]);
+
+    const diaSaldo = calcularArqueoCajaLocal([pago], "2026-10-31");
+    expect(diaSaldo.totalRecaudado).toBe(12000);
+    expect(diaSaldo.totalEfectivo).toBe(0);
+    expect(diaSaldo.totalTransferencia).toBe(12000);
+    expect(diaSaldo.cantidadCobros).toBe(1);
+    expect(diaSaldo.porOperador).toEqual([{ operador: "Titular 2", totalRecaudado: 12000, cantidadOperaciones: 1 }]);
+  });
 });

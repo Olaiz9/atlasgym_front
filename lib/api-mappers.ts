@@ -80,6 +80,17 @@ export interface BackendPagoDto {
   anuladoPor?: string | null;
   fechaAnulacion?: string | null;
   motivoAnulacion?: string | null;
+  movimientos?: BackendMovimientoCajaDto[] | null;
+}
+
+export interface BackendMovimientoCajaDto {
+  id?: number | null;
+  tipo: string;
+  monto: number;
+  metodo: string;
+  fecha: string;
+  fechaHora?: string | null;
+  registradoPor?: string | null;
 }
 
 export interface BackendEjercicioDto {
@@ -336,6 +347,16 @@ export function mapPagoDtoToFront(dto: BackendPagoDto): Pago {
     anuladoPor: dto.anuladoPor || undefined,
     fechaAnulacion: dto.fechaAnulacion || undefined,
     motivoAnulacion: dto.motivoAnulacion || undefined,
+    movimientos: Array.isArray(dto.movimientos)
+      ? dto.movimientos.map((m) => ({
+          id: m.id != null ? String(m.id) : undefined,
+          tipo: m.tipo,
+          monto: Number(m.monto),
+          metodo: mapMetodoPagoToFront(m.metodo),
+          fecha: m.fecha,
+          registradoPor: m.registradoPor || undefined,
+        }))
+      : undefined,
   };
 }
 

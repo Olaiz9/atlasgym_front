@@ -137,6 +137,21 @@ export interface Pago {
   anuladoPor?: string;
   fechaAnulacion?: string;
   motivoAnulacion?: string;
+  /**
+   * Ingresos de caja de este comprobante (seña, saldo, pago total, ajuste), cada uno con su
+   * día, método y titular. Viene del backend; si falta (datos locales/legado) el arqueo usa
+   * fecha/método/registradoPor del comprobante.
+   */
+  movimientos?: MovimientoCaja[];
+}
+
+export interface MovimientoCaja {
+  id?: string;
+  tipo: "PAGO_TOTAL" | "SENIA" | "SALDO" | "AJUSTE" | string;
+  monto: number;
+  metodo: string;
+  fecha: string; // "YYYY-MM-DD"
+  registradoPor?: string;
 }
 
 export interface ArqueoOperadorResumen {
@@ -223,6 +238,25 @@ export function verificarSolapamientoPeriodoPago(
 }
 
 /**
+ * Ingresos de caja de un comprobante. Usa los movimientos del backend si existen; si no
+ * (comprobantes locales o legado), un único ingreso con fecha/método/titular del comprobante.
+ */
+export function movimientosDeCaja(p: Pago): MovimientoCaja[] {
+  if (Array.isArray(p.movimientos)) return p.movimientos;
+  const cobrado = obtenerMontoRecaudadoPago(p);
+  if (cobrado <= 0) return [];
+  return [
+    {
+      tipo: p.estado === "PARCIAL" ? "SENIA" : "PAGO_TOTAL",
+      monto: cobrado,
+      metodo: p.metodo,
+      fecha: p.fecha,
+      registradoPor: p.registradoPor,
+    },
+  ];
+}
+
+/**
  * Calcula en memoria el Arqueo de Caja de una fecha exacta ("YYYY-MM-DD"),
  * homólogo a PagoService.calcularArqueoDiario en Spring Boot.
  */
@@ -246,9 +280,8 @@ export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCaj
       ((p.fechaAnulacion && p.fechaAnulacion.slice(0, 10) === fecha) ||
         (!p.fechaAnulacion && p.fecha === fecha));
 
-    if (p.fecha !== fecha && !anuladoEseDia) continue;
-
     if (p.estado === "ANULADO") {
+      if (!anuladoEseDia) continue;
       if (!idsAnulados.has(p.id)) {
         idsAnulados.add(p.id);
         const orig = p.montoAbonado != null && p.montoAbonado > 0 ? p.montoAbonado : p.monto;
@@ -257,32 +290,34 @@ export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCaj
       continue;
     }
 
-    if (p.fecha !== fecha) continue;
     if (p.estado !== "PAGADO" && p.estado !== "PARCIAL") continue;
 
-    const cobrado = obtenerMontoRecaudadoPago(p);
-    if (cobrado <= 0) continue;
+    let contoParcial = false;
+    for (const mov of movimientosDeCaja(p)) {
+      if (mov.fecha !== fecha || !mov.monto) continue;
 
-    totalRecaudado += cobrado;
-    cantidadCobros += 1;
+      totalRecaudado += mov.monto;
+      if (mov.monto > 0) cantidadCobros += 1;
 
-    const met = (p.metodo || "").toUpperCase();
-    if (met.includes("TRANSF") || met.includes("MERCADO")) {
-      totalTransferencia += cobrado;
-    } else if (met.includes("TARJ") || met.includes("DEBIT") || met.includes("CREDIT")) {
-      totalTarjeta += cobrado;
-    } else {
-      totalEfectivo += cobrado;
+      const met = (mov.metodo || "").toUpperCase();
+      if (met.includes("TRANSF") || met.includes("MERCADO")) {
+        totalTransferencia += mov.monto;
+      } else if (met.includes("TARJ") || met.includes("DEBIT") || met.includes("CREDIT")) {
+        totalTarjeta += mov.monto;
+      } else {
+        totalEfectivo += mov.monto;
+      }
+
+      if (p.estado === "PARCIAL" && !contoParcial) {
+        contoParcial = true;
+        cantidadParciales += 1;
+        saldoPendienteParciales += obtenerSaldoPendientePago(p);
+      }
+
+      const op = mov.registradoPor?.trim() || "Sin operador";
+      porOpMonto.set(op, (porOpMonto.get(op) || 0) + mov.monto);
+      porOpCant.set(op, (porOpCant.get(op) || 0) + 1);
     }
-
-    if (p.estado === "PARCIAL") {
-      cantidadParciales += 1;
-      saldoPendienteParciales += obtenerSaldoPendientePago(p);
-    }
-
-    const op = p.registradoPor?.trim() || "Sin operador";
-    porOpMonto.set(op, (porOpMonto.get(op) || 0) + cobrado);
-    porOpCant.set(op, (porOpCant.get(op) || 0) + 1);
   }
 
   const porOperador: ArqueoOperadorResumen[] = Array.from(porOpMonto.entries())

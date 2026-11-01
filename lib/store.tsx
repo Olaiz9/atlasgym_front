@@ -29,6 +29,8 @@ import {
   Aviso,
   SesionEntrenamiento,
   RegistroAsistencia,
+  movimientosDeCaja,
+  obtenerSaldoPendientePago,
 } from "./types";
 import {
   ALUMNOS_MOCK,
@@ -1465,6 +1467,8 @@ function useGymStore(): AppDataContextValue {
 
       setPagos((prev) => {
         pagoRespaldo = prev.find((p) => p.id === id);
+        // El comprobante conserva fecha/método/titular de la seña; el saldo se agrega como
+        // movimiento de caja propio (hoy, con su método y con quien lo cobra).
         const nuevosPagos = prev.map((p) =>
           p.id === id
             ? {
@@ -1472,9 +1476,16 @@ function useGymStore(): AppDataContextValue {
                 estado: "PAGADO" as EstadoPago,
                 montoAbonado: p.monto,
                 saldoPendiente: 0,
-                fecha: hoy,
-                metodo: metodo || p.metodo,
-                registradoPor: usuarioActual?.nombre || p.registradoPor || "Admin",
+                movimientos: [
+                  ...movimientosDeCaja(p),
+                  {
+                    tipo: "SALDO",
+                    monto: obtenerSaldoPendientePago(p),
+                    metodo: metodo || p.metodo,
+                    fecha: hoy,
+                    registradoPor: usuarioActual?.nombre || "Admin",
+                  },
+                ],
               }
             : p
         );
