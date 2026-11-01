@@ -137,8 +137,8 @@ const CLAVES_CACHE_SESION = [
   "atlas_asistencias_v1",
   "atlas_asistencias_v2",
   "atlas_avisos_v2",
+  // Claves de versiones anteriores que ya nadie lee (pueden contener datos de demo o claves).
   "atlas_credenciales_alumnos_v1",
-  // Claves de versiones anteriores que ya nadie lee (pueden contener datos de demo).
   "atlas_sesion",
   "atlas_avisos_v1",
 ];
@@ -173,17 +173,18 @@ function guardarCacheLocalAsistencias(lista: RegistroAsistencia[]): void {
   }
 }
 
-function ofuscarClaveLocal(clave: string): string {
-  const texto = "atlas_salt_v1:" + clave;
-  let h1 = 0x811c9dc5;
-  let h2 = 0x1505;
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto.charCodeAt(i);
-    h1 ^= c;
-    h1 = Math.imul(h1, 0x01000193);
-    h2 = Math.imul(h2 ^ c, 33);
-  }
-  return "h1:" + (h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0");
+/**
+ * Versiones anteriores guardaban en el navegador del titular las claves de los socios
+ * ("atlas_credenciales_alumnos_v1", con un hash debil que se revierte por fuerza bruta).
+ * Ya no se guardan: las claves solo viven (hasheadas con BCrypt) en el servidor.
+ * Esta funcion borra lo que haya quedado en dispositivos que usaron esas versiones.
+ */
+const CLAVE_LEGADA_CREDENCIALES = "atlas_credenciales_alumnos_v1";
+function borrarCredencialesLegadas(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(CLAVE_LEGADA_CREDENCIALES);
+  } catch {}
 }
 
 function formatearMensajeErrorSync(accion: string, err: unknown): string {
@@ -833,73 +834,36 @@ function useGymStore(): AppDataContextValue {
         return { ok: true };
       }
 
-      let credencialesGuardadas: Record<string, { usuario: string; password: string }> = {};
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          if (raw) credencialesGuardadas = JSON.parse(raw);
-        } catch {}
-      }
-
+      // Modo demo sin servidor: el socio entra con su DNI (o la clave de demo "alumno123").
+      // Nunca se consultan claves guardadas en el navegador.
       const alumnoPorUsuarioODni = alumnos.find(
         (a) =>
           a.usuario?.toLowerCase() === idLimpio ||
           (dniBuscado.length >= 7 && a.dni && normalizarDni(a.dni) === dniBuscado) ||
           a.email?.toLowerCase() === idLimpio
       );
+      const alumno = emailEfectivo
+        ? alumnoPorUsuarioODni
+        : alumnos.find((a) => a.activo);
 
-      const entradaCredencial =
-        (alumnoPorUsuarioODni && credencialesGuardadas[alumnoPorUsuarioODni.id]
-          ? ([alumnoPorUsuarioODni.id, credencialesGuardadas[alumnoPorUsuarioODni.id]] as const)
-          : undefined) ||
-        Object.entries(credencialesGuardadas).find(
-          ([, cred]) => cred.usuario.toLowerCase() === idLimpio
-        );
-
-      let nuevoUsuario: UsuarioSesion;
-      if (entradaCredencial) {
-        const [alumnoIdCred, cred] = entradaCredencial;
-        const al = alumnos.find((a) => a.id === alumnoIdCred);
-        const dniAlumno = al?.dni ? normalizarDni(al.dni) : "";
-        if (
-          passwordEfectivo !== cred.password &&
-          ofuscarClaveLocal(passwordEfectivo) !== cred.password &&
-          passwordEfectivo !== "alumno123" &&
-          (!dniAlumno || passwordEfectivo !== dniAlumno)
-        ) {
-          return { ok: false, error: "Usuario o contraseña incorrectos." };
-        }
-        nuevoUsuario = {
-          id: `u_alumno_${alumnoIdCred}`,
-          nombre: al?.nombre || cred.usuario,
-          email: al?.usuario || cred.usuario,
-          rol: "ALUMNO",
-          alumnoId: al?.id || alumnoIdCred,
-        };
-      } else {
-        const alumno = emailEfectivo
-          ? alumnoPorUsuarioODni
-          : alumnos.find((a) => a.activo);
-
-        if (emailEfectivo && !alumno) {
-          return { ok: false, error: "No encontramos un usuario o socio con esas credenciales." };
-        }
-
-        const dniAlumno = alumno?.dni ? normalizarDni(alumno.dni) : "";
-        if (
-          passwordEfectivo !== "alumno123" &&
-          (!dniAlumno || passwordEfectivo !== dniAlumno)
-        ) {
-          return { ok: false, error: "Usuario o contraseña incorrectos." };
-        }
-        nuevoUsuario = {
-          id: alumno ? `u_alumno_${alumno.id}` : "u_alumno_1",
-          nombre: alumno ? alumno.nombre : emailEfectivo.split("@")[0] || "Alumno Atlas",
-          email: alumno?.usuario || alumno?.email || emailEfectivo || "lucia123",
-          rol: "ALUMNO",
-          alumnoId: alumno?.id,
-        };
+      if (emailEfectivo && !alumno) {
+        return { ok: false, error: "No encontramos un usuario o socio con esas credenciales." };
       }
+
+      const dniAlumno = alumno?.dni ? normalizarDni(alumno.dni) : "";
+      if (
+        passwordEfectivo !== "alumno123" &&
+        (!dniAlumno || passwordEfectivo !== dniAlumno)
+      ) {
+        return { ok: false, error: "Usuario o contraseña incorrectos." };
+      }
+      const nuevoUsuario: UsuarioSesion = {
+        id: alumno ? `u_alumno_${alumno.id}` : "u_alumno_1",
+        nombre: alumno ? alumno.nombre : emailEfectivo.split("@")[0] || "Alumno Atlas",
+        email: alumno?.usuario || alumno?.email || emailEfectivo || "lucia123",
+        rol: "ALUMNO",
+        alumnoId: alumno?.id,
+      };
 
       setUsuarioActual(nuevoUsuario);
       if (typeof window !== "undefined") {
@@ -929,6 +893,11 @@ function useGymStore(): AppDataContextValue {
       }
     }
   }, [setAvisos]);
+
+  // Al abrir la app, borrar claves de socios que versiones anteriores dejaron en este navegador.
+  useEffect(() => {
+    borrarCredencialesLegadas();
+  }, []);
 
   // JWT vencido o inválido (401 desde apiFetch) -> cerrar sesión y volver al login.
   useEffect(() => {
@@ -984,16 +953,6 @@ function useGymStore(): AppDataContextValue {
         setAlumnos((lista) =>
           lista.map((a) => (a.id === alumnoIdTarget ? { ...a, celular: cambios.celular } : a))
         );
-      }
-
-      if (password && usuarioActual.alumnoId && typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          const actual = mapa[usuarioActual.alumnoId] || { usuario: usuarioActual.email };
-          mapa[usuarioActual.alumnoId] = { ...actual, password: ofuscarClaveLocal(password) };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
       }
 
       return { ok: true };
@@ -1152,15 +1111,6 @@ function useGymStore(): AppDataContextValue {
       setAlumnos((prev) =>
         prev.map((a) => (a.id === alumnoId ? { ...a, usuario: u } : a))
       );
-
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          mapa[alumnoId] = { usuario: u, password: ofuscarClaveLocal(p) };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
-      }
     },
     []
   );
@@ -1184,18 +1134,6 @@ function useGymStore(): AppDataContextValue {
           reportarErrorSync(msg);
           return { ok: false, error: msg };
         }
-      }
-
-      if (typeof window !== "undefined" && alumno) {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          mapa[alumnoId] = {
-            usuario: alumno.usuario || generarUsernameAlumno(alumno.nombre, alumno.dni),
-            password: ofuscarClaveLocal(claveTemporal),
-          };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
       }
 
       return { ok: true, claveTemporal };
@@ -1384,18 +1322,6 @@ function useGymStore(): AppDataContextValue {
         planId,
         id: tempId,
       };
-
-      if (usuarioApp?.trim() && passwordApp?.trim() && typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          mapa[pagoBase.alumnoId] = {
-            usuario: usuarioApp.trim(),
-            password: ofuscarClaveLocal(passwordApp.trim()),
-          };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
-      }
 
       if (usuarioApp?.trim()) {
         setAlumnos((prev) =>
