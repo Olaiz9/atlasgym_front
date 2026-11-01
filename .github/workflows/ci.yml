@@ -57,6 +57,109 @@ jobs:
       - name: Build de produccion (Next.js)
         run: npm run build
 
+  # Tests de punta a punta: un navegador real (Playwright) usa la app contra el backend real
+  # y MySQL 8 (el mismo motor que produccion), con una base vacia en cada corrida.
+  e2e:
+    name: E2E (Playwright + MySQL 8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root-e2e
+          MYSQL_DATABASE: atlas_gym_e2e
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot-e2e"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      # Datos de prueba: coinciden con e2e/soporte.ts. Solo sirven para esta base descartable.
+      E2E_ADMIN_EMAIL: titular1@e2e.local
+      E2E_ADMIN_PASSWORD: E2eTitular1!
+      E2E_ADMIN_NOMBRE: Titular E2E
+      E2E_TOTEM_SECRET: secreto-totem-e2e
+      E2E_BACKEND_URL: http://127.0.0.1:8080
+    steps:
+      - uses: actions/checkout@v5
+
+      # Backend: misma rama que el front si existe en el repo del back; si no, develop.
+      - name: Descargar backend
+        run: |
+          RAMA="${{ github.head_ref || github.ref_name }}"
+          URL="https://github.com/${{ github.repository_owner }}/atlasgym_back.git"
+          if git ls-remote --exit-code --heads "$URL" "$RAMA" >/dev/null; then
+            echo "Backend: rama $RAMA"
+          else
+            echo "Backend: la rama $RAMA no existe en el back, se usa develop"; RAMA=develop
+          fi
+          git clone --depth 1 --branch "$RAMA" "$URL" backend
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Compilar backend
+        working-directory: backend
+        run: ./mvnw -B -q -DskipTests package
+
+      - name: Levantar backend (perfil prod, Flyway sobre MySQL 8)
+        working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: prod
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/atlas_gym_e2e?serverTimezone=America/Argentina/Buenos_Aires
+          DB_USER: root
+          DB_PASSWORD: root-e2e
+          ATLAS_JWT_SECRET: e2e0000000000000000000000000000000000000000000000000000000000000e2e
+          ATLAS_ADMIN_BOOTSTRAP_ENABLED: 'true'
+          ATLAS_ADMIN_EMAIL: ${{ env.E2E_ADMIN_EMAIL }}
+          ATLAS_ADMIN_PASSWORD: ${{ env.E2E_ADMIN_PASSWORD }}
+          ATLAS_ADMIN_NOMBRE: ${{ env.E2E_ADMIN_NOMBRE }}
+          ATLAS_TOTEM_SECRET: ${{ env.E2E_TOTEM_SECRET }}
+          ATLAS_CORS_ALLOWED_ORIGIN: http://localhost:3000
+          TZ: America/Argentina/Buenos_Aires
+        run: |
+          JAR=$(ls target/backend-*.jar | grep -v plain | head -1)
+          nohup java -Duser.timezone=America/Argentina/Buenos_Aires -jar "$JAR" > ../backend-e2e.log 2>&1 &
+          # Tomcat abre el puerto antes de crear los titulares: se espera a que el login funcione.
+          for i in $(seq 1 90); do
+            if curl -sf -X POST "$E2E_BACKEND_URL/api/auth/login" -H 'Content-Type: application/json' \
+                 -d "{\"email\":\"$E2E_ADMIN_EMAIL\",\"password\":\"$E2E_ADMIN_PASSWORD\"}" >/dev/null; then
+              echo "Backend listo"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::El backend no arranco a tiempo"; tail -n 80 ../backend-e2e.log; exit 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias y navegador
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # Playwright compila y levanta el front (next build + start) antes de correr los tests.
+      - name: Tests E2E
+        run: npx playwright test
+
+      # Si algo falla: informe con video, captura y traza paso a paso de cada test, y el log del backend.
+      - name: Guardar informe E2E
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-e2e
+          path: |
+            playwright-report/
+            test-results/
+            backend-e2e.log
+          if-no-files-found: ignore
+
   docker:
     name: Imagen Docker
     runs-on: ubuntu-latest

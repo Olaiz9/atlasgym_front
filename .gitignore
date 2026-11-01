@@ -20,3 +20,9 @@ next-env.d.ts
 
 # informe de cobertura de tests (npm run test:coverage)
 coverage/
+
+# Playwright (tests E2E)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
