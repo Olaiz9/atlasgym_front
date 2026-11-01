@@ -3,12 +3,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
+import { PIN_TERMINAL_TOTEM_DEFAULT } from '@/lib/constants'
 import { normalizarDni, reproducirSonidoFeedback } from '@/lib/asistencia-utils'
 import { apiCheckInTotem, isApiRuntimeEnabled } from '@/lib/api-client'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
-import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, Delete, Check, RotateCcw, Clock, ShieldCheck, Lock, Unlock } from 'lucide-react'
 import { Tooltip } from '@/components/ui/tooltip'
 
 type EstadoTotem = 'IDLE' | 'EXITO' | 'ALERTA' | 'ERROR'
@@ -21,7 +23,21 @@ interface ResultadoFeedback {
 }
 
 export default function TotemPage() {
-  const { registrarAsistenciaPorDni } = useAppData()
+  const router = useRouter()
+  const { registrarAsistenciaPorDni, usuarioActual } = useAppData()
+  const [montado, setMontado] = useState(false)
+  const [terminalAutorizada, setTerminalAutorizada] = useState(false)
+  const [bloqueadaManualmente, setBloqueadaManualmente] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [errorPin, setErrorPin] = useState(false)
+  const [mensajeErrorPin, setMensajeErrorPin] = useState('')
+  const pinInputRef = useRef(pinInput)
+
+  useEffect(() => {
+    pinInputRef.current = pinInput
+  }, [pinInput])
+
+  const [mostrarConfirmDesvincular, setMostrarConfirmDesvincular] = useState(false)
   const [dni, setDni] = useState('')
   const [estado, setEstado] = useState<EstadoTotem>('IDLE')
   const [resultado, setResultado] = useState<ResultadoFeedback | null>(null)
@@ -31,13 +47,95 @@ export default function TotemPage() {
   const [procesando, setProcesando] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const inputPinRef = useRef<HTMLInputElement | null>(null)
+  const inputDniRef = useRef<HTMLInputElement | null>(null)
 
-  // Reemplazar historial del navegador para prevenir volver atrás con botón del navegador
+  // Cargar estado de autorización del dispositivo al montar en cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', '/totem')
+      const auth = localStorage.getItem('atlas_totem_terminal_autorizada') === 'true'
+      setTerminalAutorizada(auth)
+    }
+    setMontado(true)
+  }, [])
+
+  const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
+
+  // Auto-enfoque de inputs según pantalla activa
+  useEffect(() => {
+    if (!montado) return
+    if (!esAutorizada) {
+      inputPinRef.current?.focus()
+    } else if (estado === 'IDLE') {
+      inputDniRef.current?.focus()
+    }
+  }, [montado, esAutorizada, estado])
+
+  const procesarNuevoPin = useCallback((nuevoPin: string) => {
+    if (nuevoPin.length === 4) {
+      const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+      if (nuevoPin === pinEsperado) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
+        }
+        setBloqueadaManualmente(false)
+        setTerminalAutorizada(true)
+        setPinInput('')
+        setErrorPin(false)
+        setMensajeErrorPin('')
+      } else {
+        setErrorPin(true)
+        setMensajeErrorPin('PIN incorrecto. Consulte al administrador.')
+        setTimeout(() => {
+          setPinInput('')
+          setErrorPin(false)
+          setMensajeErrorPin('')
+        }, 900)
+      }
     }
   }, [])
+
+  const manejarDigitoPin = useCallback((digito: string) => {
+    const actual = pinInputRef.current
+    if (actual.length >= 4) return
+    const nuevo = actual + digito
+    setPinInput(nuevo)
+    setErrorPin(false)
+    setMensajeErrorPin('')
+    procesarNuevoPin(nuevo)
+  }, [procesarNuevoPin])
+
+  const manejarBorrarPin = useCallback(() => {
+    setPinInput((prev) => prev.slice(0, -1))
+    setErrorPin(false)
+    setMensajeErrorPin('')
+  }, [])
+
+  const manejarLimpiarPin = useCallback(() => {
+    setPinInput('')
+    setErrorPin(false)
+    setMensajeErrorPin('')
+  }, [])
+
+  const volverAlInicio = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/'
+    } else {
+      router.push('/')
+    }
+  }, [router])
+
+  const desvincularTerminal = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('atlas_totem_terminal_autorizada')
+    }
+    setTerminalAutorizada(false)
+    setBloqueadaManualmente(true)
+    setMostrarConfirmDesvincular(false)
+    setPinInput('')
+    setDni('')
+    setEstado('IDLE')
+  }
 
   // Reloj digital en vivo
   useEffect(() => {
@@ -238,29 +336,59 @@ export default function TotemPage() {
 
   // Manejo de teclado físico y lectores de DNI / códigos de barra por hardware
   useEffect(() => {
+    if (!montado) return
+
+    if (!esAutorizada) {
+      const manejarKeyPin = (e: KeyboardEvent) => {
+        if (e.ctrlKey || e.altKey || e.metaKey) return
+        if (e.target instanceof HTMLInputElement) return
+
+        if (/^[0-9]$/.test(e.key)) {
+          e.preventDefault()
+          manejarDigitoPin(e.key)
+        } else if (e.key === 'Backspace') {
+          e.preventDefault()
+          manejarBorrarPin()
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          manejarLimpiarPin()
+        }
+      }
+      window.addEventListener('keydown', manejarKeyPin)
+      return () => window.removeEventListener('keydown', manejarKeyPin)
+    }
+
     const manejarKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement && e.key !== 'Enter' && e.key !== 'Escape') {
+        return
+      }
+
       if (estado !== 'IDLE') {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+          e.preventDefault()
           reiniciarAIdle()
         }
         return
       }
 
       if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()
         setDni((prev) => (prev.length < 9 ? prev + e.key : prev))
       } else if (e.key === 'Backspace') {
+        e.preventDefault()
         setDni((prev) => prev.slice(0, -1))
       } else if (e.key === 'Enter') {
         e.preventDefault()
         manejarEnvio()
       } else if (e.key === 'Escape' || e.key === 'Delete') {
+        e.preventDefault()
         setDni('')
       }
     }
 
     window.addEventListener('keydown', manejarKeyDown)
     return () => window.removeEventListener('keydown', manejarKeyDown)
-  }, [estado, manejarEnvio, reiniciarAIdle])
+  }, [montado, estado, manejarEnvio, reiniciarAIdle, esAutorizada, manejarDigitoPin, manejarBorrarPin, manejarLimpiarPin])
 
   const agregarDigito = (d: string) => {
     if (estado !== 'IDLE') return
@@ -290,6 +418,151 @@ export default function TotemPage() {
     return raw
   }
 
+  if (!montado) {
+    return (
+      <main className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500" />
+          <p className="text-xs text-slate-400 font-medium">Iniciando terminal ATLAS...</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!esAutorizada) {
+    return (
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 select-none">
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 size-[650px] rounded-full bg-blue-600/15 blur-[140px] z-0" />
+        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-slate-800 bg-slate-900/95 p-7 text-slate-100 shadow-2xl backdrop-blur-md">
+          <div className="flex flex-col items-center text-center">
+            <Image
+              src="/logo-atlas-blanco.png"
+              alt="ATLAS GYM"
+              width={160}
+              height={70}
+              className="h-10 w-auto object-contain mb-4 drop-shadow"
+              priority
+            />
+            <div className="size-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 shadow-inner">
+              <ShieldCheck className="size-6" />
+            </div>
+            <h1 className="text-xl font-black text-white tracking-tight">Terminal de Recepción</h1>
+            <span className="mt-1 text-[11px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
+              Modo Kiosco Protegido
+            </span>
+            <p className="mt-3 text-xs text-slate-400 leading-relaxed">
+              Esta pantalla es exclusiva para las estaciones fijas de recepción. Para autorizar este dispositivo, ingresá el PIN de terminal.
+            </p>
+          </div>
+
+          {/* Input oculto accesible para teclado físico y lectores */}
+          <input
+            ref={inputPinRef}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            value={pinInput}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+              if (val.length > pinInputRef.current.length) {
+                const nuevoChar = val[val.length - 1]
+                manejarDigitoPin(nuevoChar)
+              } else if (val.length < pinInputRef.current.length) {
+                setPinInput(val)
+                setErrorPin(false)
+                setMensajeErrorPin('')
+              }
+            }}
+            className="sr-only"
+            autoFocus
+            aria-label="PIN de terminal"
+          />
+
+          {/* Casilleros visibles de 4 dígitos */}
+          <div
+            onClick={() => inputPinRef.current?.focus()}
+            className="mt-6 flex justify-center gap-3 cursor-pointer"
+          >
+            {[0, 1, 2, 3].map((idx) => {
+              const tieneValor = pinInput.length > idx
+              return (
+                <div
+                  key={idx}
+                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-all duration-200 select-none ${
+                    errorPin
+                      ? 'border-rose-500 bg-rose-500/15 text-rose-400 scale-95'
+                      : tieneValor
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/25 scale-105'
+                      : 'border-slate-800 bg-slate-950/70 text-slate-600'
+                  }`}
+                >
+                  {tieneValor ? '●' : ''}
+                </div>
+              )
+            })}
+          </div>
+
+          {errorPin ? (
+            <p className="mt-3 text-center text-xs font-bold text-rose-400 animate-in fade-in duration-150">
+              {mensajeErrorPin || 'PIN de terminal incorrecto'}
+            </p>
+          ) : (
+            <p className="mt-3 text-center text-[11px] text-slate-500">
+              Ingresá el código de autorización de 4 dígitos
+            </p>
+          )}
+
+          {/* Teclado numérico en pantalla */}
+          <div className="mt-6 grid grid-cols-3 gap-2.5">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => manejarDigitoPin(n)}
+                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={manejarLimpiarPin}
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+            >
+              Borrar
+            </button>
+            <button
+              type="button"
+              onClick={() => manejarDigitoPin('0')}
+              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={manejarBorrarPin}
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              aria-label="Retroceso"
+            >
+              <Delete className="size-5" />
+            </button>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
+            <button
+              type="button"
+              onClick={volverAlInicio}
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer py-2 px-4 rounded-xl hover:bg-slate-800/60"
+            >
+              ← Volver al inicio de ATLAS
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="h-dvh max-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-3 sm:p-5 select-none overflow-hidden">
       {/* CABECERA KIOSCO */}
@@ -314,12 +587,22 @@ export default function TotemPage() {
             <p className="text-xl sm:text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
             <p className="text-[11px] font-medium text-slate-400 capitalize">{fechaActual}</p>
           </div>
-          <div className="flex items-center gap-2 rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-1.5 shadow-sm">
-            <span className="relative flex size-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-bold text-slate-300">Terminal activa</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-1.5 shadow-sm">
+              <span className="relative flex size-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-xs font-bold text-slate-300">Terminal activa</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMostrarConfirmDesvincular(true)}
+              title="Desvincular terminal"
+              className="p-2 rounded-xl border border-slate-800 bg-slate-900/90 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+            >
+              <Lock className="size-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -334,8 +617,27 @@ export default function TotemPage() {
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
             </div>
 
-            {/* VISOR DE DNI */}
-            <div className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500">
+            {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
+            <div
+              onClick={() => inputDniRef.current?.focus()}
+              className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500 cursor-text"
+            >
+              <input
+                ref={inputDniRef}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={9}
+                value={dni}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 9)
+                  setDni(val)
+                }}
+                className="sr-only"
+                autoFocus
+                tabIndex={0}
+                aria-label="Ingresar DNI"
+              />
               <p className="text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
               <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center">
                 {dni ? (
@@ -575,6 +877,50 @@ export default function TotemPage() {
         </p>
         <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
+
+      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR */}
+      {mostrarConfirmDesvincular && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <div className="size-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3">
+                <Lock className="size-6" />
+              </div>
+              <h3 className="text-lg font-black text-white">Bloquear Terminal</h3>
+              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                ¿Querés desvincular o bloquear esta terminal de recepción? Al hacerlo, se requerirá nuevamente el PIN de terminal para volver a habilitar el registro de asistencias.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={desvincularTerminal}
+                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Bloquear terminal ahora
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmDesvincular(false)
+                  router.push('/asistencias')
+                }}
+                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+              >
+                Ir al panel de asistencias
+              </button>
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmDesvincular(false)}
+                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                Cancelar y seguir en tótem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

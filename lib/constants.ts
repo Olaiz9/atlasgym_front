@@ -1,4 +1,4 @@
-﻿export const HORARIOS_ATLAS = {
+export const HORARIOS_ATLAS = {
   semana: "07:00 a 22:00 hs",
   sabado: "09:00 a 14:00 hs",
   textoCompleto: "Lunes a Viernes: 07:00 a 22:00 hs · Sábados: 09:00 a 14:00 hs",
@@ -11,3 +11,5 @@ export const CONTACTO_ATLAS = {
   instagram: "@atlasgymoficial_",
   instagramUrl: "https://www.instagram.com/atlasgymoficial_/",
 };
+
+export const PIN_TERMINAL_TOTEM_DEFAULT = "1234";

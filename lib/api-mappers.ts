@@ -286,7 +286,7 @@ export function mapPagoDtoToFront(dto: BackendPagoDto): Pago {
   return {
     id: String(dto.id),
     alumnoId: dto.alumnoId != null ? String(dto.alumnoId) : "",
-    alumnoNombreHistorico: dto.alumnoNombreHistorico ?? dto.alumnoNombre,
+    alumnoNombreHistorico: dto.alumnoNombreHistorico || dto.alumnoNombre,
     alumnoActivo: dto.alumnoActivo,
     plan: dto.planNombre || "Sin plan",
     monto: Number(dto.monto),

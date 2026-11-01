@@ -14,7 +14,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { usuarioActual } = useAppData()
 
   useEffect(() => {
-    if (pathname === '/totem') return
+    if (pathname === '/totem') {
+      return
+    }
     if (!usuarioActual && pathname !== '/login') {
       router.replace('/login')
     } else if (usuarioActual && !puedeAccederRuta(pathname, usuarioActual.rol)) {

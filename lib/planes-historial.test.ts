@@ -79,7 +79,7 @@ describe("Fase 3 & 5: Gestión de Planes e Integridad en Bajas (lib/planes-histo
   });
 
   describe("Baja en cascada y auditoría de pagos (ejecutarBajaAlumno & resolverNombreParaMostrarPago)", () => {
-    it("elimina el alumno, preserva el nombre en pagos y desasigna rutinas", () => {
+    it("da de baja al alumno (queda inactivo), preserva el nombre en pagos y desasigna rutinas", () => {
       const alumno: Alumno = {
         id: "a-10",
         nombre: "Agustín Alumno",
@@ -114,8 +114,9 @@ describe("Fase 3 & 5: Gestión de Planes e Integridad en Bajas (lib/planes-histo
 
       const res = ejecutarBajaAlumno("a-10", [alumno], pagos, rutinas);
 
-      // 1. Alumno eliminado
-      expect(res.alumnos.length).toBe(0);
+      // 1. Alumno dado de baja: se conserva inactivo (el borrado definitivo es un paso aparte)
+      expect(res.alumnos).toHaveLength(1);
+      expect(res.alumnos[0].activo).toBe(false);
       // 2. Pago preserva nombre histórico
       expect(res.pagos[0].alumnoNombreHistorico).toBe("Agustín Alumno");
       // 3. Rutina desasignada

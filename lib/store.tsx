@@ -126,7 +126,7 @@ interface AppDataContextValue {
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
-  eliminarAlumno: (id: string) => void;
+  eliminarAlumno: (id: string, definitivo?: boolean) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
   agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
@@ -343,7 +343,7 @@ function useGymStore(): AppDataContextValue {
           apiGetAsistencias().catch(() => null),
         ]);
 
-        if (alumnosDto && alumnosDto.length > 0) {
+        if (alumnosDto) {
           setAlumnos(alumnosDto.map(mapAlumnoDtoToFront));
         }
 
@@ -694,25 +694,14 @@ function useGymStore(): AppDataContextValue {
         (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
       );
       const tempId = crypto.randomUUID();
-      const usuarioGenerado = alumno.usuario || generarUsernameAlumno(alumno.nombre, alumno.dni);
       const nuevo: Alumno = {
         ...alumno,
         id: tempId,
-        usuario: usuarioGenerado,
+        usuario: alumno.usuario || undefined,
         planId: alumno.planId || planEncontrado?.id,
         plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
       };
       setAlumnos((prev) => [nuevo, ...prev]);
-
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("atlas_credenciales_alumnos_v1");
-          const mapa = raw ? JSON.parse(raw) : {};
-          const passInicial = alumno.dni ? normalizarDni(alumno.dni) : "alumno123";
-          mapa[tempId] = { usuario: usuarioGenerado, password: passInicial };
-          localStorage.setItem("atlas_credenciales_alumnos_v1", JSON.stringify(mapa));
-        } catch {}
-      }
 
       if (isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo))
@@ -751,6 +740,12 @@ function useGymStore(): AppDataContextValue {
         })
       );
 
+      if (cambios.activo !== undefined) {
+        setPagos((prev) =>
+          prev.map((p) => (p.alumnoId === id ? { ...p, alumnoActivo: cambios.activo } : p))
+        );
+      }
+
       const numId = parseNumericId(id);
       if (numId != null && alumnoActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarAlumno(numId, mapAlumnoFrontToRequestDto(alumnoActualizado))
@@ -765,16 +760,33 @@ function useGymStore(): AppDataContextValue {
   );
 
   const eliminarAlumno = useCallback(
-    (id: string) => {
+    (id: string, definitivo?: boolean) => {
+      const alumnoTarget = alumnos.find((a) => a.id === id);
+      const estadoTarget = alumnoTarget
+        ? estadoCuentaDeAlumno(id, pagos, alumnoTarget.fechaAlta, alumnoTarget.activo)
+        : "INACTIVO";
+      const esEliminacionDefinitiva =
+        definitivo === true ||
+        (alumnoTarget ? alumnoTarget.activo === false || estadoTarget === "INACTIVO" : true);
+
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
-      setAlumnos(nuevosAlumnos);
+
+      if (esEliminacionDefinitiva) {
+        // Paso 2: Eliminación definitiva desde Inactivos (remueve de la lista)
+        setAlumnos((prev) => prev.filter((a) => a.id !== id));
+      } else {
+        // Paso 1: Baja administrativa (pasa a Inactivos)
+        setAlumnos(nuevosAlumnos);
+      }
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 
       const numId = parseNumericId(id);
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiDarDeBajaAlumno(numId).catch(() => {});
+        apiDarDeBajaAlumno(numId, esEliminacionDefinitiva).catch((err) => {
+          console.error("Error al procesar baja/eliminación de alumno en backend:", err);
+        });
       }
     },
     [alumnos, pagos, rutinas]

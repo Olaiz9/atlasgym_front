@@ -61,7 +61,11 @@ export function ejecutarBajaAlumno(
 
   const nuevosPagos = pagos.map((p) => {
     if (p.alumnoId === alumnoId) {
-      return { ...p, alumnoNombreHistorico: p.alumnoNombreHistorico || nombreHistorico, alumnoActivo: false };
+      return {
+        ...p,
+        alumnoNombreHistorico: p.alumnoNombreHistorico || nombreHistorico,
+        alumnoActivo: false,
+      };
     }
     return p;
   });
@@ -70,7 +74,9 @@ export function ejecutarBajaAlumno(
     r.alumnoIdAsignado === alumnoId ? { ...r, alumnoIdAsignado: undefined } : r
   );
 
-  const nuevosAlumnos = alumnos.filter((a) => a.id !== alumnoId);
+  const nuevosAlumnos = alumnos.map((a) =>
+    a.id === alumnoId ? { ...a, activo: false, tieneRutina: false } : a
+  );
 
   return {
     alumnos: nuevosAlumnos,
