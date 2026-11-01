@@ -27,6 +27,7 @@ import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
+import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "@/lib/pago-historial";
 import { descargarCSV } from "@/lib/export-utils";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -370,7 +371,7 @@ export default function FinanzasPage() {
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
       const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
-      const nombreAlumno = getAlumno(p.alumnoId)?.nombre ?? p.alumnoNombreHistorico ?? "";
+      const nombreAlumno = nombreHistoricoDelPago(p, getAlumno(p.alumnoId));
       const coincideBusqueda =
         !q ||
         nombreAlumno.toLowerCase().includes(q) ||
@@ -424,7 +425,7 @@ export default function FinanzasPage() {
     ];
     const filas = pagosDelMes.map((p) => {
       const alumno = getAlumno(p.alumnoId);
-      const nombre = alumno?.nombre ?? p.alumnoNombreHistorico ?? "Desconocido";
+      const nombre = nombreHistoricoDelPago(p, alumno) + (alumnoDePagoEstaDeBaja(p, alumno) ? " (Alumno dado de baja)" : "");
       return [
         p.id,
         nombre,
@@ -635,11 +636,16 @@ export default function FinanzasPage() {
                     <td className="px-6 py-4 font-bold text-white">
                       {alumno ? (
                         <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-400 hover:underline underline-offset-2">
-                          {alumno.nombre}
+                          {nombreHistoricoDelPago(pago, alumno)}
                         </Link>
                       ) : (
                         <span className="text-slate-500 italic font-medium">
-                          {pago.alumnoNombreHistorico || "Alumno Atlas"} (Baja)
+                          {nombreHistoricoDelPago(pago, alumno)}
+                        </span>
+                      )}
+                      {alumnoDePagoEstaDeBaja(pago, alumno) && (
+                        <span className="mt-1 block text-xs font-semibold text-amber-400">
+                          Alumno dado de baja
                         </span>
                       )}
                     </td>
