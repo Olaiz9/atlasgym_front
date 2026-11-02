@@ -18,6 +18,9 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # Commit que se muestra en el login (opcional). Ej: --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)
 ARG GIT_COMMIT=
 ENV GIT_COMMIT=${GIT_COMMIT}
+# PIN de 4 digitos de la tablet del totem (vacio = 1234 de fabrica). Lo pasa docker-compose desde ATLAS_TOTEM_PIN.
+ARG NEXT_PUBLIC_TOTEM_PIN=
+ENV NEXT_PUBLIC_TOTEM_PIN=${NEXT_PUBLIC_TOTEM_PIN}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=1
 
