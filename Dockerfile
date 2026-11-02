@@ -15,6 +15,9 @@ COPY . .
 
 ARG NEXT_PUBLIC_API_URL=/backend-api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Commit que se muestra en el login (opcional). Ej: --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)
+ARG GIT_COMMIT=
+ENV GIT_COMMIT=${GIT_COMMIT}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=1
 
