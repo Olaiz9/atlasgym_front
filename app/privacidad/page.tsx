@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { DATOS_LEGALES, datosLegalesPendientes } from '@/lib/datos-legales'
+import { DATOS_LEGALES, datosLegalesPendientes, nombreResponsable } from '@/lib/datos-legales'
 
 export const metadata: Metadata = {
   title: `Política de privacidad · ${DATOS_LEGALES.nombreGimnasio}`,
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function PaginaPrivacidad() {
   const d = DATOS_LEGALES
   const pendientes = datosLegalesPendientes()
-  const responsable = d.responsable || `${d.nombreGimnasio} (datos del responsable a completar)`
+  const responsable = nombreResponsable(d)
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-10 text-slate-200 leading-relaxed">
