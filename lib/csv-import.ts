@@ -58,6 +58,50 @@ function detectarDelimitador(primeraLinea: string): "," | ";" | "\t" {
   return ",";
 }
 
+export type ResultadoDecodificacionCsv =
+  | { ok: true; texto: string }
+  | { ok: false; error: string };
+
+/**
+ * Convierte los bytes del archivo subido en texto.
+ * Excel en español guarda "CSV (delimitado por comas)" en Windows-1252, no en UTF-8: si se lee como
+ * UTF-8, "Nicolás" queda "Nicol�s". Probamos UTF-8 estricto y, si falla, Windows-1252.
+ */
+export function decodificarArchivoCsv(bytes: Uint8Array): ResultadoDecodificacionCsv {
+  const esZip = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+  const esXlsViejo = bytes.length >= 4 && bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
+  if (esZip || esXlsViejo) {
+    return {
+      ok: false,
+      error:
+        'Ese archivo es un Excel (.xlsx/.xls), no un CSV. En Excel: Archivo → Guardar como → tipo "CSV UTF-8 (delimitado por comas)" y subí ese archivo.',
+    };
+  }
+  try {
+    return { ok: true, texto: new TextDecoder("utf-8", { fatal: true }).decode(bytes) };
+  } catch {
+    return { ok: true, texto: new TextDecoder("windows-1252").decode(bytes) };
+  }
+}
+
+/** Separa el texto en filas, respetando saltos de línea que estén dentro de una celda entre comillas. */
+function dividirFilasCsv(texto: string): string[] {
+  const filas: string[] = [];
+  let actual = "";
+  let enComillas = false;
+  for (const ch of texto) {
+    if (ch === '"') enComillas = !enComillas;
+    if (ch === "\n" && !enComillas) {
+      filas.push(actual);
+      actual = "";
+    } else {
+      actual += ch;
+    }
+  }
+  filas.push(actual);
+  return filas.map((l) => l.trim()).filter((l) => l.length > 0);
+}
+
 export function dividirLineaCsv(linea: string, delimitador: string): string[] {
   const celdas: string[] = [];
   let actual = "";
@@ -73,14 +117,28 @@ export function dividirLineaCsv(linea: string, delimitador: string): string[] {
         enComillas = !enComillas;
       }
     } else if (ch === delimitador && !enComillas) {
-      celdas.push(actual.trim());
+      celdas.push(limpiarCelda(actual));
       actual = "";
     } else {
       actual += ch;
     }
   }
-  celdas.push(actual.trim());
+  celdas.push(limpiarCelda(actual));
   return celdas;
+}
+
+// Un salto de línea dentro de la celda (Alt+Enter en Excel) se convierte en un espacio.
+function limpiarCelda(celda: string): string {
+  return celda.replace(/\s*\n\s*/g, " ").trim();
+}
+
+const MESES: Record<string, number> = {
+  ene: 1, jan: 1, feb: 2, mar: 3, abr: 4, apr: 4, may: 5, jun: 6, jul: 7,
+  ago: 8, aug: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12, dec: 12,
+};
+
+function anioCompleto(anio: string): number {
+  return anio.length === 2 ? 2000 + Number(anio) : Number(anio);
 }
 
 export function normalizarPeriodoCsv(valor?: string): string | undefined {
@@ -116,7 +174,26 @@ export function normalizarPeriodoCsv(valor?: string): string | undefined {
       return `${anio}-${String(mes).padStart(2, "0")}`;
     }
   }
-  return limpio;
+  // MM/AA (ej: "10/26")
+  const mAnioCorto = limpio.match(/^(\d{1,2})[/-](\d{2})$/);
+  if (mAnioCorto) {
+    const mes = Number(mAnioCorto[1]);
+    if (mes >= 1 && mes <= 12) {
+      return `${anioCompleto(mAnioCorto[2])}-${String(mes).padStart(2, "0")}`;
+    }
+  }
+  // Mes escrito, como lo formatea Excel: "oct-26", "Octubre 2026", "sept. 2026"
+  const mTexto = limpio
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .match(/^([a-z]+)\.?[\s/-]*(?:de\s+)?(\d{2}|\d{4})$/);
+  if (mTexto && MESES[mTexto[1].slice(0, 3)]) {
+    const mes = MESES[mTexto[1].slice(0, 3)];
+    return `${anioCompleto(mTexto[2])}-${String(mes).padStart(2, "0")}`;
+  }
+  // No se reconoce: mejor sin período (y avisado) que un período inventado
+  return undefined;
 }
 
 function parsearMontoCsv(valor?: string): number | undefined {
@@ -127,6 +204,9 @@ function parsearMontoCsv(valor?: string): number | undefined {
   // Si tiene punto de miles y coma decimal (ej: "28.500,00" o "28.500")
   if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(limpio)) {
     limpio = limpio.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(limpio)) {
+    // Coma de miles al estilo Google Sheets en inglés: "28,500" o "28,500.00"
+    limpio = limpio.replace(/,/g, "");
   } else if (limpio.includes(",") && !limpio.includes(".")) {
     limpio = limpio.replace(",", ".");
   }
@@ -135,12 +215,29 @@ function parsearMontoCsv(valor?: string): number | undefined {
   return !isNaN(num) && num > 0 ? num : undefined;
 }
 
+const COLUMNAS_NOMBRE = [
+  "nombre",
+  "nombre_completo",
+  "apellido_y_nombre",
+  "nombre_y_apellido",
+  "alumno",
+  "socio",
+];
+const COLUMNAS_DNI = ["dni", "documento", "nro_documento", "numero_documento", "doc"];
+
 export function parsearCsvPadronAlumnos(contenidoRaw: string): ResultadoParseoCsvAlumnos {
   const texto = (contenidoRaw || "").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const lineas = texto
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+  let lineas = dividirFilasCsv(texto);
+
+  // Muchas planillas tienen un título o filas vacías arriba: buscamos el encabezado real
+  // (la primera fila que tenga columnas de nombre y DNI) entre las primeras 10.
+  const idxEncabezado = lineas.slice(0, 10).findIndex((linea) => {
+    const celdas = dividirLineaCsv(linea, detectarDelimitador(linea)).map(normalizarClaveHeader);
+    return celdas.some((c) => COLUMNAS_NOMBRE.includes(c)) && celdas.some((c) => COLUMNAS_DNI.includes(c));
+  });
+  if (idxEncabezado > 0) {
+    lineas = lineas.slice(idxEncabezado);
+  }
 
   if (lineas.length < 2) {
     return {
@@ -156,16 +253,9 @@ export function parsearCsvPadronAlumnos(contenidoRaw: string): ResultadoParseoCs
   const buscarCol = (candidatos: string[]): number =>
     headers.findIndex((h) => candidatos.includes(h));
 
-  const idxNombre = buscarCol([
-    "nombre",
-    "nombre_completo",
-    "apellido_y_nombre",
-    "nombre_y_apellido",
-    "alumno",
-    "socio",
-  ]);
+  const idxNombre = buscarCol(COLUMNAS_NOMBRE);
   const idxApellido = buscarCol(["apellido", "apellidos"]);
-  const idxDni = buscarCol(["dni", "documento", "nro_documento", "numero_documento", "doc"]);
+  const idxDni = buscarCol(COLUMNAS_DNI);
   const idxCelular = buscarCol(["celular", "telefono", "whatsapp", "tel", "movil", "cel"]);
   const idxEmail = buscarCol(["email", "correo", "mail", "e_mail"]);
   const idxPlan = buscarCol(["plan", "nombre_plan", "membresia", "abono", "tipo_plan"]);
@@ -193,6 +283,7 @@ export function parsearCsvPadronAlumnos(contenidoRaw: string): ResultadoParseoCs
 
   const filasValidas: FilaImportacionAlumno[] = [];
   const erroresFila: string[] = [];
+  const filaPorDni = new Map<string, number>();
 
   for (let i = 1; i < lineas.length; i++) {
     const nroFila = i + 1;
@@ -207,10 +298,19 @@ export function parsearCsvPadronAlumnos(contenidoRaw: string): ResultadoParseoCs
         : nombreBase;
 
     const dniRaw = (cols[idxDni] || "").trim();
-    const dniLimpio = dniRaw.replace(/\D/g, "");
+    // "40111222.0" (número con decimales exportado por Sheets) -> "40111222"
+    const dniLimpio = dniRaw.replace(/^(\d+)[.,]0+$/, "$1").replace(/\D/g, "");
 
     if (nombreCompleto.length < 2) {
       erroresFila.push(`Fila ${nroFila}: falta el nombre del socio.`);
+      continue;
+    }
+    if (/\d[eE][+-]?\d/.test(dniRaw)) {
+      // Excel mostró el DNI como "4,02E+07": los dígitos reales se perdieron, no hay que adivinarlos
+      erroresFila.push(
+        `Fila ${nroFila} (${nombreCompleto}): el DNI '${dniRaw}' está en notación científica. ` +
+          "En Excel, poné la columna DNI con formato Número sin decimales y volvé a guardar el CSV."
+      );
       continue;
     }
     if (dniLimpio.length < 6 || dniLimpio.length > 10) {
@@ -223,8 +323,23 @@ export function parsearCsvPadronAlumnos(contenidoRaw: string): ResultadoParseoCs
     const celular = idxCelular >= 0 ? (cols[idxCelular] || "").trim() || undefined : undefined;
     const email = idxEmail >= 0 ? (cols[idxEmail] || "").trim() || undefined : undefined;
     const planNombre = idxPlan >= 0 ? (cols[idxPlan] || "").trim() || undefined : undefined;
-    const ultimoPeriodoPago =
-      idxPeriodo >= 0 ? normalizarPeriodoCsv(cols[idxPeriodo]) : undefined;
+    const periodoRaw = idxPeriodo >= 0 ? (cols[idxPeriodo] || "").trim() : "";
+    const ultimoPeriodoPago = normalizarPeriodoCsv(periodoRaw);
+    if (periodoRaw && !ultimoPeriodoPago) {
+      erroresFila.push(
+        `Fila ${nroFila} (${nombreCompleto}): no se entiende el mes pagado '${periodoRaw}' ` +
+          "(usá por ejemplo 2026-10 u oct-26). El socio se importa igual, sin cuota cargada."
+      );
+    }
+    const filaPrevia = filaPorDni.get(dniLimpio);
+    if (filaPrevia !== undefined) {
+      erroresFila.push(
+        `Fila ${nroFila} (${nombreCompleto}): el DNI ${dniLimpio} está repetido (ya aparece en la fila ${filaPrevia}). ` +
+          "Quedan los datos de la última fila."
+      );
+    } else {
+      filaPorDni.set(dniLimpio, nroFila);
+    }
     const montoUltimoPago = idxMonto >= 0 ? parsearMontoCsv(cols[idxMonto]) : undefined;
     const metodoPago = idxMetodo >= 0 ? (cols[idxMetodo] || "").trim() || undefined : undefined;
 

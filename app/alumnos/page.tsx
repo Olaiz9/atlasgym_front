@@ -33,6 +33,7 @@ import { useDebounce } from "@/lib/use-debounce";
 import { descargarCSV } from "@/lib/export-utils";
 import {
   PLANTILLA_CSV_DIA_CERO,
+  decodificarArchivoCsv,
   parsearCsvPadronAlumnos,
   FilaImportacionAlumno,
 } from "@/lib/csv-import";
@@ -519,10 +520,16 @@ export default function AlumnosPage() {
                 `Importación completada: ${res.resumen.creados} nuevos, ${res.resumen.actualizados} actualizados y ${res.resumen.pagosInicialesRegistrados} cuotas iniciales cargadas.`,
                 "success"
               );
-              setModalImportarAbierto(false);
-            } else {
-              toast(res.error || "No se pudo completar la importación", "error");
+              // Si el servidor dejó avisos (plan inexistente, email inválido...), el modal queda
+              // abierto para mostrarlos: si se cerrara, el titular nunca se enteraría.
+              const advertencias = res.resumen.advertencias ?? [];
+              if (advertencias.length === 0) {
+                setModalImportarAbierto(false);
+              }
+              return advertencias;
             }
+            toast(res.error || "No se pudo completar la importación", "error");
+            return null;
           }}
         />
       )}
@@ -558,10 +565,13 @@ function ModalImportarAlumnosCsv({
   onImportar,
 }: {
   onClose: () => void;
-  onImportar: (filas: FilaImportacionAlumno[]) => Promise<void>;
+  /** Devuelve las advertencias del servidor si la importación salió bien, o null si falló. */
+  onImportar: (filas: FilaImportacionAlumno[]) => Promise<string[] | null>;
 }) {
   const [textoCsv, setTextoCsv] = useState("");
   const [importando, setImportando] = useState(false);
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
+  const [advertenciasServidor, setAdvertenciasServidor] = useState<string[] | null>(null);
 
   const resultado = useMemo(
     () => (textoCsv.trim() ? parsearCsvPadronAlumnos(textoCsv) : null),
@@ -585,18 +595,28 @@ function ModalImportarAlumnosCsv({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setTextoCsv(reader.result);
+      if (!(reader.result instanceof ArrayBuffer)) return;
+      // Leemos bytes (no texto) para detectar si Excel lo guardó en Windows-1252 o si es un .xlsx
+      const decodificado = decodificarArchivoCsv(new Uint8Array(reader.result));
+      if (decodificado.ok) {
+        setErrorArchivo(null);
+        setTextoCsv(decodificado.texto);
+      } else {
+        setErrorArchivo(decodificado.error);
+        setTextoCsv("");
       }
     };
-    reader.readAsText(file, "UTF-8");
+    reader.readAsArrayBuffer(file);
   };
 
   const ejecutarImportacion = async () => {
     if (!resultado || resultado.filasValidas.length === 0) return;
     setImportando(true);
     try {
-      await onImportar(resultado.filasValidas);
+      const advertencias = await onImportar(resultado.filasValidas);
+      if (advertencias && advertencias.length > 0) {
+        setAdvertenciasServidor(advertencias);
+      }
     } finally {
       setImportando(false);
     }
@@ -697,7 +717,7 @@ function ModalImportarAlumnosCsv({
 
             {resultado.erroresFila.length > 0 && (
               <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-200 space-y-1 max-h-28 overflow-y-auto">
-                {resultado.erroresFila.slice(0, 6).map((err, idx) => (
+                {resultado.erroresFila.map((err, idx) => (
                   <p key={idx}>• {err}</p>
                 ))}
               </div>
@@ -739,17 +759,34 @@ function ModalImportarAlumnosCsv({
           </div>
         )}
 
+        {errorArchivo && (
+          <div role="alert" className="rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-200">
+            {errorArchivo}
+          </div>
+        )}
+
+        {advertenciasServidor && (
+          <div role="status" className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-200 space-y-1 max-h-48 overflow-y-auto">
+            <p className="font-bold text-amber-100">
+              La importación se completó, pero revisá estos {advertenciasServidor.length} aviso(s):
+            </p>
+            {advertenciasServidor.map((adv, idx) => (
+              <p key={idx}>• {adv}</p>
+            ))}
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={onClose}
             className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
           >
-            Cancelar
+            {advertenciasServidor ? "Cerrar" : "Cancelar"}
           </button>
           <button
             type="button"
-            disabled={!resultado || resultado.filasValidas.length === 0 || importando}
+            disabled={!resultado || resultado.filasValidas.length === 0 || importando || advertenciasServidor !== null}
             onClick={ejecutarImportacion}
             className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >

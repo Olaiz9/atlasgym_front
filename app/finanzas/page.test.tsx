@@ -28,4 +28,13 @@ describe("Finanzas del administrador", () => {
     expect(within(fila).getByRole("combobox")).toHaveValue("PAGADO");
     expect(screen.getByText("Ingresos netos totales")).toBeInTheDocument();
   });
+
+  it("sin alias cargado, el formulario no sugiere un alias que parezca real", () => {
+    render(<FinanzasPage />);
+    fireEvent.click(screen.getByRole("button", { name: /Cargar alias/ }));
+    const input = screen.getByLabelText("Alias de transferencia") as HTMLInputElement;
+    expect(input.value).toBe("");
+    // Un ejemplo con forma de alias (palabra.palabra) se confunde con el alias vigente.
+    expect(input.placeholder).not.toMatch(/\w+\.\w+/);
+  });
 });
