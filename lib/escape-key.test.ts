@@ -48,5 +48,31 @@ describe("[Auditoría A6] Pila de Modales para Tecla Escape", () => {
     expect(fn).not.toHaveBeenCalled();
     unmount();
   });
-});
 
+  it("cierra el modal al presionar Escape en window sin disparar acciones de fondo bloqueadas por el modal", () => {
+    let modalVinculacionAbierto = true;
+    let dniEnPantalla = "30123456";
+
+    const manejarKeyDownTotem = (e: KeyboardEvent) => {
+      if (modalVinculacionAbierto) return;
+      if (e.key === "Escape") {
+        dniEnPantalla = "";
+      }
+    };
+
+    window.addEventListener("keydown", manejarKeyDownTotem);
+    const { unmount } = renderHook(() =>
+      useEscapeKey(() => {
+        modalVinculacionAbierto = false;
+      }, modalVinculacionAbierto)
+    );
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+    expect(modalVinculacionAbierto).toBe(false);
+    expect(dniEnPantalla).toBe("30123456");
+
+    unmount();
+    window.removeEventListener("keydown", manejarKeyDownTotem);
+  });
+});
