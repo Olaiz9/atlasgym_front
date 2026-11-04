@@ -19,11 +19,18 @@ export const DATOS_LEGALES = {
   actualizada: '2026-11-01',
 }
 
-export function datosLegalesPendientes(): string[] {
+/**
+ * Datos obligatorios que faltan. Decisión 2026-11-01: razón social, CUIT y domicilio son
+ * OPCIONALES (los dueños de ATLAS prefirieron no publicarlos; si faltan, la página no los muestra).
+ * El contacto sí es obligatorio: sin él, el socio no tiene dónde pedir ver o borrar sus datos.
+ */
+export function datosLegalesPendientes(datos: typeof DATOS_LEGALES = DATOS_LEGALES): string[] {
   const faltan: string[] = []
-  if (!DATOS_LEGALES.responsable) faltan.push('responsable (razón social)')
-  if (!DATOS_LEGALES.cuit) faltan.push('CUIT')
-  if (!DATOS_LEGALES.domicilio) faltan.push('domicilio')
-  if (!DATOS_LEGALES.contactoPrivacidad) faltan.push('contacto para consultas de privacidad')
+  if (!datos.contactoPrivacidad) faltan.push('contacto para consultas de privacidad')
   return faltan
+}
+
+/** Cómo se nombra al responsable: la razón social si está, o los titulares del gimnasio. */
+export function nombreResponsable(datos: typeof DATOS_LEGALES = DATOS_LEGALES): string {
+  return datos.responsable || `los titulares de ${datos.nombreGimnasio}`
 }

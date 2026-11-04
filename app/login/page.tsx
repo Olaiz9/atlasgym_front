@@ -29,6 +29,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { CONTACTO_ATLAS } from '@/lib/constants'
+import { VERSION_APP } from '@/lib/version'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -271,7 +272,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-7 text-center text-xs font-medium text-slate-500">
-          ATLAS Gym Platform · v2.5.0 ·{' '}
+          ATLAS Gym Platform · {VERSION_APP} ·{' '}
           <Link href="/privacidad" className="underline underline-offset-2 hover:text-slate-300">
             Política de privacidad
           </Link>
