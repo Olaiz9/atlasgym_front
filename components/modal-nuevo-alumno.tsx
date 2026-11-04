@@ -138,7 +138,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
           <div className="rounded-xl border border-slate-800 bg-slate-800/40 px-4 py-2.5 text-xs text-slate-400">
             <span className="font-semibold text-slate-300">Acceso a la plataforma ATLAS:</span>
             <p className="mt-0.5 text-[11px] text-slate-400">
-              El usuario y la contraseña de la app se generarán en Finanzas al registrar su primer pago.
+              Podés darle acceso a la app al registrar su primer pago en Finanzas (“Primera inscripción”) o desde su ficha con “Generar clave temporal”.
             </p>
           </div>
 
