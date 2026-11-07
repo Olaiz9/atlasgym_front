@@ -11,7 +11,6 @@ import {
   Dumbbell,
   Plus,
   Search,
-  Trash2,
   Pencil,
   ChevronRight,
   Download,
@@ -173,15 +172,9 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
-    // Ya dado de baja (activo === false) => paso 2: borrado definitivo. INACTIVO por deuda NO cuenta.
-    const esInactivo = alumnoAEliminar.activo === false;
-    eliminarAlumno(alumnoAEliminar.id, esInactivo);
+    eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
-    if (esInactivo) {
-      toast(`Alumno "${nombre}" eliminado definitivamente del sistema`, "info");
-    } else {
-      toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
-    }
+    toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -422,22 +415,16 @@ export default function AlumnosPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setAlumnoAEliminar(alumno)}
-                          aria-label={
-                            alumno.activo === false
-                              ? `Eliminar definitivamente a ${alumno.nombre}`
-                              : `Dar de baja a ${alumno.nombre}`
-                          }
-                          title={
-                            alumno.activo === false
-                              ? "Eliminar definitivamente del sistema"
-                              : "Dar de baja (enviar a Inactivos)"
-                          }
-                          className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                        >
-                          {alumno.activo === false ? <Trash2 className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                        </button>
+                        {alumno.activo !== false && (
+                          <button
+                            onClick={() => setAlumnoAEliminar(alumno)}
+                            aria-label={`Dar de baja a ${alumno.nombre}`}
+                            title="Dar de baja (enviar a Inactivos)"
+                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -550,7 +537,6 @@ export default function AlumnosPage() {
       {alumnoAEliminar && (
         <ModalConfirmarEliminar
           alumno={alumnoAEliminar}
-          esInactivo={alumnoAEliminar.activo === false}
           onCancel={() => setAlumnoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />
@@ -803,12 +789,10 @@ function ModalImportarAlumnosCsv({
 // ---------- Modal: confirmar baja ----------
 function ModalConfirmarEliminar({
   alumno,
-  esInactivo,
   onCancel,
   onConfirm,
 }: {
   alumno: Alumno;
-  esInactivo: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -821,22 +805,14 @@ function ModalConfirmarEliminar({
         onClick={(e) => e.stopPropagation()}
         className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div
-          className={`flex size-12 items-center justify-center rounded-2xl mb-4 ${
-            esInactivo
-              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-              : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-          }`}
-        >
-          {esInactivo ? <Trash2 className="w-6 h-6" /> : <UserX className="w-6 h-6" />}
+        <div className="flex size-12 items-center justify-center rounded-2xl mb-4 bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          <UserX className="w-6 h-6" />
         </div>
         <h2 className="text-lg font-black text-white">
-          {esInactivo ? `¿Eliminar definitivamente a ${alumno.nombre}?` : `¿Dar de baja a ${alumno.nombre}?`}
+          {`¿Dar de baja a ${alumno.nombre}?`}
         </h2>
         <p className="mt-1.5 text-sm text-slate-400">
-          {esInactivo
-            ? "Esta acción eliminará al alumno de forma permanente del sistema y no volverá a aparecer en Inactivos. Sus pagos históricos se conservarán intactos en Finanzas."
-            : "El socio pasará a la pestaña de Inactivos por si regresa en el futuro. Si más adelante querés eliminarlo de forma permanente, podrás hacerlo desde Inactivos."}
+          El socio pasará a la pestaña de Inactivos. Si vuelve, lo reactivás desde ahí y conserva su ficha, su historial y sus pagos.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -847,13 +823,9 @@ function ModalConfirmarEliminar({
           </button>
           <button
             onClick={onConfirm}
-            className={`h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 ${
-              esInactivo
-                ? "bg-rose-600 shadow-rose-600/20 hover:bg-rose-500"
-                : "bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
-            }`}
+            className="h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
           >
-            {esInactivo ? "Eliminar definitivamente" : "Dar de baja"}
+            Dar de baja
           </button>
         </div>
       </div>
