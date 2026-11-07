@@ -234,7 +234,7 @@ interface AppDataContextValue {
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
-  eliminarAlumno: (id: string, definitivo?: boolean) => void;
+  eliminarAlumno: (id: string) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
   blanquearClaveAlumno: (
     alumnoId: string
@@ -1063,11 +1063,9 @@ function useGymStore(): AppDataContextValue {
   );
 
   const eliminarAlumno = useCallback(
-    (id: string, definitivo?: boolean) => {
-      const alumnoTarget = alumnos.find((a) => a.id === id);
-      // Paso 2 (borrado definitivo) solo si se pide explicitamente o si el socio YA estaba dado de baja,
-      // igual que el backend. "INACTIVO" por deuda (+60 dias sin pagar) NO es una baja: no se borra.
-      const esEliminacionDefinitiva = definitivo === true || alumnoTarget?.activo === false;
+    (id: string) => {
+      // Baja lógica: el socio pasa a Inactivos y nunca se borra. Si vuelve, se reactiva
+      // con su ficha e historial (no se le cobra inscripción de nuevo).
       const respaldoAlumnos = alumnos;
       const respaldoPagos = pagos;
       const respaldoRutinas = rutinas;
@@ -1075,24 +1073,17 @@ function useGymStore(): AppDataContextValue {
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
 
-      if (esEliminacionDefinitiva) {
-        // Paso 2: Eliminación definitiva desde Inactivos (remueve de la lista)
-        setAlumnos((prev) => prev.filter((a) => a.id !== id));
-      } else {
-        // Paso 1: Baja administrativa (pasa a Inactivos)
-        setAlumnos(nuevosAlumnos);
-      }
+      setAlumnos(nuevosAlumnos);
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 
       const numId = parseNumericId(id);
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiDarDeBajaAlumno(numId, esEliminacionDefinitiva).catch((err: unknown) => {
+        apiDarDeBajaAlumno(numId).catch((err: unknown) => {
           setAlumnos(respaldoAlumnos);
           setPagos(respaldoPagos);
           setRutinas(respaldoRutinas);
-          reportarErrorSync(formatearMensajeErrorSync(
-            esEliminacionDefinitiva ? "eliminar definitivamente al socio" : "dar de baja al socio", err));
+          reportarErrorSync(formatearMensajeErrorSync("dar de baja al socio", err));
         });
       }
     },
