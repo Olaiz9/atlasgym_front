@@ -2,12 +2,13 @@ import { expect, test } from '@playwright/test'
 import { iniciarSesionTitular } from './soporte'
 
 // Videos de ejemplo de lib/mock-data.ts (links de YouTube). Con backend real no deben aparecer.
+// "Curl Martillo con Mancuernas" no está en la lista: ese título también es un GIF del catálogo
+// (lib/clasicos-curados.ts), que sí tiene que verse.
 const TITULOS_DE_EJEMPLO = [
   'Press de Banca con Mancuernas',
   'Sentadilla Libre Profunda y Biomecánica',
   'Remo con Barra Agarre Prono',
   'Press Militar con Barra de Pie (Overhead Press)',
-  'Curl Martillo con Mancuernas',
   'Plancha Abdominal y Tensión Global',
 ]
 
