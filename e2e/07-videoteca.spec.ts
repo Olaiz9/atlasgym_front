@@ -33,8 +33,11 @@ test('la videoteca no muestra los videos de ejemplo de YouTube, ni siquiera si q
   })
 
   await iniciarSesionTitular(page)
-  // Se espera la respuesta sea cual sea el código: aunque el backend falle, no deben aparecer los ejemplos
-  const videoteca = page.waitForResponse((r) => r.url().includes('/api/videoteca'))
+  // El front pide /backend-api/videoteca (el proxy le agrega /api). Se espera esa respuesta sea cual sea
+  // el código: aunque el backend falle, no deben aparecer los ejemplos.
+  const videoteca = page.waitForResponse(
+    (r) => new URL(r.url()).pathname.endsWith('/videoteca') && r.request().resourceType() === 'fetch'
+  )
   await page.goto('/videoteca')
   await videoteca
   await expect(page.getByRole('heading', { name: /Técnica por/ })).toBeVisible()
