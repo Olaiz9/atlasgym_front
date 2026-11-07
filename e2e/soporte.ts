@@ -77,6 +77,33 @@ export class ApiAtlas {
     return this.llamar('post', '/planes', { nombre, precio, diaPorSemana: diasPorSemana })
   }
 
+  buscarPlan(id: number) {
+    return this.llamar('get', `/planes/${id}`)
+  }
+
+  crearRutina(nombre: string) {
+    return this.llamar('post', '/rutinas', {
+      nombre,
+      descripcion: '',
+      objetivo: 'HIPERTROFIA',
+      esGenerica: true,
+      dias: [
+        {
+          nombre: 'Día 1',
+          orden: 1,
+          ejercicios: [
+            { nombreEjercicio: 'Sentadilla', serie: 3, repeticiones: '10', descansoSegundos: '90', orden: 1, tipoSerie: 'NORMAL' },
+          ],
+          videoIds: [],
+        },
+      ],
+    })
+  }
+
+  buscarRutina(id: number) {
+    return this.llamar('get', `/rutinas/${id}`)
+  }
+
   crearAlumno(nombre: string, dni: string, planId: number) {
     return this.llamar('post', '/alumnos', { nombre, dni, planId })
   }
