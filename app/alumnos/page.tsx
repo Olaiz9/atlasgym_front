@@ -401,6 +401,7 @@ export default function AlumnosPage() {
                               actualizarAlumno(alumno.id, { activo: true });
                               toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
                             }}
+                            aria-label={`Reactivar a ${alumno.nombre}`}
                             title={`Reactivar a ${alumno.nombre}`}
                             className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
                           >
