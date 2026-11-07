@@ -34,6 +34,7 @@ import {
   verificarClaveTerminal,
 } from '@/lib/totem-offline'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { useEscapeKey } from '@/lib/use-escape-key'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
 import {
   CheckCircle2,
@@ -87,6 +88,7 @@ export default function TotemPage() {
   const [pendientesOutbox, setPendientesOutbox] = useState(0)
   const [padronSincronizadoCount, setPadronSincronizadoCount] = useState(0)
   const [modalVinculacionAbierto, setModalVinculacionAbierto] = useState(false)
+  useEscapeKey(() => setModalVinculacionAbierto(false), modalVinculacionAbierto)
   const [claveTerminalInput, setClaveTerminalInput] = useState('')
   const [mensajeVinculacion, setMensajeVinculacion] = useState<string | null>(null)
   const [errorVinculacion, setErrorVinculacion] = useState<string | null>(null)

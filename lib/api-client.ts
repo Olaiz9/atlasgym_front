@@ -272,12 +272,9 @@ export async function apiActualizarAlumno(
   });
 }
 
-export async function apiDarDeBajaAlumno(
-  id: number,
-  definitivo: boolean = false
-): Promise<void> {
-  const query = definitivo ? "?definitivo=true" : "";
-  return apiFetch<void>(`/alumnos/${id}${query}`, {
+// Baja lógica: el backend nunca borra al socio (si vuelve, se reactiva con su historial).
+export async function apiDarDeBajaAlumno(id: number): Promise<void> {
+  return apiFetch<void>(`/alumnos/${id}`, {
     method: "DELETE",
   });
 }
