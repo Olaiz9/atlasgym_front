@@ -50,6 +50,8 @@ export interface BackendAlumnoDto {
   estadoCuenta?: EstadoCuenta | null;
   rutinaId?: number | null;
   rutinaNombre?: string | null;
+  /** Versión de la ficha: se manda de vuelta al editar para no pisar cambios del otro titular. */
+  version?: number | null;
 }
 
 export interface BackendPlanDto {
@@ -251,6 +253,7 @@ export function mapAlumnoDtoToFront(dto: BackendAlumnoDto): Alumno {
     activo: dto.activo ?? true,
     tieneRutina: dto.rutinaId != null,
     rutinaId: dto.rutinaId != null ? String(dto.rutinaId) : undefined,
+    version: dto.version ?? undefined,
   };
 }
 
@@ -263,6 +266,7 @@ export function mapAlumnoFrontToRequestDto(alumno: Partial<Alumno>) {
     planId: parseNumericId(alumno.planId),
     rutinaId: parseNumericId(alumno.rutinaId),
     activo: alumno.activo ?? true,
+    version: alumno.version ?? null,
   };
 }
 

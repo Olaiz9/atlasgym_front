@@ -218,7 +218,8 @@ export async function apiFetch<T>(
         throw innerErr;
       }
     }
-    throw new Error(mensajeError);
+    // El código HTTP viaja en el error para distinguir, por ejemplo, un 409 de ficha desactualizada
+    throw Object.assign(new Error(mensajeError), { status: response.status });
   }
 
   if (response.status === 204) {
@@ -251,6 +252,10 @@ export async function apiActualizarPerfil(
 }
 
 // ── Endpoints de Alumnos ────────────────────────────────────────────────────
+
+export async function apiGetAlumno(id: number): Promise<BackendAlumnoDto> {
+  return apiFetch<BackendAlumnoDto>(`/alumnos/${id}`);
+}
 
 export async function apiGetAlumnos(): Promise<BackendAlumnoDto[]> {
   return apiFetch<BackendAlumnoDto[]>("/alumnos");
