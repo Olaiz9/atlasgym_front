@@ -205,6 +205,9 @@ const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   rol: "ADMIN",
 };
 
+/** IDs de los videos de ejemplo de mock-data (YouTube); fuera del modo demo no se muestran. */
+const ID_VIDEOS_EJEMPLO = new Set(VIDEOS_TECNICA_MOCK.map((v) => v.id));
+
 export interface ErrorSincronizacion {
   id: string;
   mensaje: string;
@@ -365,25 +368,32 @@ function useGymStore(): AppDataContextValue {
   });
 
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(() => {
+    const demo = permiteDatosDeEjemplo();
+    // Los videos de ejemplo (YouTube) solo existen en modo demo: un navegador que
+    // los guardó en caché antes de este cambio no los vuelve a mostrar.
+    const sinEjemplos = (lista: VideoTecnica[]) =>
+      demo ? lista : lista.filter((v) => !ID_VIDEOS_EJEMPLO.has(v.id));
     if (typeof window !== "undefined") {
       const guardadoV2 = localStorage.getItem("atlas_videos_v2");
       if (guardadoV2) {
         try {
-          return JSON.parse(guardadoV2);
+          const parseado = JSON.parse(guardadoV2);
+          if (Array.isArray(parseado)) return sinEjemplos(parseado);
         } catch {}
       }
       const guardadoV1 = localStorage.getItem("atlas_videos_v1");
       if (guardadoV1) {
         try {
           const parseado = JSON.parse(guardadoV1) as VideoTecnica[];
-          const limpios = parseado.filter((v) => !v.id.startsWith("cat-") && !v.id.startsWith("ex-"));
-          const resultado = limpios.length > 0 ? limpios : VIDEOS_TECNICA_MOCK;
-          localStorage.setItem("atlas_videos_v2", JSON.stringify(resultado));
-          return resultado;
+          const limpios = sinEjemplos(
+            parseado.filter((v) => !v.id.startsWith("cat-") && !v.id.startsWith("ex-"))
+          );
+          localStorage.setItem("atlas_videos_v2", JSON.stringify(limpios));
+          return limpios;
         } catch {}
       }
     }
-    return VIDEOS_TECNICA_MOCK;
+    return demo ? VIDEOS_TECNICA_MOCK : [];
   });
 
   const [planes, setPlanes] = useState<Plan[]>(() => {
@@ -542,13 +552,9 @@ function useGymStore(): AppDataContextValue {
           }
         }
 
-        if (Array.isArray(videosDto) && videosDto.length > 0) {
-          const videosBack = videosDto.map(mapVideoDtoToFront);
-          const titulosBack = new Set(videosBack.map((v) => v.titulo.toLowerCase()));
-          const complementarios = VIDEOS_TECNICA_MOCK.filter(
-            (v) => !titulosBack.has(v.titulo.toLowerCase())
-          );
-          setVideosTecnica([...videosBack, ...complementarios]);
+        // La videoteca real es la del backend; no se le suman videos de ejemplo.
+        if (Array.isArray(videosDto)) {
+          setVideosTecnica(videosDto.map(mapVideoDtoToFront));
         }
 
         // 2. Verificar que exista un JWT válido antes de solicitar colecciones protegidas
