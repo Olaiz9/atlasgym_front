@@ -1,0 +1,50 @@
+import { expect, test } from '@playwright/test'
+import { iniciarSesionTitular } from './soporte'
+
+// Videos de ejemplo de lib/mock-data.ts (links de YouTube). Con backend real no deben aparecer.
+// "Curl Martillo con Mancuernas" no está en la lista: ese título también es un GIF del catálogo
+// (lib/clasicos-curados.ts), que sí tiene que verse.
+const TITULOS_DE_EJEMPLO = [
+  'Press de Banca con Mancuernas',
+  'Sentadilla Libre Profunda y Biomecánica',
+  'Remo con Barra Agarre Prono',
+  'Press Militar con Barra de Pie (Overhead Press)',
+  'Plancha Abdominal y Tensión Global',
+]
+
+test('la videoteca no muestra los videos de ejemplo de YouTube, ni siquiera si quedaron en caché', async ({
+  page,
+}) => {
+  // Simula un navegador que guardó los videos de ejemplo antes del arreglo
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'atlas_videos_v2',
+      JSON.stringify([
+        {
+          id: 'v1',
+          titulo: 'Press de Banca con Mancuernas',
+          grupoMuscular: 'Pecho',
+          duracion: '01:45',
+          nivel: 'Técnica estricta',
+          videoUrl: 'https://www.youtube.com/embed/VmB1G1K7v94',
+          consejosClave: [],
+        },
+      ])
+    )
+  })
+
+  await iniciarSesionTitular(page)
+  // El front pide /backend-api/videoteca (el proxy le agrega /api). Se espera esa respuesta sea cual sea
+  // el código: aunque el backend falle, no deben aparecer los ejemplos.
+  const videoteca = page.waitForResponse(
+    (r) => new URL(r.url()).pathname.endsWith('/videoteca') && r.request().resourceType() === 'fetch'
+  )
+  await page.goto('/videoteca')
+  await videoteca
+  await expect(page.getByRole('heading', { name: /Técnica por/ })).toBeVisible()
+
+  for (const titulo of TITULOS_DE_EJEMPLO) {
+    await expect(page.getByText(titulo, { exact: true })).toHaveCount(0)
+  }
+  await expect(page.locator('a[href*="youtube"], iframe[src*="youtube"], img[src*="ytimg"]')).toHaveCount(0)
+})
