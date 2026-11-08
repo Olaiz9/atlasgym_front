@@ -16,11 +16,11 @@ export function AccesoRestringido({
         <ShieldAlert className="size-10" />
       </div>
 
-      <span className="mb-2 rounded-full border border-rose-500/30 bg-rose-950/40 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-rose-400">
+      <span className="mb-2 rounded-full border border-rose-500/30 bg-rose-950/40 px-3.5 py-1 text-xs font-bold text-rose-400">
         Permisos Insuficientes
       </span>
 
-      <h1 className="text-2xl font-black text-white sm:text-3xl">
+      <h1 className="text-4xl font-black text-white sm:text-5xl">
         {titulo}
       </h1>
 
@@ -31,7 +31,7 @@ export function AccesoRestringido({
       <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95"
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 active:scale-95"
         >
           <ArrowLeft className="size-4" />
           Volver a mi panel

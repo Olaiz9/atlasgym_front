@@ -122,7 +122,7 @@ export default function RutinasPage() {
       {/* Header Admin */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          <h1 className="text-5xl font-black text-white md:text-6xl">
             Rutinas y entrenamientos
           </h1>
           <p className="text-sm text-slate-400 mt-1">
@@ -131,7 +131,7 @@ export default function RutinasPage() {
         </div>
         <button
           onClick={() => setModalNuevaAbierto(true)}
-          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95"
+          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Nueva rutina
@@ -233,7 +233,7 @@ export default function RutinasPage() {
                 {/* Días y Ejercicios (Desplegable) */}
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-bold text-slate-500">
                       Estructura por Días ({rutina.dias.length}):
                     </p>
                     {rutina.dias.length > 0 && (
@@ -310,7 +310,7 @@ export default function RutinasPage() {
 
                 {/* Alumnos asignados actualmente */}
                 <div className="mt-5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <p className="text-xs font-bold text-slate-500 mb-1.5">
                     Alumnos con esta rutina:
                   </p>
                   {alumnosConEstaRutina.length > 0 ? (
@@ -513,7 +513,7 @@ function ModalAsignarRutina({
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-black text-white">
+            <h2 className="text-2xl font-black text-white">
               {mostrarConfirmacionReemplazo ? 'Aviso de reasignación' : 'Asignar rutina'}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -852,7 +852,7 @@ function ModalNuevaRutina({
       >
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-xl font-black text-white">
+            <h2 className="text-3xl font-black text-white">
               {esEdicion ? 'Editar rutina' : 'Crear nueva rutina'}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -911,7 +911,7 @@ function ModalNuevaRutina({
           {/* Días y Ejercicios */}
           <div className="pt-3 border-t border-slate-800/80">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-xs font-bold text-slate-400">
                 Días de entrenamiento ({dias.length})
               </span>
               <button
@@ -1089,7 +1089,7 @@ function TarjetaDiaRutina({
 
               {/* Series */}
               <div className="flex items-center gap-1 bg-slate-800/60 px-2 py-1 rounded-lg border border-slate-700/80">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Series:</span>
+                <span className="text-xs font-bold text-slate-400">Series:</span>
                 <input
                   type="number"
                   min={1}
@@ -1103,7 +1103,7 @@ function TarjetaDiaRutina({
 
               {/* Reps */}
               <div className="flex items-center gap-1 bg-slate-800/60 px-2 py-1 rounded-lg border border-slate-700/80 flex-1 min-w-[110px]">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Reps:</span>
+                <span className="text-xs font-bold text-slate-400">Reps:</span>
                 <input
                   value={ej.repeticiones}
                   onChange={(e) => onActualizarEjercicio(ej.id, 'repeticiones', e.target.value)}
@@ -1414,7 +1414,7 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400">{video.grupoMuscular} · {video.nivel}</p>
+            <p className="text-xs font-bold text-blue-400">{video.grupoMuscular} · {video.nivel}</p>
             <h3 className="text-base font-bold text-white mt-0.5">{video.titulo}</h3>
           </div>
           <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-white transition-colors p-1 shrink-0">
@@ -1455,7 +1455,7 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
           )}
           {video.consejosClave && video.consejosClave.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Tips de técnica</p>
+              <p className="text-xs font-bold text-slate-500 mb-2">Tips de técnica</p>
               <ul className="space-y-1.5">
                 {video.consejosClave.map((tip) => (
                   <li key={tip.slice(0, 40)} className="flex items-start gap-2 text-xs text-slate-300">
@@ -1519,7 +1519,7 @@ function TablaSeries({
     <div className="space-y-2">
       <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 shadow-inner">
         {/* Header de tabla */}
-        <div className="grid grid-cols-[40px_1fr_75px_70px_46px] gap-2 px-3 py-2.5 bg-slate-900/90 border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
+        <div className="grid grid-cols-[40px_1fr_75px_70px_46px] gap-2 px-3 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs font-black text-slate-400">
           <span className="text-center">Serie</span>
           <span>Previa</span>
           <span className="text-center">KG</span>
@@ -1894,11 +1894,11 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
         <Dumbbell className="size-10" />
       </div>
 
-      <span className="mb-2 rounded-full border border-blue-500/30 bg-blue-950/40 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-400">
+      <span className="mb-2 rounded-full border border-blue-500/30 bg-blue-950/40 px-3.5 py-1 text-xs font-bold text-blue-400">
         Portal del alumno
       </span>
 
-      <h1 className="text-2xl font-black text-white sm:text-3xl">
+      <h1 className="text-4xl font-black text-white sm:text-5xl">
         Aún no tenés una rutina asignada
       </h1>
 
@@ -1911,7 +1911,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
           href={`${CONTACTO_ATLAS.whatsappUrl}?text=${mensajeWhatsapp}`}
           target="atlas_whatsapp_tab"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+          className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
         >
           Consultar a mi coach por WhatsApp
         </a>
@@ -2155,11 +2155,11 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
       {/* Cabecera Principal con Resumen de Rutina */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-bold uppercase tracking-widest text-blue-400 mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-400 mb-3">
             <Dumbbell className="size-3.5" />
             Plan activo
           </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
+          <h1 className="text-5xl font-black text-white md:text-7xl">
             {rutina.nombre}
           </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-2 max-w-2xl leading-relaxed">
@@ -2171,19 +2171,19 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
         {dia && (
           <div className="flex items-center gap-3 sm:gap-4 shrink-0 bg-slate-900/60 border border-slate-800 p-2 sm:p-2.5 rounded-2xl">
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Ejercicios</span>
+              <span className="text-xs font-bold text-slate-500 block">Ejercicios</span>
               <span className="text-lg font-black font-mono text-white">
                 <span className="text-blue-400">{completados}</span>/{total}
               </span>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Series</span>
+              <span className="text-xs font-bold text-slate-500 block">Series</span>
               <span className="text-lg font-black font-mono text-white">
                 <span className="text-emerald-400">{seriesTotales.completadas}</span>/{seriesTotales.total}
               </span>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Progreso</span>
+              <span className="text-xs font-bold text-slate-500 block">Progreso</span>
               <span className="text-lg font-black font-mono text-blue-400">
                 {total > 0 ? Math.round((completados / total) * 100) : 0}%
               </span>
@@ -2237,10 +2237,10 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             {/* Tarjeta de Resumen del Día Actual */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur-xl space-y-5">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400 block mb-1">
+                <span className="text-xs font-bold text-blue-400 block mb-1">
                   Sesión de hoy
                 </span>
-                <h2 className="text-2xl font-black text-white">{dia.nombre}</h2>
+                <h2 className="text-4xl font-black text-white">{dia.nombre}</h2>
                 <p className="text-xs text-slate-400 mt-1">
                   {dia.ejercicios.length} ejercicios diseñados para esta jornada.
                 </p>
@@ -2282,7 +2282,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl text-sm font-bold transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95 cursor-pointer shadow-lg ${
                   guardado
                     ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 shadow-emerald-950/20'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25 hover:-translate-y-0.5'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25'
                 }`}
               >
                 {guardado ? (
@@ -2307,7 +2307,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
           {/* Columna Derecha (Lista de Ejercicios Desplegables con Diseño Alpha / Hevy) */}
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-400">
                 Ejercicios ({dia.ejercicios.length})
               </h3>
               <span className="text-xs text-slate-500">
@@ -2360,7 +2360,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                  <p className="text-xs sm:text-xs font-bold text-slate-400 truncate">
                     {temporizador.segundosRestantes === 0
                       ? '¡Tiempo cumplido!'
                       : 'Descanso en progreso'}

@@ -173,7 +173,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         <div className="mx-auto size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
           <AlertCircle className="size-8" />
         </div>
-        <h1 className="text-2xl font-black text-white">Ficha de alumno no vinculada</h1>
+        <h1 className="text-4xl font-black text-white">Ficha de alumno no vinculada</h1>
         <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">
           Tu usuario ({usuario.email}) no tiene una ficha de socio activa asociada en el gimnasio.
           Por favor consultá en recepción para que vinculen tu cuenta.
@@ -205,10 +205,10 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
   return (
     <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
+        <p className="text-xs font-bold text-blue-500 mb-1">
           Portal del alumno
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+        <h1 className="text-5xl font-black text-white md:text-6xl">
           Mis cuotas y pagos
         </h1>
         <p className="text-sm text-slate-400 mt-1">
@@ -218,7 +218,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado de mi cuota</p>
+          <p className="text-xs font-bold text-slate-400">Estado de mi cuota</p>
           <div className="mt-3 flex items-center gap-2">
             <span
               className={`px-3 py-1 rounded-full text-xs font-black ${
@@ -240,7 +240,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         </div>
 
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mi plan actual</p>
+          <p className="text-xs font-bold text-slate-400">Mi plan actual</p>
           <p className="mt-2 text-2xl font-black text-white">{alumno?.plan || "Musculación"}</p>
           <p className="mt-1 text-sm font-bold text-blue-400">
             ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-500 font-medium">/ mes</span>
@@ -248,7 +248,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         </div>
 
         <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximo vencimiento</p>
+          <p className="text-xs font-bold text-slate-400">Próximo vencimiento</p>
           <p className="mt-2 text-2xl font-black text-white">
             {calcularVencimientoCuota(
               estadoCuenta,
@@ -268,7 +268,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             </span>
             {datosCobro.alias ? (
             <>
-            <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
+            <h2 className="text-3xl font-black">Transferencia bancaria o Mercado Pago</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
               Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
             </p>
@@ -294,7 +294,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
             </>
             ) : (
             <>
-            <h2 className="text-xl font-black">Abonás en recepción</h2>
+            <h2 className="text-3xl font-black">Abonás en recepción</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">
               Consultá en recepción o por WhatsApp los medios de pago disponibles (efectivo, transferencia o tarjeta).
             </p>
@@ -309,7 +309,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               )}`}
               target="atlas_whatsapp_tab"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95 text-sm"
             >
               <WhatsAppIcon className="w-5 h-5 fill-white" />
               Enviar comprobante por WhatsApp
@@ -321,7 +321,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
       <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden text-slate-100 shadow-sm backdrop-blur-md">
         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
           <div>
-            <h2 className="text-lg font-black text-white">Historial de mis cuotas</h2>
+            <h2 className="text-2xl font-black text-white">Historial de mis cuotas</h2>
             <p className="text-xs text-slate-400 mt-0.5">Registro histórico de tus pagos</p>
           </div>
         </div>
@@ -613,7 +613,7 @@ export default function FinanzasPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Finanzas y Caja</h1>
+            <h1 className="text-5xl font-black text-white md:text-6xl">Finanzas y Caja</h1>
             <p className="text-sm text-slate-400 mt-1">
               {verTodos
                 ? "Viendo el historial completo auditado de cobros, señas y anulaciones."
@@ -628,7 +628,7 @@ export default function FinanzasPage() {
                   ? `Alias vigente: ${datosCobro.alias}. Tocá para cambiarlo.`
                   : "Cargá el alias de transferencia que ven los alumnos"
               }
-              className={`flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95 ${
+              className={`flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border transition-[color,background-color,transform] duration-200 active:scale-95 ${
                 datosCobro.alias
                   ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700"
                   : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40"
@@ -640,14 +640,14 @@ export default function FinanzasPage() {
             <button
               onClick={exportarCSVFinanzas}
               title="Exportar planilla actual a archivo CSV / Excel"
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 active:scale-95"
             >
               <Download className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="truncate">Exportar CSV</span>
             </button>
             <button
               onClick={() => setModalAbierto(true)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:shadow-blue-500/30 active:scale-95"
             >
               <Plus className="w-5 h-5 shrink-0" />
               <span className="truncate">Registrar pago</span>
@@ -756,7 +756,7 @@ export default function FinanzasPage() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+            <p className="text-xs font-bold text-emerald-400">
               Efectivo en cajón
             </p>
             <p className="mt-1 text-xl font-black text-white">
@@ -764,7 +764,7 @@ export default function FinanzasPage() {
             </p>
           </div>
           <div className="rounded-xl bg-blue-500/10 border border-blue-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+            <p className="text-xs font-bold text-blue-400">
               Transferencias / MP
             </p>
             <p className="mt-1 text-xl font-black text-white">
@@ -772,7 +772,7 @@ export default function FinanzasPage() {
             </p>
           </div>
           <div className="rounded-xl bg-purple-500/10 border border-purple-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
+            <p className="text-xs font-bold text-purple-300">
               Tarjeta
             </p>
             <p className="mt-1 text-xl font-black text-white">
@@ -780,7 +780,7 @@ export default function FinanzasPage() {
             </p>
           </div>
           <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="text-xs font-bold text-slate-400">
               Total recaudado ({arqueoDelDia.cantidadCobros})
             </p>
             <p className="mt-1 text-xl font-black text-white">
@@ -1210,7 +1210,7 @@ function ModalAnularPago({
           <Ban className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Anular comprobante de caja</h2>
+          <h2 className="text-2xl font-black text-white">Anular comprobante de caja</h2>
           <p className="mt-1 text-sm text-slate-400">
             El comprobante de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
             <span className="font-semibold text-emerald-400">
@@ -1305,7 +1305,7 @@ function ModalCompletarSaldo({
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Completar saldo pendiente</h2>
+          <h2 className="text-2xl font-black text-white">Completar saldo pendiente</h2>
           <p className="mt-1 text-sm text-slate-400">
             <span className="font-semibold text-white">{nombreAlumno}</span> dejó una seña de{" "}
             <strong className="text-slate-200">${abonado.toLocaleString("es-AR")}</strong>. Resta cobrar{" "}
@@ -1395,7 +1395,7 @@ function ModalDatosCobro({
           <Landmark className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Datos de cobro por transferencia</h2>
+          <h2 className="text-2xl font-black text-white">Datos de cobro por transferencia</h2>
           <p className="mt-1 text-sm text-slate-400">
             Es lo que ven los alumnos en <strong className="text-slate-200">Mis cuotas</strong> y lo que se
             incluye en los recordatorios por WhatsApp. Si lo dejás vacío, se les indica abonar en recepción.
@@ -1733,7 +1733,7 @@ function ModalRegistrarPago({
         className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-black text-white">Registrar pago</h2>
+          <h2 className="text-3xl font-black text-white">Registrar pago</h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"

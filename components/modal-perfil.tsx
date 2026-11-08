@@ -254,7 +254,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
           {esAlumno && alumnoDatos && (
             <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
+                <span className="font-bold text-slate-400 flex items-center gap-1.5 text-xs">
                   <CreditCard className="size-3.5 text-blue-400" />
                   Membresía y plan
                 </span>
@@ -286,7 +286,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
           {/* Formulario 1: Editar Celular (WhatsApp) */}
           <form onSubmit={handleGuardarCelular} className="space-y-3">
             <div className="flex items-center justify-between">
-              <label htmlFor="perfil-celular" className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
+              <label htmlFor="perfil-celular" className="font-bold text-slate-400 flex items-center gap-1.5 text-xs">
                 <Phone className="size-3.5 text-blue-400" />
                 Celular / WhatsApp
               </label>
@@ -328,7 +328,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
           {/* Formulario 2: Cambiar Contraseña */}
           <form onSubmit={handleGuardarPassword} className="space-y-3 pt-4 border-t border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
+              <span className="font-bold text-slate-400 flex items-center gap-1.5 text-xs">
                 <Lock className="size-3.5 text-blue-400" />
                 Seguridad y contraseña
               </span>

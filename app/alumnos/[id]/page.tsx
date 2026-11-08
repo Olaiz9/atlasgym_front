@@ -132,7 +132,7 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-400 border-b border-slate-800 text-xs font-bold uppercase tracking-wider">
+            <tr className="text-left text-slate-400 border-b border-slate-800 text-xs font-bold">
               <th className="px-6 py-3.5">Plan / Período</th>
               <th className="px-6 py-3.5">Monto</th>
               <th className="px-6 py-3.5">Fecha</th>
@@ -256,7 +256,7 @@ function HeaderAlumno({
             {iniciales}
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-white">{alumno.nombre}</h1>
+            <h1 className="text-4xl font-black text-white">{alumno.nombre}</h1>
             <p className="text-sm text-slate-400 font-medium">{alumno.plan || "Sin plan asignado"}</p>
           </div>
         </div>

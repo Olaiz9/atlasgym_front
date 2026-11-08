@@ -200,7 +200,7 @@ export default function AlumnosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Alumnos</h1>
+          <h1 className="text-5xl font-black text-white md:text-6xl">Alumnos</h1>
           <p className="text-sm text-slate-400 mt-1">
             El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
           </p>
@@ -209,7 +209,7 @@ export default function AlumnosPage() {
           <button
             onClick={() => setModalImportarAbierto(true)}
             title="Importar padrón masivo desde Excel / CSV"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 active:scale-95"
           >
             <Upload className="w-4 h-4 text-blue-400" />
             Importar CSV
@@ -217,14 +217,14 @@ export default function AlumnosPage() {
           <button
             onClick={exportarCSVAlumnos}
             title="Exportar listado a archivo CSV / Excel"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 active:scale-95"
           >
             <Download className="w-4 h-4 text-slate-400" />
             Exportar CSV
           </button>
           <button
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Agregar alumno
@@ -637,7 +637,7 @@ function ModalImportarAlumnosCsv({
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">
+              <h2 className="text-3xl font-black text-white">
                 Importar padrón de socios (CSV / Excel)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -830,7 +830,7 @@ function ModalConfirmarEliminar({
         >
           {esInactivo ? <Trash2 className="w-6 h-6" /> : <UserX className="w-6 h-6" />}
         </div>
-        <h2 className="text-lg font-black text-white">
+        <h2 className="text-2xl font-black text-white">
           {esInactivo ? `¿Eliminar definitivamente a ${alumno.nombre}?` : `¿Dar de baja a ${alumno.nombre}?`}
         </h2>
         <p className="mt-1.5 text-sm text-slate-400">

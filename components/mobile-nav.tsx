@@ -53,7 +53,7 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Navegación móvil"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-[72px] items-center justify-around border-t border-slate-800/80 bg-slate-950/95 px-1 pb-1 backdrop-blur-lg md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-[72px] items-center justify-around border-t border-slate-800/80 bg-slate-950 px-1 pb-1 md:hidden"
       >
         {navItems.map(({ label, href, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -65,12 +65,12 @@ export function MobileNav() {
               aria-label={esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label}
               className={`flex flex-col items-center justify-center gap-1 rounded-xl px-1 sm:px-1.5 py-1 transition-colors min-w-0 ${
                 active
-                  ? 'text-blue-500 font-bold'
+                  ? 'text-white font-bold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="relative">
-                <Icon className={`size-[22px] ${active ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                <span className={`flex h-7 w-11 items-center justify-center rounded-full transition-colors ${active ? 'bg-blue-600' : ''}`}><Icon className={`size-[20px] ${active ? 'stroke-[2.5]' : 'stroke-2'}`} /></span>
                 {esAvisos && cantNoLeidos > 0 && (
                   <span className="absolute -top-1 -right-1.5 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white border border-slate-950">
                     {cantNoLeidos}

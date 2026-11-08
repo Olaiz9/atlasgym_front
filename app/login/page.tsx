@@ -141,7 +141,7 @@ export default function LoginPage() {
         {/* Tarjeta Principal de Login */}
         <div className="rounded-3xl border border-slate-800/90 bg-slate-900/80 p-7 sm:p-9 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
           <div className="mb-6">
-            <h1 className="text-xl font-bold text-white tracking-tight">Ingresá a tu cuenta</h1>
+            <h1 className="text-4xl font-bold text-white">Ingresá a tu cuenta</h1>
             <p className="mt-1 text-xs text-slate-400 leading-relaxed">
               Accedé a tus rutinas personalizadas, estado de cuotas o gestión administrativa.
             </p>
@@ -227,7 +227,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={cargando}
-              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
               {cargando ? (
                 <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -306,7 +306,7 @@ export default function LoginPage() {
             </button>
 
             {/* Cabecera del Tutorial */}
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
               <Smartphone className="size-4" />
               <span>Acceso rápido al móvil</span>
             </div>

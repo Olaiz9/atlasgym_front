@@ -102,7 +102,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
               <Bell className="size-5" />
             </div>
             <div>
-              <h2 id="modal-nuevo-aviso-title" className="text-xl font-black text-white">
+              <h2 id="modal-nuevo-aviso-title" className="text-3xl font-black text-white">
                 Nuevo comunicado o aviso
               </h2>
               <p className="text-xs font-medium text-slate-400">
@@ -124,7 +124,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           {/* Título */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="aviso-titulo" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label htmlFor="aviso-titulo" className="text-xs font-bold text-slate-400">
               Título del aviso
             </label>
             <input
@@ -146,7 +146,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
 
           {/* Categoría */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="aviso-categoria" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label htmlFor="aviso-categoria" className="text-xs font-bold text-slate-400">
               Categoría
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -175,7 +175,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
 
           {/* Destinatario: General vs Particular */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold text-slate-400">
               Destinatario
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -234,7 +234,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
 
           {/* Mensaje */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="aviso-mensaje" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label htmlFor="aviso-mensaje" className="text-xs font-bold text-slate-400">
               Contenido del aviso
             </label>
             <textarea

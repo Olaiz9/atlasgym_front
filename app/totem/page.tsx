@@ -694,8 +694,8 @@ export default function TotemPage() {
             <div className="size-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 shadow-inner">
               <ShieldCheck className="size-6" />
             </div>
-            <h1 className="text-xl font-black text-white tracking-tight">Terminal de Recepción</h1>
-            <span className="mt-1 text-[11px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
+            <h1 className="text-4xl font-black text-white">Terminal de Recepción</h1>
+            <span className="mt-1 text-xs font-bold bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
               Modo Kiosco Protegido
             </span>
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
@@ -776,7 +776,7 @@ export default function TotemPage() {
             <button
               type="button"
               onClick={manejarLimpiarPin}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
             >
               Borrar
             </button>
@@ -824,7 +824,7 @@ export default function TotemPage() {
             className="h-7 sm:h-9 w-auto object-contain drop-shadow"
             priority
           />
-          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
+          <span className="text-xs font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
             Terminal de asistencias
           </span>
         </div>
@@ -890,7 +890,7 @@ export default function TotemPage() {
         {estado === 'IDLE' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-2 sm:mb-3">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">Marcá tu ingreso</h1>
+              <h1 className="text-4xl sm:text-2xl md:text-3xl font-black text-white">Marcá tu ingreso</h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
             </div>
 
@@ -997,18 +997,18 @@ export default function TotemPage() {
               <CheckCircle2 className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Acceso autorizado</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
+            <p className="text-xs font-black text-emerald-400">Acceso autorizado</p>
+            <h2 className="text-4xl sm:text-5xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
             <p className="text-xs sm:text-sm font-semibold text-emerald-300/90 mt-1">Cuota al día · ¡Que tengas un excelente entrenamiento!</p>
 
             <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-emerald-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
               <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Plan contratado</p>
+                <p className="text-xs font-bold text-slate-500">Plan contratado</p>
                 <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
               </div>
               <div className="h-7 w-px bg-slate-800" />
               <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Estado de cuenta</p>
+                <p className="text-xs font-bold text-slate-500">Estado de cuenta</p>
                 <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   Al día
                 </span>
@@ -1044,14 +1044,14 @@ export default function TotemPage() {
               {resultado.esDuplicado ? <Check className="size-8 sm:size-10" /> : <AlertTriangle className="size-8 sm:size-10" />}
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">
+            <p className="text-xs font-black text-amber-400">
               {resultado.esDuplicado
                 ? 'Ingreso ya registrado'
                 : resultado.estadoCuenta === 'PENDIENTE'
                 ? 'Atención · Cuota pendiente'
                 : 'Atención · Cuota vencida'}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
+            <h2 className="text-4xl sm:text-5xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
             <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
               {resultado.motivo ||
                 (resultado.estadoCuenta === 'PENDIENTE'
@@ -1061,12 +1061,12 @@ export default function TotemPage() {
 
             <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-amber-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
               <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Plan</p>
+                <p className="text-xs font-bold text-slate-500">Plan</p>
                 <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
               </div>
               <div className="h-7 w-px bg-slate-800" />
               <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Condición</p>
+                <p className="text-xs font-bold text-slate-500">Condición</p>
                 <span
                   className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
                     resultado.esDuplicado && resultado.estadoCuenta === 'AL_DIA'
@@ -1114,8 +1114,8 @@ export default function TotemPage() {
               <XCircle className="size-8 sm:size-10" />
             </div>
 
-            <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso no registrado</p>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+            <p className="text-xs font-black text-rose-400">Acceso no registrado</p>
+            <h2 className="text-3xl sm:text-2xl font-black text-white mt-1">
               {resultado?.tituloError || 'No identificamos tu DNI'}
             </h2>
             <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1 max-w-sm mx-auto">
@@ -1195,7 +1195,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={desvincularTerminal}
-                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
               >
                 Bloquear terminal ahora
               </button>

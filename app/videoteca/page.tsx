@@ -296,11 +296,11 @@ export default function VideotecaPage() {
       {/* Header superior */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-400 mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
             <Video className="size-4" />
             <span>Videoteca biomecánica ATLAS</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          <h1 className="text-5xl font-black text-white md:text-6xl">
             Técnica por <span className="text-blue-500">grupo muscular</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
@@ -313,7 +313,7 @@ export default function VideotecaPage() {
         {esAdmin && (
           <Button
             onClick={() => setModalNuevoAbierto(true)}
-            className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-200 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer"
+            className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-200 hover:bg-blue-500 active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus className="mr-2 size-4" />
             Nuevo video coach
@@ -450,7 +450,7 @@ export default function VideotecaPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-black text-white">{info.titulo}</h2>
+                        <h2 className="text-4xl font-black text-white">{info.titulo}</h2>
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-950/80 border border-slate-800 text-slate-300">
                           {totalDisponibles} ejercicios
                         </span>
@@ -472,7 +472,7 @@ export default function VideotecaPage() {
                 {/* Videos Exclusivos de Coaching ATLAS Gym (si existen) */}
                 {videosGym.length > 0 && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
                       <Sparkles className="size-3.5" />
                       <span>Tutoriales exclusivos de los coaches</span>
                     </div>
@@ -524,7 +524,7 @@ export default function VideotecaPage() {
                       type="button"
                       disabled={estaCargando}
                       onClick={() => cargarMasDeGrupo(grupo)}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-slate-200 font-bold text-xs md:text-sm shadow-md transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 disabled:opacity-50"
+                      className="px-6 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-slate-200 font-bold text-xs md:text-sm shadow-md transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {estaCargando ? (
                         <>
@@ -612,7 +612,7 @@ export default function VideotecaPage() {
             <div className="p-6 overflow-y-auto space-y-4 bg-slate-900">
               {videoSeleccionado.descripcion && (
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <h4 className="text-xs font-bold text-slate-400 mb-1.5">
                     Descripción del ejercicio
                   </h4>
                   <p className="text-sm text-slate-300 leading-relaxed">{videoSeleccionado.descripcion}</p>
@@ -622,7 +622,7 @@ export default function VideotecaPage() {
               {/* Músculos objetivo */}
               {(videoSeleccionado as any).musculosPrincipales && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Objetivo:</span>
+                  <span className="text-xs font-bold text-slate-400">Objetivo:</span>
                   {(videoSeleccionado as any).musculosPrincipales.map((m: string) => (
                     <span key={m} className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold">
                       {m}
@@ -639,7 +639,7 @@ export default function VideotecaPage() {
               {/* Consejos Clave */}
               {videoSeleccionado.consejosClave && videoSeleccionado.consejosClave.length > 0 && (
                 <div className="rounded-2xl border border-blue-500/20 bg-blue-950/20 p-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-3 flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-blue-400 mb-3 flex items-center gap-1.5">
                     <CheckCircle2 className="size-4 text-blue-400" />
                     Puntos clave para una ejecución perfecta
                   </h4>
@@ -657,7 +657,7 @@ export default function VideotecaPage() {
               {/* Pasos de ejecución */}
               {(videoSeleccionado as any).instruccionesPasoAPaso && (videoSeleccionado as any).instruccionesPasoAPaso.length > 0 && (
                 <div className="space-y-2.5 pt-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <h4 className="text-xs font-bold text-slate-400">
                     Instrucciones paso a paso
                   </h4>
                   <ol className="space-y-2">
@@ -740,7 +740,7 @@ function TarjetaEjercicio({
     <div
       onMouseEnter={() => setHoverActivo(true)}
       onMouseLeave={() => setHoverActivo(false)}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-xl ${
         esTutorialCoach
           ? 'border-blue-500/40 bg-gradient-to-b from-blue-950/30 to-slate-900/60 hover:shadow-blue-900/30'
           : 'border-slate-800 bg-slate-900/60 hover:border-blue-500/40 hover:shadow-blue-950/40'
@@ -757,7 +757,7 @@ function TarjetaEjercicio({
             {/* Poster liviano por defecto para apertura en 0ms */}
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
               <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:12px_12px]" />
-              <div className="size-12 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-2 shadow-inner group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <div className="size-12 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-2 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                 <Play className="size-5 fill-current ml-0.5" />
               </div>
               <span className="text-[11px] font-bold text-slate-300 group-hover:text-blue-400 transition-colors">
@@ -782,7 +782,7 @@ function TarjetaEjercicio({
           /* Video de YouTube de coach */
           <>
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-            <div className="relative size-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-500">
+            <div className="relative size-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all duration-300 group-hover:bg-blue-500">
               <Play className="size-5 fill-white ml-0.5" />
             </div>
           </>
@@ -925,7 +925,7 @@ function ModalNuevoVideo({
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 id="modal-video-title" className="text-2xl font-black text-white">
+            <h2 id="modal-video-title" className="text-4xl font-black text-white">
               Nuevo Video de Técnica
             </h2>
             <p className="mt-1 text-sm text-slate-400">

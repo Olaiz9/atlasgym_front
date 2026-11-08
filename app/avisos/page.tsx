@@ -50,12 +50,12 @@ function AvisoCardAlumno({
   )}`
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:shadow-md hover:border-slate-700">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
           {!esLeido && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-black text-white">
               Nuevo
             </span>
           )}
@@ -117,7 +117,7 @@ function AvisoCardAdmin({
   onEliminar: () => void
 }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:shadow-md hover:border-slate-700">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
@@ -386,11 +386,11 @@ export default function AvisosPage() {
       <header className="border-b border-slate-800/80 bg-slate-950 px-5 py-8 md:px-10">
         <div className="mx-auto flex max-w-5xl flex-col justify-between gap-5 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
               <Bell className="size-4" />
               {esAdmin ? 'Centro de comunicación' : 'Avisos y comunicados'}
             </div>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+            <h1 className="mt-1 text-5xl font-black text-white md:text-6xl">
               {esAdmin ? 'Avisos del gimnasio' : 'Novedades y notificaciones'}
             </h1>
             <p className="mt-1 text-sm text-slate-400">

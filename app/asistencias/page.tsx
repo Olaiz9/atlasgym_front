@@ -384,11 +384,11 @@ export default function AsistenciasPage() {
       {/* ENCABEZADO */}
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end mb-8">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
             <Activity className="size-4" />
             Monitoreo en tiempo real
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          <h1 className="text-5xl font-black text-white md:text-6xl">
             Control de asistencias y aforo
           </h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -427,7 +427,7 @@ export default function AsistenciasPage() {
         {/* KPI 1: Aforo en Sala Ahora */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">En sala ahora</span>
+            <span className="text-xs font-bold text-slate-400">En sala ahora</span>
             <span className="flex size-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
@@ -445,7 +445,7 @@ export default function AsistenciasPage() {
         {/* KPI 2: Total Ingresos Hoy */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ingresos hoy</span>
+            <span className="text-xs font-bold text-slate-400">Ingresos hoy</span>
             <Users className="size-4 text-blue-400" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
@@ -458,7 +458,7 @@ export default function AsistenciasPage() {
         {/* KPI 3: Tasa al Día */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuotas al día</span>
+            <span className="text-xs font-bold text-slate-400">Cuotas al día</span>
             <CheckCircle2 className="size-4 text-emerald-400" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
@@ -471,7 +471,7 @@ export default function AsistenciasPage() {
         {/* KPI 4: Horario Pico */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Horario pico</span>
+            <span className="text-xs font-bold text-slate-400">Horario pico</span>
             <Flame className="size-4 text-amber-500" />
           </div>
           <div className="mt-3">
@@ -553,7 +553,7 @@ export default function AsistenciasPage() {
 
           {/* Selector de días anteriores (hasta 1 semana atrás) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-thin">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
+            <span className="text-xs font-bold text-slate-500 mr-1 shrink-0 flex items-center gap-1">
               <Calendar className="size-3.5" /> Día:
             </span>
             {ultimos7Dias.map((opc) => {
@@ -962,7 +962,7 @@ export default function AsistenciasPage() {
         {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <thead className="border-b border-slate-800 text-xs font-bold text-slate-400">
               <tr>
                 <th className="py-3 px-3">Fecha y hora</th>
                 <th className="py-3 px-3">Alumno</th>

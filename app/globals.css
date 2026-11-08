@@ -4,7 +4,47 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Estilo "Cobranza": azul marino de ATLAS, Big Shoulders para títulos y montos,
+ * Public Sans para el texto. Las escalas slate y blue de Tailwind se redefinen
+ * acá para que todas las pantallas tomen la paleta sin tocar su lógica.
+ */
+@theme {
+  --color-slate-50: #f4f7fc;
+  --color-slate-100: #eaf0fa;
+  --color-slate-200: #d5deee;
+  --color-slate-300: #c9d4ea;
+  --color-slate-400: #a8b8d4;
+  --color-slate-500: #8193b5;
+  --color-slate-600: #5f7ab0;
+  --color-slate-700: #3c5a94;
+  --color-slate-800: #263e6e;
+  --color-slate-900: #1c3260;
+  --color-slate-950: #10203f;
+
+  --color-blue-50: #eef3ff;
+  --color-blue-100: #dce6ff;
+  --color-blue-200: #c9d8ff;
+  --color-blue-300: #b3c8ff;
+  --color-blue-400: #9db9ff;
+  --color-blue-500: #4f78e6;
+  --color-blue-600: #2f5bea;
+  --color-blue-700: #2449c4;
+  --color-blue-800: #1d3a9a;
+  --color-blue-900: #182f78;
+  --color-blue-950: #13234a;
+
+  --color-rose-300: #ffc2ba;
+  --color-rose-400: #ff9f95;
+  --color-amber-300: #ffdc9a;
+  --color-amber-400: #ffcf7a;
+  --color-emerald-300: #b8f2d1;
+  --color-emerald-400: #9bebbe;
+}
+
 @theme inline {
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-big-shoulders), var(--font-public-sans), ui-sans-serif, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -23,51 +63,59 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 }
 
 :root {
   color-scheme: dark;
-  --background: oklch(0.19 0.04 255);
-  --foreground: oklch(0.96 0.01 250);
-  --card: oklch(0.97 0.008 250);
-  --card-foreground: oklch(0.18 0.025 250);
-  --popover: oklch(0.97 0.008 250);
-  --popover-foreground: oklch(0.18 0.025 250);
-  --primary: oklch(0.46 0.2 258);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.27 0.045 255);
-  --secondary-foreground: oklch(0.96 0.01 250);
-  --muted: oklch(0.25 0.04 255);
-  --muted-foreground: oklch(0.72 0.025 250);
-  --accent: oklch(0.3 0.07 258);
-  --accent-foreground: oklch(0.96 0.01 250);
-  --destructive: oklch(0.58 0.18 25);
-  --border: oklch(0.34 0.04 255);
-  --input: oklch(0.8 0.015 250);
-  --ring: oklch(0.62 0.16 258);
+  --background: #14264a;
+  --foreground: #eaf0fa;
+  --card: #1c3260;
+  --card-foreground: #eaf0fa;
+  --popover: #1c3260;
+  --popover-foreground: #eaf0fa;
+  --primary: #2f5bea;
+  --primary-foreground: #ffffff;
+  --secondary: #1c3260;
+  --secondary-foreground: #eaf0fa;
+  --muted: #1c3260;
+  --muted-foreground: #a8b8d4;
+  --accent: #263e6e;
+  --accent-foreground: #eaf0fa;
+  --destructive: #e5534b;
+  --border: #263e6e;
+  --input: #3c5a94;
+  --ring: #9db9ff;
 }
 
-* { @apply border-border outline-ring/50; }
-html { background: var(--background); }
-body { @apply bg-background text-foreground; }
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { background: var(--background); }
+  body { @apply bg-background text-foreground font-sans; }
+
+  /* Títulos y cifras destacadas en Big Shoulders */
+  h1,
+  h2,
+  .font-black:not(.text-xs):not(.text-sm):not(.text-\[10px\]):not(.text-\[11px\]):not(.text-\[9px\]) {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+  h1 { line-height: 0.95; }
+
+  :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+}
+
 .bg-card { color: var(--card-foreground); }
 .bg-popover { color: var(--popover-foreground); }
 button, input { font: inherit; }
 
-/* Scrollbars discretos y modernos para evitar barras toscas con zoom */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+/* Scrollbars discretos */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(168, 184, 212, 0.25); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(168, 184, 212, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

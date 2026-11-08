@@ -138,11 +138,11 @@ export default function PlanesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500 mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-500 mb-1">
             <Package className="size-4" />
             <span>Administración de membresías</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+          <h1 className="text-5xl font-black text-white md:text-6xl">
             Planes y <span className="text-blue-500">tarifas</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-2xl">
@@ -153,7 +153,7 @@ export default function PlanesPage() {
         {usuarioActual?.rol === 'ADMIN' && (
           <Button
             onClick={abrirCrear}
-            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95 shrink-0"
+            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
             Nuevo plan
@@ -168,7 +168,7 @@ export default function PlanesPage() {
             key={plan.id}
             className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[transform,box-shadow,border-color] duration-300 ${
               plan.activo
-                ? 'border-slate-800 bg-slate-900/50 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/30'
+                ? 'border-slate-800 bg-slate-900/50 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-950/30'
                 : 'border-slate-800/40 bg-slate-950/40 opacity-70'
             }`}
           >
@@ -264,7 +264,7 @@ export default function PlanesPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 id="modal-plan-title" className="text-2xl font-black text-white">
+                <h2 id="modal-plan-title" className="text-4xl font-black text-white">
                   {form.planAEditar ? 'Modificar plan' : 'Nuevo plan de gimnasio'}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">

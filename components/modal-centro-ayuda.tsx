@@ -52,7 +52,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
                 <Mail className="size-5" />
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Correo electrónico</span>
+                <span className="text-xs font-semibold text-slate-400">Correo electrónico</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
                   {CONTACTO_ATLAS.email}
                 </p>
@@ -72,7 +72,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
                 <Phone className="size-5" />
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teléfono y WhatsApp</span>
+                <span className="text-xs font-semibold text-slate-400">Teléfono y WhatsApp</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">
                   {CONTACTO_ATLAS.telefono}
                 </p>
@@ -96,7 +96,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
                 </svg>
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Instagram</span>
+                <span className="text-xs font-semibold text-slate-400">Instagram</span>
                 <p className="text-sm font-bold text-slate-100 group-hover:text-pink-400 transition-colors">
                   {CONTACTO_ATLAS.instagram}
                 </p>

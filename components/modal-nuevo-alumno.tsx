@@ -65,7 +65,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-white">Nuevo alumno</h2>
+            <h2 id="modal-nuevo-alumno-title" className="text-4xl font-black text-white">Nuevo alumno</h2>
             <p className="mt-1 text-xs text-slate-400">Agregá los datos personales para crear su perfil y usuario automático en ATLAS.</p>
           </div>
           <button onClick={handleCerrar} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
@@ -187,7 +187,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
 
           <div className="mt-4 flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
-            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
           </div>
         </form>
       </div>

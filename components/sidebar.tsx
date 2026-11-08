@@ -164,9 +164,9 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         </div>
 
         <div className="flex flex-1 flex-col justify-between px-3.5 py-6 overflow-y-auto overflow-x-hidden min-h-0">
-          <nav className="flex flex-col gap-2.5 pb-5 shrink-0" aria-label="Navegación principal">
+          <nav className="flex flex-col gap-1 pb-5 shrink-0" aria-label="Navegación principal">
             {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-1 px-3.5 text-sm font-semibold text-slate-400">
                 {esAlumno ? 'Portal del alumno' : 'Panel principal'}
               </p>
             )}
@@ -178,12 +178,12 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                   key={label}
                   href={href}
                   title={collapsed ? (esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label) : undefined}
-                  className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
+                  className={`flex items-center gap-3.5 min-h-11 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold transition-[color,background-color] duration-200 ${
                     collapsed ? 'justify-center' : ''
                   } ${
                     active
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
-                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1'
+                      ? 'bg-blue-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-900 hover:text-white'
                   }`}
                 >
                   <div className="relative">
@@ -211,7 +211,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             <button
               onClick={() => setMostrarAyuda(true)}
               title={collapsed ? (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda') : undefined}
-              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
               {!collapsed && (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda')}
