@@ -16,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const {
     usuarioActual,
     ultimoErrorSync,
+    datosListos,
     limpiarErrorSync,
     guardarPerfilUsuario,
     cerrarSesion,
@@ -58,6 +59,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30">
         {children}
+      </div>
+    )
+  }
+
+  if (montado && usuarioActual && !datosListos) {
+    // Los datos no se guardan en el teléfono: hasta que responde el servidor no hay nada que mostrar
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3" role="status">
+          <div className="size-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500" />
+          <p className="text-xs text-slate-400 font-medium">Cargando datos del gimnasio...</p>
+        </div>
       </div>
     )
   }

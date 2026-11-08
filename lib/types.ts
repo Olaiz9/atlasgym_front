@@ -37,6 +37,8 @@ export interface Alumno {
   ultimaAsistencia?: string; // "YYYY-MM-DD" — null/undefined = todavía no registró asistencia
   tieneRutina?: boolean;
   rutinaId?: string;
+  /** Versión de la ficha en el servidor (la usa la edición para detectar cambios del otro titular). */
+  version?: number;
 }
 
 export type TipoSerieEjercicio = 'NORMAL' | 'BI_SERIE' | 'DROP_SET'
