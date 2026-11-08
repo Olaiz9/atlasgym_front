@@ -18,6 +18,7 @@ import {
   API_BASE_URL,
   apiCheckInTotem,
   apiSyncTotemOutbox,
+  apiTotemLatido,
   esErrorDeRed,
   esFallbackOfflineDemoPermitido,
   getStoredTotemSecret,
@@ -34,6 +35,7 @@ import {
   verificarClaveTerminal,
 } from '@/lib/totem-offline'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { INTERVALO_LATIDO_MS } from '@/lib/totem-estado'
 import { useEscapeKey } from '@/lib/use-escape-key'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
 import {
@@ -154,6 +156,22 @@ export default function TotemPage() {
       sincronizandoOutboxRef.current = false
     }
   }, [])
+
+  // Señal de vida: si deja de llegar en horario de apertura, los titulares ven "El tótem no tiene señal"
+  const enviarLatido = useCallback(async () => {
+    if (!isApiRuntimeEnabled() || !getStoredTotemSecret()) return
+    try {
+      await apiTotemLatido(leerOutboxTotem().length)
+    } catch {
+      // Sin conexión: justamente eso es lo que el servidor va a notar
+    }
+  }, [])
+
+  useEffect(() => {
+    enviarLatido()
+    const intvLatido = setInterval(enviarLatido, INTERVALO_LATIDO_MS)
+    return () => clearInterval(intvLatido)
+  }, [enviarLatido])
 
   useEffect(() => {
     const cacheExistente = leerPadronCacheTotem()

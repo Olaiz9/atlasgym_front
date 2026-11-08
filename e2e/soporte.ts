@@ -73,6 +73,10 @@ export class ApiAtlas {
     return res.status() === 204 ? null : res.json()
   }
 
+  estadoTotem() {
+    return this.llamar('get', '/asistencias/totem/estado')
+  }
+
   crearPlan(nombre: string, precio: number, diasPorSemana = '3') {
     return this.llamar('post', '/planes', { nombre, precio, diaPorSemana: diasPorSemana })
   }

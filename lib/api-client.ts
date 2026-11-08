@@ -17,6 +17,7 @@ import {
 } from "./api-mappers";
 import type { SocioImportadoDto } from "./importacion-revision";
 import type { EstadoCuenta } from "./types";
+import type { TotemEstadoDto } from "./totem-estado";
 
 /**
  * Normaliza la URL base de la API para evitar errores de configuración:
@@ -621,6 +622,25 @@ export async function apiSyncTotemOutbox(
     headers,
     body: JSON.stringify({ eventos }),
   });
+}
+
+/** Señal de vida de la tablet del Tótem (una por minuto), con los ingresos que tiene sin subir. */
+export async function apiTotemLatido(pendientesOffline: number): Promise<void> {
+  const headers: Record<string, string> = {};
+  const secret = getStoredTotemSecret();
+  if (secret) {
+    headers["X-Totem-Secret"] = secret;
+  }
+  return apiFetch<void>("/asistencias/totem/latido", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ pendientesOffline }),
+  });
+}
+
+/** Si la tablet del Tótem está dando señales (solo titulares). */
+export async function apiGetTotemEstado(): Promise<TotemEstadoDto> {
+  return apiFetch<TotemEstadoDto>("/asistencias/totem/estado");
 }
 
 export async function apiEliminarAsistencia(id: number): Promise<void> {

@@ -7,6 +7,7 @@ import { MobileNav } from '@/components/mobile-nav'
 import { useAppData } from '@/lib/store'
 import { puedeAccederRuta } from '@/lib/auth-utils'
 import { useToast } from '@/components/ui/toast'
+import { AvisoTotemSinSenal } from '@/components/aviso-totem'
 import { KeyRound, ShieldAlert } from 'lucide-react'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -129,6 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30 pb-24 md:pb-0">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <main className={`min-w-0 w-full overflow-x-hidden transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+        {usuarioActual.rol === 'ADMIN' && <AvisoTotemSinSenal />}
         {children}
       </main>
       <MobileNav />
