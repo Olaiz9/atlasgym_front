@@ -15,6 +15,8 @@ import {
   BackendTotemCheckInDto,
   BackendVideoTecnicaDto,
 } from "./api-mappers";
+import type { SocioImportadoDto } from "./importacion-revision";
+import type { EstadoCuenta } from "./types";
 
 /**
  * Normaliza la URL base de la API para evitar errores de configuración:
@@ -311,21 +313,42 @@ export interface RespuestaImportacionMasivaDto {
   pagosInicialesRegistrados: number;
   omitidos: number;
   advertencias: string[];
+  /** true si fue un simulacro: se calculó todo pero no se guardó nada. */
+  simulacion?: boolean;
+  /** Cuántos socios de la planilla quedan en cada estado de cuenta (hoy). */
+  estados?: Partial<Record<EstadoCuenta, number>>;
+  /** Un renglón por socio de la planilla, con el estado en que queda. */
+  socios?: SocioImportadoDto[];
+}
+
+export interface FilaImportacionDto {
+  nombre: string;
+  dni: string;
+  celular?: string;
+  email?: string;
+  planNombre?: string;
+  ultimoPeriodoPago?: string;
+  montoUltimoPago?: number;
+  metodoPago?: string;
 }
 
 export async function apiImportarAlumnosMasivo(
-  filas: {
-    nombre: string;
-    dni: string;
-    celular?: string;
-    email?: string;
-    planNombre?: string;
-    ultimoPeriodoPago?: string;
-    montoUltimoPago?: number;
-    metodoPago?: string;
-  }[]
+  filas: FilaImportacionDto[]
 ): Promise<RespuestaImportacionMasivaDto> {
   return apiFetch<RespuestaImportacionMasivaDto>("/alumnos/importar", {
+    method: "POST",
+    body: JSON.stringify({ filas }),
+  });
+}
+
+/**
+ * Simulacro de la importación: el servidor corre la importación completa y la deshace al final.
+ * Devuelve lo mismo que pasaría al confirmar (avisos y estado de cada socio) sin guardar nada.
+ */
+export async function apiSimularImportacionAlumnos(
+  filas: FilaImportacionDto[]
+): Promise<RespuestaImportacionMasivaDto> {
+  return apiFetch<RespuestaImportacionMasivaDto>("/alumnos/importar?simular=true", {
     method: "POST",
     body: JSON.stringify({ filas }),
   });
