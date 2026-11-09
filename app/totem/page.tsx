@@ -5,9 +5,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-// DECISION PENDIENTE 2 (tótem): conviven el PIN de pantalla de ramaBruno (bloqueo local, no es
-// seguridad: se valida en el navegador) y la clave de servidor X-Totem-Secret de ramaLucas
-// (la que el backend exige para fichar). Si el equipo descarta el PIN, quitar lo marcado "PIN".
+// Dos llaves con trabajos distintos (decidido para la v1.0.0):
+// - PIN de 4 dígitos (ATLAS_TOTEM_PIN, marcado "PIN" abajo): traba de pantalla para que un socio no
+//   salga del modo tótem. Se valida en el navegador, así que NO es seguridad.
+// - Clave X-Totem-Secret (ATLAS_TOTEM_SECRET): la que el servidor exige para fichar. Esta es la protección real.
 import { PIN_TERMINAL_TOTEM_DEFAULT } from '@/lib/constants'
 import {
   normalizarDni,
