@@ -59,6 +59,7 @@ describe("API Mappers (Spring Boot DTO <-> Frontend Model)", () => {
       estadoCuenta: "AL_DIA",
       rutinaId: 1,
       rutinaNombre: "Rutina Hipertrofia A/B",
+      version: 7,
     });
 
     expect(front.id).toBe("2");
@@ -71,6 +72,9 @@ describe("API Mappers (Spring Boot DTO <-> Frontend Model)", () => {
     const req = mapAlumnoFrontToRequestDto(front);
     expect(req.planId).toBe(2);
     expect(req.rutinaId).toBe(1);
+    // La versión vuelve al servidor para que no se pisen los cambios del otro titular
+    expect(front.version).toBe(7);
+    expect(req.version).toBe(7);
   });
 
   it("mapea AsistenciaResponseDto con alumnoDni, planNombre y control de cupo semanal", () => {

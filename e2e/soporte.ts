@@ -73,6 +73,10 @@ export class ApiAtlas {
     return res.status() === 204 ? null : res.json()
   }
 
+  estadoTotem() {
+    return this.llamar('get', '/asistencias/totem/estado')
+  }
+
   crearPlan(nombre: string, precio: number, diasPorSemana = '3') {
     return this.llamar('post', '/planes', { nombre, precio, diaPorSemana: diasPorSemana })
   }
@@ -110,6 +114,22 @@ export class ApiAtlas {
 
   buscarAlumno(id: number) {
     return this.llamar('get', `/alumnos/${id}`)
+  }
+
+  /** Edita la ficha como lo haría el otro titular desde su celular (con la versión que tiene el servidor). */
+  async editarAlumno(id: number, cambios: Record<string, unknown>) {
+    const actual = await this.buscarAlumno(id)
+    return this.llamar('put', `/alumnos/${id}`, {
+      nombre: actual.nombre,
+      dni: actual.dni,
+      email: actual.email,
+      celular: actual.celular,
+      planId: actual.planId,
+      rutinaId: actual.rutinaId,
+      activo: actual.activo,
+      version: actual.version,
+      ...cambios,
+    })
   }
 
   registrarPago(alumnoId: number, planId: number, monto: number, metodo = 'EFECTIVO') {

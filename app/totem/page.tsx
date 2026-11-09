@@ -5,9 +5,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
-// DECISION PENDIENTE 2 (tótem): conviven el PIN de pantalla de ramaBruno (bloqueo local, no es
-// seguridad: se valida en el navegador) y la clave de servidor X-Totem-Secret de ramaLucas
-// (la que el backend exige para fichar). Si el equipo descarta el PIN, quitar lo marcado "PIN".
+// Dos llaves con trabajos distintos (decidido para la v1.0.0):
+// - PIN de 4 dígitos (ATLAS_TOTEM_PIN, marcado "PIN" abajo): traba de pantalla para que un socio no
+//   salga del modo tótem. Se valida en el navegador, así que NO es seguridad.
+// - Clave X-Totem-Secret (ATLAS_TOTEM_SECRET): la que el servidor exige para fichar. Esta es la protección real.
 import { PIN_TERMINAL_TOTEM_DEFAULT } from '@/lib/constants'
 import {
   normalizarDni,
@@ -18,6 +19,7 @@ import {
   API_BASE_URL,
   apiCheckInTotem,
   apiSyncTotemOutbox,
+  apiTotemLatido,
   esErrorDeRed,
   esFallbackOfflineDemoPermitido,
   getStoredTotemSecret,
@@ -34,6 +36,8 @@ import {
   verificarClaveTerminal,
 } from '@/lib/totem-offline'
 import { fechaLocalHoy } from '@/lib/date-utils'
+import { INTERVALO_LATIDO_MS } from '@/lib/totem-estado'
+import { useEscapeKey } from '@/lib/use-escape-key'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
 import {
   CheckCircle2,
@@ -87,6 +91,7 @@ export default function TotemPage() {
   const [pendientesOutbox, setPendientesOutbox] = useState(0)
   const [padronSincronizadoCount, setPadronSincronizadoCount] = useState(0)
   const [modalVinculacionAbierto, setModalVinculacionAbierto] = useState(false)
+  useEscapeKey(() => setModalVinculacionAbierto(false), modalVinculacionAbierto)
   const [claveTerminalInput, setClaveTerminalInput] = useState('')
   const [mensajeVinculacion, setMensajeVinculacion] = useState<string | null>(null)
   const [errorVinculacion, setErrorVinculacion] = useState<string | null>(null)
@@ -152,6 +157,22 @@ export default function TotemPage() {
       sincronizandoOutboxRef.current = false
     }
   }, [])
+
+  // Señal de vida: si deja de llegar en horario de apertura, los titulares ven "El tótem no tiene señal"
+  const enviarLatido = useCallback(async () => {
+    if (!isApiRuntimeEnabled() || !getStoredTotemSecret()) return
+    try {
+      await apiTotemLatido(leerOutboxTotem().length)
+    } catch {
+      // Sin conexión: justamente eso es lo que el servidor va a notar
+    }
+  }, [])
+
+  useEffect(() => {
+    enviarLatido()
+    const intvLatido = setInterval(enviarLatido, INTERVALO_LATIDO_MS)
+    return () => clearInterval(intvLatido)
+  }, [enviarLatido])
 
   useEffect(() => {
     const cacheExistente = leerPadronCacheTotem()

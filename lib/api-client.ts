@@ -15,6 +15,9 @@ import {
   BackendTotemCheckInDto,
   BackendVideoTecnicaDto,
 } from "./api-mappers";
+import type { SocioImportadoDto } from "./importacion-revision";
+import type { EstadoCuenta } from "./types";
+import type { TotemEstadoDto } from "./totem-estado";
 
 /**
  * Normaliza la URL base de la API para evitar errores de configuración:
@@ -215,7 +218,8 @@ export async function apiFetch<T>(
         throw innerErr;
       }
     }
-    throw new Error(mensajeError);
+    // El código HTTP viaja en el error para distinguir, por ejemplo, un 409 de ficha desactualizada
+    throw Object.assign(new Error(mensajeError), { status: response.status });
   }
 
   if (response.status === 204) {
@@ -249,6 +253,10 @@ export async function apiActualizarPerfil(
 
 // ── Endpoints de Alumnos ────────────────────────────────────────────────────
 
+export async function apiGetAlumno(id: number): Promise<BackendAlumnoDto> {
+  return apiFetch<BackendAlumnoDto>(`/alumnos/${id}`);
+}
+
 export async function apiGetAlumnos(): Promise<BackendAlumnoDto[]> {
   return apiFetch<BackendAlumnoDto[]>("/alumnos");
 }
@@ -272,12 +280,9 @@ export async function apiActualizarAlumno(
   });
 }
 
-export async function apiDarDeBajaAlumno(
-  id: number,
-  definitivo: boolean = false
-): Promise<void> {
-  const query = definitivo ? "?definitivo=true" : "";
-  return apiFetch<void>(`/alumnos/${id}${query}`, {
+// Baja lógica: el backend nunca borra al socio (si vuelve, se reactiva con su historial).
+export async function apiDarDeBajaAlumno(id: number): Promise<void> {
+  return apiFetch<void>(`/alumnos/${id}`, {
     method: "DELETE",
   });
 }
@@ -314,21 +319,42 @@ export interface RespuestaImportacionMasivaDto {
   pagosInicialesRegistrados: number;
   omitidos: number;
   advertencias: string[];
+  /** true si fue un simulacro: se calculó todo pero no se guardó nada. */
+  simulacion?: boolean;
+  /** Cuántos socios de la planilla quedan en cada estado de cuenta (hoy). */
+  estados?: Partial<Record<EstadoCuenta, number>>;
+  /** Un renglón por socio de la planilla, con el estado en que queda. */
+  socios?: SocioImportadoDto[];
+}
+
+export interface FilaImportacionDto {
+  nombre: string;
+  dni: string;
+  celular?: string;
+  email?: string;
+  planNombre?: string;
+  ultimoPeriodoPago?: string;
+  montoUltimoPago?: number;
+  metodoPago?: string;
 }
 
 export async function apiImportarAlumnosMasivo(
-  filas: {
-    nombre: string;
-    dni: string;
-    celular?: string;
-    email?: string;
-    planNombre?: string;
-    ultimoPeriodoPago?: string;
-    montoUltimoPago?: number;
-    metodoPago?: string;
-  }[]
+  filas: FilaImportacionDto[]
 ): Promise<RespuestaImportacionMasivaDto> {
   return apiFetch<RespuestaImportacionMasivaDto>("/alumnos/importar", {
+    method: "POST",
+    body: JSON.stringify({ filas }),
+  });
+}
+
+/**
+ * Simulacro de la importación: el servidor corre la importación completa y la deshace al final.
+ * Devuelve lo mismo que pasaría al confirmar (avisos y estado de cada socio) sin guardar nada.
+ */
+export async function apiSimularImportacionAlumnos(
+  filas: FilaImportacionDto[]
+): Promise<RespuestaImportacionMasivaDto> {
+  return apiFetch<RespuestaImportacionMasivaDto>("/alumnos/importar?simular=true", {
     method: "POST",
     body: JSON.stringify({ filas }),
   });
@@ -596,6 +622,25 @@ export async function apiSyncTotemOutbox(
     headers,
     body: JSON.stringify({ eventos }),
   });
+}
+
+/** Señal de vida de la tablet del Tótem (una por minuto), con los ingresos que tiene sin subir. */
+export async function apiTotemLatido(pendientesOffline: number): Promise<void> {
+  const headers: Record<string, string> = {};
+  const secret = getStoredTotemSecret();
+  if (secret) {
+    headers["X-Totem-Secret"] = secret;
+  }
+  return apiFetch<void>("/asistencias/totem/latido", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ pendientesOffline }),
+  });
+}
+
+/** Si la tablet del Tótem está dando señales (solo titulares). */
+export async function apiGetTotemEstado(): Promise<TotemEstadoDto> {
+  return apiFetch<TotemEstadoDto>("/asistencias/totem/estado");
 }
 
 export async function apiEliminarAsistencia(id: number): Promise<void> {

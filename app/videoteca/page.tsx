@@ -13,7 +13,6 @@ import {
   Plus,
   Trash2,
   X,
-  Sparkles,
   CheckCircle2,
   Clock,
   Dumbbell,
@@ -473,7 +472,6 @@ export default function VideotecaPage() {
                 {videosGym.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
-                      <Sparkles className="size-3.5" />
                       <span>Tutoriales exclusivos de los coaches</span>
                     </div>
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -815,7 +813,6 @@ function TarjetaEjercicio({
         {esTutorialCoach && (
           <div className="absolute top-2.5 right-2.5">
             <span className="rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold flex items-center gap-1">
-              <Sparkles className="size-2.5" />
               Coach ATLAS
             </span>
           </div>
@@ -827,7 +824,6 @@ function TarjetaEjercicio({
         <div>
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-              <Sparkles className="size-2.5 text-blue-400" />
               {video.nivel}
             </span>
 

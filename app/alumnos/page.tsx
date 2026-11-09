@@ -11,7 +11,6 @@ import {
   Dumbbell,
   Plus,
   Search,
-  Trash2,
   Pencil,
   ChevronRight,
   Download,
@@ -19,6 +18,7 @@ import {
   X,
   FileSpreadsheet,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
@@ -31,6 +31,14 @@ import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
 import { descargarCSV } from "@/lib/export-utils";
+import {
+  apiSimularImportacionAlumnos,
+  RespuestaImportacionMasivaDto,
+} from "@/lib/api-client";
+import {
+  ORDEN_ESTADOS_REVISION,
+  resumirRevisionImportacion,
+} from "@/lib/importacion-revision";
 import {
   PLANTILLA_CSV_DIA_CERO,
   decodificarArchivoCsv,
@@ -173,15 +181,9 @@ export default function AlumnosPage() {
   const confirmarEliminar = () => {
     if (!alumnoAEliminar) return;
     const nombre = alumnoAEliminar.nombre;
-    // Ya dado de baja (activo === false) => paso 2: borrado definitivo. INACTIVO por deuda NO cuenta.
-    const esInactivo = alumnoAEliminar.activo === false;
-    eliminarAlumno(alumnoAEliminar.id, esInactivo);
+    eliminarAlumno(alumnoAEliminar.id);
     setAlumnoAEliminar(null);
-    if (esInactivo) {
-      toast(`Alumno "${nombre}" eliminado definitivamente del sistema`, "info");
-    } else {
-      toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
-    }
+    toast(`Alumno "${nombre}" dado de baja (movido a Inactivos)`, "info");
   };
 
   if (!usuarioActual || usuarioActual.rol === "ALUMNO") {
@@ -408,6 +410,7 @@ export default function AlumnosPage() {
                               actualizarAlumno(alumno.id, { activo: true });
                               toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
                             }}
+                            aria-label={`Reactivar a ${alumno.nombre}`}
                             title={`Reactivar a ${alumno.nombre}`}
                             className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
                           >
@@ -422,22 +425,16 @@ export default function AlumnosPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setAlumnoAEliminar(alumno)}
-                          aria-label={
-                            alumno.activo === false
-                              ? `Eliminar definitivamente a ${alumno.nombre}`
-                              : `Dar de baja a ${alumno.nombre}`
-                          }
-                          title={
-                            alumno.activo === false
-                              ? "Eliminar definitivamente del sistema"
-                              : "Dar de baja (enviar a Inactivos)"
-                          }
-                          className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                        >
-                          {alumno.activo === false ? <Trash2 className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                        </button>
+                        {alumno.activo !== false && (
+                          <button
+                            onClick={() => setAlumnoAEliminar(alumno)}
+                            aria-label={`Dar de baja a ${alumno.nombre}`}
+                            title="Dar de baja (enviar a Inactivos)"
+                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -513,6 +510,15 @@ export default function AlumnosPage() {
       {modalImportarAbierto && (
         <ModalImportarAlumnosCsv
           onClose={() => setModalImportarAbierto(false)}
+          onSimular={async (filas) => {
+            try {
+              return await apiSimularImportacionAlumnos(filas);
+            } catch (err: unknown) {
+              const detalle = err instanceof Error ? err.message : "";
+              toast(`No se pudo revisar la planilla${detalle ? `: ${detalle}` : ""}`, "error");
+              return null;
+            }
+          }}
           onImportar={async (filas) => {
             const res = await importarAlumnosMasivo(filas);
             if (res.ok && res.resumen) {
@@ -550,7 +556,6 @@ export default function AlumnosPage() {
       {alumnoAEliminar && (
         <ModalConfirmarEliminar
           alumno={alumnoAEliminar}
-          esInactivo={alumnoAEliminar.activo === false}
           onCancel={() => setAlumnoAEliminar(null)}
           onConfirm={confirmarEliminar}
         />
@@ -562,21 +567,36 @@ export default function AlumnosPage() {
 // ---------- Modal: Importador Masivo CSV ("Día Cero") ----------
 function ModalImportarAlumnosCsv({
   onClose,
+  onSimular,
   onImportar,
 }: {
   onClose: () => void;
+  /** Simulacro en el servidor: devuelve cómo quedaría el padrón sin guardar nada, o null si falló. */
+  onSimular: (filas: FilaImportacionAlumno[]) => Promise<RespuestaImportacionMasivaDto | null>;
   /** Devuelve las advertencias del servidor si la importación salió bien, o null si falló. */
   onImportar: (filas: FilaImportacionAlumno[]) => Promise<string[] | null>;
 }) {
   const [textoCsv, setTextoCsv] = useState("");
   const [importando, setImportando] = useState(false);
+  const [revisando, setRevisando] = useState(false);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [advertenciasServidor, setAdvertenciasServidor] = useState<string[] | null>(null);
+  // Simulacro de la planilla actual. Si cambia el texto, hay que volver a revisar antes de importar.
+  const [simulacro, setSimulacro] = useState<RespuestaImportacionMasivaDto | null>(null);
 
   const resultado = useMemo(
     () => (textoCsv.trim() ? parsearCsvPadronAlumnos(textoCsv) : null),
     [textoCsv]
   );
+  const revision = useMemo(
+    () => (simulacro ? resumirRevisionImportacion(simulacro) : null),
+    [simulacro]
+  );
+
+  const cambiarTexto = (texto: string) => {
+    setTextoCsv(texto);
+    setSimulacro(null);
+  };
 
   const descargarPlantilla = () => {
     const blob = new Blob(["\uFEFF" + PLANTILLA_CSV_DIA_CERO], {
@@ -600,17 +620,27 @@ function ModalImportarAlumnosCsv({
       const decodificado = decodificarArchivoCsv(new Uint8Array(reader.result));
       if (decodificado.ok) {
         setErrorArchivo(null);
-        setTextoCsv(decodificado.texto);
+        cambiarTexto(decodificado.texto);
       } else {
         setErrorArchivo(decodificado.error);
-        setTextoCsv("");
+        cambiarTexto("");
       }
     };
     reader.readAsArrayBuffer(file);
   };
 
-  const ejecutarImportacion = async () => {
+  const revisarPlanilla = async () => {
     if (!resultado || resultado.filasValidas.length === 0) return;
+    setRevisando(true);
+    try {
+      setSimulacro(await onSimular(resultado.filasValidas));
+    } finally {
+      setRevisando(false);
+    }
+  };
+
+  const ejecutarImportacion = async () => {
+    if (!resultado || resultado.filasValidas.length === 0 || !simulacro) return;
     setImportando(true);
     try {
       const advertencias = await onImportar(resultado.filasValidas);
@@ -694,7 +724,7 @@ function ModalImportarAlumnosCsv({
             <textarea
               rows={4}
               value={textoCsv}
-              onChange={(e) => setTextoCsv(e.target.value)}
+              onChange={(e) => cambiarTexto(e.target.value)}
               placeholder={"Nombre;DNI;Celular;Plan;Ultimo_Mes_Pago\nCamila Sosa;42111222;1144556677;Pase Libre;2026-10"}
               className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl outline-none focus:border-blue-500 text-xs font-mono text-slate-200 placeholder-slate-600"
             />
@@ -759,6 +789,91 @@ function ModalImportarAlumnosCsv({
           </div>
         )}
 
+        {simulacro && revision && !advertenciasServidor && (
+          <section
+            aria-label="Revisión antes de importar"
+            className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-3 text-xs"
+          >
+            <div>
+              <p className="text-sm font-bold text-white">Así quedaría el padrón</p>
+              <p className="text-slate-400">
+                Es un simulacro con las reglas reales de cobro: todavía no se guardó nada.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700 font-bold">
+                {simulacro.creados} nuevos
+              </span>
+              <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700 font-bold">
+                {simulacro.actualizados} ya existían
+              </span>
+              <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700 font-bold">
+                {simulacro.pagosInicialesRegistrados} cuotas cargadas
+              </span>
+              {simulacro.omitidos > 0 && (
+                <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                  {simulacro.omitidos} filas omitidas
+                </span>
+              )}
+            </div>
+
+            {revision.conEstados && (
+              <div className="flex flex-wrap gap-2" aria-label="Estado de cuenta con que quedan">
+                {ORDEN_ESTADOS_REVISION.map((estado) => (
+                  <span
+                    key={estado}
+                    className={`px-3 py-1 rounded-full font-bold ${ESTADO_CUENTA_STYLES[estado]}`}
+                  >
+                    {ESTADO_CUENTA_LABEL[estado]}: {revision.porEstado[estado]}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {revision.morosos.length > 0 && (
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 space-y-2">
+                <p className="flex items-start gap-2 text-rose-100">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-px text-rose-400" />
+                  <span>
+                    <strong>{revision.morosos.length} socio(s) quedarían morosos.</strong> Revisalos con
+                    los titulares: si alguno pagó, corregí su Ultimo_Mes_Pago en el Excel y volvé a revisar.
+                  </span>
+                </p>
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-rose-500/20">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-rose-200/80 bg-slate-950/60">
+                        <th className="px-3 py-1.5 font-bold">Fila</th>
+                        <th className="px-3 py-1.5 font-bold">Nombre</th>
+                        <th className="px-3 py-1.5 font-bold">DNI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {revision.morosos.map((s) => (
+                        <tr key={s.dni} className="border-t border-rose-500/10">
+                          <td className="px-3 py-1.5 font-mono text-rose-200">{s.fila}</td>
+                          <td className="px-3 py-1.5 font-semibold text-white">{s.nombre}</td>
+                          <td className="px-3 py-1.5 font-mono text-slate-300">{s.dni}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {simulacro.advertencias.length > 0 && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-amber-200 space-y-1 max-h-40 overflow-y-auto">
+                <p className="font-bold text-amber-100">Avisos ({simulacro.advertencias.length}):</p>
+                {simulacro.advertencias.map((adv, idx) => (
+                  <p key={idx}>• {adv}</p>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {errorArchivo && (
           <div role="alert" className="rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-200">
             {errorArchivo}
@@ -784,16 +899,29 @@ function ModalImportarAlumnosCsv({
           >
             {advertenciasServidor ? "Cerrar" : "Cancelar"}
           </button>
-          <button
-            type="button"
-            disabled={!resultado || resultado.filasValidas.length === 0 || importando || advertenciasServidor !== null}
-            onClick={ejecutarImportacion}
-            className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {importando
-              ? "Importando padrón..."
-              : `Importar ${resultado?.filasValidas.length ?? 0} socio(s)`}
-          </button>
+          {simulacro ? (
+            <button
+              type="button"
+              disabled={!resultado || resultado.filasValidas.length === 0 || importando || advertenciasServidor !== null}
+              onClick={ejecutarImportacion}
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {importando
+                ? "Importando padrón..."
+                : `Confirmar importación (${resultado?.filasValidas.length ?? 0})`}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!resultado || resultado.filasValidas.length === 0 || revisando || advertenciasServidor !== null}
+              onClick={revisarPlanilla}
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {revisando
+                ? "Revisando planilla..."
+                : `Revisar ${resultado?.filasValidas.length ?? 0} socio(s)`}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -803,12 +931,10 @@ function ModalImportarAlumnosCsv({
 // ---------- Modal: confirmar baja ----------
 function ModalConfirmarEliminar({
   alumno,
-  esInactivo,
   onCancel,
   onConfirm,
 }: {
   alumno: Alumno;
-  esInactivo: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -821,22 +947,14 @@ function ModalConfirmarEliminar({
         onClick={(e) => e.stopPropagation()}
         className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
       >
-        <div
-          className={`flex size-12 items-center justify-center rounded-2xl mb-4 ${
-            esInactivo
-              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-              : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-          }`}
-        >
-          {esInactivo ? <Trash2 className="w-6 h-6" /> : <UserX className="w-6 h-6" />}
+        <div className="flex size-12 items-center justify-center rounded-2xl mb-4 bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          <UserX className="w-6 h-6" />
         </div>
         <h2 className="text-2xl font-black text-white">
-          {esInactivo ? `¿Eliminar definitivamente a ${alumno.nombre}?` : `¿Dar de baja a ${alumno.nombre}?`}
+          {`¿Dar de baja a ${alumno.nombre}?`}
         </h2>
         <p className="mt-1.5 text-sm text-slate-400">
-          {esInactivo
-            ? "Esta acción eliminará al alumno de forma permanente del sistema y no volverá a aparecer en Inactivos. Sus pagos históricos se conservarán intactos en Finanzas."
-            : "El socio pasará a la pestaña de Inactivos por si regresa en el futuro. Si más adelante querés eliminarlo de forma permanente, podrás hacerlo desde Inactivos."}
+          El socio pasará a la pestaña de Inactivos. Si vuelve, lo reactivás desde ahí y conserva su ficha, su historial y sus pagos.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -847,13 +965,9 @@ function ModalConfirmarEliminar({
           </button>
           <button
             onClick={onConfirm}
-            className={`h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 ${
-              esInactivo
-                ? "bg-rose-600 shadow-rose-600/20 hover:bg-rose-500"
-                : "bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
-            }`}
+            className="h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
           >
-            {esInactivo ? "Eliminar definitivamente" : "Dar de baja"}
+            Dar de baja
           </button>
         </div>
       </div>

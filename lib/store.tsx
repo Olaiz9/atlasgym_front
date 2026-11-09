@@ -82,6 +82,7 @@ import {
   apiEliminarPlan,
   apiEliminarRutina,
   apiEliminarVideo,
+  apiGetAlumno,
   apiGetAlumnos,
   apiGetAsistencias,
   apiGetAvisosAdmin,
@@ -100,6 +101,7 @@ import {
   esFallbackOfflineDemoPermitido,
   EVENTO_SESION_EXPIRADA,
   getStoredJwtToken,
+  getStoredTotemSecret,
   isApiRuntimeEnabled,
   permiteDatosDeEjemplo,
   RespuestaImportacionMasivaDto,
@@ -160,7 +162,7 @@ function marcarSincronizadoConBackend(): void {
 }
 
 function guardarCacheLocalAsistencias(lista: RegistroAsistencia[]): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !usaCacheLocal()) return;
   const hoy = fechaLocalHoy();
   const recortada = recortarAsistenciasParaCacheLocal(lista, hoy, 7, 500);
   try {
@@ -180,11 +182,57 @@ function guardarCacheLocalAsistencias(lista: RegistroAsistencia[]): void {
  * Esta funcion borra lo que haya quedado en dispositivos que usaron esas versiones.
  */
 const CLAVE_LEGADA_CREDENCIALES = "atlas_credenciales_alumnos_v1";
+/**
+ * Copia local de socios, pagos, rutinas, etc. en el navegador: SOLO en modo demo o tests.
+ * Con el servidor real, los datos viven en memoria y siempre vienen del servidor: dos titulares con
+ * el celular abierto no trabajan sobre una copia vieja, y el padrón (con DNIs) no queda guardado
+ * en el teléfono.
+ */
+function usaCacheLocal(): boolean {
+  return !isApiRuntimeEnabled() || permiteDatosDeEjemplo();
+}
+
+/** Copias locales que dejaron versiones anteriores (con el servidor real ya no se leen). */
+const CLAVES_COPIA_LOCAL_DATOS = [
+  "atlas_alumnos_v1",
+  "atlas_pagos_v1",
+  "atlas_rutinas_v1",
+  "atlas_planes_v1",
+  "atlas_historial_v1",
+  "atlas_videos_v1",
+  "atlas_videos_v2",
+  "atlas_asistencias_v1",
+];
+
+function borrarCopiasLocalesDeDatos(): void {
+  if (typeof window === "undefined" || usaCacheLocal()) return;
+  const claves = [...CLAVES_COPIA_LOCAL_DATOS];
+  // La tablet del tótem sí necesita sus ingresos recientes para funcionar sin internet
+  if (!getStoredTotemSecret()) claves.push("atlas_asistencias_v2");
+  for (const clave of claves) {
+    try {
+      localStorage.removeItem(clave);
+    } catch {}
+  }
+}
+
+/** Cada cuánto se vuelven a pedir socios, pagos e ingresos de hoy con la app abierta. */
+const INTERVALO_REFRESCO_DATOS_MS = 60_000;
+
 function borrarCredencialesLegadas(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(CLAVE_LEGADA_CREDENCIALES);
   } catch {}
+}
+
+/** 409 del servidor porque otro titular guardó la misma ficha antes. */
+function esConflictoDeVersion(err: unknown): boolean {
+  return (
+    (err as { status?: number } | null)?.status === 409 &&
+    err instanceof Error &&
+    err.message.startsWith("Otro titular")
+  );
 }
 
 function formatearMensajeErrorSync(accion: string, err: unknown): string {
@@ -205,6 +253,9 @@ const USUARIO_ADMIN_DEFAULT: UsuarioSesion = {
   rol: "ADMIN",
 };
 
+/** IDs de los videos de ejemplo de mock-data (YouTube); fuera del modo demo no se muestran. */
+const ID_VIDEOS_EJEMPLO = new Set(VIDEOS_TECNICA_MOCK.map((v) => v.id));
+
 export interface ErrorSincronizacion {
   id: string;
   mensaje: string;
@@ -219,6 +270,8 @@ interface AppDataContextValue {
   avisos: Aviso[];
   usuarioActual: UsuarioSesion | null;
   ultimoErrorSync: ErrorSincronizacion | null;
+  /** false mientras llega la primera carga del servidor después de iniciar sesión. */
+  datosListos: boolean;
   limpiarErrorSync: () => void;
   actualizarUsuarioActual: (
     cambios: Partial<UsuarioSesion> & { password?: string; passwordActual?: string }
@@ -234,7 +287,7 @@ interface AppDataContextValue {
   cerrarSesion: () => void;
   agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
-  eliminarAlumno: (id: string, definitivo?: boolean) => void;
+  eliminarAlumno: (id: string) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
   blanquearClaveAlumno: (
     alumnoId: string
@@ -301,6 +354,8 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 function useGymStore(): AppDataContextValue {
   const [ultimoErrorSync, setUltimoErrorSync] = useState<ErrorSincronizacion | null>(null);
   const ultimaHidratacionFocusRef = useRef<number>(0);
+  // Para qué usuario ya llegó la primera carga del servidor (sin copia local, hasta entonces no hay datos)
+  const [cargaCompletaDe, setCargaCompletaDe] = useState<string | null>(null);
 
   const reportarErrorSync = useCallback((mensaje: string) => {
     setUltimoErrorSync({
@@ -314,7 +369,7 @@ function useGymStore(): AppDataContextValue {
   }, []);
 
   const [alumnos, setAlumnos] = useState<Alumno[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardado = localStorage.getItem("atlas_alumnos_v1");
       if (guardado) {
@@ -333,7 +388,7 @@ function useGymStore(): AppDataContextValue {
   });
 
   const [pagos, setPagos] = useState<Pago[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardado = localStorage.getItem("atlas_pagos_v1");
       if (guardado) {
@@ -349,7 +404,7 @@ function useGymStore(): AppDataContextValue {
   });
 
   const [rutinas, setRutinas] = useState<Rutina[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardado = localStorage.getItem("atlas_rutinas_v1");
       if (guardado) {
@@ -365,29 +420,36 @@ function useGymStore(): AppDataContextValue {
   });
 
   const [videosTecnica, setVideosTecnica] = useState<VideoTecnica[]>(() => {
-    if (typeof window !== "undefined") {
+    const demo = permiteDatosDeEjemplo();
+    // Los videos de ejemplo (YouTube) solo existen en modo demo: un navegador que
+    // los guardó en caché antes de este cambio no los vuelve a mostrar.
+    const sinEjemplos = (lista: VideoTecnica[]) =>
+      demo ? lista : lista.filter((v) => !ID_VIDEOS_EJEMPLO.has(v.id));
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const guardadoV2 = localStorage.getItem("atlas_videos_v2");
       if (guardadoV2) {
         try {
-          return JSON.parse(guardadoV2);
+          const parseado = JSON.parse(guardadoV2);
+          if (Array.isArray(parseado)) return sinEjemplos(parseado);
         } catch {}
       }
       const guardadoV1 = localStorage.getItem("atlas_videos_v1");
       if (guardadoV1) {
         try {
           const parseado = JSON.parse(guardadoV1) as VideoTecnica[];
-          const limpios = parseado.filter((v) => !v.id.startsWith("cat-") && !v.id.startsWith("ex-"));
-          const resultado = limpios.length > 0 ? limpios : VIDEOS_TECNICA_MOCK;
-          localStorage.setItem("atlas_videos_v2", JSON.stringify(resultado));
-          return resultado;
+          const limpios = sinEjemplos(
+            parseado.filter((v) => !v.id.startsWith("cat-") && !v.id.startsWith("ex-"))
+          );
+          localStorage.setItem("atlas_videos_v2", JSON.stringify(limpios));
+          return limpios;
         } catch {}
       }
     }
-    return VIDEOS_TECNICA_MOCK;
+    return demo ? VIDEOS_TECNICA_MOCK : [];
   });
 
   const [planes, setPlanes] = useState<Plan[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardado = localStorage.getItem("atlas_planes_v1");
       if (guardado) {
@@ -425,7 +487,7 @@ function useGymStore(): AppDataContextValue {
   const [datosCobro, setDatosCobro] = useState<DatosCobro>({ alias: "", titular: "" });
 
   const [sesionesEntrenamiento, setSesionesEntrenamiento] = useState<SesionEntrenamiento[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardado = localStorage.getItem("atlas_historial_v1");
       if (guardado) {
@@ -441,7 +503,7 @@ function useGymStore(): AppDataContextValue {
   });
 
   const [asistencias, setAsistencias] = useState<RegistroAsistencia[]>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       const sincronizado = estaSincronizadoConBackend();
       const guardadoV2 = localStorage.getItem("atlas_asistencias_v2");
       if (guardadoV2) {
@@ -542,13 +604,9 @@ function useGymStore(): AppDataContextValue {
           }
         }
 
-        if (Array.isArray(videosDto) && videosDto.length > 0) {
-          const videosBack = videosDto.map(mapVideoDtoToFront);
-          const titulosBack = new Set(videosBack.map((v) => v.titulo.toLowerCase()));
-          const complementarios = VIDEOS_TECNICA_MOCK.filter(
-            (v) => !titulosBack.has(v.titulo.toLowerCase())
-          );
-          setVideosTecnica([...videosBack, ...complementarios]);
+        // La videoteca real es la del backend; no se le suman videos de ejemplo.
+        if (Array.isArray(videosDto)) {
+          setVideosTecnica(videosDto.map(mapVideoDtoToFront));
         }
 
         // 2. Verificar que exista un JWT válido antes de solicitar colecciones protegidas
@@ -633,10 +691,34 @@ function useGymStore(): AppDataContextValue {
             setSesionesEntrenamiento(misSesionesDto.map(mapSesionDtoToFront));
           }
         }
-      } catch {}
+      } catch {
+      } finally {
+        if (sesionActiva) setCargaCompletaDe(sesionActiva.id);
+      }
     },
     [setAvisos]
   );
+
+  // Con la app abierta, cada minuto se vuelven a pedir socios, pagos e ingresos de hoy: lo que cobró
+  // o editó el otro titular aparece solo, sin tener que salir y volver a entrar.
+  useEffect(() => {
+    if (!isApiRuntimeEnabled() || usuarioActual?.rol !== "ADMIN") return;
+    const refrescar = async () => {
+      if (document.visibilityState !== "visible" || !getStoredJwtToken()) return;
+      const [alumnosDto, pagosDto] = await Promise.all([
+        apiGetAlumnos().catch(() => null),
+        apiGetPagos().catch(() => null),
+      ]);
+      if (Array.isArray(alumnosDto)) setAlumnos(alumnosDto.map(mapAlumnoDtoToFront));
+      if (Array.isArray(pagosDto)) setPagos(pagosDto.map(mapPagoDtoToFront));
+      refrescarAsistencias();
+    };
+    const intervalo = setInterval(refrescar, INTERVALO_REFRESCO_DATOS_MS);
+    return () => clearInterval(intervalo);
+  }, [usuarioActual?.rol, refrescarAsistencias]);
+
+  const datosListos =
+    !isApiRuntimeEnabled() || usaCacheLocal() || !usuarioActual || cargaCompletaDe === usuarioActual.id;
 
   useEffect(() => {
     if (!isApiRuntimeEnabled()) return;
@@ -899,6 +981,7 @@ function useGymStore(): AppDataContextValue {
   // Al abrir la app, borrar claves de socios que versiones anteriores dejaron en este navegador.
   useEffect(() => {
     borrarCredencialesLegadas();
+    borrarCopiasLocalesDeDatos();
   }, []);
 
   // JWT vencido o inválido (401 desde apiFetch) -> cerrar sesión y volver al login.
@@ -1051,9 +1134,19 @@ function useGymStore(): AppDataContextValue {
             const mapeado = mapAlumnoDtoToFront(dto);
             setAlumnos((prev) => prev.map((a) => (a.id === id ? mapeado : a)));
           })
-          .catch((err: unknown) => {
+          .catch(async (err: unknown) => {
             if (alumnoAnterior) {
               setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoAnterior! : a)));
+            }
+            // El otro titular cambió la ficha antes: mostrar la versión del servidor, no la vieja
+            if (esConflictoDeVersion(err)) {
+              const fresco = await apiGetAlumno(numId).catch(() => null);
+              if (fresco) {
+                const mapeado = mapAlumnoDtoToFront(fresco);
+                setAlumnos((prev) => prev.map((a) => (a.id === id ? mapeado : a)));
+              }
+              reportarErrorSync(err instanceof Error ? err.message : "Otro titular cambió este socio.");
+              return;
             }
             reportarErrorSync(formatearMensajeErrorSync("actualizar los datos del socio", err));
           });
@@ -1063,11 +1156,9 @@ function useGymStore(): AppDataContextValue {
   );
 
   const eliminarAlumno = useCallback(
-    (id: string, definitivo?: boolean) => {
-      const alumnoTarget = alumnos.find((a) => a.id === id);
-      // Paso 2 (borrado definitivo) solo si se pide explicitamente o si el socio YA estaba dado de baja,
-      // igual que el backend. "INACTIVO" por deuda (+60 dias sin pagar) NO es una baja: no se borra.
-      const esEliminacionDefinitiva = definitivo === true || alumnoTarget?.activo === false;
+    (id: string) => {
+      // Baja lógica: el socio pasa a Inactivos y nunca se borra. Si vuelve, se reactiva
+      // con su ficha e historial (no se le cobra inscripción de nuevo).
       const respaldoAlumnos = alumnos;
       const respaldoPagos = pagos;
       const respaldoRutinas = rutinas;
@@ -1075,24 +1166,17 @@ function useGymStore(): AppDataContextValue {
       const { alumnos: nuevosAlumnos, pagos: nuevosPagos, rutinas: nuevasRutinas } =
         ejecutarBajaAlumno(id, alumnos, pagos, rutinas);
 
-      if (esEliminacionDefinitiva) {
-        // Paso 2: Eliminación definitiva desde Inactivos (remueve de la lista)
-        setAlumnos((prev) => prev.filter((a) => a.id !== id));
-      } else {
-        // Paso 1: Baja administrativa (pasa a Inactivos)
-        setAlumnos(nuevosAlumnos);
-      }
+      setAlumnos(nuevosAlumnos);
       setPagos(nuevosPagos);
       setRutinas(nuevasRutinas);
 
       const numId = parseNumericId(id);
       if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiDarDeBajaAlumno(numId, esEliminacionDefinitiva).catch((err: unknown) => {
+        apiDarDeBajaAlumno(numId).catch((err: unknown) => {
           setAlumnos(respaldoAlumnos);
           setPagos(respaldoPagos);
           setRutinas(respaldoRutinas);
-          reportarErrorSync(formatearMensajeErrorSync(
-            esEliminacionDefinitiva ? "eliminar definitivamente al socio" : "dar de baja al socio", err));
+          reportarErrorSync(formatearMensajeErrorSync("dar de baja al socio", err));
         });
       }
     },
@@ -1722,7 +1806,7 @@ function useGymStore(): AppDataContextValue {
 
   // Persistir entidades en localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_alumnos_v1", JSON.stringify(alumnos));
       } catch {}
@@ -1730,7 +1814,7 @@ function useGymStore(): AppDataContextValue {
   }, [alumnos]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_pagos_v1", JSON.stringify(pagos));
       } catch {}
@@ -1738,7 +1822,7 @@ function useGymStore(): AppDataContextValue {
   }, [pagos]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_rutinas_v1", JSON.stringify(rutinas));
       } catch {}
@@ -1746,7 +1830,7 @@ function useGymStore(): AppDataContextValue {
   }, [rutinas]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_videos_v2", JSON.stringify(videosTecnica));
       } catch {}
@@ -1754,7 +1838,7 @@ function useGymStore(): AppDataContextValue {
   }, [videosTecnica]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_planes_v1", JSON.stringify(planes));
       } catch {}
@@ -1871,7 +1955,7 @@ function useGymStore(): AppDataContextValue {
 
   // Persistir historial de entrenamiento en localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && usaCacheLocal()) {
       try {
         localStorage.setItem("atlas_historial_v1", JSON.stringify(sesionesEntrenamiento));
       } catch {}
@@ -2059,7 +2143,7 @@ function useGymStore(): AppDataContextValue {
         const actualizados = prev.map((a) =>
           a.id === alumno.id ? { ...a, ultimaAsistencia: hoy } : a
         );
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && usaCacheLocal()) {
           try {
             localStorage.setItem("atlas_alumnos_v1", JSON.stringify(actualizados));
           } catch {}
@@ -2156,6 +2240,7 @@ function useGymStore(): AppDataContextValue {
       planes,
       usuarioActual,
       ultimoErrorSync,
+      datosListos,
       limpiarErrorSync,
       actualizarUsuarioActual,
       guardarPerfilUsuario,
@@ -2219,6 +2304,7 @@ function useGymStore(): AppDataContextValue {
       getCantidadAvisosNoLeidos,
       usuarioActual,
       ultimoErrorSync,
+      datosListos,
       limpiarErrorSync,
       actualizarUsuarioActual,
       guardarPerfilUsuario,
