@@ -484,6 +484,22 @@ function useGymStore(): AppDataContextValue {
     return null;
   });
 
+  // Última versión conocida de socios, rutinas y planes, para armar lo que se manda al servidor al
+  // editar. No se puede sacar de adentro de setX(prev => ...): React puede correr esa función más
+  // tarde, y entonces el PUT no salía (ver lib/store-ediciones-servidor.test.ts).
+  const alumnosRef = useRef(alumnos);
+  const rutinasRef = useRef(rutinas);
+  const planesRef = useRef(planes);
+  useEffect(() => {
+    alumnosRef.current = alumnos;
+  }, [alumnos]);
+  useEffect(() => {
+    rutinasRef.current = rutinas;
+  }, [rutinas]);
+  useEffect(() => {
+    planesRef.current = planes;
+  }, [planes]);
+
   const [datosCobro, setDatosCobro] = useState<DatosCobro>({ alias: "", titular: "" });
 
   const [sesionesEntrenamiento, setSesionesEntrenamiento] = useState<SesionEntrenamiento[]>(() => {
@@ -1098,28 +1114,25 @@ function useGymStore(): AppDataContextValue {
 
   const actualizarAlumno = useCallback(
     (id: string, cambios: Partial<Omit<Alumno, "id">>) => {
-      let alumnoAnterior: Alumno | null = null;
-      let alumnoActualizado: Alumno | null = null;
+      const alumnoAnterior = alumnosRef.current.find((a) => a.id === id) ?? null;
+      if (!alumnoAnterior) return;
 
-      setAlumnos((prev) =>
-        prev.map((a) => {
-          if (a.id !== id) return a;
-          alumnoAnterior = a;
-          let planId = cambios.planId ?? a.planId;
-          let plan = cambios.plan ?? a.plan;
-          if (cambios.plan && !cambios.planId) {
-            const encontrado = planes.find(
-              (p) => p.nombre.toLowerCase() === cambios.plan!.toLowerCase()
-            );
-            if (encontrado) planId = encontrado.id;
-          } else if (cambios.planId && !cambios.plan) {
-            const encontrado = planes.find((p) => p.id === cambios.planId);
-            if (encontrado) plan = encontrado.nombre;
-          }
-          alumnoActualizado = { ...a, ...cambios, planId, plan };
-          return alumnoActualizado;
-        })
-      );
+      let planId = cambios.planId ?? alumnoAnterior.planId;
+      let plan = cambios.plan ?? alumnoAnterior.plan;
+      if (cambios.plan && !cambios.planId) {
+        const encontrado = planes.find(
+          (p) => p.nombre.toLowerCase() === cambios.plan!.toLowerCase()
+        );
+        if (encontrado) planId = encontrado.id;
+      } else if (cambios.planId && !cambios.plan) {
+        const encontrado = planes.find((p) => p.id === cambios.planId);
+        if (encontrado) plan = encontrado.nombre;
+      }
+      const alumnoActualizado: Alumno = { ...alumnoAnterior, ...cambios, planId, plan };
+
+      // La ref se actualiza ya, para que otra edición en el mismo instante parta de esta.
+      alumnosRef.current = alumnosRef.current.map((a) => (a.id === id ? alumnoActualizado : a));
+      setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoActualizado : a)));
 
       if (cambios.activo !== undefined) {
         setPagos((prev) =>
@@ -1128,16 +1141,14 @@ function useGymStore(): AppDataContextValue {
       }
 
       const numId = parseNumericId(id);
-      if (numId != null && alumnoActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarAlumno(numId, mapAlumnoFrontToRequestDto(alumnoActualizado))
           .then((dto) => {
             const mapeado = mapAlumnoDtoToFront(dto);
             setAlumnos((prev) => prev.map((a) => (a.id === id ? mapeado : a)));
           })
           .catch(async (err: unknown) => {
-            if (alumnoAnterior) {
-              setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoAnterior! : a)));
-            }
+            setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoAnterior : a)));
             // El otro titular cambió la ficha antes: mostrar la versión del servidor, no la vieja
             if (esConflictoDeVersion(err)) {
               const fresco = await apiGetAlumno(numId).catch(() => null);
@@ -1688,28 +1699,21 @@ function useGymStore(): AppDataContextValue {
 
   const actualizarRutina = useCallback(
     (id: string, cambios: Partial<Omit<Rutina, "id">>) => {
-      let rutinaAnterior: Rutina | null = null;
-      let rutinaCombinada: Rutina | null = null;
-      setRutinas((prev) =>
-        prev.map((r) => {
-          if (r.id !== id) return r;
-          rutinaAnterior = r;
-          rutinaCombinada = { ...r, ...cambios };
-          return rutinaCombinada;
-        })
-      );
+      const rutinaAnterior = rutinasRef.current.find((r) => r.id === id) ?? null;
+      if (!rutinaAnterior) return;
+      const rutinaCombinada: Rutina = { ...rutinaAnterior, ...cambios };
+      rutinasRef.current = rutinasRef.current.map((r) => (r.id === id ? rutinaCombinada : r));
+      setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaCombinada : r)));
 
       const numId = parseNumericId(id);
-      if (numId != null && rutinaCombinada && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarRutina(numId, mapRutinaFrontToRequestDto(rutinaCombinada))
           .then((dto) => {
             const mapeada = mapRutinaDtoToFront(dto);
             setRutinas((prev) => prev.map((r) => (r.id === id ? mapeada : r)));
           })
           .catch((err: unknown) => {
-            if (rutinaAnterior) {
-              setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaAnterior! : r)));
-            }
+            setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaAnterior : r)));
             reportarErrorSync(formatearMensajeErrorSync("actualizar la rutina", err));
           });
       }
@@ -1894,28 +1898,21 @@ function useGymStore(): AppDataContextValue {
 
   const actualizarPlan = useCallback(
     (id: string, cambios: Partial<Omit<Plan, "id">>) => {
-      let planAnterior: Plan | null = null;
-      let planActualizado: Plan | null = null;
+      const planAnterior = planesRef.current.find((p) => p.id === id) ?? null;
+      if (!planAnterior) return;
+      const planActualizado: Plan = { ...planAnterior, ...cambios };
       const respaldoAlumnos = alumnos;
 
-      setPlanes((prev) =>
-        prev.map((p) => {
-          if (p.id !== id) return p;
-          planAnterior = p;
-          planActualizado = { ...p, ...cambios };
-          return planActualizado;
-        })
-      );
+      planesRef.current = planesRef.current.map((p) => (p.id === id ? planActualizado : p));
+      setPlanes((prev) => prev.map((p) => (p.id === id ? planActualizado : p)));
       if (cambios.nombre) {
         setAlumnos((prev) => sincronizarNombrePlanEnAlumnos(prev, id, cambios.nombre!));
       }
 
       const numId = parseNumericId(id);
-      if (numId != null && planActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarPlan(numId, mapPlanFrontToRequestDto(planActualizado)).catch((err: unknown) => {
-          if (planAnterior) {
-            setPlanes((prev) => prev.map((p) => (p.id === id ? planAnterior! : p)));
-          }
+          setPlanes((prev) => prev.map((p) => (p.id === id ? planAnterior : p)));
           if (cambios.nombre) {
             setAlumnos(respaldoAlumnos);
           }
