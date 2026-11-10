@@ -28,6 +28,10 @@ Es la **única fuente de verdad** sobre cómo se trabaja en este repo. El contex
 2. Una rama por Issue: `feat/<nro>-descripcion-corta` o `fix/<nro>-descripcion-corta`.
 3. Commits en español: `tipo(area): descripcion` (tipos: feat, fix, test, refactor, docs, ci, chore).
 4. **Nunca** subas directo a `develop` ni a `main`, y nunca uses `--force` sobre ramas compartidas.
+   Para traer `develop` a tu rama usá **siempre** `git merge origin/develop` (o `git rebase`) y resolvé los
+   conflictos línea por línea. **Nunca copies archivos de una rama encima de otra** para "sincronizar":
+   así se perdieron sin aviso el catálogo del buscador de rutinas y los íconos de "Consultar al profesor"
+   (commit 90db143). Si el diff de tu PR borra código que no tocaste a propósito, frená y preguntá.
 5. Abrí un Pull Request hacia `develop` completando la plantilla. Se mergea solo con el CI en verde
    y la aprobación de otra persona.
 
