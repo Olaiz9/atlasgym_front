@@ -16,6 +16,10 @@ for (const e of CATALOGO_EJERCICIOS_GIF) {
   }
 }
 
+function normalizar(texto: string): string {
+  return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const resumen = searchParams.get('resumen') === 'true'
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
   }
 
   const grupo = searchParams.get('grupo')
-  const q = searchParams.get('q')?.toLowerCase()
+  const q = searchParams.get('q')
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam, 10) : 50
 
@@ -47,16 +51,25 @@ export async function GET(request: Request) {
     )
   }
 
-  if (q) {
-    resultados = resultados.filter(
-      (e) =>
-        e.titulo.toLowerCase().includes(q) ||
-        (e.nombreIngles && e.nombreIngles.toLowerCase().includes(q)) ||
-        (e.descripcion && e.descripcion.toLowerCase().includes(q)) ||
-        e.grupoMuscular.toLowerCase().includes(q) ||
-        e.musculosPrincipales.some((m) => m.toLowerCase().includes(q)) ||
-        (e.musculosSecundarios && e.musculosSecundarios.some((m) => m.toLowerCase().includes(q)))
-    )
+  // Cada palabra tiene que aparecer en algún campo, sin importar el orden ni los acentos:
+  // "press banca" encuentra "Press de Banca Plano con Barra" y "triceps" encuentra "Tríceps".
+  const palabras = normalizar(q ?? '').split(/\s+/).filter(Boolean)
+  if (palabras.length > 0) {
+    resultados = resultados.filter((e) => {
+      const texto = normalizar(
+        [
+          e.titulo,
+          e.nombreIngles,
+          e.descripcion,
+          e.grupoMuscular,
+          ...e.musculosPrincipales,
+          ...(e.musculosSecundarios ?? []),
+        ]
+          .filter(Boolean)
+          .join(' ')
+      )
+      return palabras.every((p) => texto.includes(p))
+    })
   }
 
   const offsetParam = searchParams.get('offset')
