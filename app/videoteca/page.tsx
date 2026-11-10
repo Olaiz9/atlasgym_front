@@ -227,27 +227,6 @@ export default function VideotecaPage() {
     [cargandoGrupo, ejerciciosPorGrupo]
   )
 
-  // Videos tutoriales subidos por el gimnasio (excluyendo IDs de catálogo para cero duplicados)
-  const videosGymPorGrupo = useMemo(() => {
-    const mapa: Record<GrupoValido, VideoTecnica[]> = {
-      Pecho: [],
-      Espalda: [],
-      Piernas: [],
-      Hombros: [],
-      Brazos: [],
-      Core: [],
-    }
-
-    videosTecnica.forEach((v) => {
-      if (v.id.startsWith('cat-') || v.id.startsWith('ex-')) return
-      const g = v.grupoMuscular as GrupoValido
-      if (mapa[g]) {
-        mapa[g].push(v)
-      }
-    })
-
-    return mapa
-  }, [videosTecnica])
 
   // Resultados combinados si hay búsqueda activa
   const resultadosBusqueda = useMemo(() => {
@@ -431,7 +410,6 @@ export default function VideotecaPage() {
         <div className="space-y-12">
           {gruposAMostrar.map((grupo) => {
             const info = INFO_GRUPOS[grupo]
-            const videosGym = videosGymPorGrupo[grupo] || []
             const ejerciciosCatalogo = ejerciciosPorGrupo[grupo] || []
             const totalDisponibles = totalesPorGrupo[grupo] || ejerciciosCatalogo.length
             const estaCargando = cargandoGrupo[grupo] || false
@@ -467,27 +445,6 @@ export default function VideotecaPage() {
                     </button>
                   )}
                 </div>
-
-                {/* Videos Exclusivos de Coaching ATLAS Gym (si existen) */}
-                {videosGym.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
-                      <span>Tutoriales exclusivos de los coaches</span>
-                    </div>
-                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {videosGym.map((video) => (
-                        <TarjetaEjercicio
-                          key={video.id}
-                          video={video}
-                          esAdmin={esAdmin}
-                          esTutorialCoach={true}
-                          onSeleccionar={() => setVideoSeleccionado(video)}
-                          onEliminar={() => setVideoAEliminar(video)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Grilla de Ejercicios y Técnica del Catálogo */}
                 <div className="space-y-3">
