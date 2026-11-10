@@ -409,6 +409,7 @@ function CobrarPorParametro({
 
   useEffect(() => {
     if (!cobrarDni || procesadoRef.current === cobrarDni) return;
+    // Esperamos a que el socio tenga ID numérico del servidor (mientras está en alta optimista tiene UUID).
     const socio = alumnos.find((a) => a.dni === cobrarDni && /^\d+$/.test(a.id));
     if (!socio) return;
     procesadoRef.current = cobrarDni;
