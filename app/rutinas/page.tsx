@@ -131,7 +131,7 @@ export default function RutinasPage() {
         </div>
         <button
           onClick={() => setModalNuevaAbierto(true)}
-          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95"
+          className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Nueva rutina
@@ -145,7 +145,7 @@ export default function RutinasPage() {
             <button
               key={obj}
               onClick={() => setFiltroObjetivo(obj)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[color,background-color,box-shadow] duration-200 active:scale-95 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[color,background-color] duration-200 active:scale-95 ${
                 filtroObjetivo === obj
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
                   : 'bg-slate-900/80 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
@@ -164,7 +164,7 @@ export default function RutinasPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar rutina..."
-            className="pl-9 pr-4 h-10 text-sm bg-slate-900 border border-slate-800 text-white rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64 placeholder:text-slate-500"
+            className="pl-9 pr-4 h-10 text-sm bg-slate-900 border border-slate-800 text-white rounded-full outline-none transition-[border-color] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64 placeholder:text-slate-500"
           />
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function RutinasPage() {
           return (
             <div
               key={rutina.id}
-              className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl backdrop-blur-sm transition-[border-color,box-shadow] duration-300 hover:border-slate-700"
+              className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl backdrop-blur-sm transition-[border-color] duration-200 hover:border-slate-700"
             >
               <div>
                 {/* Cabecera de la Tarjeta */}
@@ -241,7 +241,7 @@ export default function RutinasPage() {
                         type="button"
                         onClick={() => toggleTodosDias(rutina)}
                         aria-label={rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos los días' : 'Ver todos los días'}
-                        className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                        className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
                       >
                         {rutina.dias.every((d) => diaExpandido[d.id]) ? 'Colapsar todos' : 'Ver todos'}
                       </button>
@@ -260,7 +260,7 @@ export default function RutinasPage() {
                           className="w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-bold text-slate-300 hover:text-white transition-colors"
                         >
                           <span>{dia.nombre}</span>
-                          <span className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <span className="flex items-center gap-2 text-xs text-slate-500">
                             {dia.ejercicios.length} ejer.
                             {expandido ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
                           </span>
@@ -278,24 +278,24 @@ export default function RutinasPage() {
                                     • {ej.nombre}
                                   </span>
                                   {ej.tipoSerie === 'BI_SERIE' && (
-                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                                    <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
                                       Bi-serie
                                     </span>
                                   )}
                                   {ej.tipoSerie === 'DROP_SET' && (
-                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                                    <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
                                       Drop Set
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                   {ej.descansoSegundos ? (
-                                    <span className="text-[10px] font-mono text-slate-500 flex items-center gap-0.5" title={`Descanso: ${ej.descansoSegundos} segundos`}>
+                                    <span className="text-xs font-mono text-slate-500 flex items-center gap-0.5" title={`Descanso: ${ej.descansoSegundos} segundos`}>
                                       <Clock className="size-2.5 text-blue-400" />
                                       {ej.descansoSegundos}s
                                     </span>
                                   ) : null}
-                                  <span className="text-[11px] font-mono text-slate-400">
+                                  <span className="text-xs font-mono text-slate-400">
                                     {ej.series}x{ej.repeticiones}
                                   </span>
                                 </div>
@@ -318,7 +318,7 @@ export default function RutinasPage() {
                       {alumnosConEstaRutina.map((al) => (
                         <span
                           key={al.id}
-                          className="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-300"
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300"
                         >
                           {al.nombre}
                         </span>
@@ -544,7 +544,7 @@ function ModalAsignarRutina({
                     className="p-2 rounded-xl bg-slate-950/70 border border-amber-500/20 text-slate-200 flex items-center justify-between gap-2"
                   >
                     <span className="font-bold truncate">{c.alumnoNombre}</span>
-                    <span className="text-[10px] text-amber-400/90 truncate shrink-0">
+                    <span className="text-xs text-amber-400/90 truncate shrink-0">
                       Actual: {c.rutinaAnteriorNombre}
                     </span>
                   </div>
@@ -570,7 +570,7 @@ function ModalAsignarRutina({
                   onConfirm(seleccionados)
                   onClose()
                 }}
-                className="h-10 rounded-xl bg-amber-600 px-5 text-xs font-bold text-white shadow-lg shadow-amber-600/25 hover:bg-amber-500 transition-all active:scale-95"
+                className="h-10 rounded-xl bg-amber-600 px-5 text-xs font-bold text-white shadow-lg shadow-amber-600/25 hover:bg-amber-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] active:scale-95"
               >
                 Sí, reemplazar y asignar
               </button>
@@ -581,7 +581,7 @@ function ModalAsignarRutina({
             <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 shrink-0">
               <p className="font-bold text-slate-400">Rutina seleccionada:</p>
               <p className="text-sm font-extrabold text-blue-400 mt-0.5">{rutina.nombre}</p>
-              <p className="text-[11px] text-blue-300/80 mt-1">{rutina.dias.length} días de entrenamiento</p>
+              <p className="text-xs text-blue-300/80 mt-1">{rutina.dias.length} días de entrenamiento</p>
             </div>
 
             <div className="relative shrink-0">
@@ -624,14 +624,14 @@ function ModalAsignarRutina({
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{a.nombre}</p>
-                        <p className="text-[11px] text-slate-400 truncate">
+                        <p className="text-xs text-slate-400 truncate">
                           {a.plan}
                           {yaAsignada && ' — Ya tiene esta rutina'}
                           {tieneOtraRutina && ` — Tiene: ${nombreOtraRutina}`}
                         </p>
                       </div>
                       {tieneOtraRutina && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
                           Tiene rutina
                         </span>
                       )}
@@ -666,7 +666,7 @@ function ModalAsignarRutina({
               <button
                 type="submit"
                 disabled={seleccionados.length === 0}
-                className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,transform] duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {conflictos.length > 0 ? 'Continuar asignación' : 'Confirmar asignación'}
               </button>
@@ -956,7 +956,7 @@ function ModalNuevaRutina({
             </button>
             <button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95"
+              className="h-11 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,transform] duration-200 active:scale-95"
             >
               {esEdicion ? 'Guardar cambios' : 'Guardar rutina'}
             </button>
@@ -1073,7 +1073,7 @@ function TarjetaDiaRutina({
                       onActualizarEjercicio(ej.id, 'repeticiones', '8 + 8 + 8')
                     }
                   }}
-                  className={`text-[11px] font-bold px-2 py-1 rounded-lg border outline-none cursor-pointer transition-colors ${
+                  className={`text-xs font-bold px-2 py-1 rounded-lg border outline-none cursor-pointer transition-colors ${
                     ej.tipoSerie === 'BI_SERIE'
                       ? 'bg-purple-950/60 text-purple-300 border-purple-800'
                       : ej.tipoSerie === 'DROP_SET'
@@ -1121,7 +1121,7 @@ function TarjetaDiaRutina({
                   aria-label="Tiempo de descanso"
                   value={ej.descansoSegundos ?? 60}
                   onChange={(e) => onActualizarEjercicio(ej.id, 'descansoSegundos', parseInt(e.target.value, 10))}
-                  className="text-[11px] font-mono font-bold text-slate-200 bg-transparent outline-none cursor-pointer"
+                  className="text-xs font-mono font-bold text-slate-200 bg-transparent outline-none cursor-pointer"
                 >
                   <option value={15} className="bg-slate-900 text-white">15s</option>
                   <option value={20} className="bg-slate-900 text-white">20s</option>
@@ -1215,7 +1215,7 @@ function ModalBuscarEjercicioVideoteca({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-black text-white">Videoteca de ejercicios</h3>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
                 {videosTecnica.length.toLocaleString('es-AR')} ejercicios
               </span>
             </div>
@@ -1323,10 +1323,10 @@ function ModalBuscarEjercicioVideoteca({
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/25">
                           {ejercicio.grupoMuscular}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
                           {ejercicio.nivel}
                         </span>
                       </div>
@@ -1334,7 +1334,7 @@ function ModalBuscarEjercicioVideoteca({
                         {ejercicio.titulo}
                       </h4>
                       {ejercicio.descripcion && (
-                        <p className="text-[11px] text-slate-400 line-clamp-1">
+                        <p className="text-xs text-slate-400 line-clamp-1">
                           {ejercicio.descripcion}
                         </p>
                       )}
@@ -1432,7 +1432,7 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
               className="max-h-full max-w-full object-contain mx-auto"
               loading="lazy"
             />
-            <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
+            <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-slate-950/80 text-xs font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
               Loop continuo
             </div>
           </div>
@@ -1484,7 +1484,7 @@ function BadgeEstadoEjercicio({
 }) {
   if (todasCompletas) {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
         <Check className="size-3 text-emerald-400" strokeWidth={3} />
         Completado
       </span>
@@ -1492,13 +1492,13 @@ function BadgeEstadoEjercicio({
   }
   if (seriesCompletas > 0) {
     return (
-      <span className="text-[11px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">
+      <span className="text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">
         {seriesCompletas}/{totalSeries} series
       </span>
     )
   }
   return (
-    <span className="text-[11px] font-medium text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+    <span className="text-xs font-medium text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
       {totalSeries} series
     </span>
   )
@@ -1551,7 +1551,7 @@ function TablaSeries({
                 {previaData && typeof previaData.kg === 'number' && typeof previaData.reps === 'number' ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-300">
                     <span className="text-blue-400 font-extrabold">{previaData.kg}</span>
-                    <span className="text-[10px] text-slate-500 font-sans">kg</span>
+                    <span className="text-xs text-slate-500 font-sans">kg</span>
                     <span className="text-slate-600 font-sans mx-0.5 font-bold">×</span>
                     <span className="text-blue-400 font-extrabold">{previaData.reps}</span>
                   </span>
@@ -1713,12 +1713,12 @@ function TarjetaEjercicioAlumno({
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h3 className="text-sm sm:text-base font-bold text-white break-words">{ejercicio.nombre}</h3>
                 {ejercicio.tipoSerie === 'BI_SERIE' && (
-                  <span className="inline-flex items-center text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm shrink-0">
+                  <span className="inline-flex items-center text-xs sm:text-xs font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm shrink-0">
                     Bi-serie
                   </span>
                 )}
                 {ejercicio.tipoSerie === 'DROP_SET' && (
-                  <span className="inline-flex items-center text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm shrink-0">
+                  <span className="inline-flex items-center text-xs sm:text-xs font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm shrink-0">
                     Drop Set
                   </span>
                 )}
@@ -1734,7 +1734,7 @@ function TarjetaEjercicioAlumno({
           {/* Lateral derecho: Descanso y Chevron */}
           <div className="flex items-center gap-3 shrink-0">
             {ejercicio.descansoSegundos ? (
-              <span className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-slate-200 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 shadow-sm" title={`Descanso sugerido entre series: ${ejercicio.descansoSegundos} segundos`}>
+              <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 shadow-sm" title={`Descanso sugerido entre series: ${ejercicio.descansoSegundos} segundos`}>
                 <Clock className="size-3 text-blue-400" />
                 {ejercicio.descansoSegundos}s descanso
               </span>
@@ -1871,7 +1871,7 @@ function ModalConfirmarIncompleto({
               onConfirmar()
               onClose()
             }}
-            className="h-10 px-5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition-[color,background-color,box-shadow,transform] duration-150 active:scale-95"
+            className="h-10 px-5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition-[color,background-color,transform] duration-150 active:scale-95"
           >
             Guardar progreso parcial
           </button>
@@ -2208,14 +2208,14 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             <button
               key={d.id}
               onClick={() => handleCambioDia(index)}
-              className={`flex-1 sm:flex-initial flex items-center justify-between sm:justify-center gap-3 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-between sm:justify-center gap-3 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 active:scale-95 cursor-pointer ${
                 esActivo
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-black'
                   : 'bg-slate-900/80 text-slate-400 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <span className="truncate">{d.nombre}</span>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${
+              <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold shrink-0 ${
                 esActivo
                   ? 'bg-blue-700/60 text-blue-100'
                   : dTerminado
@@ -2279,7 +2279,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
               <button
                 type="button"
                 onClick={handleGuardar}
-                className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl text-sm font-bold transition-[color,background-color,box-shadow,transform] duration-200 active:scale-95 cursor-pointer shadow-lg ${
+                className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl text-sm font-bold transition-[color,background-color,transform] duration-200 active:scale-95 cursor-pointer shadow-lg ${
                   guardado
                     ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 shadow-emerald-950/20'
                     : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25'
@@ -2335,9 +2335,9 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
 
       {/* Barra Flotante de Temporizador de Descanso Automático */}
       {temporizador && (
-        <div className="fixed bottom-22 md:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-22 md:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md animate-in slide-in-from-bottom-5 duration-200">
           <div
-            className={`rounded-2xl border p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl transition-all ${
+            className={`rounded-2xl border p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
               temporizador.segundosRestantes === 0
                 ? 'bg-emerald-950/95 border-emerald-500/80 shadow-emerald-900/50'
                 : 'bg-slate-900/95 border-blue-500/50 shadow-blue-950/60'
@@ -2422,7 +2422,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                               : null
                           )
                         }
-                        className="h-8 px-2 sm:px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center justify-center transition-colors cursor-pointer"
+                        className="h-8 px-2 sm:px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
                       >
                         +15s
                       </button>
@@ -2444,7 +2444,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             {/* Barra de progreso animada */}
             <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-2.5">
               <div
-                className={`h-full transition-all duration-300 rounded-full ${
+                className={`h-full transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 rounded-full ${
                   temporizador.segundosRestantes === 0
                     ? 'bg-emerald-500'
                     : 'bg-gradient-to-r from-blue-500 to-emerald-400'
@@ -2465,7 +2465,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
             </div>
 
             {temporizador.segundosRestantes === 0 && (
-              <p className="text-center text-[11px] font-bold text-emerald-300 mt-2 animate-pulse">
+              <p className="text-center text-xs font-bold text-emerald-300 mt-2 animate-pulse">
                 🔔 ¡Descanso completado! Preparate para tu próxima serie.
               </p>
             )}

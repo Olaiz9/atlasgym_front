@@ -49,7 +49,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-blue-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 group-hover:border-red-500/30 group-hover:bg-white/[0.09] group-hover:scale-105 transition-all shadow-sm shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 group-hover:border-red-500/30 group-hover:bg-white/[0.09] group-hover:scale-105 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] shadow-sm shrink-0">
                 <GmailIcon className="size-5.5" />
               </div>
               <div>
@@ -69,7 +69,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-emerald-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] group-hover:border-[#25D366]/40 group-hover:bg-[#25D366]/20 group-hover:scale-105 transition-all shadow-sm shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] group-hover:border-[#25D366]/40 group-hover:bg-[#25D366]/20 group-hover:scale-105 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] shadow-sm shrink-0">
                 <WhatsAppIcon className="size-5.5" />
               </div>
               <div>
@@ -89,7 +89,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-[border-color,background-color] duration-200 hover:border-pink-500/50 hover:bg-slate-800/40 group"
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-tr from-[#f09433]/15 via-[#dc2743]/15 to-[#bc1888]/15 border border-[#dc2743]/25 group-hover:border-[#dc2743]/50 group-hover:scale-105 transition-all shadow-sm shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-tr from-[#f09433]/15 via-[#dc2743]/15 to-[#bc1888]/15 border border-[#dc2743]/25 group-hover:border-[#dc2743]/50 group-hover:scale-105 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] shadow-sm shrink-0">
                 <InstagramIcon className="size-5.5" />
               </div>
               <div>

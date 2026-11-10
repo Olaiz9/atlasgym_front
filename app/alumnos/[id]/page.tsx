@@ -70,7 +70,7 @@ function TarjetaRutina({ rutina }: { rutina: any }) {
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-black text-white">{rutina.nombre}</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
               {rutina.objetivo}
             </span>
           </div>
@@ -87,19 +87,19 @@ function TarjetaRutina({ rutina }: { rutina: any }) {
                     <div key={ej.id} className="flex items-center gap-1.5 truncate">
                       <span className="truncate">• {ej.nombre} ({ej.series}x{ej.repeticiones})</span>
                       {ej.tipoSerie === "BI_SERIE" && (
-                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                        <span className="text-xs font-extrabold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
                           Bi-serie
                         </span>
                       )}
                       {ej.tipoSerie === "DROP_SET" && (
-                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                        <span className="text-xs font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
                           Drop Set
                         </span>
                       )}
                     </div>
                   ))}
                   {dia.ejercicios.length > 3 && (
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-xs font-medium text-slate-500">
                       + {dia.ejercicios.length - 3} ejercicios más
                     </p>
                   )}
@@ -157,10 +157,10 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
                   <td className="px-6 py-4 text-slate-300 font-medium">
                     <div>{pago.plan}</div>
                     {pago.periodoMes && (
-                      <div className="text-[11px] text-slate-500">Período: {pago.periodoMes}</div>
+                      <div className="text-xs text-slate-500">Período: {pago.periodoMes}</div>
                     )}
                     {esAnulado && pago.motivoAnulacion && (
-                      <div className="text-[11px] text-rose-400/90 mt-0.5">
+                      <div className="text-xs text-rose-400/90 mt-0.5">
                         Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}: {pago.motivoAnulacion}
                       </div>
                     )}
@@ -170,7 +170,7 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
                       ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
                     </span>
                     {esParcial && (
-                      <div className="text-[11px] font-bold text-amber-400">
+                      <div className="text-xs font-bold text-amber-400">
                         Resta ${saldo.toLocaleString("es-AR")} (de ${pago.monto.toLocaleString("es-AR")})
                       </div>
                     )}
@@ -509,7 +509,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
                 <Clock className="w-4 h-4 text-slate-400" />
                 Asistencia
               </h2>
-              <span className="text-[11px] font-semibold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <span className="text-xs font-semibold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
                 Registrado por Tótem
               </span>
             </div>

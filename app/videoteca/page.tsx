@@ -312,7 +312,7 @@ export default function VideotecaPage() {
         {esAdmin && (
           <Button
             onClick={() => setModalNuevoAbierto(true)}
-            className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-200 hover:bg-blue-500 active:scale-95 shrink-0 cursor-pointer"
+            className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 hover:bg-blue-500 active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus className="mr-2 size-4" />
             Nuevo video coach
@@ -332,7 +332,7 @@ export default function VideotecaPage() {
             placeholder="Buscar ejercicio (ej. Banca, Sentadilla, Curl, Polea)..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-800 bg-slate-900/80 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
+            className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-800 bg-slate-900/80 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200"
           />
           {busqueda && (
             <button
@@ -359,7 +359,7 @@ export default function VideotecaPage() {
                   setFiltroGrupo(grupo)
                   setBusqueda('')
                 }}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 shrink-0 cursor-pointer ${
                   activo
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'bg-slate-900/80 text-slate-400 border border-slate-800/80 hover:bg-slate-800 hover:text-slate-200'
@@ -367,7 +367,7 @@ export default function VideotecaPage() {
               >
                 <span>{grupo}</span>
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  className={`px-1.5 py-0.5 rounded-full text-xs font-mono font-bold ${
                     activo ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
                   }`}
                 >
@@ -522,7 +522,7 @@ export default function VideotecaPage() {
                       type="button"
                       disabled={estaCargando}
                       onClick={() => cargarMasDeGrupo(grupo)}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-slate-200 font-bold text-xs md:text-sm shadow-md transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-6 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-slate-200 font-bold text-xs md:text-sm shadow-md transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {estaCargando ? (
                         <>
@@ -536,7 +536,7 @@ export default function VideotecaPage() {
                         </>
                       )}
                     </button>
-                    <span className="text-[11px] text-slate-500 font-medium">
+                    <span className="text-xs text-slate-500 font-medium">
                       Quedan {totalDisponibles - ejerciciosCatalogo.length} ejercicios adicionales de {grupo}
                     </span>
                   </div>
@@ -590,7 +590,7 @@ export default function VideotecaPage() {
                   alt={`Técnica de ${videoSeleccionado.titulo}`}
                   className="max-h-full max-w-full object-contain mx-auto"
                 />
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-950/80 text-[10px] font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-slate-950/80 text-xs font-mono font-bold text-blue-400 border border-slate-800 backdrop-blur-sm">
                   Loop continuo sin cortes
                 </div>
               </div>
@@ -738,7 +738,7 @@ function TarjetaEjercicio({
     <div
       onMouseEnter={() => setHoverActivo(true)}
       onMouseLeave={() => setHoverActivo(false)}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-xl ${
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 hover:shadow-xl ${
         esTutorialCoach
           ? 'border-blue-500/40 bg-gradient-to-b from-blue-950/30 to-slate-900/60 hover:shadow-blue-900/30'
           : 'border-slate-800 bg-slate-900/60 hover:border-blue-500/40 hover:shadow-blue-950/40'
@@ -755,10 +755,10 @@ function TarjetaEjercicio({
             {/* Poster liviano por defecto para apertura en 0ms */}
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
               <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:12px_12px]" />
-              <div className="size-12 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-2 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <div className="size-12 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-2 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200">
                 <Play className="size-5 fill-current ml-0.5" />
               </div>
-              <span className="text-[11px] font-bold text-slate-300 group-hover:text-blue-400 transition-colors">
+              <span className="text-xs font-bold text-slate-300 group-hover:text-blue-400 transition-colors">
                 Ver loop biomecánico
               </span>
             </div>
@@ -769,7 +769,7 @@ function TarjetaEjercicio({
               src={urlMedio}
               alt={video.titulo}
               onLoad={() => setGifCargado(true)}
-              className={`absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-300 ${
+              className={`absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-200 ${
                 gifCargado ? 'opacity-100' : 'opacity-0'
               }`}
               loading="lazy"
@@ -780,7 +780,7 @@ function TarjetaEjercicio({
           /* Video de YouTube de coach */
           <>
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-            <div className="relative size-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all duration-300 group-hover:bg-blue-500">
+            <div className="relative size-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-blue-500">
               <Play className="size-5 fill-white ml-0.5" />
             </div>
           </>
@@ -788,18 +788,18 @@ function TarjetaEjercicio({
 
         {/* Badge superior de grupo / equipo */}
         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-          <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold text-blue-300 border border-blue-500/30">
+          <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-xs font-bold text-blue-300 border border-blue-500/30">
             {video.grupoMuscular}
           </span>
           {video.equipo && (
-            <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-800">
+            <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-xs font-semibold text-slate-300 border border-slate-800">
               {video.equipo}
             </span>
           )}
         </div>
 
         {/* Badge inferior de duración o GIF */}
-        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-[10px] font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
+        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-xs font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
           {esGif ? (
             <span className="text-blue-400 font-extrabold flex items-center gap-1">Loop GIF</span>
           ) : (
@@ -812,7 +812,7 @@ function TarjetaEjercicio({
 
         {esTutorialCoach && (
           <div className="absolute top-2.5 right-2.5">
-            <span className="rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold flex items-center gap-1">
+            <span className="rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 backdrop-blur-md px-2 py-0.5 text-xs font-bold flex items-center gap-1">
               Coach ATLAS
             </span>
           </div>
@@ -823,7 +823,7 @@ function TarjetaEjercicio({
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
               {video.nivel}
             </span>
 
@@ -862,7 +862,7 @@ function TarjetaEjercicio({
             <span>Ver técnica</span>
           </button>
 
-          <span className="text-[10px] font-medium text-slate-500">
+          <span className="text-xs font-medium text-slate-500">
             {esTutorialCoach ? 'ATLAS Coach' : 'Biomecánica'}
           </span>
         </div>
@@ -1022,7 +1022,7 @@ function ModalNuevoVideo({
             </Button>
             <Button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all duration-200"
+              className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200"
             >
               Guardar video
             </Button>

@@ -106,8 +106,8 @@ export default function AsistenciasPage() {
         <span
           className={`inline-flex items-center gap-1 font-bold ${
             small
-              ? 'text-[10px] px-2 py-0.5 rounded'
-              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+              ? 'text-xs px-2 py-0.5 rounded'
+              : 'text-xs px-2.5 py-0.5 rounded-full'
           } bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}
         >
           Al día
@@ -119,8 +119,8 @@ export default function AsistenciasPage() {
         <span
           className={`inline-flex items-center gap-1 font-bold ${
             small
-              ? 'text-[10px] px-2 py-0.5 rounded'
-              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+              ? 'text-xs px-2 py-0.5 rounded'
+              : 'text-xs px-2.5 py-0.5 rounded-full'
           } bg-amber-500/10 text-amber-400 border border-amber-500/20`}
         >
           Pendiente
@@ -131,8 +131,8 @@ export default function AsistenciasPage() {
       <span
         className={`inline-flex items-center gap-1 font-bold ${
           small
-            ? 'text-[10px] px-2 py-0.5 rounded'
-            : 'text-[11px] px-2.5 py-0.5 rounded-full'
+            ? 'text-xs px-2 py-0.5 rounded'
+            : 'text-xs px-2.5 py-0.5 rounded-full'
         } bg-rose-500/10 text-rose-400 border border-rose-500/20`}
       >
         Vencido
@@ -147,8 +147,8 @@ export default function AsistenciasPage() {
         <span
           className={`inline-flex items-center gap-1 font-bold ${
             small
-              ? 'text-[10px] px-2 py-0.5 rounded'
-              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+              ? 'text-xs px-2 py-0.5 rounded'
+              : 'text-xs px-2.5 py-0.5 rounded-full'
           } bg-orange-500/15 text-orange-300 border border-orange-500/40`}
           title={`El plan habilita ${cupo.limiteDiasSemana} días por semana y ya registró ${cupo.asistenciasSemana} días distintos esta semana`}
         >
@@ -162,8 +162,8 @@ export default function AsistenciasPage() {
         <span
           className={`inline-flex items-center gap-1 font-semibold ${
             small
-              ? 'text-[10px] px-2 py-0.5 rounded'
-              : 'text-[11px] px-2.5 py-0.5 rounded-full'
+              ? 'text-xs px-2 py-0.5 rounded'
+              : 'text-xs px-2.5 py-0.5 rounded-full'
           } bg-slate-800/90 text-slate-300 border border-slate-700`}
         >
           {cupo.asistenciasSemana}/{cupo.limiteDiasSemana} días sem.
@@ -174,8 +174,8 @@ export default function AsistenciasPage() {
       <span
         className={`inline-flex items-center gap-1 font-medium ${
           small
-            ? 'text-[10px] px-2 py-0.5 rounded'
-            : 'text-[11px] px-2.5 py-0.5 rounded-full'
+            ? 'text-xs px-2 py-0.5 rounded'
+            : 'text-xs px-2.5 py-0.5 rounded-full'
         } bg-slate-800/50 text-slate-400 border border-slate-800`}
       >
         Libre ({cupo.asistenciasSemana} d.)
@@ -401,7 +401,7 @@ export default function AsistenciasPage() {
             <button
               type="button"
               onClick={exportarCSV}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-all shadow-sm cursor-pointer"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] shadow-sm cursor-pointer"
             >
               <Download className="size-4" />
               Exportar CSV
@@ -413,7 +413,7 @@ export default function AsistenciasPage() {
               href="/totem"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all cursor-pointer"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
             >
               <ExternalLink className="size-4" />
               Abrir terminal tótem
@@ -437,7 +437,7 @@ export default function AsistenciasPage() {
             <span className="text-4xl font-black tracking-tight text-white">{sociosEnSala.length}</span>
             <span className="text-xs font-semibold text-slate-400">socios activos</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2 text-xs text-slate-500">
             Sesión activa menor a {DURACION_SESION_MINUTOS} min (1h 40m).
           </p>
         </div>
@@ -452,7 +452,7 @@ export default function AsistenciasPage() {
             <span className="text-4xl font-black tracking-tight text-white">{asistenciasHoy.length}</span>
             <span className="text-xs font-semibold text-slate-400">check-ins</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">Total acumulado durante la jornada.</p>
+          <p className="mt-2 text-xs text-slate-500">Total acumulado durante la jornada.</p>
         </div>
 
         {/* KPI 3: Tasa al Día */}
@@ -465,7 +465,7 @@ export default function AsistenciasPage() {
             <span className="text-4xl font-black tracking-tight text-emerald-400">{porcentajeAlDiaHoy}%</span>
             <span className="text-xs font-semibold text-slate-400">de concurrencia</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">Socios que ingresaron con cuota paga.</p>
+          <p className="mt-2 text-xs text-slate-500">Socios que ingresaron con cuota paga.</p>
         </div>
 
         {/* KPI 4: Horario Pico */}
@@ -477,7 +477,7 @@ export default function AsistenciasPage() {
           <div className="mt-3">
             <span className="text-xl sm:text-2xl font-black tracking-tight text-amber-400">{horaPico}</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">Franja con mayor concurrencia ({etiquetaDiaGrafico}).</p>
+          <p className="mt-2 text-xs text-slate-500">Franja con mayor concurrencia ({etiquetaDiaGrafico}).</p>
         </div>
       </section>
 
@@ -511,7 +511,7 @@ export default function AsistenciasPage() {
                       <span className="font-black text-orange-300">
                         {cupo.asistenciasSemana} de {cupo.limiteDiasSemana} días esta semana
                       </span>
-                      <span className="text-[11px] font-mono text-slate-500">{asistencia.hora} hs</span>
+                      <span className="text-xs font-mono text-slate-500">{asistencia.hora} hs</span>
                     </li>
                   ))}
                 </ul>
@@ -563,7 +563,7 @@ export default function AsistenciasPage() {
                   key={opc.fecha}
                   type="button"
                   onClick={() => setDiaGrafico(opc.fecha)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer ${
                     seleccionado
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold'
                       : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -577,7 +577,7 @@ export default function AsistenciasPage() {
             <button
               type="button"
               onClick={() => setDiaGrafico('SEMANA_COMPLETA')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer ${
                 diaGrafico === 'SEMANA_COMPLETA'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold'
                   : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -596,7 +596,7 @@ export default function AsistenciasPage() {
                   return (
                     <div key={item.hora} className="flex-1 flex flex-col items-center gap-1 group relative">
                       {/* Tooltip hover */}
-                      <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg pointer-events-none z-10 whitespace-nowrap border border-slate-700">
+                      <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg pointer-events-none z-10 whitespace-nowrap border border-slate-700">
                         {item.etiqueta}: {item.cantidad} {item.cantidad === 1 ? 'persona' : 'personas'}
                       </div>
 
@@ -612,7 +612,7 @@ export default function AsistenciasPage() {
                           style={{ height: `${Math.max(item.porcentaje, item.cantidad > 0 ? 8 : 3)}%` }}
                         />
                       </div>
-                      <span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
+                      <span className="text-xs font-medium text-slate-500 group-hover:text-slate-300">
                         {item.hora}h
                       </span>
                     </div>
@@ -659,7 +659,7 @@ export default function AsistenciasPage() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-xl bg-blue-950/30 border border-blue-500/20 p-3 text-[11px] text-blue-300 flex items-center gap-2">
+          <div className="mt-6 rounded-xl bg-blue-950/30 border border-blue-500/20 p-3 text-xs text-blue-300 flex items-center gap-2">
             <Sparkles className="size-4 shrink-0 text-blue-400" />
             <span>Datos calculados automáticamente a partir de los ingresos registrados en el tótem.</span>
           </div>
@@ -710,7 +710,7 @@ export default function AsistenciasPage() {
                     type="button"
                     onClick={() => setPaginaSala((prev) => Math.max(0, prev - 1))}
                     disabled={paginaSalaActual === 0}
-                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
                       paginaSalaActual === 0
                         ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
                         : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
@@ -724,7 +724,7 @@ export default function AsistenciasPage() {
                     type="button"
                     onClick={() => setPaginaSala((prev) => Math.min(totalPaginasSala - 1, prev + 1))}
                     disabled={paginaSalaActual >= totalPaginasSala - 1}
-                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
+                    className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
                       paginaSalaActual >= totalPaginasSala - 1
                         ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
                         : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
@@ -792,7 +792,7 @@ export default function AsistenciasPage() {
                       <p className="truncate text-sm font-bold text-white">{s.alumnoNombre}</p>
                       <p className="text-xs text-slate-400 font-medium">DNI: {s.alumnoDni}</p>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                        <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
                           {s.planNombre}
                         </span>
                         {renderBadgeEstadoCuota(estadoSocio, true)}
@@ -807,7 +807,7 @@ export default function AsistenciasPage() {
                       <Clock className="size-3" />
                       {formatearTiempoEnSala(s.timestamp, ahoraMs)}
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Resta: ~{minutosRestantes} min</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Resta: ~{minutosRestantes} min</p>
                   </div>
                 </div>
               )
@@ -1021,12 +1021,12 @@ export default function AsistenciasPage() {
                       </td>
                       <td className="py-3.5 px-3 text-xs">
                         {activa ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[11px]">
+                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-xs">
                             <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             {formatearTiempoEnSala(asist.timestamp, ahoraMs)}
                           </span>
                         ) : (
-                          <span className="text-slate-500 text-[11px]">
+                          <span className="text-slate-500 text-xs">
                             Sesión completada
                           </span>
                         )}
@@ -1094,7 +1094,7 @@ export default function AsistenciasPage() {
                   eliminarAsistencia(asistenciaAEliminar.id)
                   setAsistenciaAEliminar(null)
                 }}
-                className="px-4 py-2 text-xs font-bold text-white rounded-xl bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-white rounded-xl bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Eliminar asistencia
               </button>

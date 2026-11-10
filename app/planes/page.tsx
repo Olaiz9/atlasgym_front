@@ -153,7 +153,7 @@ export default function PlanesPage() {
         {usuarioActual?.rol === 'ADMIN' && (
           <Button
             onClick={abrirCrear}
-            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 shrink-0"
+            className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 shrink-0"
           >
             <Plus className="mr-2 size-5" />
             Nuevo plan
@@ -166,7 +166,7 @@ export default function PlanesPage() {
         {planes.map((plan) => (
           <div
             key={plan.id}
-            className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[transform,box-shadow,border-color] duration-300 ${
+            className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[transform,border-color] duration-200 ${
               plan.activo
                 ? 'border-slate-800 bg-slate-900/50 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-950/30'
                 : 'border-slate-800/40 bg-slate-950/40 opacity-70'
@@ -362,7 +362,7 @@ export default function PlanesPage() {
                 </Button>
                 <Button
                   type="submit"
-                  className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,box-shadow,transform] duration-200"
+                  className="h-11 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-[color,background-color,transform] duration-200"
                 >
                   {form.planAEditar ? 'Guardar cambios' : 'Crear plan'}
                 </Button>

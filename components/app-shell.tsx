@@ -129,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30 pb-24 md:pb-0">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-      <main className={`min-w-0 w-full overflow-x-hidden transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+      <main className={`min-w-0 w-full overflow-x-hidden ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
         {usuarioActual.rol === 'ADMIN' && <AvisoTotemSinSenal />}
         {children}
       </main>
@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Contraseña provisoria actual
                 </label>
                 <input
@@ -163,7 +163,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Nueva contraseña personal (mínimo 6 caracteres)
                 </label>
                 <input
@@ -175,7 +175,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Confirmar nueva contraseña
                 </label>
                 <input

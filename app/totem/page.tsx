@@ -758,7 +758,7 @@ export default function TotemPage() {
               return (
                 <div
                   key={idx}
-                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-all duration-200 select-none ${
+                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 select-none ${
                     errorPin
                       ? 'border-rose-500 bg-rose-500/15 text-rose-400 scale-95'
                       : tieneValor
@@ -777,7 +777,7 @@ export default function TotemPage() {
               {mensajeErrorPin || 'PIN de terminal incorrecto'}
             </p>
           ) : (
-            <p className="mt-3 text-center text-[11px] text-slate-500">
+            <p className="mt-3 text-center text-xs text-slate-500">
               Ingresá el código de autorización de 4 dígitos
             </p>
           )}
@@ -789,7 +789,7 @@ export default function TotemPage() {
                 key={n}
                 type="button"
                 onClick={() => manejarDigitoPin(n)}
-                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
               >
                 {n}
               </button>
@@ -797,21 +797,21 @@ export default function TotemPage() {
             <button
               type="button"
               onClick={manejarLimpiarPin}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
             >
               Borrar
             </button>
             <button
               type="button"
               onClick={() => manejarDigitoPin('0')}
-              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
             >
               0
             </button>
             <button
               type="button"
               onClick={manejarBorrarPin}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
               aria-label="Retroceso"
             >
               <Delete className="size-5" />
@@ -854,7 +854,7 @@ export default function TotemPage() {
         <div className="flex items-center gap-3 sm:gap-4 text-right">
           <div className="hidden sm:block">
             <p className="text-xl sm:text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
-            <p className="text-[11px] font-medium text-slate-400 capitalize">{fechaActual}</p>
+            <p className="text-xs font-medium text-slate-400 capitalize">{fechaActual}</p>
           </div>
           <div className="flex items-center gap-2">
             {pendientesOutbox > 0 && (
@@ -862,7 +862,7 @@ export default function TotemPage() {
                 type="button"
                 onClick={() => vaciarColaOutbox()}
                 title="Reintentar sincronización de ingresos registrados sin Internet"
-                className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-1.5 text-amber-300 text-[11px] font-bold cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-1.5 text-amber-300 text-xs font-bold cursor-pointer"
               >
                 <CloudUpload className="size-3.5 shrink-0" />
                 <span>{pendientesOutbox} pend. sync</span>
@@ -918,7 +918,7 @@ export default function TotemPage() {
             {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
             <div
               onClick={() => inputDniRef.current?.focus()}
-              className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500 cursor-text"
+              className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] focus-within:border-blue-500 cursor-text"
             >
               <input
                 ref={inputDniRef}
@@ -936,7 +936,7 @@ export default function TotemPage() {
                 tabIndex={0}
                 aria-label="Ingresar DNI"
               />
-              <p className="text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
+              <p className="text-xs sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
               <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center">
                 {dni ? (
                   <span className="text-2xl sm:text-3xl md:text-4xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
@@ -957,7 +957,7 @@ export default function TotemPage() {
                   key={num}
                   type="button"
                   onClick={() => agregarDigito(num)}
-                  className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                  className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
                 >
                   {num}
                 </button>
@@ -967,7 +967,7 @@ export default function TotemPage() {
                 <button
                   type="button"
                   onClick={limpiar}
-                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-xs sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                 >
                   <RotateCcw className="size-4 md:size-5 text-slate-400" />
                   <span>Limpiar</span>
@@ -977,7 +977,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={() => agregarDigito('0')}
-                className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
               >
                 0
               </button>
@@ -986,7 +986,7 @@ export default function TotemPage() {
                 <button
                   type="button"
                   onClick={borrarUltimo}
-                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-xs sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                 >
                   <Delete className="size-4 md:size-5 text-slate-400" />
                   <span>Borrar</span>
@@ -999,7 +999,7 @@ export default function TotemPage() {
               type="button"
               disabled={dni.length < 6 || procesando}
               onClick={() => manejarEnvio()}
-              className={`w-full h-11 sm:h-13 md:h-14 lg:h-15 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg tracking-wide flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg ${
+              className={`w-full h-11 sm:h-13 md:h-14 lg:h-15 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg tracking-wide flex items-center justify-center gap-2 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 cursor-pointer shadow-lg ${
                 dni.length >= 6 && !procesando
                   ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 active:scale-98'
                   : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
@@ -1030,7 +1030,7 @@ export default function TotemPage() {
               <div className="h-7 w-px bg-slate-800" />
               <div>
                 <p className="text-xs font-bold text-slate-500">Estado de cuenta</p>
-                <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   Al día
                 </span>
               </div>
@@ -1039,10 +1039,10 @@ export default function TotemPage() {
             {/* Temporizador y botón siguiente */}
             <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-xs font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full bg-emerald-500 transition-all duration-100 ease-linear rounded-full"
+                    className="h-full bg-emerald-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-100 ease-linear rounded-full"
                     style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
                   />
                 </div>
@@ -1050,7 +1050,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Siguiente socio
               </button>
@@ -1089,7 +1089,7 @@ export default function TotemPage() {
               <div>
                 <p className="text-xs font-bold text-slate-500">Condición</p>
                 <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                  className={`inline-flex items-center gap-1 text-xs font-black px-2.5 py-0.5 rounded-full border ${
                     resultado.esDuplicado && resultado.estadoCuenta === 'AL_DIA'
                       ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                       : resultado.estadoCuenta === 'PENDIENTE'
@@ -1109,10 +1109,10 @@ export default function TotemPage() {
             {/* Temporizador y botón siguiente */}
             <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-xs font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full bg-amber-500 transition-all duration-100 ease-linear rounded-full"
+                    className="h-full bg-amber-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-100 ease-linear rounded-full"
                     style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
                   />
                 </div>
@@ -1120,7 +1120,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Siguiente socio
               </button>
@@ -1149,10 +1149,10 @@ export default function TotemPage() {
 
             <div className="flex items-center justify-between gap-3 mt-4">
               <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
+                <p className="text-xs font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full bg-rose-500 transition-all duration-100 ease-linear rounded-full"
+                    className="h-full bg-rose-500 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-100 ease-linear rounded-full"
                     style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
                   />
                 </div>
@@ -1160,7 +1160,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Reintentar
               </button>
@@ -1170,7 +1170,7 @@ export default function TotemPage() {
       </section>
 
       {/* PIE DE PÁGINA KIOSCO */}
-      <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-[11px] sm:text-xs text-slate-500 shrink-0">
+      <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-xs sm:text-xs text-slate-500 shrink-0">
         <div className="flex items-center gap-2.5">
           <p className="flex items-center gap-1.5">
             <ShieldCheck className="size-3.5 text-blue-500" />
@@ -1184,7 +1184,7 @@ export default function TotemPage() {
               setErrorVinculacion(null)
               setModalVinculacionAbierto(true)
             }}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
             title="Configurar clave local de terminal (solo administradores)"
           >
             <KeyRound className="size-3" />
@@ -1195,7 +1195,7 @@ export default function TotemPage() {
             </span>
           </button>
         </div>
-        <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
+        <p className="text-xs sm:text-xs hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
 
       {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR */}
@@ -1216,7 +1216,7 @@ export default function TotemPage() {
               <button
                 type="button"
                 onClick={desvincularTerminal}
-                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Bloquear terminal ahora
               </button>
@@ -1226,14 +1226,14 @@ export default function TotemPage() {
                   setMostrarConfirmDesvincular(false)
                   router.push('/asistencias')
                 }}
-                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Ir al panel de asistencias
               </button>
               <button
                 type="button"
                 onClick={() => setMostrarConfirmDesvincular(false)}
-                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
               >
                 Cancelar y seguir en tótem
               </button>

@@ -204,7 +204,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black text-white">{usuarioActual.nombre}</h3>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">
                   {esAlumno ? 'Socio' : 'Coach / Admin'}
                 </span>
               </div>
@@ -227,7 +227,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
           <div className="p-4 bg-slate-950/60 border-b border-slate-800 space-y-2 text-xs">
             <p className="font-bold text-slate-300">Seleccioná un avatar o pegá el enlace seguro de tu foto:</p>
             {errorFoto && (
-              <p className="text-rose-400 text-[11px] font-semibold">{errorFoto}</p>
+              <p className="text-rose-400 text-xs font-semibold">{errorFoto}</p>
             )}
             <div className="flex items-center gap-2">
               <input
@@ -258,18 +258,18 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
                   <CreditCard className="size-3.5 text-blue-400" />
                   Membresía y plan
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
+                <span className={`px-2 py-0.5 rounded-md text-xs font-bold border ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
                   {ESTADO_CUENTA_LABEL[estadoCuenta]}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Plan actual</span>
+                  <span className="text-xs text-slate-400 block font-semibold">Plan actual</span>
                   <span className="text-xs font-bold text-white mt-0.5 block">{alumnoDatos.plan}</span>
                 </div>
                 <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-semibold flex items-center gap-1">
+                  <span className="text-xs text-slate-400 block font-semibold flex items-center gap-1">
                     <Calendar className="size-3 text-slate-400" />
                     Vencimiento
                   </span>
@@ -277,7 +277,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-500 leading-relaxed italic">
+              <p className="text-xs text-slate-500 leading-relaxed italic">
                 * Para solicitar un cambio de plan o consultas sobre aranceles, comunicate directamente con recepción o tu profesor.
               </p>
             </div>
@@ -291,7 +291,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
                 Celular / WhatsApp
               </label>
               {celularGuardado && (
-                <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">
+                <span className="text-emerald-400 font-bold flex items-center gap-1 text-xs animate-in fade-in">
                   <CheckCircle2 className="size-3.5" />
                   ¡Actualizado en todo el sistema!
                 </span>
@@ -306,19 +306,19 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
                 onChange={(e) => setCelular(e.target.value)}
                 placeholder="+54 9 261 123-4567"
                 required
-                className="flex-1 bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono"
+                className="flex-1 bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] font-mono"
               />
               <button
                 type="submit"
                 disabled={guardandoCelular}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] active:scale-95 shrink-0 flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="size-3.5" />
                 {guardandoCelular ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               {esAlumno
                 ? 'Tu profesor y administración verán este número actualizado inmediatamente para avisos y comprobantes.'
                 : 'Número de contacto oficial del profesor para comunicación interna.'}
@@ -333,7 +333,7 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
                 Seguridad y contraseña
               </span>
               {passwordGuardada && (
-                <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">
+                <span className="text-emerald-400 font-bold flex items-center gap-1 text-xs animate-in fade-in">
                   <CheckCircle2 className="size-3.5" />
                   Contraseña cambiada
                 </span>

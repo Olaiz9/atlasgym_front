@@ -127,7 +127,7 @@ function AlumnoCardsSection({
       {/* Tarjeta 1: Mi Rutina */}
       <Link
         href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer backdrop-blur-md"
+        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer backdrop-blur-md"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -136,7 +136,7 @@ function AlumnoCardsSection({
             <p className="mt-1 text-sm font-semibold text-blue-400">{subtituloRutina}</p>
             <p className="mt-4 text-xs font-medium text-slate-400">{detalleRutina}</p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/25 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white shadow-sm shrink-0">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-blue-600 group-hover:text-white shadow-sm shrink-0">
             <Dumbbell className="size-7" />
           </div>
         </div>
@@ -150,7 +150,7 @@ function AlumnoCardsSection({
       {/* Tarjeta 2: Mi Cuota */}
       <Link
         href="/finanzas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer backdrop-blur-md"
+        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer backdrop-blur-md"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -161,7 +161,7 @@ function AlumnoCardsSection({
               Vence el {calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined)}
             </p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-all duration-300 group-hover:bg-emerald-600 group-hover:text-white shadow-sm shrink-0">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-emerald-600 group-hover:text-white shadow-sm shrink-0">
             <WalletCards className="size-7" />
           </div>
         </div>
@@ -175,7 +175,7 @@ function AlumnoCardsSection({
       {/* Tarjeta 3: Mi Constancia */}
       <Link
         href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-amber-950/30 text-slate-100 border border-slate-800 hover:border-amber-500/40 cursor-pointer backdrop-blur-md"
+        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-amber-950/30 text-slate-100 border border-slate-800 hover:border-amber-500/40 cursor-pointer backdrop-blur-md"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -188,7 +188,7 @@ function AlumnoCardsSection({
               {constancia.ultimaVisita ? `Última visita: ${constancia.ultimaVisita}` : 'Todavía no registraste ingresos'}
             </p>
           </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 transition-all duration-300 group-hover:bg-amber-500 group-hover:text-white shadow-sm shrink-0">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-amber-500 group-hover:text-white shadow-sm shrink-0">
             <Sparkles className="size-7" />
           </div>
         </div>
@@ -231,10 +231,12 @@ function HomeAlumno({
       'bg-gradient-to-br from-indigo-900/60 to-slate-900',
       'bg-gradient-to-br from-cyan-900/60 to-slate-900',
     ];
-    return videosTecnica.slice(0, 3).map((v, i) => ({
-      ...v,
-      thumbnail: gradients[i % gradients.length],
-    }));
+    // Primero los que tienen imagen (GIF de técnica o miniatura de YouTube): una tarjeta vacía se ve rota
+    return [...videosTecnica]
+      .map((v) => ({ ...v, imagen: imagenDeVideo(v) }))
+      .sort((a, b) => Number(Boolean(b.imagen)) - Number(Boolean(a.imagen)))
+      .slice(0, 3)
+      .map((v, i) => ({ ...v, thumbnail: gradients[i % gradients.length] }));
   }, [videosTecnica])
 
   return (
@@ -280,7 +282,7 @@ function HomeAlumno({
           </div>
           <Link
             href="/rutinas"
-            className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 active:scale-95 text-sm"
+            className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 active:scale-95 text-sm"
           >
             <Dumbbell className="size-4" />
             Empezar entrenamiento
@@ -322,22 +324,38 @@ function HomeAlumno({
               <Link
                 key={v.id}
                 href="/videoteca"
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-900/20"
+                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-[transform,border-color] duration-200 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-900/20"
               >
                 <div className={`h-36 w-full rounded-xl ${v.thumbnail} flex items-center justify-center relative overflow-hidden border border-slate-800 group-hover:border-blue-500/30 transition-colors`}>
-                  <div className="size-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transition-transform duration-300">
-                    <PlayCircle className="size-6" />
-                  </div>
-                  <span className="absolute bottom-2 right-2 rounded-md bg-slate-950/80 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800">
+                  {v.imagen ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={v.imagen}
+                        alt={`Técnica: ${v.titulo}`}
+                        className={`absolute inset-0 h-full w-full ${v.gifUrl || v.formato === 'GIF' ? 'object-contain p-2 bg-white/95' : 'object-cover'}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div className="absolute bottom-2 left-2 size-8 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg">
+                        <PlayCircle className="size-4" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="size-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transition-transform duration-200">
+                      <PlayCircle className="size-6" />
+                    </div>
+                  )}
+                  <span className="absolute bottom-2 right-2 rounded-md bg-slate-950/80 px-2 py-0.5 text-xs font-mono font-bold text-slate-300 border border-slate-800">
                     {v.duracion}
                   </span>
                 </div>
                 <div className="mt-4">
                   <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-[10px] font-bold text-blue-400 border border-blue-500/20">
+                    <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/20">
                       {v.grupoMuscular}
                     </span>
-                    <span className="text-[10px] font-medium text-slate-500">{v.nivel}</span>
+                    <span className="text-xs font-medium text-slate-500">{v.nivel}</span>
                   </div>
                   <h3 className="mt-2 text-base font-bold text-white group-hover:text-blue-400 transition-colors">
                     {v.titulo}
@@ -488,7 +506,7 @@ export default function Page() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar en pagos recientes..."
             aria-label="Buscar en pagos recientes"
-            className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
+            className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
           />
         </div>
         <HeaderStatusSection
@@ -629,4 +647,12 @@ export default function Page() {
       <ModalNuevoAlumno isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
   )
+}
+
+/** Imagen para la tarjeta: el GIF de técnica, o la miniatura del video si es de YouTube. */
+function imagenDeVideo(v: { gifUrl?: string; formato?: string; videoUrl: string }): string | undefined {
+  if (v.gifUrl) return v.gifUrl
+  if (v.formato === 'GIF') return v.videoUrl
+  const yt = v.videoUrl?.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)
+  return yt ? `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg` : undefined
 }

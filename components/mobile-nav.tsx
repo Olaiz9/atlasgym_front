@@ -77,7 +77,7 @@ export function MobileNav() {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] font-semibold tracking-tight truncate max-w-[55px] text-center">
+              <span className="text-xs sm:text-xs font-semibold tracking-tight truncate max-w-[55px] text-center">
                 {label}
               </span>
             </Link>
@@ -92,7 +92,7 @@ export function MobileNav() {
           className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 sm:px-1.5 py-1 text-slate-400 hover:text-amber-400 transition-colors active:scale-95 cursor-pointer min-w-0"
         >
           <HelpCircle className="size-[22px] stroke-2 text-amber-500/90" />
-          <span className="text-[10px] sm:text-[11px] font-semibold tracking-tight truncate max-w-[55px] text-center">
+          <span className="text-xs sm:text-xs font-semibold tracking-tight truncate max-w-[55px] text-center">
             {esAlumno ? 'Profesor' : 'Ayuda'}
           </span>
         </button>
@@ -104,7 +104,7 @@ export function MobileNav() {
           className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 sm:px-1.5 py-1 text-slate-400 hover:text-rose-400 transition-colors active:scale-95 min-w-0 cursor-pointer"
         >
           <LogOut className="size-[22px] stroke-2" />
-          <span className="text-[10px] sm:text-[11px] font-semibold tracking-tight truncate max-w-[50px] text-center">
+          <span className="text-xs sm:text-xs font-semibold tracking-tight truncate max-w-[50px] text-center">
             Salir
           </span>
         </button>

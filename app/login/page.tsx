@@ -132,7 +132,7 @@ export default function LoginPage() {
             className="h-16 w-auto object-contain mb-3 drop-shadow-[0_10px_25px_rgba(37,99,235,0.25)]"
             priority
           />
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-950/40 px-3.5 py-1 text-[11px] font-semibold text-blue-300 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-950/40 px-3.5 py-1 text-xs font-semibold text-blue-300 backdrop-blur-md">
             <span className="size-1.5 rounded-full bg-blue-400 animate-pulse" />
             Portal Oficial de Gestión y Entrenamiento
           </div>
@@ -163,7 +163,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Ingresá tu usuario, DNI o correo"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
+                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
                 />
                 <button
                   type="button"
@@ -227,7 +227,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={cargando}
-              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
               {cargando ? (
                 <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -241,7 +241,7 @@ export default function LoginPage() {
           </form>
 
           {/* Micro indicadores de seguridad y servicio (sin emojis) */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-[11px] text-slate-400">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs text-slate-400">
             <div className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2.5 border border-slate-800/40">
               <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
               <span className="leading-tight">Acceso seguro y protegido</span>
@@ -257,7 +257,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={abrirModalTutorial}
-              className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 py-3 px-4 text-xs font-semibold text-slate-300 hover:text-white transition-all duration-200 group cursor-pointer"
+              className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 py-3 px-4 text-xs font-semibold text-slate-300 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
@@ -283,13 +283,13 @@ export default function LoginPage() {
       {mostrarModalTutorial && (
         <div
           onClick={cerrarModalTutorial}
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 transition-opacity duration-300 ease-out ${
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 transition-opacity duration-200 ease-out ${
             animandoCierre ? 'opacity-0' : 'opacity-100'
           }`}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-2xl transition-all duration-300 ease-out ${
+            className={`relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-2xl transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 ease-out ${
               animandoCierre
                 ? 'opacity-0 scale-95 translate-y-3'
                 : 'opacity-100 scale-100 translate-y-0'
@@ -353,7 +353,7 @@ export default function LoginPage() {
                     </span>
                     <div className="text-xs">
                       <p className="font-bold text-slate-200">Abrí en Google Chrome</p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Ingresá a la web de ATLAS Gym desde tu navegador Chrome.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Ingresá a la web de ATLAS Gym desde tu navegador Chrome.</p>
                     </div>
                   </div>
 
@@ -365,7 +365,7 @@ export default function LoginPage() {
                       <p className="font-bold text-slate-200 flex items-center gap-1">
                         Tocá el menú <MoreVertical className="size-3 text-blue-400" /> (tres puntos)
                       </p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Ubicado en la esquina superior derecha del navegador.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Ubicado en la esquina superior derecha del navegador.</p>
                     </div>
                   </div>
 
@@ -377,7 +377,7 @@ export default function LoginPage() {
                       <p className="font-bold text-slate-200 flex items-center gap-1">
                         Elegí <DownloadCloud className="size-3 text-blue-400" /> &quot;Instalar aplicación&quot;
                       </p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">O &quot;Agregar a la pantalla principal&quot; según tu versión.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">O &quot;Agregar a la pantalla principal&quot; según tu versión.</p>
                     </div>
                   </div>
 
@@ -387,7 +387,7 @@ export default function LoginPage() {
                     </span>
                     <div className="text-xs">
                       <p className="font-bold text-emerald-300">¡Listo! Acceso creado</p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Se creará el icono de ATLAS Gym junto a tus demás apps.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Se creará el icono de ATLAS Gym junto a tus demás apps.</p>
                     </div>
                   </div>
                 </>
@@ -399,7 +399,7 @@ export default function LoginPage() {
                     </span>
                     <div className="text-xs">
                       <p className="font-bold text-slate-200">Abrí en Safari</p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Es importante abrir la página desde el navegador Safari de iOS.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Es importante abrir la página desde el navegador Safari de iOS.</p>
                     </div>
                   </div>
 
@@ -411,7 +411,7 @@ export default function LoginPage() {
                       <p className="font-bold text-slate-200 flex items-center gap-1">
                         Tocá el botón Compartir <Share2 className="size-3 text-blue-400" />
                       </p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">El ícono de cuadrado con flecha hacia arriba en la barra inferior.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">El ícono de cuadrado con flecha hacia arriba en la barra inferior.</p>
                     </div>
                   </div>
 
@@ -423,7 +423,7 @@ export default function LoginPage() {
                       <p className="font-bold text-slate-200 flex items-center gap-1">
                         Deslizá y tocá <PlusSquare className="size-3 text-blue-400" /> &quot;Agregar al inicio&quot;
                       </p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Buscá la opción con el símbolo más (+) en la lista.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Buscá la opción con el símbolo más (+) en la lista.</p>
                     </div>
                   </div>
 
@@ -433,7 +433,7 @@ export default function LoginPage() {
                     </span>
                     <div className="text-xs">
                       <p className="font-bold text-emerald-300">Tocá &quot;Agregar&quot; y ¡listo!</p>
-                      <p className="text-slate-400 text-[11px] mt-0.5">Tendrás el acceso directo a pantalla completa en tu iPhone.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Tendrás el acceso directo a pantalla completa en tu iPhone.</p>
                     </div>
                   </div>
                 </>
@@ -441,7 +441,7 @@ export default function LoginPage() {
             </div>
 
             {/* Ventajas destacadas al pie del modal */}
-            <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-1">
                 <Zap className="size-3 text-amber-400" /> Carga instantánea
               </span>
@@ -492,7 +492,7 @@ export default function LoginPage() {
                   <span className="size-2 rounded-full bg-blue-500" />
                   Presencial en recepción
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
                   Acercate al mostrador con tu <strong>DNI</strong> para que el administrador te restablezca la clave en el instante.
                 </p>
               </div>
@@ -503,7 +503,7 @@ export default function LoginPage() {
                   <span className="size-2 rounded-full bg-emerald-500" />
                   Atención por WhatsApp
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
                   Comunicate con nuestro canal oficial de soporte para coordinar tu restablecimiento de acceso.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">

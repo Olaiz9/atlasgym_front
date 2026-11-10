@@ -226,7 +226,7 @@ export default function AlumnosPage() {
           </button>
           <button
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:shadow-blue-500/30 active:scale-95"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Agregar alumno
@@ -288,7 +288,7 @@ export default function AlumnosPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -780,7 +780,7 @@ function ModalImportarAlumnosCsv({
                   </tbody>
                 </table>
                 {resultado.filasValidas.length > 8 && (
-                  <p className="px-3 py-2 text-[11px] text-slate-500 bg-slate-950/50">
+                  <p className="px-3 py-2 text-xs text-slate-500 bg-slate-950/50">
                     + {resultado.filasValidas.length - 8} socio(s) adicionales en el lote.
                   </p>
                 )}

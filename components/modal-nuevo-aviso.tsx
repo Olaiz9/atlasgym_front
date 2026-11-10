@@ -135,7 +135,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
               onChange={(e) => setTitulo(e.target.value)}
               maxLength={80}
               placeholder="Ej. Feriado de Carnaval / Aviso de cuota pendiente"
-              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm font-medium text-white placeholder-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 ${
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm font-medium text-white placeholder-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 ${
                 errores.titulo ? 'border-rose-500/60' : 'border-slate-700/80'
               }`}
             />
@@ -214,7 +214,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
                   id="aviso-alumno"
                   value={alumnoId}
                   onChange={(e) => setAlumnoId(e.target.value)}
-                  className={`h-11 rounded-xl border bg-slate-800/80 px-3 text-sm font-medium text-white outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 ${
+                  className={`h-11 rounded-xl border bg-slate-800/80 px-3 text-sm font-medium text-white outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 ${
                     errores.alumnoId ? 'border-rose-500/60' : 'border-slate-700/80'
                   }`}
                 >
@@ -244,7 +244,7 @@ export function ModalNuevoAviso({ isOpen, onClose }: ModalNuevoAvisoProps) {
               value={mensaje}
               onChange={(e) => setMensaje(e.target.value)}
               placeholder="Escribí aquí el mensaje o comunicado detallado..."
-              className={`rounded-xl border bg-slate-800/80 p-3 text-sm font-medium text-white placeholder-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 resize-none ${
+              className={`rounded-xl border bg-slate-800/80 p-3 text-sm font-medium text-white placeholder-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 resize-none ${
                 errores.mensaje ? 'border-rose-500/60' : 'border-slate-700/80'
               }`}
             />

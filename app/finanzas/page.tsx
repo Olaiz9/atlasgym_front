@@ -309,7 +309,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
               )}`}
               target="atlas_whatsapp_tab"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95 text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform] duration-200 active:scale-95 text-sm"
             >
               <WhatsAppIcon className="w-5 h-5 fill-white" />
               Enviar comprobante por WhatsApp
@@ -348,7 +348,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span>{pago.plan}</span>
                         {(pago.cantidadMeses ?? 1) > 1 && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30">
                             ×{pago.cantidadMeses} meses
                           </span>
                         )}
@@ -357,7 +357,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
                     <td className="px-6 py-4 font-black text-white">
                       ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
                       {esParcial && (
-                        <div className="text-[11px] font-bold text-amber-400">
+                        <div className="text-xs font-bold text-amber-400">
                           Resta ${saldo.toLocaleString("es-AR")}
                         </div>
                       )}
@@ -647,7 +647,7 @@ export default function FinanzasPage() {
             </button>
             <button
               onClick={() => setModalAbierto(true)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:shadow-blue-500/30 active:scale-95"
+              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:shadow-blue-500/30 active:scale-95"
             >
               <Plus className="w-5 h-5 shrink-0" />
               <span className="truncate">Registrar pago</span>
@@ -876,7 +876,7 @@ export default function FinanzasPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar socio u operador..."
-              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -931,7 +931,7 @@ export default function FinanzasPage() {
                         </span>
                       )}
                       {esAnulado && pago.motivoAnulacion && (
-                        <div className="text-[11px] font-medium text-rose-400/90 mt-0.5">
+                        <div className="text-xs font-medium text-rose-400/90 mt-0.5">
                           Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}: {pago.motivoAnulacion}
                         </div>
                       )}
@@ -942,13 +942,13 @@ export default function FinanzasPage() {
                         {(pago.cantidadMeses ?? 1) > 1 && (
                           <span
                             title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}
-                            className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                            className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30"
                           >
                             ×{pago.cantidadMeses} meses
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="text-xs text-slate-500 mt-0.5">
                         Período: {pago.periodoMes || pago.fecha.slice(0, 7)}
                       </div>
                     </td>
@@ -957,7 +957,7 @@ export default function FinanzasPage() {
                         ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
                       </span>
                       {esParcial && (
-                        <div className="text-[11px] font-bold text-amber-400 mt-0.5">
+                        <div className="text-xs font-bold text-amber-400 mt-0.5">
                           Resta ${saldo.toLocaleString("es-AR")} (total ${pago.monto.toLocaleString("es-AR")})
                         </div>
                       )}
@@ -968,12 +968,12 @@ export default function FinanzasPage() {
                     <td className="px-6 py-4 text-slate-400 font-medium">
                       <div>{pago.metodo}</div>
                       {pago.registradoPor && (
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           Por: {pago.registradoPor}
                         </div>
                       )}
                       {pago.comprobante && (
-                        <div className="text-[11px] text-sky-400/90 truncate max-w-[180px]" title={pago.comprobante}>
+                        <div className="text-xs text-sky-400/90 truncate max-w-[180px]" title={pago.comprobante}>
                           {pago.comprobante}
                         </div>
                       )}
@@ -1900,7 +1900,7 @@ function ModalRegistrarPago({
                     />
                   </Field>
                   {Number(form.monto) > 0 && Number(montoSenia) > 0 && Number(montoSenia) < Number(form.monto) && (
-                    <p className="text-[11px] font-bold text-sky-300">
+                    <p className="text-xs font-bold text-sky-300">
                       Quedará un saldo pendiente de $
                       {(Number(form.monto) - Number(montoSenia)).toLocaleString("es-AR")}.
                     </p>
@@ -1944,7 +1944,7 @@ function ModalRegistrarPago({
             )}
 
             {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
-              <p className="text-[11px] font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
+              <p className="text-xs font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
                 Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta{" "}
                 {formatearMes(periodoFinEfectivo)} (próximo vencimiento:{" "}
                 {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
@@ -2190,7 +2190,7 @@ function SeccionNotificarWhatsapp({
               </div>
             </Field>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-400">
             {credencialesGuardadas ? (
               <span className="text-emerald-400 font-semibold">
                 ✓ Credenciales activadas en el sistema para el ingreso del alumno.

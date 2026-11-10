@@ -54,7 +54,7 @@ function SidebarUserCard({
           type="button"
           onClick={onAbrirPerfil}
           title={`Mi perfil: ${usuario.nombre} (${rolLabel})`}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-all cursor-pointer overflow-hidden active:scale-95"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer overflow-hidden active:scale-95"
         >
           {usuario.fotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -94,7 +94,7 @@ function SidebarUserCard({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-bold text-slate-200">{usuario.nombre}</p>
-          <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
+          <p className="text-xs font-medium text-slate-500">{rolLabel}</p>
         </div>
       </button>
       <button
@@ -126,7 +126,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-300 ${
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-150 ease-out motion-reduce:transition-none ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -136,7 +136,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-[color,border-color,transform] duration-200 hover:text-white hover:border-blue-600 active:scale-90"
         >
-          <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeft className={`size-3.5 transition-transform duration-150 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
 
         <div className="flex h-20 items-center justify-center border-b border-slate-800/50 px-4 shrink-0">
