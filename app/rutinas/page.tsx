@@ -1190,7 +1190,43 @@ function ModalBuscarEjercicioVideoteca({
     })
   }, [videosTecnica, busqueda, grupoSeleccionado])
 
-  const visibles = useMemo(() => ejerciciosFiltrados.slice(0, 50), [ejerciciosFiltrados])
+  // Catálogo de ejercicios con GIF (el mismo que muestra la Videoteca). Sin esto, si el gimnasio
+  // todavía no cargó videos propios, el buscador quedaba vacío y no se podía agregar nada.
+  const [catalogo, setCatalogo] = useState<VideoTecnica[]>([])
+  const [totalCatalogo, setTotalCatalogo] = useState(0)
+  const [buscandoCatalogo, setBuscandoCatalogo] = useState(true)
+  useEffect(() => {
+    const control = new AbortController()
+    setBuscandoCatalogo(true)
+    const espera = setTimeout(() => {
+      const params = new URLSearchParams({ limit: '50' })
+      if (busqueda.trim()) params.set('q', busqueda.trim())
+      if (grupoSeleccionado !== 'TODOS') params.set('grupo', grupoSeleccionado)
+      fetch(`/api/ejercicios?${params.toString()}`, { signal: control.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (!data) return
+          setCatalogo(Array.isArray(data.ejercicios) ? data.ejercicios : [])
+          setTotalCatalogo(typeof data.total === 'number' ? data.total : 0)
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!control.signal.aborted) setBuscandoCatalogo(false)
+        })
+    }, 250)
+    return () => {
+      clearTimeout(espera)
+      control.abort()
+    }
+  }, [busqueda, grupoSeleccionado])
+
+  // Primero los videos del gimnasio; después el catálogo, sin repetir el mismo ejercicio
+  const resultados = useMemo(() => {
+    const titulos = new Set(ejerciciosFiltrados.map((v) => normalizar(v.titulo)))
+    return [...ejerciciosFiltrados, ...catalogo.filter((c) => !titulos.has(normalizar(c.titulo)))]
+  }, [ejerciciosFiltrados, catalogo])
+  const totalResultados = ejerciciosFiltrados.length + totalCatalogo
+  const visibles = useMemo(() => resultados.slice(0, 50), [resultados])
 
   const handleAgregar = (video: VideoTecnica) => {
     onSeleccionar(video)
@@ -1281,7 +1317,9 @@ function ModalBuscarEjercicioVideoteca({
 
         {/* Resultados */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-slate-800/80">
-          {visibles.length === 0 ? (
+          {visibles.length === 0 && buscandoCatalogo ? (
+            <p className="py-10 text-center text-sm text-slate-400" role="status">Buscando ejercicios…</p>
+          ) : visibles.length === 0 ? (
             <div className="text-center py-12 px-4 space-y-3">
               <div className="size-12 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
                 <Search className="size-6" />
@@ -1367,9 +1405,9 @@ function ModalBuscarEjercicioVideoteca({
             })
           )}
 
-          {ejerciciosFiltrados.length > 50 && (
+          {totalResultados > 50 && (
             <div className="text-center py-3 text-xs text-slate-400 font-medium">
-              Mostrando los primeros 50 de {ejerciciosFiltrados.length} resultados. Escribí más letras para afinar la búsqueda.
+              Mostrando los primeros 50 de {totalResultados} resultados. Escribí más letras para afinar la búsqueda.
             </div>
           )}
         </div>
@@ -1382,7 +1420,7 @@ function ModalBuscarEjercicioVideoteca({
                 ✓ {contadorAgregados} ejercicio{contadorAgregados > 1 ? 's' : ''} sumado{contadorAgregados > 1 ? 's' : ''}
               </span>
             ) : (
-              `${ejerciciosFiltrados.length} ejercicios disponibles`
+              `${totalResultados} ejercicios disponibles`
             )}
           </span>
           <button
