@@ -50,7 +50,7 @@ function AvisoCardAlumno({
   )}`
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-md hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/70 p-6 shadow-lg shadow-slate-950/40 transition-[transform,border-color] duration-200 hover:shadow-xl hover:border-slate-600">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
@@ -117,7 +117,7 @@ function AvisoCardAdmin({
   onEliminar: () => void
 }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-md hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/70 p-6 shadow-lg shadow-slate-950/40 transition-[transform,border-color] duration-200 hover:shadow-xl hover:border-slate-600">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
