@@ -300,7 +300,7 @@ export default function VideotecaPage() {
             <span>Videoteca biomecánica ATLAS</span>
           </div>
           <h1 className="text-5xl font-black text-white md:text-6xl">
-            Técnica por <span className="text-blue-500">grupo muscular</span>
+            Técnica por <span className="text-blue-400">grupo muscular</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
             {esAdmin

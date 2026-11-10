@@ -763,7 +763,7 @@ export default function TotemPage() {
                       ? 'border-rose-500 bg-rose-500/15 text-rose-400 scale-95'
                       : tieneValor
                       ? 'border-blue-500 bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/25 scale-105'
-                      : 'border-slate-800 bg-slate-950/70 text-slate-600'
+                      : 'border-slate-800 bg-slate-950/70 text-slate-500'
                   }`}
                 >
                   {tieneValor ? '●' : ''}
@@ -943,7 +943,7 @@ export default function TotemPage() {
                     {formatearDniVisual(dni)}
                   </span>
                 ) : (
-                  <span className="text-xl sm:text-2xl md:text-3xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-mono font-bold tracking-widest text-slate-500 animate-pulse">
                     _ _ . _ _ _ . _ _ _
                   </span>
                 )}
@@ -1002,7 +1002,7 @@ export default function TotemPage() {
               className={`w-full h-11 sm:h-13 md:h-14 lg:h-15 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg tracking-wide flex items-center justify-center gap-2 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 cursor-pointer shadow-lg ${
                 dni.length >= 6 && !procesando
                   ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 active:scale-98'
-                  : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
+                  : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
               }`}
             >
               <Check className="size-5 md:size-6" />
@@ -1173,7 +1173,7 @@ export default function TotemPage() {
       <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-xs sm:text-xs text-slate-500 shrink-0">
         <div className="flex items-center gap-2.5">
           <p className="flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5 text-blue-500" />
+            <ShieldCheck className="size-3.5 text-blue-400" />
             <span>Terminal kiosco protegida por ATLAS GYM</span>
           </p>
           <button

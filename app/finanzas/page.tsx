@@ -123,7 +123,7 @@ function SelectorMes({
         onChange={(e) =>
           onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
         }
-        className="h-full pl-4 pr-2 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-4 pr-2 bg-transparent text-sm font-bold text-slate-500 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {NOMBRES_MESES.map((nombre, i) => (
           <option key={nombre} value={i}>{nombre}</option>
@@ -135,7 +135,7 @@ function SelectorMes({
         aria-label="Seleccionar año"
         value={anioStr}
         onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
-        className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-500 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {anios.map((a) => (
           <option key={a} value={a}>{a}</option>
@@ -205,7 +205,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
   return (
     <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
       <div>
-        <p className="text-xs font-bold text-blue-500 mb-1">
+        <p className="text-xs font-bold text-blue-400 mb-1">
           Portal del alumno
         </p>
         <h1 className="text-5xl font-black text-white md:text-6xl">
@@ -670,7 +670,7 @@ export default function FinanzasPage() {
               setMes(mesActualISO());
               setVerTodos(false);
             }}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-500 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
           >
             Mes actual
           </button>
@@ -680,7 +680,7 @@ export default function FinanzasPage() {
             className={`h-11 px-4 rounded-full text-sm font-bold transition-[color,background-color] duration-200 active:scale-95 ${
               verTodos
                 ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                : "border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
             }`}
           >
             Ver todos

@@ -76,7 +76,7 @@ export function ModalEditarAlumno({
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="text-slate-400 hover:text-slate-600 transition-colors active:scale-95"
+            className="text-slate-400 hover:text-slate-500 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -203,7 +203,7 @@ export function ModalEditarAlumno({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
             >
               Cancelar
             </button>

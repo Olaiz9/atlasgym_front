@@ -138,12 +138,12 @@ export default function PlanesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-blue-500 mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
             <Package className="size-4" />
             <span>Administración de membresías</span>
           </div>
           <h1 className="text-5xl font-black text-white md:text-6xl">
-            Planes y <span className="text-blue-500">tarifas</span>
+            Planes y <span className="text-blue-400">tarifas</span>
           </h1>
           <p className="mt-2 text-sm md:text-base text-slate-400 max-w-2xl">
             Ajustá los precios de las cuotas, creá nuevos planes o actualizá las condiciones de cada pase. Los cambios impactan inmediatamente en Alumnos y Finanzas.

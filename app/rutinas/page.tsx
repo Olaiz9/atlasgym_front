@@ -1590,11 +1590,11 @@ function TablaSeries({
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-300">
                     <span className="text-blue-400 font-extrabold">{previaData.kg}</span>
                     <span className="text-xs text-slate-500 font-sans">kg</span>
-                    <span className="text-slate-600 font-sans mx-0.5 font-bold">×</span>
+                    <span className="text-slate-500 font-sans mx-0.5 font-bold">×</span>
                     <span className="text-blue-400 font-extrabold">{previaData.reps}</span>
                   </span>
                 ) : (
-                  <span className="text-xs font-mono text-slate-600 px-1 font-bold select-none">—</span>
+                  <span className="text-xs font-mono text-slate-500 px-1 font-bold select-none">—</span>
                 )}
               </div>
 

@@ -55,7 +55,7 @@ function TarjetaRutina({ rutina }: { rutina: any }) {
     <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6 text-white shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="font-bold flex items-center gap-2 text-white">
-          <Dumbbell className="w-4 h-4 text-blue-500" />
+          <Dumbbell className="w-4 h-4 text-blue-400" />
           Rutina asignada
         </h2>
         <Link
