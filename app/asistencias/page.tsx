@@ -712,7 +712,7 @@ export default function AsistenciasPage() {
                     disabled={paginaSalaActual === 0}
                     className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
                       paginaSalaActual === 0
-                        ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                        ? 'bg-slate-900/40 text-slate-500 cursor-not-allowed'
                         : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
                     }`}
                   >
@@ -726,7 +726,7 @@ export default function AsistenciasPage() {
                     disabled={paginaSalaActual >= totalPaginasSala - 1}
                     className={`size-9 rounded-xl border border-slate-800 flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
                       paginaSalaActual >= totalPaginasSala - 1
-                        ? 'bg-slate-900/40 text-slate-600 cursor-not-allowed'
+                        ? 'bg-slate-900/40 text-slate-500 cursor-not-allowed'
                         : 'bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer active:scale-95'
                     }`}
                   >
@@ -740,13 +740,13 @@ export default function AsistenciasPage() {
 
         {sociosEnSala.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
-            <Users className="size-8 mx-auto mb-2 text-slate-600" />
+            <Users className="size-8 mx-auto mb-2 text-slate-500" />
             <p className="text-sm font-semibold">No hay alumnos entrenando en sala en este momento.</p>
             <p className="text-xs mt-1">Los socios aparecerán aquí cuando marquen su DNI en el tótem.</p>
           </div>
         ) : sociosEnSalaFiltrados.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
-            <Search className="size-8 mx-auto mb-2 text-slate-600" />
+            <Search className="size-8 mx-auto mb-2 text-slate-500" />
             <p className="text-sm font-semibold">No se encontraron socios en sala con ese criterio.</p>
             <button
               type="button"

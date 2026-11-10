@@ -472,7 +472,7 @@ export default function Page() {
           />
         </div>
         <div className="relative hidden w-80 sm:block group">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
