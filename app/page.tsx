@@ -5,14 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar, UserCheck } from 'lucide-react'
+import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, Sparkles, Calendar, UserCheck, CheckCircle2 } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago } from '@/lib/types'
 import { calcularVencimientoCuota } from '@/lib/date-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
-import { calcularConstanciaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
+import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
 
 
 function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
@@ -212,11 +212,18 @@ function HomeAlumno({
   fechaHoy: Date | null
   ubicacion: string
 }) {
-  const { alumnos, asistencias, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
+  const { alumnos, planes, asistencias, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const constancia = useMemo(
     () => calcularConstanciaAlumno(asistencias, alumno?.id),
     [asistencias, alumno?.id]
+  )
+  const planDelAlumno =
+    (alumno?.planId ? planes.find((p) => p.id === alumno.planId) : undefined) ||
+    planes.find((p) => p.nombre.trim().toLowerCase() === (alumno?.plan || '').trim().toLowerCase())
+  const semana = useMemo(
+    () => calcularSemanaAlumno(asistencias, alumno?.id, planDelAlumno?.diasPorSemana ?? alumno?.plan),
+    [asistencias, alumno?.id, planDelAlumno?.diasPorSemana, alumno?.plan]
   )
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
@@ -225,19 +232,6 @@ function HomeAlumno({
   const avisosAlumno = getAvisosParaUsuario(usuario)
   const ultimoAvisoNoLeido = avisosAlumno.find((av) => !av.leidoPor.includes(usuario.id))
 
-  const videosDestacados = useMemo(() => {
-    const gradients = [
-      'bg-gradient-to-br from-blue-900/60 to-slate-900',
-      'bg-gradient-to-br from-indigo-900/60 to-slate-900',
-      'bg-gradient-to-br from-cyan-900/60 to-slate-900',
-    ];
-    // Primero los que tienen imagen (GIF de técnica o miniatura de YouTube): una tarjeta vacía se ve rota
-    return [...videosTecnica]
-      .map((v) => ({ ...v, imagen: imagenDeVideo(v) }))
-      .sort((a, b) => Number(Boolean(b.imagen)) - Number(Boolean(a.imagen)))
-      .slice(0, 3)
-      .map((v, i) => ({ ...v, thumbnail: gradients[i % gradients.length] }));
-  }, [videosTecnica])
 
   return (
     <>
@@ -298,73 +292,51 @@ function HomeAlumno({
           constancia={constancia}
         />
 
-        {/* Sección: Videoteca Destacada */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8 backdrop-blur-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        {/* Tu semana: qué días vino y cuántos le quedan según su plan (misma cuenta que el tótem) */}
+        <section aria-labelledby="titulo-tu-semana" className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
-                <PlayCircle className="size-4" />
-                Videoteca ATLAS
-              </div>
-              <h2 className="text-4xl font-black text-white">Técnica y ejecución de ejercicios</h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Mirá los videos de técnica correcta para optimizar tu entrenamiento y prevenir lesiones.
+              <h2 id="titulo-tu-semana" className="text-4xl font-black text-white">Tu semana</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                {semana.limite == null
+                  ? `Viniste ${semana.diasAsistidos} ${semana.diasAsistidos === 1 ? 'día' : 'días'} esta semana. Tu plan es libre.`
+                  : semana.excedido
+                  ? `Viniste ${semana.diasAsistidos} días y tu plan es de ${semana.limite}. Hablalo en el mostrador para cambiar de plan.`
+                  : semana.restantes === 0
+                  ? `Ya usaste los ${semana.limite} días de tu plan esta semana. El lunes se renuevan.`
+                  : `Te ${semana.restantes === 1 ? 'queda 1 día' : `quedan ${semana.restantes} días`} de los ${semana.limite} de tu plan.`}
               </p>
             </div>
-            <Link
-              href="/videoteca"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors shrink-0"
-            >
-              Explorar videoteca completa <ChevronRight className="size-4" />
-            </Link>
+            {semana.limite != null && (
+              <p className={`font-display text-5xl font-black leading-none tabular-nums ${semana.excedido ? 'text-amber-400' : 'text-white'}`}>
+                {semana.diasAsistidos}
+                <span className="text-2xl text-slate-500">/{semana.limite}</span>
+              </p>
+            )}
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {videosDestacados.map((v) => (
-              <Link
-                key={v.id}
-                href="/videoteca"
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-[transform,border-color] duration-200 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-900/20"
-              >
-                <div className={`h-36 w-full rounded-xl ${v.thumbnail} flex items-center justify-center relative overflow-hidden border border-slate-800 group-hover:border-blue-500/30 transition-colors`}>
-                  {v.imagen ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={v.imagen}
-                        alt={`Técnica: ${v.titulo}`}
-                        className={`absolute inset-0 h-full w-full ${v.gifUrl || v.formato === 'GIF' ? 'object-contain p-2 bg-white/95' : 'object-cover'}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="absolute bottom-2 left-2 size-8 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg">
-                        <PlayCircle className="size-4" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="size-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transition-transform duration-200">
-                      <PlayCircle className="size-6" />
-                    </div>
-                  )}
-                  <span className="absolute bottom-2 right-2 rounded-md bg-slate-950/80 px-2 py-0.5 text-xs font-mono font-bold text-slate-300 border border-slate-800">
-                    {v.duracion}
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/20">
-                      {v.grupoMuscular}
-                    </span>
-                    <span className="text-xs font-medium text-slate-500">{v.nivel}</span>
-                  </div>
-                  <h3 className="mt-2 text-base font-bold text-white group-hover:text-blue-400 transition-colors">
-                    {v.titulo}
-                  </h3>
-                </div>
-              </Link>
+          <ol className="mt-6 grid grid-cols-7 gap-2" aria-label="Días de esta semana">
+            {semana.dias.map((d) => (
+              <li key={d.fecha} className="flex flex-col items-center gap-2">
+                <span className={`text-xs font-bold ${d.esHoy ? 'text-blue-400' : 'text-slate-500'}`}>{d.letra}</span>
+                <span
+                  aria-label={`${d.fecha}: ${d.fue ? 'viniste' : d.futuro ? 'todavía no llegó' : 'no viniste'}${d.esHoy ? ' (hoy)' : ''}`}
+                  className={`flex aspect-square w-full max-w-14 items-center justify-center rounded-xl border-2 text-sm font-bold ${
+                    d.fue
+                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300'
+                      : d.esHoy
+                      ? 'border-blue-500 border-dashed text-blue-300'
+                      : d.futuro
+                      ? 'border-slate-800 text-slate-600'
+                      : 'border-slate-700 bg-slate-950/60 text-slate-500'
+                  }`}
+                >
+                  {d.fue ? <CheckCircle2 className="size-5" /> : Number(d.fecha.slice(8))}
+                </span>
+              </li>
             ))}
-          </div>
-        </div>
+          </ol>
+        </section>
 
         {/* Sección: Información & Horarios de ATLAS */}
         <div className="rounded-2xl border border-slate-800/80 bg-slate-950 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
@@ -647,12 +619,4 @@ export default function Page() {
       <ModalNuevoAlumno isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
   )
-}
-
-/** Imagen para la tarjeta: el GIF de técnica, o la miniatura del video si es de YouTube. */
-function imagenDeVideo(v: { gifUrl?: string; formato?: string; videoUrl: string }): string | undefined {
-  if (v.gifUrl) return v.gifUrl
-  if (v.formato === 'GIF') return v.videoUrl
-  const yt = v.videoUrl?.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)
-  return yt ? `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg` : undefined
 }

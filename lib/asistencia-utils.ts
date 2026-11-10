@@ -558,3 +558,59 @@ export function calcularConstanciaAlumno(
   }
   return { entrenosMes: dias.size, ultimaVisita };
 }
+
+export interface DiaSemanaAlumno {
+  fecha: string;
+  letra: string;
+  fue: boolean;
+  esHoy: boolean;
+  futuro: boolean;
+}
+
+export interface SemanaAlumno {
+  dias: DiaSemanaAlumno[];
+  diasAsistidos: number;
+  /** Días por semana del plan; null si el plan es libre. */
+  limite: number | null;
+  /** Días que le quedan esta semana (nunca negativo); null si el plan es libre. */
+  restantes: number | null;
+  excedido: boolean;
+}
+
+/**
+ * La semana del socio (lunes a domingo) para "Tu semana" del portal: qué días fue y cuántos le
+ * quedan según su plan. Mismo criterio que el tótem: un doble turno el mismo día cuenta como 1.
+ */
+export function calcularSemanaAlumno(
+  asistencias: RegistroAsistencia[],
+  alumnoId: string | undefined,
+  diasPorSemana: string | null | undefined,
+  hoy: string = fechaLocalHoy()
+): SemanaAlumno {
+  const lunes = inicioSemanaLunes(hoy);
+  const letras = ["L", "M", "M", "J", "V", "S", "D"];
+  const fechas = letras.map((_, i) => restarDiasFechaLocal(lunes, -i));
+  const fue = new Set<string>();
+  if (alumnoId) {
+    for (const a of asistencias) {
+      if (a.alumnoId === alumnoId && a.fecha >= fechas[0] && a.fecha <= fechas[6] && a.fecha <= hoy) {
+        fue.add(a.fecha);
+      }
+    }
+  }
+  const limite = extraerLimiteDiasSemana(diasPorSemana);
+  const diasAsistidos = fue.size;
+  return {
+    dias: fechas.map((fecha, i) => ({
+      fecha,
+      letra: letras[i],
+      fue: fue.has(fecha),
+      esHoy: fecha === hoy,
+      futuro: fecha > hoy,
+    })),
+    diasAsistidos,
+    limite,
+    restantes: limite == null ? null : Math.max(0, limite - diasAsistidos),
+    excedido: limite != null && diasAsistidos > limite,
+  };
+}
