@@ -15,7 +15,7 @@ export default function PaginaError({
   }, [error])
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-10 text-slate-200 leading-relaxed">
+    <div className="mx-auto max-w-3xl px-5 py-10 text-slate-200 leading-relaxed">
       <div className="rounded-xl border border-slate-700 bg-slate-900/60 px-5 py-6">
         <h1 className="text-2xl font-black text-white">Algo salió mal</h1>
         <p className="mt-2 text-sm text-slate-300">
@@ -37,6 +37,6 @@ export default function PaginaError({
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
