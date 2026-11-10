@@ -17,6 +17,9 @@ function commitActual() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Para probar desde un celular en el mismo Wi-Fi: DEV_ORIGINS=192.168.1.37 npm run dev
+  // (Next bloquea en desarrollo los pedidos que no vienen de localhost).
+  allowedDevOrigins: process.env.DEV_ORIGINS ? process.env.DEV_ORIGINS.split(",") : undefined,
   output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
   env: {
     NEXT_PUBLIC_APP_VERSION: version,

@@ -123,16 +123,16 @@ function AlumnoCardsSection({
       : 'text-rose-600'
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]">
       {/* Tarjeta 1: Mi Rutina */}
       <Link
         href="/rutinas"
         className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer backdrop-blur-md"
       >
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <span className="text-xs font-bold text-slate-400">Mi rutina de hoy</span>
-            <p className="mt-2 text-2xl font-black text-white">{nombreRutina}</p>
+            <p className="mt-2 text-2xl font-black text-white break-words text-balance">{nombreRutina}</p>
             <p className="mt-1 text-sm font-semibold text-blue-400">{subtituloRutina}</p>
             <p className="mt-4 text-xs font-medium text-slate-400">{detalleRutina}</p>
           </div>
@@ -152,8 +152,8 @@ function AlumnoCardsSection({
         href="/finanzas"
         className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer backdrop-blur-md"
       >
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <span className="text-xs font-bold text-slate-400">Estado de mi cuota</span>
             <p className="mt-2 text-2xl font-black text-white">{etiquetaEstadoCuota}</p>
             <p className={`mt-1 text-sm font-semibold ${colorSubtituloCuota}`}>{alumno?.plan || 'Plan Musculación'}</p>
@@ -177,8 +177,8 @@ function AlumnoCardsSection({
         href="/rutinas"
         className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:shadow-xl hover:shadow-amber-950/30 text-slate-100 border border-slate-800 hover:border-amber-500/40 cursor-pointer backdrop-blur-md"
       >
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <span className="text-xs font-bold text-slate-400">Mi constancia</span>
             <p className="mt-2 text-2xl font-black text-white">
               {constancia.entrenosMes} {constancia.entrenosMes === 1 ? 'entreno' : 'entrenos'}
@@ -515,17 +515,17 @@ export default function Page() {
         {/* MARCADOR: lo que falta cobrar, quiénes están y el padrón */}
         <section
           aria-label="Resumen de hoy"
-          className="mt-10 grid border-y-2 border-slate-700 sm:grid-cols-3"
+          className="mt-10 grid border-y-2 border-slate-700 lg:grid-cols-3"
         >
           <Link
             href="/finanzas"
-            className="group block py-6 pr-6 text-slate-100 transition-colors hover:bg-slate-900/40 sm:pl-0"
+            className="group block min-w-0 py-6 pr-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:pl-0"
           >
             <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
               <WalletCards className="size-4 text-rose-400" />
               Cuotas pendientes
             </p>
-            <p className="mt-2 font-display text-6xl font-black leading-[0.9] text-rose-400 md:text-7xl">
+            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-rose-400 break-all xl:text-7xl">
               ${totalPendiente.toLocaleString('es-AR')}
             </p>
             <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
@@ -536,7 +536,7 @@ export default function Page() {
 
           <Link
             href="/asistencias"
-            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 sm:border-l sm:border-t-0 sm:px-6"
+            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:border-l lg:border-t-0 lg:px-6"
           >
             <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
               <span className="relative flex size-2">
@@ -545,7 +545,7 @@ export default function Page() {
               </span>
               En sala ahora
             </p>
-            <p className="mt-2 font-display text-6xl font-black leading-[0.9] text-white md:text-7xl">{sociosEnSala.length}</p>
+            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-white xl:text-7xl">{sociosEnSala.length}</p>
             <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
               Sesión activa &lt; 1h 40m
               <ArrowUpRight className="size-4 text-slate-500 transition-transform group- group-hover:translate-x-0.5" />
@@ -554,13 +554,13 @@ export default function Page() {
 
           <Link
             href="/alumnos"
-            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 sm:border-l sm:border-t-0 sm:px-6"
+            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:border-l lg:border-t-0 lg:px-6"
           >
             <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
               <Users className="size-4 text-blue-400" />
               Alumnos activos
             </p>
-            <p className="mt-2 font-display text-6xl font-black leading-[0.9] text-white md:text-7xl">{alumnosActivos}</p>
+            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-white xl:text-7xl">{alumnosActivos}</p>
             <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
               {alumnos.length} registrados en total
               <ArrowUpRight className="size-4 text-slate-500 transition-transform group- group-hover:translate-x-0.5" />
