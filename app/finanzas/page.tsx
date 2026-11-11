@@ -1,7 +1,8 @@
 // app/finanzas/page.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DollarSign,
   AlertCircle,
@@ -394,6 +395,31 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 }
 
 // ---------- Componente principal ----------
+function CobrarPorParametro({
+  alumnos,
+  onSeleccionar,
+}: {
+  alumnos: Alumno[];
+  onSeleccionar: (dni: string) => void;
+}) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const procesadoRef = useRef<string | null>(null);
+  const cobrarDni = searchParams.get("cobrar");
+
+  useEffect(() => {
+    if (!cobrarDni || procesadoRef.current === cobrarDni) return;
+    // Esperamos a que el socio tenga ID numérico del servidor (mientras está en alta optimista tiene UUID).
+    const socio = alumnos.find((a) => a.dni === cobrarDni && /^\d+$/.test(a.id));
+    if (!socio) return;
+    procesadoRef.current = cobrarDni;
+    onSeleccionar(cobrarDni);
+    router.replace("/finanzas", { scroll: false });
+  }, [cobrarDni, alumnos, onSeleccionar, router]);
+
+  return null;
+}
+
 export default function FinanzasPage() {
   const {
     alumnos,
@@ -420,6 +446,7 @@ export default function FinanzasPage() {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [dniPreseleccionado, setDniPreseleccionado] = useState<string | null>(null);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
   const [fechaArqueo, setFechaArqueo] = useState<string>(() => fechaLocalHoy());
@@ -495,7 +522,7 @@ export default function FinanzasPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setModalAbierto(false);
+        setModalAbierto(false); setDniPreseleccionado(null);
         setPagoAAnular(null);
         setPagoACompletar(null);
       }
@@ -572,7 +599,7 @@ export default function FinanzasPage() {
         console.warn("No se pudieron sincronizar las credenciales con el backend:", err);
       }
     }
-    setModalAbierto(false);
+    setModalAbierto(false); setDniPreseleccionado(null);
     if (nuevo.usuarioApp && nuevo.passwordApp) {
       toast(
         `Pago registrado y credenciales activadas para "${nuevo.usuarioApp}"`,
@@ -1117,13 +1144,23 @@ export default function FinanzasPage() {
         )}
       </div>
 
+      <Suspense fallback={null}>
+        <CobrarPorParametro
+          alumnos={alumnos}
+          onSeleccionar={(dni) => {
+            setDniPreseleccionado(dni);
+            setModalAbierto(true);
+          }}
+        />
+      </Suspense>
       {modalAbierto && (
         <ModalRegistrarPago
           alumnos={alumnos}
           planes={planes}
           pagos={pagos}
           getEstadoCuenta={getEstadoCuenta}
-          onClose={() => setModalAbierto(false)}
+          alumnoInicialDni={dniPreseleccionado ?? undefined}
+          onClose={() => { setModalAbierto(false); setDniPreseleccionado(null); }}
           onSubmit={handleNuevoPago}
           onAsignarCredenciales={asignarCredencialesAlumno}
         />
@@ -1518,6 +1555,7 @@ function ModalRegistrarPago({
   planes,
   pagos,
   getEstadoCuenta,
+  alumnoInicialDni,
   onClose,
   onSubmit,
   onAsignarCredenciales,
@@ -1526,11 +1564,12 @@ function ModalRegistrarPago({
   planes: Plan[];
   pagos: Pago[];
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
+  alumnoInicialDni?: string;
   onClose: () => void;
   onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
-  const primerAlumno = alumnos[0];
+  const primerAlumno = (alumnoInicialDni ? alumnos.find((a) => a.dni === alumnoInicialDni) : undefined) ?? alumnos[0];
   const obtenerPlanYPrecio = (alumno?: Alumno) => {
     if (!alumno) return { planNombre: "", planPrecio: "" };
     const planObj = planes.find(
