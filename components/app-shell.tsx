@@ -146,7 +146,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span>Actualizá tu contraseña inicial</span>
             </div>
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Estás ingresando con tu contraseña provisoria (la que te pasó el gimnasio, o tu DNI si te cargaron desde la planilla). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.
+              {usuarioActual.rol === 'ADMIN'
+                ? 'Estás ingresando con la contraseña provisoria de la instalación. Definí una clave personal antes de continuar.'
+                : 'Estás ingresando con tu contraseña provisoria (la que te pasó el gimnasio, o tu DNI si te cargaron desde la planilla). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.'}
             </p>
 
             <div className="space-y-3 mb-4">
