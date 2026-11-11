@@ -12,6 +12,8 @@ const enCI = !!process.env.CI
 
 export default defineConfig({
   testDir: './e2e',
+  // Antes de los tests: el titular de prueba hace su cambio de clave inicial (ver el archivo).
+  globalSetup: './e2e/preparar-titular.ts',
   // Los flujos comparten la misma base: se corren de a uno para que no se pisen.
   workers: 1,
   fullyParallel: false,
