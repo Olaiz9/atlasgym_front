@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AppShell } from '@/components/app-shell'
 import { AppDataProvider } from '@/lib/store'
@@ -24,7 +23,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <AppShell>{children}</AppShell>
           </ToastProvider>
         </AppDataProvider>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
