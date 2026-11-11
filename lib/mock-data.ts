@@ -1,0 +1,788 @@
+// lib/mock-data.ts
+// Datos de ejemplo. Cuando exista el backend, esto se reemplaza por fetch
+// y los ids pasan a ser los que devuelva la base de datos real.
+import { Alumno, Pago, Rutina, VideoTecnica, Plan, Aviso, SesionEntrenamiento, RegistroAsistencia } from "./types";
+
+
+export const ALUMNOS_MOCK: Alumno[] = [
+  { id: "a1", nombre: "Lucía Fernández", dni: "41890123", usuario: "lucia123", email: "lucia.fernandez@mail.com", celular: "2611234567", planId: "p1", plan: "Musculación", fechaAlta: "2026-03-14", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r1" },
+  { id: "a2", nombre: "Martín Torres", dni: "39456789", usuario: "martin789", email: "martin.torres@mail.com", celular: "2612345678", planId: "p2", plan: "Full Access", fechaAlta: "2026-01-08", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
+  { id: "a3", nombre: "Sofía Ramírez", dni: "42123456", usuario: "sofia456", email: "sofia.ramirez@mail.com", celular: "2613456789", planId: "p3", plan: "Funcional", fechaAlta: "2026-05-22", activo: true, ultimaAsistencia: "2026-08-10", tieneRutina: false },
+  { id: "a4", nombre: "Diego Castro", dni: "38901234", usuario: "diego234", email: "diego.castro@mail.com", celular: "2614567890", planId: "p1", plan: "Musculación", fechaAlta: "2026-07-01", activo: true, ultimaAsistencia: "2026-08-27", tieneRutina: true, rutinaId: "r2" },
+  { id: "a5", nombre: "Valentina Ríos", dni: "43567890", usuario: "valentina890", email: "valentina.rios@mail.com", celular: "2615678901", planId: "p2", plan: "Full Access", fechaAlta: "2026-06-15", activo: true, ultimaAsistencia: undefined, tieneRutina: false },
+  { id: "a6", nombre: "Esteban Morales", dni: "37890123", usuario: "esteban123", email: "esteban.m@mail.com", celular: "2619876543", planId: "p1", plan: "Musculación", fechaAlta: "2026-02-10", activo: false, ultimaAsistencia: "2026-05-12", tieneRutina: false },
+  { id: "a7", nombre: "Camila Morales", dni: "40123987", usuario: "camila987", email: "camila.morales@mail.com", celular: "2616789012", planId: "p3", plan: "Funcional", fechaAlta: "2026-04-10", activo: true, ultimaAsistencia: "2026-08-28", tieneRutina: false },
+  { id: "a8", nombre: "Gonzalo Romero", dni: "35987654", usuario: "gonzalo654", email: "gonzalo.romero@mail.com", celular: "2617890123", planId: "p1", plan: "Musculación", fechaAlta: "2026-02-18", activo: true, ultimaAsistencia: "2026-08-29", tieneRutina: true, rutinaId: "r2" },
+  { id: "a9", nombre: "Agustín Pellegrini", dni: "36456789", usuario: "agustin789", email: "agustin.p@mail.com", celular: "2618901234", planId: "p2", plan: "Full Access", fechaAlta: "2026-03-01", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: true, rutinaId: "r1" },
+  { id: "a10", nombre: "Julieta Navas", dni: "44123890", usuario: "julieta890", email: "julieta.navas@mail.com", celular: "2619012345", planId: "p3", plan: "Funcional", fechaAlta: "2026-06-20", activo: true, ultimaAsistencia: "2026-08-30", tieneRutina: false },
+];
+
+export const PAGOS_MOCK: Pago[] = [
+  { id: "1", alumnoId: "a1", alumnoNombreHistorico: "Lucía Fernández", planId: "p1", plan: "Musculación", monto: 15000, fecha: "2026-08-20", metodo: "Transferencia", estado: "PAGADO" },
+  { id: "2", alumnoId: "a2", alumnoNombreHistorico: "Martín Torres", planId: "p2", plan: "Full Access", monto: 22000, fecha: "2026-08-18", metodo: "Efectivo", estado: "PAGADO" },
+  { id: "3", alumnoId: "a3", alumnoNombreHistorico: "Sofía Ramírez", planId: "p3", plan: "Funcional", monto: 18000, fecha: "2026-08-05", metodo: "Tarjeta", estado: "VENCIDO" },
+  { id: "4", alumnoId: "a4", alumnoNombreHistorico: "Diego Castro", planId: "p1", plan: "Musculación", monto: 15000, fecha: "2026-08-25", metodo: "-", estado: "PENDIENTE" },
+  { id: "5", alumnoId: "a5", alumnoNombreHistorico: "Valentina Ríos", planId: "p2", plan: "Full Access", monto: 22000, fecha: "2026-08-25", metodo: "-", estado: "PENDIENTE" },
+  { id: "6", alumnoId: "a1", alumnoNombreHistorico: "Lucía Fernández", planId: "p1", plan: "Musculación", monto: 15000, fecha: "2026-07-19", metodo: "Transferencia", estado: "PAGADO" },
+  { id: "7", alumnoId: "a2", alumnoNombreHistorico: "Martín Torres", planId: "p2", plan: "Full Access", monto: 22000, fecha: "2026-07-17", metodo: "Efectivo", estado: "PAGADO" },
+  { id: "8", alumnoId: "a6", alumnoNombreHistorico: "Esteban Morales", planId: "p1", plan: "Musculación", monto: 15000, fecha: "2026-05-10", metodo: "Efectivo", estado: "PAGADO" },
+];
+
+export const RUTINAS_MOCK: Rutina[] = [
+  {
+    id: "r1",
+    nombre: "Hipertrofia nivel 2",
+    descripcion: "Rutina orientada a ganancia de masa muscular y fuerza en 3 días semanales.",
+    objetivo: "Hipertrofia",
+    esGenerica: true,
+    dias: [
+      {
+        id: "d1",
+        nombre: "Día 1 — Pecho, Hombros y Tríceps",
+        ejercicios: [
+          { id: "e1", nombre: "Press de Banca Plano", series: 4, repeticiones: "8-10", descansoSegundos: 90, notas: "Controlar la bajada, retracción escapular" },
+          { id: "e2", nombre: "Press Inclinado con Mancuernas", series: 3, repeticiones: "10-12", descansoSegundos: 60, notas: "Inclinación a 30°" },
+          { id: "e3", nombre: "Aperturas en Polea / Peck Deck", series: 3, repeticiones: "12-15", descansoSegundos: 45, notas: "Pico de contracción 1 seg" },
+          { id: "e4", nombre: "Elevaciones Laterales", series: 4, repeticiones: "12 + 10 + fallo", tipoSerie: "DROP_SET", descansoSegundos: 60, notas: "Drop set en última serie" },
+          { id: "e5", nombre: "Extensiones de Tríceps en Polea", series: 4, repeticiones: "10-12", descansoSegundos: 60, notas: "Codos pegados al cuerpo" },
+        ],
+      },
+      {
+        id: "d2",
+        nombre: "Día 2 — Espalda y Bíceps",
+        ejercicios: [
+          { id: "e6", nombre: "Jalón al Pecho en Polea", series: 4, repeticiones: "10", descansoSegundos: 75, notas: "Llevar la barra al esternón" },
+          { id: "e7", nombre: "Remo con Barra Agarre Prono", series: 4, repeticiones: "8-10", descansoSegundos: 90, notas: "Torso a 45 grados" },
+          { id: "e8", nombre: "Remo Unilateral con Mancuerna", series: 3, repeticiones: "10 por lado", descansoSegundos: 60 },
+          { id: "e9", nombre: "Curl de Bíceps con Barra Z", series: 3, repeticiones: "10 + 10", tipoSerie: "BI_SERIE", descansoSegundos: 60, notas: "Bi-serie con curl martillo" },
+          { id: "e10", nombre: "Curl Martillo con Mancuernas", series: 3, repeticiones: "12", tipoSerie: "BI_SERIE", descansoSegundos: 45, notas: "Énfasis en braquial" },
+        ],
+      },
+      {
+        id: "d3",
+        nombre: "Día 3 — Piernas y Core",
+        ejercicios: [
+          { id: "e11", nombre: "Sentadilla Libre con Barra", series: 4, repeticiones: "8-10", descansoSegundos: 120, notas: "Profundidad paralela" },
+          { id: "e12", nombre: "Prensa 45°", series: 4, repeticiones: "10-12", descansoSegundos: 90 },
+          { id: "e13", nombre: "Sillón de Cuádriceps", series: 3, repeticiones: "12-15", descansoSegundos: 45 },
+          { id: "e14", nombre: "Camilla Femoral Tumbado", series: 4, repeticiones: "10-12", descansoSegundos: 60 },
+          { id: "e15", nombre: "Plancha Abdominal Isométrica", series: 3, repeticiones: "45 seg", descansoSegundos: 45 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "r2",
+    nombre: "Fuerza & Potencia (4 Días)",
+    descripcion: "Enfoque en levantamientos básicos pesados y transferencia de potencia.",
+    objetivo: "Fuerza",
+    esGenerica: true,
+    dias: [
+      {
+        id: "d4",
+        nombre: "Día 1 — Sentadilla y Accesorios",
+        ejercicios: [
+          { id: "e16", nombre: "Sentadilla Trasera Pesada", series: 5, repeticiones: "5", descansoSegundos: 180, notas: "RPE 8" },
+          { id: "e17", nombre: "Prensa Inclinada Pesada", series: 4, repeticiones: "8", descansoSegundos: 120 },
+        ],
+      },
+      {
+        id: "d5",
+        nombre: "Día 2 — Press Banca y Torso",
+        ejercicios: [
+          { id: "e18", nombre: "Press de Banca Plano", series: 5, repeticiones: "5", descansoSegundos: 180 },
+          { id: "e19", nombre: "Press Militar de Pie", series: 4, repeticiones: "6-8", descansoSegundos: 120 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "r3",
+    nombre: "Adaptación e Iniciación",
+    descripcion: "Circuito general para alumnos que recién comienzan en el gimnasio.",
+    objetivo: "Adaptación",
+    esGenerica: true,
+    dias: [
+      {
+        id: "d6",
+        nombre: "Día 1 — Fullbody Inicial A",
+        ejercicios: [
+          { id: "e20", nombre: "Prensa de Piernas Guiada", series: 3, repeticiones: "12", descansoSegundos: 60 },
+          { id: "e21", nombre: "Jalón al Pecho en Máquina", series: 3, repeticiones: "12", descansoSegundos: 60 },
+          { id: "e22", nombre: "Press de Pecho en Máquina", series: 3, repeticiones: "12", descansoSegundos: 60 },
+          { id: "e23", nombre: "Cinta / Bici de calentamiento", series: 1, repeticiones: "10 min", descansoSegundos: 0 },
+        ],
+      },
+    ],
+  },
+];
+
+export const VIDEOS_TECNICA_MOCK: VideoTecnica[] = [
+  {
+    id: "v1",
+    titulo: "Press de Banca con Mancuernas",
+    grupoMuscular: "Pecho",
+    duracion: "01:45",
+    nivel: "Técnica estricta",
+    videoUrl: "https://www.youtube.com/embed/VmB1G1K7v94",
+    descripcion: "Aprende el arco lumbar seguro, la retracción escapular y el recorrido completo para maximizar el estímulo en el pectoral mayor evitando el estrés articular en hombros.",
+    consejosClave: [
+      "Junta tus omóplatos contra el banco durante toda la serie.",
+      "Baja las mancuernas a 45 grados respecto al torso (no a 90°).",
+      "Pies firmes en el suelo empujando para mantener estabilidad (leg drive).",
+    ],
+  },
+  {
+    id: "v2",
+    titulo: "Sentadilla Libre Profunda y Biomecánica",
+    grupoMuscular: "Piernas",
+    duracion: "02:10",
+    nivel: "Biomecánica",
+    videoUrl: "https://www.youtube.com/embed/gcNh17Ckjgg",
+    descripcion: "Desglose de la postura de pies, respiración diafragmática (valsalva) y profundidad adecuada según tu movilidad de tobillo y cadera.",
+    consejosClave: [
+      "Inhala profundo inflando el abdomen antes de iniciar el descenso.",
+      "Empuja las rodillas hacia afuera en la misma dirección de las puntas de tus pies.",
+      "El peso debe sentirse distribuido en todo el trípode del pie.",
+    ],
+  },
+  {
+    id: "v3",
+    titulo: "Remo con Barra Agarre Prono",
+    grupoMuscular: "Espalda",
+    duracion: "01:30",
+    nivel: "Activación dorsal",
+    videoUrl: "https://www.youtube.com/embed/FWJR5Ve8gkQ",
+    descripcion: "Técnica fundamental para densidad de espalda. Mantén la espalda neutra y aprende a traccionar con los codos sin tirar con los lumbares.",
+    consejosClave: [
+      "Inclina el torso a 45° bloqueando la cadera hacia atrás.",
+      "Tira de la barra hacia el ombligo pensando en llevar los codos hacia el techo.",
+      "Evita dar tirones con el pecho o hiperextender el cuello.",
+    ],
+  },
+  {
+    id: "v4",
+    titulo: "Press Militar con Barra de Pie (Overhead Press)",
+    grupoMuscular: "Hombros",
+    duracion: "01:55",
+    nivel: "Fuerza básica",
+    videoUrl: "https://www.youtube.com/embed/2yjwXTZQDDI",
+    descripcion: "El rey de los ejercicios de hombro. Alineación vertical, bloqueo de glúteos y abdomen para no sobrecargar la zona lumbar.",
+    consejosClave: [
+      "Aprieta glúteos y cuádriceps para crear una base sólida como una roca.",
+      "Pasa la cabeza hacia adelante una vez que la barra supera la frente.",
+      "Bloquea la barra sobre la coronilla en el punto más alto.",
+    ],
+  },
+  {
+    id: "v5",
+    titulo: "Curl Martillo con Mancuernas",
+    grupoMuscular: "Brazos",
+    duracion: "01:15",
+    nivel: "Aislamiento",
+    videoUrl: "https://www.youtube.com/embed/zC3nLlEvin4",
+    descripcion: "Excelente variante para el desarrollo del braquial anterior y braquiorradial, aportando volumen y grosor al brazo.",
+    consejosClave: [
+      "Mantén los codos fijados al costado del cuerpo sin balancear el torso.",
+      "Las palmas se miran entre sí durante todo el movimiento.",
+      "Controla 2 segundos la fase excéntrica (bajada).",
+    ],
+  },
+  {
+    id: "v6",
+    titulo: "Plancha Abdominal y Tensión Global",
+    grupoMuscular: "Core",
+    duracion: "01:20",
+    nivel: "Postura",
+    videoUrl: "https://www.youtube.com/embed/ASdvN_XEl_c",
+    descripcion: "No se trata de aguantar 5 minutos flojo, sino 45 segundos con máxima tensión en glúteos, abdomen y dorsales.",
+    consejosClave: [
+      "Retroversión pélvica: mete la cola como si quisieras juntar el pubis con el esternón.",
+      "Empuja el suelo con los antebrazos separando las escápulas.",
+      "Mantén la respiración corta y controlada sin soltar la panza.",
+    ],
+  },
+];
+
+export const PLANES_MOCK: Plan[] = [
+  {
+    id: "p1",
+    nombre: "Musculación",
+    precio: 15000,
+    descripcion: "Acceso libre e ilimitado al sector de pesas, máquinas y cardio.",
+    diasPorSemana: "Libre",
+    activo: true,
+  },
+  {
+    id: "p2",
+    nombre: "Full Access",
+    precio: 22000,
+    descripcion: "Acceso a musculación + clases guiadas + seguimiento personalizado.",
+    diasPorSemana: "Libre",
+    activo: true,
+  },
+  {
+    id: "p3",
+    nombre: "Funcional",
+    precio: 18000,
+    descripcion: "Entrenamiento funcional en circuito y acondicionamiento metabólico.",
+    diasPorSemana: "3 días por semana",
+    activo: true,
+  },
+];
+
+export const AVISOS_MOCK: Aviso[] = [
+  {
+    id: "av-1",
+    titulo: "Feriado Nacional: Horario Especial",
+    mensaje: "Este próximo lunes feriado abrimos de 09:00 a 14:00 hs. Las clases de funcional de la tarde quedan suspendidas. ¡Los esperamos por la mañana!",
+    categoria: "HORARIO",
+    fecha: "2026-09-04",
+    paraTodos: true,
+    leidoPor: [],
+  },
+  {
+    id: "av-2",
+    titulo: "Nuevas Mancuernas en Sala de Musculación",
+    mensaje: "Incorporamos juegos de mancuernas de 12kg a 36kg de uretano de alta durabilidad y un banco declinado nuevo. ¡A cuidarlas y ordenarlas después de usarlas!",
+    categoria: "NOVEDAD",
+    fecha: "2026-09-02",
+    paraTodos: true,
+    leidoPor: ["u_alumno_1", "u1"],
+  },
+  {
+    id: "av-3",
+    titulo: "Recordatorio: Cuota de Septiembre",
+    mensaje: "Hola Lucía! Te recordamos que el vencimiento de tu cuota de Musculación es el día 10. Podés abonar en recepción o por transferencia.",
+    categoria: "IMPORTANTE",
+    fecha: "2026-09-01",
+    paraTodos: false,
+    alumnoId: "a1",
+    leidoPor: [],
+  },
+];
+
+// ── Historial de Entrenamiento Mock ────────────────────────────────────────
+// Sesiones previas de Lucía (a1) sobre la rutina r1 para poblar la columna
+// "Previa" desde el primer momento de prueba sin depender de datos reales.
+export const SESIONES_MOCK: SesionEntrenamiento[] = [
+  {
+    id: "ses-1",
+    alumnoId: "a1",
+    rutinaId: "r1",
+    diaId: "d1",
+    fecha: "2026-09-01",
+    ejercicios: [
+      {
+        ejercicioId: "e1",
+        series: [
+          { serieNumero: 1, kg: 80, reps: 10, completada: true },
+          { serieNumero: 2, kg: 80, reps: 9,  completada: true },
+          { serieNumero: 3, kg: 75, reps: 10, completada: true },
+          { serieNumero: 4, kg: 75, reps: 8,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e2",
+        series: [
+          { serieNumero: 1, kg: 22, reps: 12, completada: true },
+          { serieNumero: 2, kg: 22, reps: 11, completada: true },
+          { serieNumero: 3, kg: 20, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e3",
+        series: [
+          { serieNumero: 1, kg: 40, reps: 15, completada: true },
+          { serieNumero: 2, kg: 40, reps: 13, completada: true },
+          { serieNumero: 3, kg: 40, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e4",
+        series: [
+          { serieNumero: 1, kg: 8, reps: 15, completada: true },
+          { serieNumero: 2, kg: 8, reps: 14, completada: true },
+          { serieNumero: 3, kg: 8, reps: 12, completada: true },
+          { serieNumero: 4, kg: 6, reps: 15, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e5",
+        series: [
+          { serieNumero: 1, kg: 30, reps: 12, completada: true },
+          { serieNumero: 2, kg: 30, reps: 12, completada: true },
+          { serieNumero: 3, kg: 27, reps: 12, completada: true },
+          { serieNumero: 4, kg: 27, reps: 10, completada: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: "ses-2",
+    alumnoId: "a1",
+    rutinaId: "r1",
+    diaId: "d2",
+    fecha: "2026-09-03",
+    ejercicios: [
+      {
+        ejercicioId: "e6",
+        series: [
+          { serieNumero: 1, kg: 55, reps: 10, completada: true },
+          { serieNumero: 2, kg: 55, reps: 10, completada: true },
+          { serieNumero: 3, kg: 52, reps: 10, completada: true },
+          { serieNumero: 4, kg: 52, reps: 9,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e7",
+        series: [
+          { serieNumero: 1, kg: 60, reps: 10, completada: true },
+          { serieNumero: 2, kg: 60, reps: 9,  completada: true },
+          { serieNumero: 3, kg: 57, reps: 10, completada: true },
+          { serieNumero: 4, kg: 57, reps: 8,  completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e8",
+        series: [
+          { serieNumero: 1, kg: 24, reps: 10, completada: true },
+          { serieNumero: 2, kg: 24, reps: 10, completada: true },
+          { serieNumero: 3, kg: 22, reps: 10, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e9",
+        series: [
+          { serieNumero: 1, kg: 35, reps: 12, completada: true },
+          { serieNumero: 2, kg: 35, reps: 11, completada: true },
+          { serieNumero: 3, kg: 32, reps: 12, completada: true },
+        ],
+      },
+      {
+        ejercicioId: "e10",
+        series: [
+          { serieNumero: 1, kg: 14, reps: 12, completada: true },
+          { serieNumero: 2, kg: 14, reps: 12, completada: true },
+          { serieNumero: 3, kg: 12, reps: 12, completada: true },
+        ],
+      },
+    ],
+  },
+];
+
+// Helper para generar fechas dinámicas relativas a hoy (inmune a husos horarios)
+const calcFechaOffset = (diasAtras: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - diasAtras);
+  const yyyy = d.getFullYear();
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const ASISTENCIAS_MOCK: RegistroAsistencia[] = [
+  // --- ACTIVOS EN SALA HOY (>3 para carrusel y paginación) ---
+  {
+    id: "asist-act-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(0),
+    hora: "19:25",
+    timestamp: Date.now() - 18 * 60 * 1000, // Hace 18 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(0),
+    hora: "19:10",
+    timestamp: Date.now() - 32 * 60 * 1000, // Hace 32 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(0),
+    hora: "18:55",
+    timestamp: Date.now() - 48 * 60 * 1000, // Hace 48 min
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-4",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(0),
+    hora: "18:40",
+    timestamp: Date.now() - 62 * 60 * 1000, // Hace 62 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-5",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(0),
+    hora: "18:25",
+    timestamp: Date.now() - 77 * 60 * 1000, // Hace 77 min
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-act-6",
+    alumnoId: "a8",
+    alumnoNombre: "Gonzalo Romero",
+    alumnoDni: "35987654",
+    fecha: calcFechaOffset(0),
+    hora: "18:15",
+    timestamp: Date.now() - 88 * 60 * 1000, // Hace 88 min
+    estadoCuenta: "MOROSO",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+
+  // --- SESIONES COMPLETADAS HOY ---
+  {
+    id: "asist-hoy-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(0),
+    hora: "10:15",
+    timestamp: Date.now() - 8 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-2",
+    alumnoId: "a6",
+    alumnoNombre: "Esteban Morales",
+    alumnoDni: "37890123",
+    fecha: calcFechaOffset(0),
+    hora: "09:30",
+    timestamp: Date.now() - 9 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-3",
+    alumnoId: "a9",
+    alumnoNombre: "Agustín Pellegrini",
+    alumnoDni: "36456789",
+    fecha: calcFechaOffset(0),
+    hora: "08:15",
+    timestamp: Date.now() - 10 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-hoy-4",
+    alumnoId: "a10",
+    alumnoNombre: "Julieta Navas",
+    alumnoDni: "44123890",
+    fecha: calcFechaOffset(0),
+    hora: "11:45",
+    timestamp: Date.now() - 7 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // --- HISTORIAL DÍAS PREVIOS (ÚLTIMOS 7 DÍAS) ---
+  // Ayer (Día -1)
+  {
+    id: "asist-d1-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(1),
+    hora: "19:00",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(1),
+    hora: "19:30",
+    timestamp: Date.now() - 23 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(1),
+    hora: "18:00",
+    timestamp: Date.now() - 25 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-4",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(1),
+    hora: "09:00",
+    timestamp: Date.now() - 34 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d1-5",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(1),
+    hora: "18:45",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -2
+  {
+    id: "asist-d2-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(2),
+    hora: "18:30",
+    timestamp: Date.now() - 48 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-2",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(2),
+    hora: "18:00",
+    timestamp: Date.now() - 49 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-3",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(2),
+    hora: "20:00",
+    timestamp: Date.now() - 47 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d2-4",
+    alumnoId: "a9",
+    alumnoNombre: "Agustín Pellegrini",
+    alumnoDni: "36456789",
+    fecha: calcFechaOffset(2),
+    hora: "10:00",
+    timestamp: Date.now() - 57 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -3
+  {
+    id: "asist-d3-1",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(3),
+    hora: "19:15",
+    timestamp: Date.now() - 72 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-2",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(3),
+    hora: "19:45",
+    timestamp: Date.now() - 71 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-3",
+    alumnoId: "a8",
+    alumnoNombre: "Gonzalo Romero",
+    alumnoDni: "35987654",
+    fecha: calcFechaOffset(3),
+    hora: "20:10",
+    timestamp: Date.now() - 70 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d3-4",
+    alumnoId: "a6",
+    alumnoNombre: "Esteban Morales",
+    alumnoDni: "37890123",
+    fecha: calcFechaOffset(3),
+    hora: "08:30",
+    timestamp: Date.now() - 82 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -4
+  {
+    id: "asist-d4-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(4),
+    hora: "18:20",
+    timestamp: Date.now() - 96 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d4-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(4),
+    hora: "18:45",
+    timestamp: Date.now() - 95 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d4-3",
+    alumnoId: "a7",
+    alumnoNombre: "Camila Morales",
+    alumnoDni: "40123987",
+    fecha: calcFechaOffset(4),
+    hora: "19:30",
+    timestamp: Date.now() - 94 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -5
+  {
+    id: "asist-d5-1",
+    alumnoId: "a3",
+    alumnoNombre: "Sofía Ramírez",
+    alumnoDni: "42123456",
+    fecha: calcFechaOffset(5),
+    hora: "09:30",
+    timestamp: Date.now() - 120 * 60 * 60 * 1000,
+    estadoCuenta: "MOROSO",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d5-2",
+    alumnoId: "a5",
+    alumnoNombre: "Valentina Ríos",
+    alumnoDni: "43567890",
+    fecha: calcFechaOffset(5),
+    hora: "19:00",
+    timestamp: Date.now() - 118 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d5-3",
+    alumnoId: "a10",
+    alumnoNombre: "Julieta Navas",
+    alumnoDni: "44123890",
+    fecha: calcFechaOffset(5),
+    hora: "19:40",
+    timestamp: Date.now() - 117 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Funcional",
+    metodo: "DNI_TOTEM",
+  },
+
+  // Día -6
+  {
+    id: "asist-d6-1",
+    alumnoId: "a1",
+    alumnoNombre: "Lucía Fernández",
+    alumnoDni: "41890123",
+    fecha: calcFechaOffset(6),
+    hora: "18:00",
+    timestamp: Date.now() - 144 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d6-2",
+    alumnoId: "a2",
+    alumnoNombre: "Martín Torres",
+    alumnoDni: "39456789",
+    fecha: calcFechaOffset(6),
+    hora: "18:50",
+    timestamp: Date.now() - 143 * 60 * 60 * 1000,
+    estadoCuenta: "AL_DIA",
+    planNombre: "Full Access",
+    metodo: "DNI_TOTEM",
+  },
+  {
+    id: "asist-d6-3",
+    alumnoId: "a4",
+    alumnoNombre: "Diego Castro",
+    alumnoDni: "38901234",
+    fecha: calcFechaOffset(6),
+    hora: "19:20",
+    timestamp: Date.now() - 142 * 60 * 60 * 1000,
+    estadoCuenta: "PENDIENTE",
+    planNombre: "Musculación",
+    metodo: "DNI_TOTEM",
+  },
+];
+
+
+
