@@ -40,7 +40,7 @@ test('un rechazo del cobro conserva el formulario y muestra el error', async ({ 
     await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ mensaje: 'El período ya está pagado' }) })
   })
   await page.getByRole('button', { name: 'Guardar pago', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('El período ya está pagado')
+  await expect(page.getByRole('alert').filter({ hasText: 'El período ya está pagado' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Guardar pago', exact: true })).toBeEnabled()
   await expect(page.getByText('Pago registrado con éxito', { exact: true })).toHaveCount(0)
 })
