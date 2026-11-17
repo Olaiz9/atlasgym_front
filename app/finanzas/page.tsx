@@ -23,7 +23,7 @@ import {
   Landmark,
 } from "lucide-react";
 import Link from "next/link";
-import { useAppData } from "@/lib/store";
+import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
 import {
   formatFechaAR,
   calcularVencimientoCuota,
@@ -426,6 +426,7 @@ export default function FinanzasPage() {
     planes,
     pagos,
     agregarPago,
+    refrescarPagos,
     actualizarEstadoPago,
     completarSaldoPago,
     anularPago,
@@ -587,18 +588,8 @@ export default function FinanzasPage() {
   const handleNuevoPago = async (
     nuevo: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
   ) => {
-    agregarPago(nuevo);
-    if (nuevo.alumnoId && nuevo.usuarioApp?.trim() && nuevo.passwordApp?.trim()) {
-      try {
-        await asignarCredencialesAlumno(
-          nuevo.alumnoId,
-          nuevo.usuarioApp.trim(),
-          nuevo.passwordApp.trim()
-        );
-      } catch (err) {
-        console.warn("No se pudieron sincronizar las credenciales con el backend:", err);
-      }
-    }
+    const resultado = await agregarPago(nuevo);
+    if (!resultado.ok) return resultado;
     setModalAbierto(false); setDniPreseleccionado(null);
     if (nuevo.usuarioApp && nuevo.passwordApp) {
       toast(
@@ -610,6 +601,7 @@ export default function FinanzasPage() {
     } else {
       toast("Pago registrado con éxito", "success");
     }
+    return resultado;
   };
 
   const confirmarAnulacion = async (motivo: string) => {
@@ -1162,6 +1154,7 @@ export default function FinanzasPage() {
           alumnoInicialDni={dniPreseleccionado ?? undefined}
           onClose={() => { setModalAbierto(false); setDniPreseleccionado(null); }}
           onSubmit={handleNuevoPago}
+          onConsultarPagos={refrescarPagos}
           onAsignarCredenciales={asignarCredencialesAlumno}
         />
       )}
@@ -1558,6 +1551,7 @@ function ModalRegistrarPago({
   alumnoInicialDni,
   onClose,
   onSubmit,
+  onConsultarPagos,
   onAsignarCredenciales,
 }: {
   alumnos: Alumno[];
@@ -1566,7 +1560,8 @@ function ModalRegistrarPago({
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   alumnoInicialDni?: string;
   onClose: () => void;
-  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => Promise<ResultadoAgregarPago>;
+  onConsultarPagos: () => Promise<boolean>;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
   const primerAlumno = (alumnoInicialDni ? alumnos.find((a) => a.dni === alumnoInicialDni) : undefined) ?? alumnos[0];
@@ -1604,6 +1599,21 @@ function ModalRegistrarPago({
   const [usuarioApp, setUsuarioApp] = useState(() => sugerirUsuarioAlumno(primerAlumno));
   const [passwordApp, setPasswordApp] = useState("");
   const [errorValidacion, setErrorValidacion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [incierto, setIncierto] = useState(false);
+  const [consultando, setConsultando] = useState(false);
+  const enviando = useRef(false);
+  const cerrar = () => { if (!enviando.current && !consultando) onClose(); };
+  const consultar = async () => {
+    if (consultando) return;
+    setConsultando(true);
+    try {
+      if (await onConsultarPagos()) onClose();
+      else setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } catch {
+      setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } finally { setConsultando(false); }
+  };
 
   const alumnosFiltrados = alumnos.filter(
     (a) =>
@@ -1692,8 +1702,9 @@ function ModalRegistrarPago({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (enviando.current || incierto) return;
     const montoNum = Number(form.monto);
     if (!form.alumnoId) {
       setErrorValidacion("Seleccioná un alumno");
@@ -1745,7 +1756,10 @@ function ModalRegistrarPago({
     const incluyeCredenciales =
       tipoMensaje === "bienvenida" && usuarioApp.trim() && passwordApp.trim();
 
-    onSubmit({
+    enviando.current = true;
+    setGuardando(true);
+    try {
+    const resultado = await onSubmit({
       ...form,
       estado: estadoFinal,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
@@ -1760,11 +1774,19 @@ function ModalRegistrarPago({
           }
         : {}),
     });
+    if (!resultado.ok) {
+      setErrorValidacion(resultado.error);
+      setIncierto(Boolean(resultado.esIncierto));
+    }
+    } catch {
+      setErrorValidacion("No pudimos confirmar el resultado. Revisá los pagos antes de volver a cobrar.");
+      setIncierto(true);
+    } finally { enviando.current = false; setGuardando(false); }
   };
 
   return (
     <div
-      onClick={onClose}
+      onClick={cerrar}
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
     >
       <div
@@ -1774,7 +1796,8 @@ function ModalRegistrarPago({
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-black text-white">Registrar pago</h2>
           <button
-            onClick={onClose}
+            onClick={cerrar}
+            disabled={guardando || consultando}
             aria-label="Cerrar"
             className="text-slate-400 hover:text-white rounded-full p-1.5 hover:bg-slate-800 transition-colors active:scale-95"
           >
@@ -1795,7 +1818,8 @@ function ModalRegistrarPago({
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={guardando}>
+            <fieldset disabled={guardando || incierto} className="space-y-4">
             <Field label="Alumno">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -2021,19 +2045,28 @@ function ModalRegistrarPago({
               </Field>
             </div>
 
+            </fieldset>
             {errorValidacion && (
-              <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
+              <p role="alert" className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
                 {errorValidacion}
               </p>
             )}
 
             <button
               type="submit"
+              disabled={guardando || incierto}
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
             >
-              {esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
+              {guardando ? "Registrando…" : esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
             </button>
 
+            {incierto && (
+              <button type="button" disabled={consultando} onClick={consultar}
+                className="w-full rounded-xl border border-slate-500 p-3">
+                {consultando ? "Consultando…" : "Consultar pagos registrados"}
+              </button>
+            )}
+            <fieldset disabled={guardando || incierto}>
             <SeccionNotificarWhatsapp
               alumnoId={form.alumnoId}
               alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
@@ -2060,6 +2093,7 @@ function ModalRegistrarPago({
               onPasswordAppChange={setPasswordApp}
               onAsignarCredenciales={onAsignarCredenciales}
             />
+            </fieldset>
           </form>
         )}
       </div>
