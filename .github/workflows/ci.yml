@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verificar:
     name: Tests, tipos y build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -61,7 +61,7 @@ jobs:
   # y MySQL 8 (el mismo motor que produccion), con una base vacia en cada corrida.
   e2e:
     name: E2E (Playwright + MySQL 8)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       mysql:
@@ -164,7 +164,7 @@ jobs:
 
   docker:
     name: Imagen Docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
