@@ -3,10 +3,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  DollarSign,
   AlertCircle,
   Clock,
-  Users,
   Plus,
   X,
   Search,
@@ -17,9 +15,8 @@ import {
   Download,
   Copy,
   Check,
-  Wallet,
-  ShieldCheck,
   Landmark,
+  MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
@@ -55,7 +52,6 @@ import {
   tieneCelularWhatsappValido,
 } from "@/lib/whatsapp-utils";
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
-import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
 import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "@/lib/pago-historial";
@@ -107,7 +103,7 @@ function SelectorMes({
 
   return (
     <div
-      className={`flex items-center h-11 rounded-full border border-slate-200 bg-white transition-opacity ${
+      className={`flex items-center h-11 rounded-full border border-slate-800 bg-slate-900 transition-opacity ${
         disabled ? "opacity-40" : ""
       }`}
     >
@@ -118,22 +114,22 @@ function SelectorMes({
         onChange={(e) =>
           onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
         }
-        className="h-full pl-4 pr-2 bg-transparent text-sm font-bold text-slate-500 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-4 pr-2 bg-transparent text-sm font-medium text-slate-200 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {NOMBRES_MESES.map((nombre, i) => (
-          <option key={nombre} value={i}>{nombre}</option>
+          <option key={nombre} value={i} className="bg-slate-900 text-white">{nombre}</option>
         ))}
       </select>
-      <div className="h-5 w-px bg-slate-200 shrink-0" />
+      <div className="h-5 w-px bg-slate-700 shrink-0" />
       <select
         disabled={disabled}
         aria-label="Seleccionar año"
         value={anioStr}
         onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
-        className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-500 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-2 pr-4 bg-transparent text-sm font-medium text-slate-200 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {anios.map((a) => (
-          <option key={a} value={a}>{a}</option>
+          <option key={a} value={a} className="bg-slate-900 text-white">{a}</option>
         ))}
       </select>
     </div>
@@ -603,19 +599,15 @@ export default function FinanzasPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1500px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-10 overflow-x-hidden px-4 pb-28 pt-6 sm:px-5 md:gap-12 md:px-14 md:pb-16 md:pt-12">
+      {/* ENCABEZADO */}
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-5xl font-black text-white md:text-6xl">Finanzas y Caja</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              {verTodos
-                ? "Viendo el historial completo auditado de cobros, señas y anulaciones."
-                : `Viendo ${formatearMes(mes)} — caja trazable con señas parciales y anulaciones auditadas.`}
-            </p>
+            <p className="mb-2 text-sm text-slate-500">{verTodos ? "Historial completo" : formatearMes(mes)}</p>
+            <h1 className="text-4xl font-bold uppercase text-white md:text-[40px]">Finanzas y caja</h1>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap w-full sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             <button
               onClick={() => setModalDatosCobro(true)}
               title={
@@ -623,29 +615,29 @@ export default function FinanzasPage() {
                   ? `Alias vigente: ${datosCobro.alias}. Tocá para cambiarlo.`
                   : "Cargá el alias de transferencia que ven los alumnos"
               }
-              className={`flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border transition-[color,background-color,transform] duration-200 active:scale-95 ${
+              className={`flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium ${
                 datosCobro.alias
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700"
-                  : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40"
+                  ? "border-slate-800 text-slate-300 hover:bg-slate-900"
+                  : "border-amber-400/50 text-amber-300 hover:bg-amber-500/10"
               }`}
             >
-              <Landmark className="w-4 h-4 shrink-0" />
-              <span className="truncate">{datosCobro.alias ? "Datos de cobro" : "Cargar alias"}</span>
+              <Landmark className="size-4 shrink-0" />
+              {datosCobro.alias ? "Datos de cobro" : "Cargar alias"}
             </button>
             <button
               onClick={exportarCSVFinanzas}
               title="Exportar planilla actual a archivo CSV / Excel"
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 active:scale-95"
+              className="flex h-11 items-center gap-2 rounded-xl border border-slate-800 px-4 text-sm font-medium text-slate-300 hover:bg-slate-900"
             >
-              <Download className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="truncate">Exportar CSV</span>
+              <Download className="size-4 shrink-0" />
+              Exportar CSV
             </button>
             <button
               onClick={() => setModalAbierto(true)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:shadow-blue-500/30 active:scale-95"
+              className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-500"
             >
-              <Plus className="w-5 h-5 shrink-0" />
-              <span className="truncate">Registrar pago</span>
+              <Plus className="size-4 shrink-0" />
+              Registrar pago
             </button>
           </div>
         </div>
@@ -665,17 +657,16 @@ export default function FinanzasPage() {
               setMes(mesActualISO());
               setVerTodos(false);
             }}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-500 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-full border border-slate-800 px-4 text-sm font-medium text-slate-300 hover:bg-slate-900"
           >
             Mes actual
           </button>
           <button
             type="button"
+            aria-pressed={verTodos}
             onClick={() => setVerTodos((v) => !v)}
-            className={`h-11 px-4 rounded-full text-sm font-bold transition-[color,background-color] duration-200 active:scale-95 ${
-              verTodos
-                ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                : "border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+            className={`h-11 rounded-full px-4 text-sm font-medium ${
+              verTodos ? "bg-slate-200 text-slate-950" : "border border-slate-800 text-slate-300 hover:bg-slate-900"
             }`}
           >
             Ver todos
@@ -683,210 +674,132 @@ export default function FinanzasPage() {
         </div>
       </div>
 
-      {/* Tarjetas de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          icon={<DollarSign className="size-6" />}
-          label={verTodos ? "Ingresos netos totales" : "Ingresos del mes"}
-          value={`$${metrica.ingresosDelMes.toLocaleString("es-AR")}`}
-          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
-        />
-        <MetricCard
-          icon={<Clock className="size-6" />}
-          label="Saldos y cuotas pendientes"
-          value={`$${metrica.pendientesMonto.toLocaleString("es-AR")}`}
-          sub={`${metrica.pendientesCount} comprobantes`}
-          tint={{ bg: "bg-amber-500/15 border border-amber-500/30", text: "text-amber-400", bar: "bg-amber-500" }}
-        />
-        <MetricCard
-          icon={<AlertCircle className="size-6" />}
-          label="Cuotas vencidas"
-          value={`$${metrica.vencidosMonto.toLocaleString("es-AR")}`}
-          sub={`${metrica.vencidosCount} cuotas`}
-          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
-        />
-        <MetricCard
-          icon={<Users className="size-6" />}
-          label="Socios morosos hoy"
-          value={`${metrica.morosos}`}
-          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
-        />
-      </div>
-
-      {/* Panel de Arqueo de Caja del Día */}
-      <div className="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 sm:p-6 text-slate-100 shadow-sm backdrop-blur-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-white">
-                Arqueo de Caja del Día
-              </h2>
-              <p className="text-xs text-slate-400">
-                Efectivo físico en cajón, transferencias y desglose nominal por operador ({formatFechaAR(fechaArqueo)}).
-              </p>
-            </div>
-          </div>
+      {/* CAJA DEL DÍA: franja con el total y el desglose */}
+      <section aria-labelledby="titulo-caja" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="titulo-caja" className="text-base font-semibold text-slate-300">
+            {fechaArqueo === fechaLocalHoy() ? "Caja de hoy" : `Caja del ${formatFechaAR(fechaArqueo)}`}
+          </h2>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              aria-label="Fecha de arqueo de caja"
-              value={fechaArqueo}
-              onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
-              className="h-9 px-3 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-slate-200 outline-none focus:border-blue-500"
-            />
+            <label className="flex items-center gap-2 text-[13px] text-slate-500">
+              Ver otro día
+              <input
+                type="date"
+                aria-label="Fecha de arqueo de caja"
+                value={fechaArqueo}
+                onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
+                className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200 outline-none focus:border-blue-500"
+              />
+            </label>
             {fechaArqueo !== fechaLocalHoy() && (
               <button
                 type="button"
                 onClick={() => setFechaArqueo(fechaLocalHoy())}
-                className="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700"
+                className="h-11 rounded-xl border border-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-900"
               >
                 Hoy
               </button>
             )}
           </div>
         </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3.5">
-            <p className="text-xs font-bold text-emerald-400">
-              Efectivo en cajón
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalEfectivo.toLocaleString("es-AR")}
-            </p>
+        <div className="grid grid-cols-2 border-y border-slate-800 lg:grid-cols-4">
+          <div className="flex flex-col gap-1 py-4 pr-4 md:py-5">
+            <span className="text-[13px] text-slate-500">Total cobrado ({arqueoDelDia.cantidadCobros})</span>
+            <span className="text-xl font-semibold text-white md:text-2xl">${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}</span>
           </div>
-          <div className="rounded-xl bg-blue-500/10 border border-blue-500/25 p-3.5">
-            <p className="text-xs font-bold text-blue-400">
-              Transferencias / MP
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalTransferencia.toLocaleString("es-AR")}
-            </p>
-          </div>
-          <div className="rounded-xl bg-purple-500/10 border border-purple-500/25 p-3.5">
-            <p className="text-xs font-bold text-purple-300">
-              Tarjeta
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalTarjeta.toLocaleString("es-AR")}
-            </p>
-          </div>
-          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3.5">
-            <p className="text-xs font-bold text-slate-400">
-              Total recaudado ({arqueoDelDia.cantidadCobros})
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-400">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-300 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              Por operador:
-            </span>
-            {arqueoDelDia.porOperador.length === 0 ? (
-              <span className="text-slate-500 italic">Sin cobros registrados en esta fecha</span>
-            ) : (
-              arqueoDelDia.porOperador.map((op) => (
-                <span
-                  key={op.operador}
-                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-semibold"
-                >
-                  {op.operador}:{" "}
-                  <strong className="text-emerald-400">
-                    ${op.totalRecaudado.toLocaleString("es-AR")}
-                  </strong>{" "}
-                  ({op.cantidadOperaciones})
-                </span>
-              ))
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {arqueoDelDia.cantidadParciales > 0 && (
-              <span className="text-sky-300 font-semibold">
-                {arqueoDelDia.cantidadParciales} seña(s) con $
-                {arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar
-              </span>
-            )}
-            {arqueoDelDia.cantidadAnulados > 0 && (
-              <span className="text-rose-400 font-semibold">
-                {arqueoDelDia.cantidadAnulados} anulado(s) ($
-                {arqueoDelDia.montoAnulado.toLocaleString("es-AR")} excluidos de caja)
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
-          <div className="flex gap-4 flex-wrap items-center">
-            <div className="flex gap-2 flex-wrap">
-              {FILTROS.map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setFiltro(f.value)}
-                  className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                    filtro === f.value
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                      : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+          {[
+            { label: "Efectivo", valor: arqueoDelDia.totalEfectivo },
+            { label: "Transferencia / MP", valor: arqueoDelDia.totalTransferencia },
+            { label: "Tarjeta", valor: arqueoDelDia.totalTarjeta },
+          ].map((m, i) => (
+            <div
+              key={m.label}
+              className={`flex flex-col gap-1 border-slate-800 py-4 md:py-5 ${
+                i === 0 ? "border-l pl-4 md:pl-6" : i === 1 ? "border-t pr-4 lg:border-l lg:border-t-0 lg:pl-6" : "border-l border-t pl-4 md:pl-6 lg:border-t-0"
+              }`}
+            >
+              <span className="text-[13px] text-slate-500">{m.label}</span>
+              <span className="text-lg font-medium text-slate-200 md:text-xl">${m.valor.toLocaleString("es-AR")}</span>
             </div>
+          ))}
+        </div>
+        <p className="text-[13px] text-slate-500">
+          {arqueoDelDia.porOperador.length === 0
+            ? "Sin cobros registrados en esta fecha."
+            : `Por titular: ${arqueoDelDia.porOperador
+                .map((op) => `${op.operador} $${op.totalRecaudado.toLocaleString("es-AR")} (${op.cantidadOperaciones})`)
+                .join(", ")}.`}
+          {arqueoDelDia.cantidadParciales > 0 &&
+            ` ${arqueoDelDia.cantidadParciales} seña(s) con $${arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar.`}
+          {arqueoDelDia.cantidadAnulados > 0 &&
+            ` ${arqueoDelDia.cantidadAnulados} anulado(s) por $${arqueoDelDia.montoAnulado.toLocaleString("es-AR")}, fuera de la caja.`}
+        </p>
+      </section>
 
-            <div className="h-5 w-px bg-slate-800 hidden sm:block" />
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold text-slate-400 mr-1">Método:</span>
-              {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
-                <button
-                  key={met}
-                  onClick={() => setFiltroMetodo(met)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
-                    filtroMetodo === met
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-slate-800/60 text-slate-300 border border-slate-700/60 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {met === "TODOS" ? "Todos" : met}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* MOVIMIENTOS: la tabla es lo principal */}
+      <section aria-labelledby="titulo-movimientos" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="titulo-movimientos" className="text-xl font-semibold text-white">
+            {verTodos ? "Todos los movimientos" : "Movimientos del mes"}
+          </h2>
+          <label className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
             <input
               id="buscar-finanzas"
               aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar socio u operador..."
-              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900 pl-10 pr-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500/60"
             />
-          </div>
+          </label>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por estado">
+          {FILTROS.map((f) => {
+            const cantidad = f.value === "TODOS" ? pagosDelMes.length : pagosDelMes.filter((p) => p.estado === f.value).length;
+            const activo = filtro === f.value;
+            return (
+              <button
+                key={f.value}
+                aria-pressed={activo}
+                onClick={() => setFiltro(f.value)}
+                className={`flex h-11 items-center gap-2 rounded-full px-4 text-sm ${
+                  activo ? "bg-slate-200 font-semibold text-slate-950" : "border border-slate-800 text-slate-300 hover:bg-slate-900"
+                }`}
+              >
+                {f.label}
+                <span className={activo ? "font-normal" : "text-slate-500"}>{cantidad}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por medio de pago">
+          <span className="text-[13px] text-slate-500">Medio de pago:</span>
+          {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
+            <button
+              key={met}
+              aria-pressed={filtroMetodo === met}
+              onClick={() => setFiltroMetodo(met)}
+              className={`h-9 rounded-lg px-3 text-[13px] ${
+                filtroMetodo === met ? "bg-slate-800 font-semibold text-white" : "text-slate-400 hover:bg-slate-900"
+              }`}
+            >
+              {met === "TODOS" ? "Todos" : met}
+            </button>
+          ))}
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-slate-800">
+          <table className="w-full min-w-[860px] border-collapse text-[15px]">
             <thead>
-              <tr className="text-left text-slate-400 border-b border-slate-800">
-                <th className="font-bold px-6 py-3.5">Alumno</th>
-                <th className="font-bold px-6 py-3.5">Plan / Período</th>
-                <th className="font-bold px-6 py-3.5">Importe</th>
-                <th className="font-bold px-6 py-3.5">Fecha</th>
-                <th className="font-bold px-6 py-3.5">Método / Operador</th>
-                <th className="font-bold px-6 py-3.5">Estado</th>
-                <th className="font-bold px-6 py-3.5 text-right">Acciones</th>
+              <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                <th className="px-5 py-3 font-medium">Alumno</th>
+                <th className="px-5 py-3 font-medium">Período</th>
+                <th className="px-5 py-3 text-right font-medium">Importe</th>
+                <th className="px-5 py-3 font-medium">Cobro</th>
+                <th className="px-5 py-3 font-medium">Estado</th>
+                <th className="px-5 py-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
@@ -897,153 +810,138 @@ export default function FinanzasPage() {
                 const abonado = obtenerMontoRecaudadoPago(pago);
                 const saldo = obtenerSaldoPendientePago(pago);
                 const requiereRecordatorio =
-                  pago.estado === "PARCIAL" ||
-                  pago.estado === "PENDIENTE" ||
-                  pago.estado === "VENCIDO";
-                const puedeWhatsapp =
-                  requiereRecordatorio && alumno && tieneCelularWhatsappValido(alumno.celular);
+                  pago.estado === "PARCIAL" || pago.estado === "PENDIENTE" || pago.estado === "VENCIDO";
+                const puedeWhatsapp = requiereRecordatorio && alumno && tieneCelularWhatsappValido(alumno.celular);
 
                 return (
-                  <tr
-                    key={pago.id}
-                    className={`border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors ${
-                      esAnulado ? "opacity-60 bg-slate-950/30" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4 font-bold text-white">
+                  <tr key={pago.id} className={`border-t border-slate-800 ${esAnulado ? "text-slate-500" : ""}`}>
+                    <td className="px-5 py-4">
                       {alumno ? (
-                        <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-400 hover:underline underline-offset-2">
+                        <Link
+                          href={`/alumnos/${alumno.id}`}
+                          className={`block font-semibold hover:underline ${esAnulado ? "text-slate-500 line-through" : "text-white"}`}
+                        >
                           {nombreHistoricoDelPago(pago, alumno)}
                         </Link>
                       ) : (
-                        <span className="text-slate-500 italic font-medium">
-                          {nombreHistoricoDelPago(pago, alumno)}
-                        </span>
+                        <span className="block italic text-slate-500">{nombreHistoricoDelPago(pago, alumno)}</span>
                       )}
+                      {alumno?.dni && <span className="mt-0.5 block text-[13px] text-slate-500">DNI {alumno.dni}</span>}
                       {alumnoDePagoEstaDeBaja(pago, alumno) && (
-                        <span className="mt-1 block text-xs font-semibold text-amber-400">
-                          Alumno dado de baja
-                        </span>
-                      )}
-                      {esAnulado && pago.motivoAnulacion && (
-                        <div className="text-xs font-medium text-rose-400/90 mt-0.5">
-                          Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}: {pago.motivoAnulacion}
-                        </div>
+                        <span className="mt-0.5 block text-[13px] text-amber-400">Alumno dado de baja</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span>{pago.plan}</span>
+                    <td className="px-5 py-4 text-slate-300">
+                      {pago.periodoMes || pago.fecha.slice(0, 7)}
+                      <span className="mt-0.5 block text-[13px] text-slate-500">
+                        {pago.plan}
                         {(pago.cantidadMeses ?? 1) > 1 && (
-                          <span
-                            title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}
-                            className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                          >
-                            ×{pago.cantidadMeses} meses
-                          </span>
+                          <span title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}>, {pago.cantidadMeses} meses</span>
                         )}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        Período: {pago.periodoMes || pago.fecha.slice(0, 7)}
-                      </div>
+                      </span>
                     </td>
-                    <td className="px-6 py-4 font-black text-white">
-                      <span className={esAnulado ? "line-through text-slate-500" : ""}>
+                    <td className="px-5 py-4 text-right tabular-nums">
+                      <span className={esAnulado ? "line-through" : "text-white"}>
                         ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
                       </span>
                       {esParcial && (
-                        <div className="text-xs font-bold text-amber-400 mt-0.5">
-                          Resta ${saldo.toLocaleString("es-AR")} (total ${pago.monto.toLocaleString("es-AR")})
-                        </div>
+                        <span className="mt-0.5 block text-[13px] text-slate-500">resta ${saldo.toLocaleString("es-AR")}</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      {formatFechaAR(pago.fecha)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      <div>{pago.metodo}</div>
-                      {pago.registradoPor && (
-                        <div className="text-xs text-slate-500">
-                          Por: {pago.registradoPor}
-                        </div>
-                      )}
+                    <td className="px-5 py-4 text-slate-300">
+                      {esAnulado ? `Anulado${pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}` : pago.metodo}
+                      <span className="mt-0.5 block text-[13px] text-slate-500">
+                        {esAnulado && pago.motivoAnulacion
+                          ? `Motivo: ${pago.motivoAnulacion}`
+                          : [pago.registradoPor, formatFechaAR(pago.fecha)].filter(Boolean).join(", ")}
+                      </span>
                       {pago.comprobante && (
-                        <div className="text-xs text-sky-400/90 truncate max-w-[180px]" title={pago.comprobante}>
+                        <span className="block max-w-[180px] truncate text-[13px] text-slate-500" title={pago.comprobante}>
                           {pago.comprobante}
-                        </div>
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      {esAnulado || esParcial ? (
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_STYLES[pago.estado]}`}
-                        >
-                          {esParcial ? "SEÑA PARCIAL" : "ANULADO"}
+                    <td className="px-5 py-4">
+                      {esAnulado ? (
+                        <span className="text-sm text-slate-500">Anulado</span>
+                      ) : esParcial ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm text-amber-400">
+                          <Clock className="size-3.5" />Seña parcial
                         </span>
                       ) : (
-                        <div className="relative inline-block">
+                        <span className="relative inline-flex items-center gap-1.5">
+                          {pago.estado === "PAGADO" ? null : pago.estado === "VENCIDO" ? (
+                            <AlertCircle className="size-3.5 text-rose-400" />
+                          ) : (
+                            <Clock className="size-3.5 text-amber-400" />
+                          )}
                           <select
                             aria-label="Cambiar estado del pago"
                             value={pago.estado}
-                            onChange={(e) =>
-                              actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
-                            }
-                            className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+                            onChange={(e) => actualizarEstadoPago(pago.id, e.target.value as EstadoPago)}
+                            className={`cursor-pointer appearance-none bg-transparent pr-5 text-sm outline-none ${ESTADO_STYLES[pago.estado]}`}
                           >
-                            <option value="PAGADO" className="bg-slate-900 text-white">PAGADO</option>
-                            <option value="PENDIENTE" className="bg-slate-900 text-white">PENDIENTE</option>
-                            <option value="VENCIDO" className="bg-slate-900 text-white">VENCIDO</option>
+                            <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
+                            <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
+                            <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
                           </select>
-                          <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
-                        </div>
+                          <ChevronDown className="pointer-events-none absolute right-0 size-3.5 opacity-60" />
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
+                    <td className="px-5 py-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         {esParcial && (
                           <button
                             type="button"
                             onClick={() => setPagoACompletar(pago)}
                             title={`Completar saldo restante ($${saldo.toLocaleString("es-AR")})`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 text-xs font-bold transition-colors active:scale-95"
+                            className="h-11 whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Completar</span>
+                            Completar saldo
                           </button>
-                        )}
-                        {puedeWhatsapp && alumno?.celular && (
-                          <a
-                            href={construirUrlWaMe(
-                              alumno.celular,
-                              mensajeRecordatorioCuotaWhatsapp({
-                                nombre: alumno.nombre,
-                                plan: pago.plan,
-                                estadoPago: pago.estado,
-                                saldoPendiente: saldo,
-                                montoTotal: pago.monto,
-                                periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
-                                aliasPago: datosCobro.alias,
-                              })
-                            )}
-                            target="atlas_whatsapp_tab"
-                            rel="noopener noreferrer"
-                            title={`Enviar recordatorio 1-clic por WhatsApp a ${alumno.nombre}`}
-                            aria-label={`Recordar por WhatsApp a ${alumno.nombre}`}
-                            className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/15 transition-colors active:scale-90"
-                          >
-                            <WhatsAppIcon className="w-4 h-4 fill-current" />
-                          </a>
                         )}
                         {!esAnulado && (
-                          <button
-                            type="button"
-                            onClick={() => setPagoAAnular(pago)}
-                            title="Anular comprobante con motivo auditado"
-                            aria-label={`Anular comprobante de ${alumno?.nombre ?? "alumno"}`}
-                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                          >
-                            <Ban className="w-4 h-4" />
-                          </button>
+                          <details className="relative">
+                            <summary
+                              aria-label={`Más acciones para ${alumno?.nombre ?? "este pago"}`}
+                              className="flex size-11 cursor-pointer list-none items-center justify-center rounded-xl text-slate-400 hover:bg-slate-900 [&::-webkit-details-marker]:hidden"
+                            >
+                              <MoreHorizontal className="size-5" />
+                            </summary>
+                            <div className="absolute right-0 z-20 mt-1 flex w-56 flex-col rounded-xl border border-slate-700 bg-slate-900 py-1 text-left shadow-xl">
+                              {puedeWhatsapp && alumno?.celular && (
+                                <a
+                                  href={construirUrlWaMe(
+                                    alumno.celular,
+                                    mensajeRecordatorioCuotaWhatsapp({
+                                      nombre: alumno.nombre,
+                                      plan: pago.plan,
+                                      estadoPago: pago.estado,
+                                      saldoPendiente: saldo,
+                                      montoTotal: pago.monto,
+                                      periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
+                                      aliasPago: datosCobro.alias,
+                                    })
+                                  )}
+                                  target="atlas_whatsapp_tab"
+                                  rel="noopener noreferrer"
+                                  className="flex min-h-11 items-center gap-2.5 px-4 text-sm text-slate-200 hover:bg-slate-800"
+                                >
+                                  <WhatsAppIcon className="size-4 fill-current" />
+                                  Recordar por WhatsApp
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setPagoAAnular(pago)}
+                                className="flex min-h-11 items-center gap-2.5 px-4 text-left text-sm text-rose-300 hover:bg-slate-800"
+                              >
+                                <Ban className="size-4" />
+                                Anular comprobante
+                              </button>
+                            </div>
+                          </details>
                         )}
                       </div>
                     </td>
@@ -1052,7 +950,7 @@ export default function FinanzasPage() {
               })}
               {pagosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">
+                  <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
                     {verTodos
                       ? "No se encontraron pagos con ese criterio."
                       : `Todavía no hay pagos registrados en ${formatearMes(mes)}. Arrancá agregando el primero.`}
@@ -1065,9 +963,12 @@ export default function FinanzasPage() {
 
         {/* Paginación */}
         {pagosFiltrados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
+          <div className="flex flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
             <div className="flex items-center gap-2">
-              <span>Mostrar</span>
+              <span>
+                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
+                {Math.min(paginaActual * elementosPorPagina, pagosFiltrados.length)} de {pagosFiltrados.length}
+              </span>
               <select
                 aria-label="Pagos por página"
                 value={elementosPorPagina}
@@ -1075,42 +976,67 @@ export default function FinanzasPage() {
                   setElementosPorPagina(Number(e.target.value));
                   setPaginaActual(1);
                 }}
-                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
+                className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-2.5 text-slate-300 outline-none"
               >
                 <option value={15} className="bg-slate-900 text-white">15 por página</option>
                 <option value={30} className="bg-slate-900 text-white">30 por página</option>
                 <option value={50} className="bg-slate-900 text-white">50 por página</option>
                 <option value={100} className="bg-slate-900 text-white">100 por página</option>
               </select>
-              <span>
-                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
-                {Math.min(paginaActual * elementosPorPagina, pagosFiltrados.length)} de{" "}
-                {pagosFiltrados.length} pagos
-              </span>
             </div>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
                 disabled={paginaActual === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-4 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Anterior
               </button>
-              <span className="px-2 font-bold text-slate-300">
-                Página {paginaActual} de {totalPaginas}
-              </span>
+              <span className="px-1 text-slate-400">Página {paginaActual} de {totalPaginas}</span>
               <button
                 onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
                 disabled={paginaActual === totalPaginas}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-4 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Siguiente
               </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* RESUMEN DEL MES: al final, en una línea */}
+      <section aria-labelledby="titulo-mes" className="flex flex-col gap-3">
+        <h2 id="titulo-mes" className="text-base font-semibold text-slate-300">
+          {verTodos ? "Resumen total" : "Resumen del mes"}
+        </h2>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-slate-800 pt-4 text-[15px] text-slate-400">
+          <span>
+            {verTodos ? "Ingresos netos totales" : "Ingresos del mes"}
+            <strong className="ml-2 font-semibold text-white">${metrica.ingresosDelMes.toLocaleString("es-AR")}</strong>
+          </span>
+          <span>
+            Saldos y cuotas pendientes
+            <strong className="ml-2 font-semibold text-white">${metrica.pendientesMonto.toLocaleString("es-AR")}</strong>
+            <span className="ml-1 text-[13px] text-slate-500">({metrica.pendientesCount})</span>
+          </span>
+          <span>
+            Cuotas vencidas
+            <strong className="ml-2 font-semibold text-white">${metrica.vencidosMonto.toLocaleString("es-AR")}</strong>
+            <span className="ml-1 text-[13px] text-slate-500">({metrica.vencidosCount})</span>
+          </span>
+          <span>
+            Socios morosos hoy<strong className="ml-2 font-semibold text-white">{metrica.morosos}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setFiltro("VENCIDO")}
+            className="flex h-11 items-center rounded-xl border border-slate-800 px-4 text-sm text-slate-300 hover:bg-slate-900 sm:ml-auto"
+          >
+            Ver cuotas vencidas
+          </button>
+        </div>
+      </section>
 
       {modalAbierto && (
         <ModalRegistrarPago

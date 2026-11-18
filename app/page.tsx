@@ -5,28 +5,17 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, Sparkles, Calendar, UserCheck, CheckCircle2 } from 'lucide-react'
+import { Search, Bell, Plus, WalletCards, ChevronRight, Dumbbell, Sparkles, Calendar, CheckCircle2, Clock, AlertCircle, MessageCircle } from 'lucide-react'
 import { useAppData } from '@/lib/store'
 import { ESTADO_CUENTA_LABEL, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago } from '@/lib/types'
-import { calcularVencimientoCuota } from '@/lib/date-utils'
+import { calcularVencimientoCuota, fechaLocalHoy } from '@/lib/date-utils'
+import { construirUrlWaMe, mensajeRecordatorioCuotaWhatsapp, tieneCelularWhatsappValido } from '@/lib/whatsapp-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
 import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
 
 
-function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
-  return (
-    <div className="flex items-baseline justify-between mb-4">
-      <h2 className="text-3xl font-black text-white">{title}</h2>
-      {action && (
-        <Link href={href || "/finanzas"} className="flex items-center gap-1 text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors">
-          {action}<ChevronRight className="size-3" />
-        </Link>
-      )}
-    </div>
-  )
-}
 
 function capitalizar(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
@@ -357,7 +346,7 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual, alumnos, pagos, planes, rutinas, asistencias, getCantidadAvisosNoLeidos, getEstadoCuenta } = useAppData()
+  const { usuarioActual, alumnos, pagos, planes, rutinas, asistencias, datosCobro, getCantidadAvisosNoLeidos, getEstadoCuenta } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
@@ -420,6 +409,89 @@ export default function Page() {
     return res;
   }, [pagosOrdenados, alumnosMap, query]);
 
+  // Estilo 3 (panel "Hoy"): cifras del día y la lista de cosas para resolver
+  const hoyIso = fechaLocalHoy();
+  const { cobradoHoy, saldoSenias } = useMemo(() => {
+    let cobrado = 0;
+    let senias = 0;
+    for (const p of pagos) {
+      if (p.estado === 'ANULADO') continue;
+      if (p.fecha === hoyIso) cobrado += obtenerMontoRecaudadoPago(p);
+      if (p.estado === 'PARCIAL') senias += obtenerSaldoPendientePago(p);
+    }
+    return { cobradoHoy: cobrado, saldoSenias: senias };
+  }, [pagos, hoyIso]);
+
+  // Primero las señas (completar saldo), después los socios con cuota impaga (recordar por WhatsApp)
+  const paraResolver = useMemo(() => {
+    const filas: {
+      id: string;
+      alumno: (typeof alumnos)[number] | undefined;
+      nombre: string;
+      plan: string;
+      tipo: 'SENIA' | 'DEUDA';
+      detalle: string;
+      monto: number;
+      pago?: (typeof pagos)[number];
+      estadoCuenta?: ReturnType<typeof getEstadoCuenta>;
+    }[] = [];
+    const conSenia = new Set<string>();
+    const deudas: typeof filas = [];
+    // Mismo criterio que la métrica "Cuotas impagas": comprobantes abiertos + socios PENDIENTE/MOROSO sin comprobante
+    for (const p of pagos) {
+      if (p.estado !== 'PENDIENTE' && p.estado !== 'VENCIDO') continue;
+      const al = alumnosMap.get(p.alumnoId);
+      conSenia.add(p.alumnoId);
+      deudas.push({
+        id: `p-${p.id}`,
+        alumno: al,
+        nombre: al ? al.nombre : p.alumnoNombreHistorico || 'Alumno Atlas',
+        plan: p.plan,
+        tipo: 'DEUDA',
+        detalle: p.estado === 'VENCIDO' ? 'Cuota vencida' : 'Cuota pendiente',
+        monto: obtenerSaldoPendientePago(p),
+        pago: p,
+        estadoCuenta: p.estado === 'VENCIDO' ? 'MOROSO' : 'PENDIENTE',
+      });
+    }
+    for (const p of pagos) {
+      if (p.estado !== 'PARCIAL') continue;
+      const al = alumnosMap.get(p.alumnoId);
+      conSenia.add(p.alumnoId);
+      filas.push({
+        id: `p-${p.id}`,
+        alumno: al,
+        nombre: al ? al.nombre : p.alumnoNombreHistorico || 'Alumno Atlas',
+        plan: p.plan,
+        tipo: 'SENIA',
+        detalle: p.periodoMes || p.fecha.slice(0, 7),
+        monto: obtenerSaldoPendientePago(p),
+        pago: p,
+      });
+    }
+    for (const a of alumnos) {
+      if (!a.activo || conSenia.has(a.id)) continue;
+      const estado = getEstadoCuenta(a.id);
+      if (estado !== 'PENDIENTE' && estado !== 'MOROSO') continue;
+      filas.push({
+        id: `a-${a.id}`,
+        alumno: a,
+        nombre: a.nombre,
+        plan: a.plan,
+        tipo: 'DEUDA',
+        detalle: estado === 'MOROSO' ? 'Cuota vencida' : 'Cuota pendiente',
+        monto: planes.find((pl) => pl.id === a.planId)?.precio ?? 0,
+        estadoCuenta: estado,
+      });
+    }
+    return [...filas.filter((f) => f.tipo === 'SENIA'), ...deudas, ...filas.filter((f) => f.tipo === 'DEUDA')];
+  }, [pagos, alumnos, alumnosMap, planes, getEstadoCuenta]);
+
+  const ingresosHoy = useMemo(
+    () => asistencias.filter((a) => a.fecha === hoyIso).sort((a, b) => b.timestamp - a.timestamp).slice(0, 5),
+    [asistencias, hoyIso]
+  );
+
   const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
 
@@ -478,7 +550,7 @@ export default function Page() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar en pagos recientes..."
             aria-label="Buscar en pagos recientes"
-            className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
+            className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900"
           />
         </div>
         <HeaderStatusSection
@@ -488,131 +560,309 @@ export default function Page() {
         />
       </header>
 
-      <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10">
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-10 px-5 pb-28 pt-8 md:gap-12 md:px-14 md:pb-16 md:pt-12">
 
-        {/* SECCIÓN BIENVENIDA */}
+        {/* TÍTULO Y ACCIONES */}
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-sm font-semibold text-slate-400">Resumen de actividad</p>
-            <h1 className="text-5xl font-black text-white md:text-7xl">Hola, {usuarioActual.nombre}.</h1>
-            <p className="mt-2 text-base text-slate-400">Esto es lo que está pasando en tu gimnasio hoy.</p>
+            <p className="mb-2 text-sm text-slate-500">
+              {fechaHoy
+                ? capitalizar(
+                    fechaHoy.toLocaleDateString('es-AR', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      timeZone: 'America/Argentina/Buenos_Aires',
+                    })
+                  )
+                : ' '}
+            </p>
+            <h1 className="text-4xl font-bold uppercase text-white md:text-[40px]">
+              <span className="md:hidden">Hola, {usuarioActual.nombre.split(' ')[0]}</span>
+              <span className="hidden md:inline">Hoy en ATLAS</span>
+            </h1>
           </div>
-          <Button onClick={() => setShowModal(true)} className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white border-transparent transition-colors duration-200 hover:bg-blue-500 active:scale-95">
-            <Plus data-icon="inline-start" className="mr-2 size-5" />Nuevo alumno
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => setShowModal(true)}
+              className="h-11 rounded-xl border border-slate-800 bg-transparent px-4 font-medium text-slate-300 hover:bg-slate-900"
+            >
+              <Plus data-icon="inline-start" className="mr-1.5 size-4" />Nuevo alumno
+            </Button>
+            <Link
+              href="/finanzas"
+              className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-blue-500"
+            >
+              <Plus className="size-4" />Cobrar
+            </Link>
+          </div>
         </div>
 
-        {/* MARCADOR: lo que falta cobrar, quiénes están y el padrón */}
-        <section
-          aria-label="Resumen de hoy"
-          className="mt-10 grid border-y-2 border-slate-700 lg:grid-cols-3"
-        >
-          <Link
-            href="/finanzas"
-            className="group block min-w-0 py-6 pr-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:pl-0"
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-              <WalletCards className="size-4 text-rose-400" />
-              Cuotas pendientes
-            </p>
-            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-rose-400 break-all xl:text-7xl">
-              ${totalPendiente.toLocaleString('es-AR')}
-            </p>
-            <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
-              {sociosQueDeben} {sociosQueDeben === 1 ? 'socio' : 'socios'} con cuota impaga
-              <ArrowUpRight className="size-4 text-slate-500 transition-transform group- group-hover:translate-x-0.5" />
-            </p>
-          </Link>
-
-          <Link
-            href="/asistencias"
-            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:border-l lg:border-t-0 lg:px-6"
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-400"></span>
-              </span>
-              En sala ahora
-            </p>
-            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-white xl:text-7xl">{sociosEnSala.length}</p>
-            <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
-              Sesión activa &lt; 1h 40m
-              <ArrowUpRight className="size-4 text-slate-500 transition-transform group- group-hover:translate-x-0.5" />
-            </p>
-          </Link>
-
-          <Link
-            href="/alumnos"
-            className="group block border-t border-slate-800 py-6 text-slate-100 transition-colors hover:bg-slate-900/40 lg:border-l lg:border-t-0 lg:px-6"
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-              <Users className="size-4 text-blue-400" />
-              Alumnos activos
-            </p>
-            <p className="mt-2 font-display text-5xl font-black leading-[0.9] text-white xl:text-7xl">{alumnosActivos}</p>
-            <p className="mt-3 flex items-center gap-1 text-sm text-slate-400">
-              {alumnos.length} registrados en total
-              <ArrowUpRight className="size-4 text-slate-500 transition-transform group- group-hover:translate-x-0.5" />
-            </p>
-          </Link>
+        {/* FRANJA DE MÉTRICAS: chica y neutra, la tabla es lo importante */}
+        <section aria-label="Resumen de hoy" className="grid grid-cols-2 border-y border-slate-800 lg:grid-cols-4">
+          {[
+            { href: '/asistencias', label: 'En sala ahora', valor: String(sociosEnSala.length) },
+            { href: '/finanzas', label: 'Cobrado hoy', valor: `$${cobradoHoy.toLocaleString('es-AR')}` },
+            { href: '#para-resolver', label: 'Saldos por completar', valor: `$${saldoSenias.toLocaleString('es-AR')}` },
+            {
+              href: '#para-resolver',
+              label: 'Cuotas impagas',
+              valor: `${sociosQueDeben} ${sociosQueDeben === 1 ? 'socio' : 'socios'}`,
+            },
+          ].map((m, i) => (
+            <Link
+              key={m.label}
+              href={m.href}
+              className={`flex min-w-0 flex-col gap-1 py-4 text-white transition-colors hover:bg-slate-900/40 md:py-5 ${
+                i % 2 === 1 ? 'border-l border-slate-800 pl-4 md:pl-6' : 'pr-4 lg:pr-6'
+              } ${i === 2 ? 'border-t border-slate-800 lg:border-l lg:border-t-0 lg:pl-6' : ''} ${
+                i === 3 ? 'border-t lg:border-t-0' : ''
+              }`}
+            >
+              <span className="text-[13px] text-slate-500">{m.label}</span>
+              <span className="truncate text-xl font-semibold md:text-2xl">{m.valor}</span>
+            </Link>
+          ))}
         </section>
 
-        {/* LISTAS INFERIORES */}
-        <section className="mt-10 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-slate-900 p-6 text-slate-100 md:p-7">
-            <SectionHeader title="Pagos recientes" action="Ver finanzas" />
-            <div className="mt-2 flex flex-col">
-              {ultimosPagos.length === 0 ? (
-                <p className="py-6 text-sm text-slate-500 text-center font-medium">No hay pagos registrados aún.</p>
-              ) : (
-                ultimosPagos.map((p) => (
-                  <div key={p.id} className="group flex items-center gap-4 border-b border-slate-800/60 py-4 last:border-0 hover:bg-slate-800/40 -mx-4 px-4 rounded-xl transition-colors">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-blue-500/15 border border-blue-500/20 text-sm font-black text-blue-400 transition-colors group-hover:bg-blue-600 group-hover:text-white">{p.initials}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-bold text-white">{p.name}</p>
-                      <p className="text-sm font-medium text-slate-400">{p.plan} · {p.time}</p>
-                    </div>
-                    <p className="text-base font-black text-white">{p.amount}</p>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* PARA RESOLVER HOY */}
+        <section id="para-resolver" aria-labelledby="titulo-resolver" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-resolver" className="text-xl font-semibold text-white">Para resolver hoy</h2>
+            <Link href="/finanzas" className="text-sm text-blue-300 hover:text-blue-200">Ver todos en Finanzas</Link>
           </div>
-
-          <div className="rounded-2xl bg-slate-900 p-6 text-slate-100 md:p-7">
-            <SectionHeader title="Rutinas activas" action="Ver todas" href="/rutinas" />
-            <div className="mt-4 flex flex-col gap-5">
-              {rutinas.slice(0, 3).map((r, idx) => {
-                const alumnosAsignados = alumnos.filter((a) => a.rutinaId === r.id);
-                const nombresAlumnos = alumnosAsignados.length > 0 
-                  ? alumnosAsignados.map(a => a.nombre).join(', ')
-                  : 'Sin alumnos asignados';
-                const colores = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400'];
-                const porcentajes = [85, 60, 40];
-                return (
-                  <div key={r.id} className="group">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-base font-bold text-white">{r.nombre}</p>
-                        <p className="mt-0.5 text-xs font-medium text-slate-400 truncate max-w-[240px]">{nombresAlumnos}</p>
-                      </div>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">{r.objetivo}</span>
-                    </div>
-                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div className={`h-full rounded-full ${colores[idx % colores.length]} transition-[width] duration-1000 ease-out`} style={{ width: `${porcentajes[idx % porcentajes.length]}%` }} />
-                    </div>
+          {paraResolver.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+              No hay señas ni cuotas impagas. Todo al día.
+            </p>
+          ) : (
+            <>
+            {/* Celular: filas simples con la acción al lado */}
+            <ul className="md:hidden">
+              {paraResolver.slice(0, 5).map((f) => (
+                <li key={f.id} className="flex items-center gap-3 border-b border-slate-800 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{f.nombre}</p>
+                    <p
+                      className={`mt-0.5 flex items-center gap-1.5 text-sm ${
+                        f.tipo === 'SENIA' || f.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {f.tipo === 'SENIA' ? <Clock className="size-3.5 shrink-0" /> : <AlertCircle className="size-3.5 shrink-0" />}
+                      {f.tipo === 'SENIA' ? `Resta $${f.monto.toLocaleString('es-AR')} de la seña` : f.detalle}
+                    </p>
                   </div>
-                );
-              })}
+                  {f.tipo === 'SENIA' ? (
+                    <Link href="/finanzas" className="flex h-11 items-center rounded-xl bg-blue-600 px-3.5 text-sm font-semibold text-white">
+                      Completar
+                    </Link>
+                  ) : f.alumno?.celular && tieneCelularWhatsappValido(f.alumno.celular) ? (
+                    <a
+                      href={construirUrlWaMe(
+                        f.alumno.celular,
+                        mensajeRecordatorioCuotaWhatsapp({
+                          nombre: f.nombre,
+                          plan: f.plan,
+                          estadoCuenta: f.estadoCuenta,
+                          montoTotal: f.monto,
+                          aliasPago: datosCobro.alias,
+                        })
+                      )}
+                      target="atlas_whatsapp_tab"
+                      rel="noopener noreferrer"
+                      aria-label={`Recordar cuota por WhatsApp a ${f.nombre}`}
+                      className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-700 text-slate-200"
+                    >
+                      <MessageCircle className="size-5" />
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-2xl border border-slate-800 md:block">
+              <table className="w-full min-w-[680px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                    <th className="px-5 py-3 font-medium">Socio</th>
+                    <th className="px-5 py-3 font-medium">Situación</th>
+                    <th className="px-5 py-3 text-right font-medium">Monto</th>
+                    <th className="px-5 py-3"><span className="sr-only">Acción</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paraResolver.slice(0, 5).map((f) => (
+                    <tr key={f.id} className="border-t border-slate-800">
+                      <td className="px-5 py-4">
+                        <span className="block font-semibold text-white">{f.nombre}</span>
+                        <span className="mt-0.5 block text-[13px] text-slate-500">{f.plan}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-sm ${
+                            f.tipo === 'SENIA' || f.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'
+                          }`}
+                        >
+                          {f.tipo === 'SENIA' ? <Clock className="size-3.5" /> : <AlertCircle className="size-3.5" />}
+                          {f.tipo === 'SENIA' ? 'Dejó seña' : f.detalle}
+                        </span>
+                        {f.tipo === 'SENIA' && <span className="mt-0.5 block text-[13px] text-slate-500">{f.detalle}</span>}
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums">
+                        <span className="block text-white">${f.monto.toLocaleString('es-AR')}</span>
+                        {f.tipo === 'SENIA' && <span className="mt-0.5 block text-[13px] text-slate-500">resta pagar</span>}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {f.tipo === 'SENIA' ? (
+                          <Link
+                            href="/finanzas"
+                            className="inline-flex h-11 items-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
+                          >
+                            Completar saldo
+                          </Link>
+                        ) : f.alumno?.celular && tieneCelularWhatsappValido(f.alumno.celular) ? (
+                          <a
+                            href={construirUrlWaMe(
+                              f.alumno.celular,
+                              mensajeRecordatorioCuotaWhatsapp({
+                                nombre: f.nombre,
+                                plan: f.plan,
+                                estadoCuenta: f.estadoCuenta,
+                                montoTotal: f.monto,
+                                aliasPago: datosCobro.alias,
+                              })
+                            )}
+                            target="atlas_whatsapp_tab"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm font-medium text-slate-200 hover:bg-slate-900"
+                          >
+                            <MessageCircle className="size-4" />Recordar por WhatsApp
+                          </a>
+                        ) : (
+                          <span className="text-[13px] text-slate-500">Sin celular cargado</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+            </>
+          )}
+          {paraResolver.length > 5 && (
+            <p className="text-[13px] text-slate-500">
+              Mostrando 5 de {paraResolver.length} pendientes. Primero los que dejaron seña, después las cuotas impagas.
+            </p>
+          )}
         </section>
 
-        <div className="mt-12 flex items-center justify-between border-t border-slate-800/50 pt-6 text-sm font-medium text-slate-500">
-          <p>Datos sincronizados con el servidor del gimnasio</p>
-          <p>ATLAS Admin · v2.4.0</p>
-        </div>
+        {/* ÚLTIMOS INGRESOS */}
+        <section aria-labelledby="titulo-ingresos" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-ingresos" className="text-xl font-semibold text-white">Últimos ingresos</h2>
+            <Link href="/asistencias" className="text-sm text-blue-300 hover:text-blue-200">Ver asistencias</Link>
+          </div>
+          {ingresosHoy.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+              Todavía no entró nadie hoy.
+            </p>
+          ) : (
+            <>
+            <ul className="md:hidden">
+              {ingresosHoy.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 border-b border-slate-800 py-3 text-[15px]">
+                  <span className="w-11 tabular-nums text-[13px] text-slate-500">{a.hora.slice(0, 5)}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-white">{a.alumnoNombre}</span>
+                  {a.excedeLimiteSemanal ? (
+                    <span className="flex items-center gap-1 text-[13px] text-amber-400"><Plus className="size-3.5" />Días extra</span>
+                  ) : (
+                    <span className={`text-[13px] ${a.estadoCuenta === 'AL_DIA' ? 'text-slate-400' : a.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'}`}>
+                      {ESTADO_CUENTA_LABEL[a.estadoCuenta]}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-2xl border border-slate-800 md:block">
+              <table className="w-full min-w-[600px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                    <th className="px-5 py-3 font-medium">Hora</th>
+                    <th className="px-5 py-3 font-medium">Socio</th>
+                    <th className="px-5 py-3 font-medium">Semana</th>
+                    <th className="px-5 py-3 font-medium">Cuota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingresosHoy.map((a) => (
+                    <tr key={a.id} className="border-t border-slate-800">
+                      <td className="px-5 py-3.5 tabular-nums text-slate-500">{a.hora.slice(0, 5)}</td>
+                      <td className="px-5 py-3.5 font-semibold text-white">{a.alumnoNombre}</td>
+                      <td className="px-5 py-3.5">
+                        {a.excedeLimiteSemanal ? (
+                          <span className="inline-flex items-center gap-1.5 text-sm text-amber-400">
+                            <Plus className="size-3.5" />
+                            {a.asistenciasSemana} de {a.limiteDiasSemana} días
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">
+                            {a.limiteDiasSemana ? `${a.asistenciasSemana ?? 1} de ${a.limiteDiasSemana} días` : 'Plan libre'}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`px-5 py-3.5 ${a.estadoCuenta === 'AL_DIA' ? 'text-slate-300' : a.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'}`}>
+                        {ESTADO_CUENTA_LABEL[a.estadoCuenta]}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
+        </section>
+
+        {/* PAGOS RECIENTES (lo que ya tenía el inicio, con el buscador de arriba) */}
+        <section aria-labelledby="titulo-pagos" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-pagos" className="text-xl font-semibold text-white">Pagos recientes</h2>
+            <Link href="/finanzas" className="text-sm text-blue-300 hover:text-blue-200">Ver finanzas</Link>
+          </div>
+          {ultimosPagos.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">No hay pagos registrados aún.</p>
+          ) : (
+            <ul className="rounded-2xl border border-slate-800">
+              {ultimosPagos.map((p) => (
+                <li key={p.id} className="flex items-center gap-4 border-t border-slate-800 px-5 py-3.5 first:border-t-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{p.name}</p>
+                    <p className="text-[13px] text-slate-500">{p.plan} <span aria-hidden="true">|</span> {p.time}</p>
+                  </div>
+                  <p className="tabular-nums text-white">{p.amount}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ACCESOS A LO SECUNDARIO */}
+        <nav aria-label="Más información" className="flex flex-wrap gap-3">
+          {[
+            { href: '/finanzas', label: 'Ir al arqueo de caja' },
+            { href: '/asistencias', label: 'Ir al aforo de la semana' },
+            { href: '/rutinas', label: `Ir a rutinas (${rutinas.length})` },
+            { href: '/alumnos', label: `Ir a alumnos (${alumnosActivos} activos)` },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="flex h-11 items-center rounded-xl border border-slate-800 px-4 text-sm text-slate-300 hover:bg-slate-900"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
+        <p className="border-t border-slate-800/50 pt-6 text-sm text-slate-500">Datos sincronizados con el servidor del gimnasio</p>
       </div>
 
       {/* MODAL NUEVO ALUMNO */}
@@ -620,3 +870,4 @@ export default function Page() {
     </>
   )
 }
+
