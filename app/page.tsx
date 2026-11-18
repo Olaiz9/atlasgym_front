@@ -10,6 +10,7 @@ import { useAppData } from '@/lib/store'
 import { Ejercicio, ESTADO_CUENTA_LABEL, obtenerMaxPeriodoCubiertoAlumno, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago, UsuarioSesion } from '@/lib/types'
 import { EstadoCuentaEtiqueta } from '@/components/estado-cuenta-etiqueta'
 import { calcularVencimientoCuota, fechaLocalHoy } from '@/lib/date-utils'
+import { diaInicialDeRutina } from '@/lib/rutina-utils'
 import { construirUrlWaMe, mensajeRecordatorioCuotaWhatsapp, tieneCelularWhatsappValido } from '@/lib/whatsapp-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
@@ -102,7 +103,7 @@ function TuSemana({ semana, entrenosMes, ultimaVisita }: { semana: SemanaAlumno;
 
 // ---------- Home personalizado para el Alumno ----------
 function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: Date | null }) {
-  const { alumnos, planes, asistencias, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, getAvisosParaUsuario } = useAppData()
+  const { alumnos, planes, asistencias, sesionesEntrenamiento, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, getAvisosParaUsuario } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const constancia = useMemo(
     () => calcularConstanciaAlumno(asistencias, alumno?.id),
@@ -117,7 +118,8 @@ function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: D
   )
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
-  const dia = rutina?.dias[0]
+  const indiceDia = rutina && alumno ? diaInicialDeRutina(rutina, sesionesEntrenamiento, alumno.id, fechaLocalHoy()) : 0
+  const dia = rutina?.dias[indiceDia]
   const avisos = getAvisosParaUsuario(usuario)
   const pagos = alumno ? getPagosDeAlumno(alumno.id).filter((p) => p.estado !== 'ANULADO') : []
   const vencimiento = calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined, obtenerMaxPeriodoCubiertoAlumno(pagos))
@@ -170,7 +172,7 @@ function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: D
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <p className="text-sm text-[#8296BB]">
-                      Mi rutina de hoy{rutina && rutina.dias.length > 1 ? `, día 1 de ${rutina.dias.length}` : ''}
+                      Mi rutina de hoy{rutina && rutina.dias.length > 1 ? `, día ${indiceDia + 1} de ${rutina.dias.length}` : ''}
                     </p>
                     <h2 id="titulo-rutina-hoy" className="mt-1.5 text-[26px] font-semibold text-white">{dia?.nombre ?? rutina?.nombre ?? 'Sin rutina asignada'}</h2>
                     <p className="mt-1 text-sm text-[#8296BB]">{dia ? `${dia.ejercicios.length} ejercicios` : 'Consultá a tu profesor'}</p>

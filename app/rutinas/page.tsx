@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
-import { buscarVideoParaEjercicio, formatPrevia, obtenerBorradorEntrenamiento, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
+import { buscarVideoParaEjercicio, formatPrevia, obtenerBorradorEntrenamiento, diaInicialDeRutina, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { reproducirSonidoFinDescanso } from '@/lib/asistencia-utils'
@@ -1856,7 +1856,7 @@ function EstadoSinRutina({ usuario }: { usuario: any }) {
 
 // ── Vista dedicada para el Alumno en Rutinas ────────────────────────────────
 function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any }) {
-  const { guardarSesion, getUltimaSesion, videosTecnica } = useAppData()
+  const { guardarSesion, getUltimaSesion, sesionesEntrenamiento, videosTecnica } = useAppData()
   const alumnoId = usuario?.alumnoId || 'a1'
 
   // Clave de almacenamiento local para persistir el progreso en curso del alumno
@@ -1866,13 +1866,12 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
   )
 
   // Estado del día activo (restaura borrador si existía)
-  const [diaActivo, setDiaActivo] = useState<number>(() => {
-    const borrador = obtenerBorradorEntrenamiento(alumnoId, rutina.id, fechaLocalHoy())
-    if (borrador && borrador.diaActivo < rutina.dias.length) {
-      return borrador.diaActivo
-    }
-    return 0
-  })
+  const [diaActivo, setDiaActivo] = useState<number>(() =>
+    diaInicialDeRutina(rutina, sesionesEntrenamiento, alumnoId, fechaLocalHoy())
+  )
+  const [diaElegidoAMano, setDiaElegidoAMano] = useState(
+    () => obtenerBorradorEntrenamiento(alumnoId, rutina.id, fechaLocalHoy())?.diaElegidoAMano === true
+  )
 
   const [guardado, setGuardado] = useState(false)
   const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
@@ -1977,13 +1976,14 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
         claveBorrador,
         JSON.stringify({
           diaActivo,
+          diaElegidoAMano,
           seriesPorDia,
           fecha: fechaLocalHoy(),
           actualizadoEn: Date.now(),
         })
       )
     } catch {}
-  }, [claveBorrador, diaActivo, seriesPorDia])
+  }, [claveBorrador, diaActivo, diaElegidoAMano, seriesPorDia])
 
   // Obtener las series del día activo
   const seriesPorEjercicio = useMemo(() => {
@@ -2133,6 +2133,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 aria-label={d.nombre}
                 onClick={() => {
                   handleCambioDia(index)
+                  setDiaElegidoAMano(true)
                   setEjercicioActivo(0)
                 }}
                 className={`flex h-11 items-center justify-center gap-1 rounded-[10px] text-sm lg:px-[18px] lg:text-[15px] ${
