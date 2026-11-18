@@ -1,3 +1,5 @@
+import { CONTACTO_ATLAS } from './constants'
+
 /**
  * Datos del responsable de la base de datos (el gimnasio), usados en la Política de
  * Privacidad (/privacidad) que exige la Ley 25.326 de Protección de Datos Personales.
@@ -14,9 +16,9 @@ export const DATOS_LEGALES = {
   cuit: '',
   domicilio: '',
   /** Email o canal donde los socios ejercen sus derechos (acceso, rectificación, supresión). */
-  contactoPrivacidad: '',
+  contactoPrivacidad: `${CONTACTO_ATLAS.email} (WhatsApp ${CONTACTO_ATLAS.telefono})`,
   /** Fecha de la última actualización de la política (AAAA-MM-DD). */
-  actualizada: '2026-11-01',
+  actualizada: '2026-11-17',
 }
 
 /**
