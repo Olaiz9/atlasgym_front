@@ -13,6 +13,7 @@ import { construirUrlWaMe, mensajeRecordatorioCuotaWhatsapp, tieneCelularWhatsap
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
+import { BotonPerfilMovil } from '@/components/modal-perfil'
 import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
 
 
@@ -31,8 +32,9 @@ function HeaderStatusSection({
   ubicacion: string
 }) {
   return (
-    <div className="ml-auto flex items-center gap-6">
+    <div className="ml-auto flex items-center gap-1 sm:gap-6">
       <NotificacionesDropdown />
+      <BotonPerfilMovil />
       <div className="hidden h-8 w-px bg-slate-800 sm:block" />
       <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
         {fechaHoy

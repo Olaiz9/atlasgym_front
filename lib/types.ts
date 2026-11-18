@@ -399,6 +399,44 @@ export function obtenerMaxPeriodoCubiertoAlumno(pagos: Pago[]): string | undefin
 }
 
 /**
+ * Meses que debe un socio, del más viejo al más nuevo: desde el mes siguiente al último cubierto
+ * (pagado o con seña) hasta hoy. El mes en curso recién se debe pasado el día 10; un socio que
+ * nunca pagó lo debe desde su alta.
+ */
+export function mesesAdeudados(
+  alumnoId: string,
+  pagos: Pago[],
+  fechaAlta?: string,
+  fechaReferencia: Date = new Date()
+): string[] {
+  let cubierto: string | undefined;
+  for (const p of pagos) {
+    if (p.alumnoId !== alumnoId || (p.estado !== "PAGADO" && p.estado !== "PARCIAL")) continue;
+    const fin = obtenerPeriodoFinCubierto(p);
+    if (fin && (!cubierto || fin > cubierto)) cubierto = fin;
+  }
+  const actual = periodoMesActual(fechaReferencia);
+  const ultimo = !cubierto || fechaReferencia.getDate() > 10 ? actual : sumarMesesPeriodo(actual, -1);
+  let mes = cubierto ? sumarMesesPeriodo(cubierto, 1) : fechaAlta?.slice(0, 7) || actual;
+  const meses: string[] = [];
+  while (mes <= ultimo) {
+    meses.push(mes);
+    mes = sumarMesesPeriodo(mes, 1);
+  }
+  return meses;
+}
+
+/** Saldo que falta completar por socio, sumando sus señas abiertas. */
+export function saldosDeSeniaPorAlumno(pagos: Pago[]): Map<string, number> {
+  const saldos = new Map<string, number>();
+  for (const p of pagos) {
+    if (p.estado !== "PARCIAL") continue;
+    saldos.set(p.alumnoId, (saldos.get(p.alumnoId) ?? 0) + obtenerSaldoPendientePago(p));
+  }
+  return saldos;
+}
+
+/**
  * Calcula dinámicamente el estado de cuenta según la política oficial de Atlas Gym (Opción A),
  * 100% homóloga a AlumnoService.calcularEstadoCuenta en Spring Boot:
  * - Baja administrativa (!socioActivo) -> INACTIVO.

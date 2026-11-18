@@ -25,10 +25,10 @@ type ItemNav = { label: string; href: string; icon: typeof Users }
 // En el celular entran 4 accesos + "Más" sin que se pisen (más de 5 íconos en una barra de 360px se superponen).
 // En la barra van las tareas de todos los días; el resto vive en el menú "Más".
 const principalesAdmin: ItemNav[] = [
-  { label: 'Inicio', href: '/', icon: LayoutDashboard },
+  { label: 'Hoy', href: '/', icon: LayoutDashboard },
   { label: 'Alumnos', href: '/alumnos', icon: Users },
-  { label: 'Asistencias', href: '/asistencias', icon: UserCheck },
-  { label: 'Finanzas', href: '/finanzas', icon: WalletCards },
+  { label: 'Sala', href: '/asistencias', icon: UserCheck },
+  { label: 'Caja', href: '/finanzas', icon: WalletCards },
 ]
 const secundariosAdmin: ItemNav[] = [
   { label: 'Rutinas', href: '/rutinas', icon: Dumbbell },
@@ -46,7 +46,7 @@ const secundariosAlumno: ItemNav[] = [{ label: 'Videoteca', href: '/videoteca', 
 
 function Pastilla({ activo, children }: { activo: boolean; children: React.ReactNode }) {
   return (
-    <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${activo ? 'bg-blue-600' : ''}`}>
+    <span className={`relative flex h-[30px] w-[52px] items-center justify-center rounded-full transition-colors ${activo ? 'bg-blue-600' : ''}`}>
       {children}
     </span>
   )
@@ -87,7 +87,7 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Navegación móvil"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-[72px] items-stretch border-t border-slate-800/80 bg-slate-950 px-1 pb-1 md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-[76px] items-stretch border-t border-[#1E3663] bg-[#0A1530] px-1 pb-2.5 pt-2 md:hidden"
       >
         {principales.map(({ label, href, icon: Icon }) => {
           const activo = esActivo(href)

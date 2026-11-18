@@ -22,7 +22,7 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
 
   // Al recargar, el socio sigue ahí: quedó guardado en el servidor, no solo en el navegador
   await page.reload()
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await expect(page.getByText(nombre).first()).toBeVisible()
 
   // --- Cobro desde Finanzas ---
@@ -31,7 +31,7 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await page.getByPlaceholder('Buscar alumno por nombre o DNI...').fill(dni)
   await page.locator('select[aria-label="Alumno"]').selectOption({ index: 0 })
   await page.getByLabel('Monto').fill(String(precio))
-  await page.getByRole('button', { name: 'Guardar pago' }).click()
+  await page.getByRole('button', { name: /^Registrar pago de/ }).click()
 
   // El cobro queda registrado en el servidor, a nombre del titular que lo hizo
   await expect

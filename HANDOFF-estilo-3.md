@@ -15,12 +15,12 @@ Objetivo: que la app real quede **igual que los mocks**, conservando **todo** lo
 | `Main.dc.html` + `InicioMovil.dc.html` | `/` dueños (escritorio y celular) | ✅ hecho |
 | `Finanzas.dc.html` | `/finanzas` dueños | ✅ hecho |
 | `Totem.dc.html` (título coral `#FF7A8E`) | `/totem` | ✅ hecho |
-| `AlumnosMovil.dc.html` | `/alumnos` | pendiente |
-| `FichaSocio.dc.html` | `/alumnos/[id]` (incluye asistente de morosos) | pendiente |
-| `AsistenciasMovil.dc.html` | `/asistencias` | pendiente |
-| `CobrarMovil.dc.html` | modal Registrar pago de `/finanzas` (pago completo / seña, medio de pago) | pendiente |
-| `AnularMovil.dc.html` | modal Anular de `/finanzas` (chips de motivo) | pendiente |
-| `PerfilMovil.dc.html` | `components/modal-perfil.tsx` + acceso desde el avatar en celular | pendiente |
+| `AlumnosMovil.dc.html` | `/alumnos` | ✅ hecho |
+| `FichaSocio.dc.html` | `/alumnos/[id]` (incluye asistente de morosos) | ✅ hecho |
+| `AsistenciasMovil.dc.html` | `/asistencias` | ✅ hecho |
+| `CobrarMovil.dc.html` | modal Registrar pago de `/finanzas` (pago completo / seña, medio de pago) | ✅ hecho |
+| `AnularMovil.dc.html` | modal Anular de `/finanzas` (chips de motivo) | ✅ hecho |
+| `PerfilMovil.dc.html` | `components/modal-perfil.tsx` + acceso desde el avatar en celular | ✅ hecho |
 | `LoginAlumno.dc.html` | `/login` | pendiente |
 | `PortalSocio.dc.html` | `/` alumno en **celular** | pendiente |
 | `PortalWeb2.dc.html` (dos columnas) | `/` alumno en **escritorio** | pendiente |

@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
+import { inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
+  formatearMes,
   calcularVencimientoCuota,
   fechaLocalHoy,
   periodoMesActual,
@@ -76,12 +78,24 @@ const OPCIONES_VIGENCIA_MESES: { value: number; label: string }[] = [
 
 const ESTADO_STYLES = ESTADO_PAGO_STYLES;
 
-const MOTIVOS_ANULACION_RAPIDOS = [
-  "Importe mal tipeado",
-  "Período / mes equivocado",
-  "Socio equivocado",
-  "Medio de pago erróneo",
-];
+const MOTIVO_OTRO = "Otro motivo";
+const MOTIVOS_ANULACION_RAPIDOS = ["Cargado por error", "Monto incorrecto", "Socio equivocado", MOTIVO_OTRO];
+
+type CobroPreseleccionado = { alumnoId: string; periodo?: string; meses?: number };
+
+// Hoja inferior en celular, ventana centrada en escritorio
+const claseFondoHoja =
+  "fixed inset-0 z-50 flex items-end justify-center bg-[#060D1F]/80 backdrop-blur-sm md:items-center md:p-4";
+const claseHoja =
+  "flex max-h-[92dvh] w-full min-w-0 flex-col rounded-t-3xl bg-[#13254A] text-slate-100 shadow-2xl md:max-h-[90vh] md:max-w-md md:rounded-3xl";
+const claseCampoHoja =
+  "h-11 w-full rounded-xl border border-[#2A4677] bg-[#0E1B36] px-3 text-[15px] text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-400";
+const claseMontoGrande =
+  "min-w-0 flex-1 bg-transparent font-display text-4xl font-bold text-slate-100 outline-none";
+
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 text-slate-600">|</span>;
+}
 
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -134,17 +148,6 @@ function SelectorMes({
       </select>
     </div>
   );
-}
-
-function formatearMes(mesStr: string) {
-  const [anio, mesNum] = mesStr.split("-").map(Number);
-  if (!anio || !mesNum) return mesStr;
-  const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric",
-  });
-
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function mesActualISO() {
@@ -411,6 +414,7 @@ export default function FinanzasPage() {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cobroPreseleccionado, setCobroPreseleccionado] = useState<CobroPreseleccionado | null>(null);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
   const [fechaArqueo, setFechaArqueo] = useState<string>(() => fechaLocalHoy());
@@ -493,6 +497,29 @@ export default function FinanzasPage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // La ficha del socio llega con ?cobrar=<id>&periodo=YYYY-MM&meses=N o ?completar=<idPago>
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const alumnoId = params.get("cobrar");
+    const pagoId = params.get("completar");
+    if (!alumnoId && !pagoId) return;
+    if (alumnoId) {
+      const periodo = params.get("periodo") ?? "";
+      const meses = Number(params.get("meses"));
+      setCobroPreseleccionado({
+        alumnoId,
+        periodo: /^\d{4}-\d{2}$/.test(periodo) ? periodo : undefined,
+        meses: Number.isInteger(meses) && meses >= 1 && meses <= 24 ? meses : undefined,
+      });
+      setModalAbierto(true);
+    }
+    const pago = pagos.find((p) => p.id === pagoId && p.estado === "PARCIAL");
+    if (pago) setPagoACompletar(pago);
+    window.history.replaceState(null, "", "/finanzas");
+    // Solo al entrar: después el modal ya vive por su cuenta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!usuarioActual) {
@@ -633,7 +660,10 @@ export default function FinanzasPage() {
               Exportar CSV
             </button>
             <button
-              onClick={() => setModalAbierto(true)}
+              onClick={() => {
+                setCobroPreseleccionado(null);
+                setModalAbierto(true);
+              }}
               className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-500"
             >
               <Plus className="size-4 shrink-0" />
@@ -790,7 +820,7 @@ export default function FinanzasPage() {
           ))}
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-800">
+        <div className="relative overflow-x-auto rounded-2xl border border-slate-800">
           <table className="w-full min-w-[860px] border-collapse text-[15px]">
             <thead>
               <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
@@ -935,6 +965,7 @@ export default function FinanzasPage() {
                               <button
                                 type="button"
                                 onClick={() => setPagoAAnular(pago)}
+                                aria-label={`Anular comprobante de ${alumno?.nombre ?? "este socio"}`}
                                 className="flex min-h-11 items-center gap-2.5 px-4 text-left text-sm text-rose-300 hover:bg-slate-800"
                               >
                                 <Ban className="size-4" />
@@ -1044,6 +1075,8 @@ export default function FinanzasPage() {
           planes={planes}
           pagos={pagos}
           getEstadoCuenta={getEstadoCuenta}
+          cobrador={usuarioActual.nombre}
+          preseleccion={cobroPreseleccionado}
           onClose={() => setModalAbierto(false)}
           onSubmit={handleNuevoPago}
           onAsignarCredenciales={asignarCredencialesAlumno}
@@ -1105,91 +1138,89 @@ function ModalAnularPago({
   onCancel: () => void;
   onConfirm: (motivo: string) => void;
 }) {
-  const [motivo, setMotivo] = useState("");
-  const [error, setError] = useState("");
+  const [elegido, setElegido] = useState("");
+  const [detalle, setDetalle] = useState("");
+  const esOtro = elegido === MOTIVO_OTRO;
+  const motivo = (esOtro ? detalle : elegido).trim();
+  const motivoValido = motivo.length >= 4;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (motivo.trim().length < 4) {
-      setError("Indicá brevemente el motivo de anulación para la auditoría de caja.");
-      return;
-    }
-    onConfirm(motivo.trim());
+    if (motivoValido) onConfirm(motivo);
   };
 
   return (
-    <div
-      onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
+    <div onClick={onCancel} className={claseFondoHoja}>
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-anular"
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4"
+        className={`${claseHoja} gap-4 overflow-y-auto px-5 pb-6 pt-2.5`}
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30">
-          <Ban className="w-6 h-6" />
-        </div>
+        <span aria-hidden="true" className="h-[5px] w-11 shrink-0 self-center rounded-full bg-slate-700 md:hidden" />
         <div>
-          <h2 className="text-2xl font-black text-white">Anular comprobante de caja</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            El comprobante de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
-            <span className="font-semibold text-emerald-400">
-              ${obtenerMontoRecaudadoPago(pago).toLocaleString("es-AR")}
-            </span>{" "}
-            no se borrará: quedará registrado como <strong>ANULADO</strong> con tu usuario, fecha y motivo, descontándose de la recaudación y habilitando recobrar ese período.
-          </p>
+          <h2 id="titulo-anular" className="text-[26px] font-extrabold uppercase leading-tight text-white">Anular comprobante</h2>
+          <p className="mt-1.5 text-sm text-slate-400">No se borra: queda tachado en la caja, con tu nombre y el motivo.</p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          {MOTIVOS_ANULACION_RAPIDOS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => {
-                setMotivo(preset);
-                setError("");
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition-colors"
-            >
-              {preset}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[#0E1B36] p-3.5">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-white">{nombreAlumno}</p>
+            <p className="mt-0.5 text-[13px] text-slate-400">
+              {pago.plan}
+              <Separador />
+              {formatearMes(pago.periodoMes || pago.fecha.slice(0, 7))}
+              <Separador />
+              {pago.metodo}
+            </p>
+          </div>
+          <span className="shrink-0 font-display text-[26px] font-bold text-white">
+            ${obtenerMontoRecaudadoPago(pago).toLocaleString("es-AR")}
+          </span>
         </div>
 
-        <Field label="Motivo de anulación (obligatorio)">
-          <input
-            aria-label="Motivo de anulación"
-            value={motivo}
-            onChange={(e) => {
-              setMotivo(e.target.value);
-              if (error) setError("");
-            }}
-            placeholder="Ej: Importe mal tipeado, se recobra por monto real"
-            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-rose-500 text-white placeholder-slate-500 text-sm"
-            autoFocus
-          />
-        </Field>
+        <div>
+          <p className="mb-2 text-[13px] font-semibold text-slate-400">Motivo (obligatorio)</p>
+          <div role="radiogroup" aria-label="Motivo de anulación" className="flex flex-wrap gap-2">
+            {MOTIVOS_ANULACION_RAPIDOS.map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                role="radio"
+                aria-checked={elegido === opcion}
+                onClick={() => setElegido(opcion)}
+                className={`h-11 rounded-full px-4 text-sm ${
+                  elegido === opcion
+                    ? "border-2 border-[#FF8A80] bg-[#FF8A80]/15 font-bold text-white"
+                    : "border border-[#2A4677] font-semibold text-slate-300"
+                }`}
+              >
+                {opcion}
+              </button>
+            ))}
+          </div>
+          {esOtro && (
+            <label className="mt-3 block text-[13px] font-semibold text-slate-400">
+              Contanos qué pasó
+              <textarea
+                rows={2}
+                autoFocus
+                value={detalle}
+                onChange={(e) => setDetalle(e.target.value)}
+                className="mt-1.5 block w-full resize-none rounded-xl border border-[#2A4677] bg-[#0E1B36] p-3 text-[15px] font-normal text-slate-100 outline-none focus:border-blue-400"
+              />
+            </label>
+          )}
+        </div>
 
-        {error && (
-          <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-          >
-            Cancelar
+        <div className="grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={onCancel} className="h-[54px] rounded-[14px] border border-[#2A4677] text-base font-semibold text-slate-100">
+            Volver
           </button>
-          <button
-            type="submit"
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-colors"
-          >
-            Confirmar anulación
+          <button type="submit" disabled={!motivoValido} className="h-[54px] rounded-[14px] bg-[#C4362F] text-base font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+            Anular
           </button>
         </div>
       </form>
@@ -1439,6 +1470,8 @@ function ModalRegistrarPago({
   planes,
   pagos,
   getEstadoCuenta,
+  cobrador,
+  preseleccion,
   onClose,
   onSubmit,
   onAsignarCredenciales,
@@ -1447,11 +1480,13 @@ function ModalRegistrarPago({
   planes: Plan[];
   pagos: Pago[];
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
+  cobrador: string;
+  preseleccion: CobroPreseleccionado | null;
   onClose: () => void;
   onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
-  const primerAlumno = alumnos[0];
+  const primerAlumno = alumnos.find((a) => a.id === preseleccion?.alumnoId) ?? alumnos[0];
   const obtenerPlanYPrecio = (alumno?: Alumno) => {
     if (!alumno) return { planNombre: "", planPrecio: "" };
     const planObj = planes.find(
@@ -1466,6 +1501,7 @@ function ModalRegistrarPago({
   };
 
   const inicial = obtenerPlanYPrecio(primerAlumno);
+  const mesesIniciales = preseleccion?.meses ?? 1;
 
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
   const [esSeniaParcial, setEsSeniaParcial] = useState(false);
@@ -1473,10 +1509,10 @@ function ModalRegistrarPago({
   const [form, setForm] = useState({
     alumnoId: primerAlumno?.id ?? "",
     plan: inicial.planNombre,
-    monto: inicial.planPrecio,
+    monto: inicial.planPrecio ? String(Number(inicial.planPrecio) * mesesIniciales) : "",
     fecha: fechaLocalHoy(),
-    periodoMes: mesActualISO(),
-    cantidadMeses: 1,
+    periodoMes: preseleccion?.periodo ?? mesActualISO(),
+    cantidadMeses: mesesIniciales,
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
@@ -1495,6 +1531,8 @@ function ModalRegistrarPago({
   );
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
   const estadoCuentaSeleccionado = form.alumnoId ? getEstadoCuenta(form.alumnoId) : "AL_DIA";
+
+  const [cambiandoAlumno, setCambiandoAlumno] = useState(!preseleccion);
 
   const mesActual = mesActualISO();
   const mesAnterior = sumarMesesPeriodo(mesActual, -1);
@@ -1644,304 +1682,313 @@ function ModalRegistrarPago({
     });
   };
 
+  const montoHoy = Number(esSeniaParcial ? montoSenia : form.monto);
+  const importeCta = montoHoy > 0 ? ` de $${montoHoy.toLocaleString("es-AR")}` : "";
+  const saldoSenia = Number(form.monto) - Number(montoSenia);
+  const opcionesVigencia = OPCIONES_VIGENCIA_MESES.some((o) => o.value === form.cantidadMeses)
+    ? OPCIONES_VIGENCIA_MESES
+    : [...OPCIONES_VIGENCIA_MESES, { value: form.cantidadMeses, label: `${form.cantidadMeses} meses` }];
+  const claseSegmento = (activo: boolean) =>
+    `h-11 rounded-[10px] text-[15px] ${activo ? "bg-blue-600 font-bold text-white" : "font-semibold text-slate-300"}`;
+
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
+    <div onClick={onClose} className={claseFondoHoja}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-cobrar"
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className={claseHoja}
       >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-3xl font-black text-white">Registrar pago</h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="text-slate-400 hover:text-white rounded-full p-1.5 hover:bg-slate-800 transition-colors active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex shrink-0 flex-col gap-1 px-5 pt-2.5">
+          <span aria-hidden="true" className="h-[5px] w-11 self-center rounded-full bg-slate-700 md:hidden" />
+          <div className="flex items-center justify-between">
+            <h2 id="titulo-cobrar" className="text-[26px] font-extrabold uppercase text-white">Cobrar cuota</h2>
+            <button type="button" onClick={onClose} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-xl text-slate-300 hover:bg-slate-800">
+              <X className="size-5" />
+            </button>
+          </div>
         </div>
 
         {alumnos.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="px-5 pb-8 pt-4 text-center">
             <p className="text-sm text-slate-400">
               Todavía no hay alumnos cargados. Agregá un alumno primero para poder registrarle un pago.
             </p>
-            <Link
-              href="/alumnos"
-              className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-10 px-5 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
-            >
+            <Link href="/alumnos" className="mt-4 inline-flex h-11 items-center rounded-xl bg-blue-600 px-5 text-sm font-bold text-white hover:bg-blue-500">
               Ir a Alumnos
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Alumno">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={busquedaAlumno}
-                  onChange={(e) => setBusquedaAlumno(e.target.value)}
-                  placeholder="Buscar alumno por nombre o DNI..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                />
-              </div>
-              {alumnosFiltrados.length === 0 ? (
-                <p className="text-xs text-slate-400 py-2 italic text-center">No se encontraron alumnos con ese nombre o DNI</p>
-              ) : (
-                <select
-                  aria-label="Alumno"
-                  value={form.alumnoId}
-                  onChange={(e) => handleAlumnoChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm mt-1.5 cursor-pointer"
-                  required
-                  size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
-                >
-                  {alumnosFiltrados.map((a) => (
-                    <option key={a.id} value={a.id} className="py-1 bg-slate-900 text-white">
-                      {a.nombre} {a.dni ? `(${a.dni})` : ""}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
-
-            {/* Asistente de imputación para socios MOROSOS */}
-            {estadoCuentaSeleccionado === "MOROSO" && (
-              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-3.5 space-y-2">
-                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  Socio moroso: elegí cómo imputar este cobro
-                </p>
-                <div className="flex flex-col gap-1.5">
+          <form onSubmit={handleSubmit} className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-5 pb-4 pt-2">
+              {alumnoSeleccionado && (
+                <div className="flex items-center gap-3 rounded-[14px] bg-[#0E1B36] p-3">
+                  <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#1E3663] text-sm font-bold text-blue-200">
+                    {inicialesDe(alumnoSeleccionado.nombre)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{alumnoSeleccionado.nombre}</p>
+                    <p className="mt-0.5 truncate text-[13px] text-slate-400">
+                      {form.plan || "Sin plan"}
+                      <Separador />
+                      {formatearMes(periodoInicioEfectivo)}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => aplicarImputacionMoroso(mesAnterior, 1)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesAnterior && form.cantidadMeses === 1
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
+                    onClick={() => setCambiandoAlumno((v) => !v)}
+                    aria-expanded={cambiandoAlumno}
+                    className="h-11 shrink-0 rounded-lg border border-[#2A4677] px-2.5 text-[13px] font-semibold text-slate-300"
                   >
-                    1. Saldar solo mes adeudado ({mesAnterior})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarImputacionMoroso(mesAnterior, 2)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesAnterior && form.cantidadMeses === 2
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    2. Ponerse al día: deuda + mes actual (2 meses)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarImputacionMoroso(mesActual, 1)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesActual && form.cantidadMeses === 1
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    3. Reactivar desde mes actual ({mesActual})
+                    {cambiandoAlumno ? "Listo" : "Cambiar"}
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            <Field label="Plan">
-              <input
-                aria-label="Plan"
-                value={form.plan}
-                onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                placeholder="Ej: Musculación"
-              />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Valor total cuota ($)">
-                <input
-                  aria-label="Monto"
-                  type="number"
-                  value={form.monto}
-                  onChange={(e) => setForm({ ...form, monto: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                  placeholder="$"
-                  required
-                />
-              </Field>
-              <Field label="Fecha de pago">
-                <input
-                  aria-label="Fecha"
-                  type="date"
-                  value={form.fecha}
-                  onChange={(e) => {
-                    const nuevaFecha = e.target.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      fecha: nuevaFecha,
-                      periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7),
-                    }));
-                  }}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                />
-              </Field>
-            </div>
-
-            {/* Opción de Seña / Entrega Parcial */}
-            <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-3.5 space-y-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={esSeniaParcial}
-                  onChange={(e) => setEsSeniaParcial(e.target.checked)}
-                  className="size-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-xs font-bold text-slate-200">
-                  Dejó una seña / entrega parcial (resta completar saldo)
-                </span>
-              </label>
-
-              {esSeniaParcial && (
-                <div className="space-y-1.5 pt-1">
-                  <Field label="Importe entregado hoy ($)">
+              {cambiandoAlumno && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
                     <input
+                      type="text"
+                      aria-label="Buscar alumno"
+                      value={busquedaAlumno}
+                      onChange={(e) => setBusquedaAlumno(e.target.value)}
+                      placeholder="Buscar alumno por nombre o DNI..."
+                      className={`${claseCampoHoja} pl-9`}
+                    />
+                  </div>
+                  {alumnosFiltrados.length === 0 ? (
+                    <p className="py-2 text-center text-[13px] text-slate-500">No se encontraron alumnos con ese nombre o DNI</p>
+                  ) : (
+                    <select
+                      aria-label="Alumno"
+                      value={form.alumnoId}
+                      onChange={(e) => handleAlumnoChange(e.target.value)}
+                      className="w-full cursor-pointer rounded-xl border border-[#2A4677] bg-[#0E1B36] px-3 py-2 text-[15px] text-slate-100 outline-none focus:border-blue-400"
+                      required
+                      size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
+                    >
+                      {alumnosFiltrados.map((a) => (
+                        <option key={a.id} value={a.id} className="py-1">
+                          {a.nombre} {a.dni ? `(${a.dni})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {/* Asistente de imputación para socios MOROSOS */}
+              {/* Si viene de la ficha, los meses ya se eligieron ahí */}
+              {estadoCuentaSeleccionado === "MOROSO" && !(preseleccion?.periodo && preseleccion.alumnoId === form.alumnoId) && (
+                <div className="flex flex-col gap-2 rounded-[14px] border border-amber-500/30 p-3">
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-400">
+                    <AlertCircle className="size-3.5 shrink-0" />
+                    Socio moroso: elegí cómo imputar este cobro
+                  </p>
+                  {[
+                    { periodo: mesAnterior, meses: 1, texto: `Saldar solo el mes adeudado (${formatearMes(mesAnterior)})` },
+                    { periodo: mesAnterior, meses: 2, texto: "Ponerse al día: deuda + mes actual (2 meses)" },
+                    { periodo: mesActual, meses: 1, texto: `Reactivar desde el mes actual (${formatearMes(mesActual)})` },
+                  ].map((o) => {
+                    const activo = form.periodoMes === o.periodo && form.cantidadMeses === o.meses;
+                    return (
+                      <button
+                        key={o.texto}
+                        type="button"
+                        aria-pressed={activo}
+                        onClick={() => aplicarImputacionMoroso(o.periodo, o.meses)}
+                        className={`min-h-11 rounded-xl border px-3 py-1.5 text-left text-[13px] font-semibold ${
+                          activo ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#2A4677] text-slate-300"
+                        }`}
+                      >
+                        {o.texto}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div role="radiogroup" aria-label="Tipo de pago" className="grid shrink-0 grid-cols-2 gap-1.5 rounded-xl bg-[#0E1B36] p-1">
+                <button type="button" role="radio" aria-checked={!esSeniaParcial} onClick={() => setEsSeniaParcial(false)} className={claseSegmento(!esSeniaParcial)}>
+                  Pago completo
+                </button>
+                <button type="button" role="radio" aria-checked={esSeniaParcial} onClick={() => setEsSeniaParcial(true)} className={claseSegmento(esSeniaParcial)}>
+                  Seña parcial
+                </button>
+              </div>
+
+              <div>
+                <label htmlFor="monto-cobro" className="mb-1.5 block text-[13px] font-semibold text-slate-400">
+                  {esSeniaParcial ? "Entrega hoy" : "Importe"}
+                </label>
+                <div className="flex h-16 items-center gap-2 rounded-[14px] border-2 border-blue-600 bg-[#0E1B36] px-4">
+                  <span aria-hidden="true" className="font-display text-4xl font-bold text-slate-500">$</span>
+                  {esSeniaParcial ? (
+                    <input
+                      id="monto-cobro"
                       aria-label="Importe entregado hoy"
                       type="number"
+                      inputMode="numeric"
                       value={montoSenia}
                       onChange={(e) => setMontoSenia(e.target.value)}
-                      placeholder="Ej: 10000"
-                      className="w-full px-3.5 py-2 bg-slate-800/80 border border-sky-500/40 rounded-xl outline-none focus:border-sky-400 text-white text-sm"
+                      className={claseMontoGrande}
                     />
-                  </Field>
-                  {Number(form.monto) > 0 && Number(montoSenia) > 0 && Number(montoSenia) < Number(form.monto) && (
-                    <p className="text-xs font-bold text-sky-300">
-                      Quedará un saldo pendiente de $
-                      {(Number(form.monto) - Number(montoSenia)).toLocaleString("es-AR")}.
-                    </p>
+                  ) : (
+                    <input
+                      id="monto-cobro"
+                      aria-label="Monto"
+                      type="number"
+                      inputMode="numeric"
+                      value={form.monto}
+                      onChange={(e) => setForm({ ...form, monto: e.target.value })}
+                      className={claseMontoGrande}
+                      required
+                    />
                   )}
                 </div>
-              )}
-            </div>
+                {esSeniaParcial && Number(montoSenia) > 0 && saldoSenia > 0 && (
+                  <p className="mt-2 text-sm text-amber-400">
+                    Queda saldo de ${saldoSenia.toLocaleString("es-AR")}
+                    <Separador />
+                    aparece en “Para resolver”
+                  </p>
+                )}
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Mes que abona (Período)">
-                <input
-                  aria-label="Mes que abona"
-                  type="month"
-                  value={form.periodoMes}
-                  onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                  required
-                />
-              </Field>
-              <Field label="Vigencia / Meses">
-                <select
-                  aria-label="Vigencia / Meses"
-                  value={form.cantidadMeses}
-                  onChange={(e) => handleCantidadMesesChange(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                >
-                  {OPCIONES_VIGENCIA_MESES.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                      {opt.label}
-                    </option>
+              <div>
+                <p className="mb-1.5 text-[13px] font-semibold text-slate-400">Medio de pago</p>
+                <div role="radiogroup" aria-label="Medio de pago" className="grid grid-cols-3 gap-2">
+                  {["Efectivo", "Transferencia", "Tarjeta"].map((metodo) => (
+                    <button
+                      key={metodo}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.metodo === metodo}
+                      onClick={() => setForm({ ...form, metodo })}
+                      className={`h-[52px] rounded-xl text-sm ${
+                        form.metodo === metodo
+                          ? "border-2 border-blue-400 bg-[#1E3663] font-bold text-white"
+                          : "border border-[#2A4677] font-semibold text-slate-300"
+                      }`}
+                    >
+                      {metodo}
+                    </button>
                   ))}
-                </select>
-              </Field>
-            </div>
+                </div>
+              </div>
 
-            {pagoSolapado && (
-              <p className="text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
-                ⚠️ Este socio ya registra un comprobante ({pagoSolapado.estado}) que cubre{" "}
-                <strong>{pagoSolapado.periodoMes}</strong>. Para evitar cobros duplicados, seleccioná otro período o anulá el anterior.
-              </p>
-            )}
+              {pagoSolapado && (
+                <p className="flex gap-2 text-[13px] font-semibold text-amber-400">
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    Este socio ya registra un comprobante ({pagoSolapado.estado}) que cubre {pagoSolapado.periodoMes}. Para evitar cobros duplicados, elegí otro período o anulá el anterior.
+                  </span>
+                </p>
+              )}
 
-            {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
-              <p className="text-xs font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
-                Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta{" "}
-                {formatearMes(periodoFinEfectivo)} (próximo vencimiento:{" "}
-                {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
-              </p>
-            )}
+              {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
+                <p className="text-[13px] text-blue-300">
+                  Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta {formatearMes(periodoFinEfectivo)} (próximo vencimiento: {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
+                </p>
+              )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Método">
-                <select
-                  value={form.metodo}
-                  onChange={(e) => setForm({ ...form, metodo: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                >
-                  <option className="bg-slate-900 text-white">Efectivo</option>
-                  <option className="bg-slate-900 text-white">Transferencia</option>
-                  <option className="bg-slate-900 text-white">Tarjeta</option>
-                </select>
-              </Field>
-              <Field label="Estado">
-                <select
-                  disabled={esSeniaParcial}
-                  value={esSeniaParcial ? "PARCIAL" : form.estado}
-                  onChange={(e) =>
-                    setForm({ ...form, estado: e.target.value as EstadoPago })
-                  }
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm disabled:opacity-60"
-                >
-                  <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
+              <details className="group rounded-[14px] border border-[#2A4677]">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold text-slate-300">
+                  Más datos del cobro
+                  <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="flex flex-col gap-3 border-t border-[#2A4677] p-3">
+                  <Field label="Plan">
+                    <input aria-label="Plan" value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} placeholder="Ej: Musculación" className={claseCampoHoja} />
+                  </Field>
                   {esSeniaParcial && (
-                    <option value="PARCIAL" className="bg-slate-900 text-white">Seña parcial</option>
+                    <Field label="Valor total cuota ($)">
+                      <input aria-label="Monto" type="number" value={form.monto} onChange={(e) => setForm({ ...form, monto: e.target.value })} className={claseCampoHoja} required />
+                    </Field>
                   )}
-                  <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
-                  <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
-                </select>
-              </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Fecha de pago">
+                      <input
+                        aria-label="Fecha"
+                        type="date"
+                        value={form.fecha}
+                        onChange={(e) => {
+                          const nuevaFecha = e.target.value;
+                          setForm((prev) => ({ ...prev, fecha: nuevaFecha, periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7) }));
+                        }}
+                        className={claseCampoHoja}
+                      />
+                    </Field>
+                    <Field label="Mes que abona">
+                      <input aria-label="Mes que abona" type="month" value={form.periodoMes} onChange={(e) => setForm({ ...form, periodoMes: e.target.value })} className={claseCampoHoja} required />
+                    </Field>
+                    <Field label="Vigencia">
+                      <select aria-label="Vigencia / Meses" value={form.cantidadMeses} onChange={(e) => handleCantidadMesesChange(Number(e.target.value))} className={claseCampoHoja}>
+                        {opcionesVigencia.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Estado">
+                      <select
+                        disabled={esSeniaParcial}
+                        value={esSeniaParcial ? "PARCIAL" : form.estado}
+                        onChange={(e) => setForm({ ...form, estado: e.target.value as EstadoPago })}
+                        className={`${claseCampoHoja} disabled:opacity-60`}
+                      >
+                        <option value="PAGADO">Pagado</option>
+                        {esSeniaParcial && <option value="PARCIAL">Seña parcial</option>}
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="VENCIDO">Vencido</option>
+                      </select>
+                    </Field>
+                  </div>
+                  <SeccionNotificarWhatsapp
+                    alumnoId={form.alumnoId}
+                    alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
+                    plan={form.plan}
+                    monto={esSeniaParcial && montoSenia ? montoSenia : form.monto}
+                    cantidadMeses={form.cantidadMeses}
+                    celular={celular}
+                    onCelularChange={setCelular}
+                    tipoMensaje={tipoMensaje}
+                    onTipoMensajeChange={(nuevoTipo) => {
+                      setTipoMensaje(nuevoTipo);
+                      if (nuevoTipo === "bienvenida") {
+                        if (!usuarioApp.trim() && alumnoSeleccionado) {
+                          setUsuarioApp(sugerirUsuarioAlumno(alumnoSeleccionado));
+                        }
+                        if (!passwordApp.trim()) {
+                          setPasswordApp(generarPassword());
+                        }
+                      }
+                    }}
+                    usuarioApp={usuarioApp}
+                    onUsuarioAppChange={setUsuarioApp}
+                    passwordApp={passwordApp}
+                    onPasswordAppChange={setPasswordApp}
+                    onAsignarCredenciales={onAsignarCredenciales}
+                  />
+                </div>
+              </details>
             </div>
 
-            {errorValidacion && (
-              <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
-                {errorValidacion}
+            <div className="flex shrink-0 flex-col gap-3 border-t border-[#2A4677] px-5 pb-6 pt-3">
+              {errorValidacion && <p role="alert" className="text-[13px] font-semibold text-rose-400">{errorValidacion}</p>}
+              <p className="text-[13px] text-slate-500">
+                Cobra: {cobrador}
+                <Separador />
+                {form.fecha === fechaLocalHoy()
+                  ? `Hoy ${new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                  : formatFechaAR(form.fecha)}
               </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
-            >
-              {esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
-            </button>
-
-            <SeccionNotificarWhatsapp
-              alumnoId={form.alumnoId}
-              alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
-              plan={form.plan}
-              monto={esSeniaParcial && montoSenia ? montoSenia : form.monto}
-              cantidadMeses={form.cantidadMeses}
-              celular={celular}
-              onCelularChange={setCelular}
-              tipoMensaje={tipoMensaje}
-              onTipoMensajeChange={(nuevoTipo) => {
-                setTipoMensaje(nuevoTipo);
-                if (nuevoTipo === "bienvenida") {
-                  if (!usuarioApp.trim() && alumnoSeleccionado) {
-                    setUsuarioApp(sugerirUsuarioAlumno(alumnoSeleccionado));
-                  }
-                  if (!passwordApp.trim()) {
-                    setPasswordApp(generarPassword());
-                  }
-                }
-              }}
-              usuarioApp={usuarioApp}
-              onUsuarioAppChange={setUsuarioApp}
-              passwordApp={passwordApp}
-              onPasswordAppChange={setPasswordApp}
-              onAsignarCredenciales={onAsignarCredenciales}
-            />
+              <button type="submit" className="min-h-14 rounded-[14px] bg-blue-600 px-3 text-[17px] font-bold text-white transition-colors hover:bg-blue-500">
+                {esSeniaParcial ? `Registrar seña${importeCta}` : `Registrar pago${importeCta}`} en {form.metodo.toLowerCase()}
+              </button>
+            </div>
           </form>
         )}
       </div>
