@@ -2101,10 +2101,11 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     if (seriesTotales.completadas > 0) handleGuardar()
     else setEntrenando(false)
   }
-  const claseBarra = 'sticky bottom-[76px] z-10 -mx-5 border-t border-[#1E3663] bg-slate-950 px-5 py-3 lg:hidden'
+  // fixed y no sticky: <main> tiene overflow-x-hidden y el sticky se calcula contra él, no contra la pantalla.
+  const claseBarra = 'fixed inset-x-0 bottom-[76px] z-10 border-t border-[#1E3663] bg-slate-950 px-5 py-3 md:static md:border-0 md:bg-transparent md:p-0 lg:hidden'
 
   return (
-    <div className="mx-auto flex max-w-[1240px] flex-col gap-3.5 px-5 pb-6 pt-[22px] md:px-10 lg:gap-6 lg:pb-12 lg:pt-8">
+    <div className="mx-auto flex max-w-[1240px] flex-col gap-3.5 px-5 pb-24 pt-[22px] md:px-10 md:pb-6 lg:gap-6 lg:pb-12 lg:pt-8">
       <header className={`${entrenando ? 'hidden lg:flex' : 'flex'} flex-col gap-3.5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between`}>
         <div>
           <p className="text-[13px] font-semibold text-slate-500 lg:mb-1.5 lg:text-sm">
@@ -2229,7 +2230,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                   {completados === total ? 'Entrenamiento completado' : 'Progreso parcial guardado'}
                 </p>
               )}
-              <div className="sticky bottom-[76px] z-10 -mx-5 grid grid-cols-[1fr_1.7fr] gap-2.5 border-t border-[#1E3663] bg-slate-950 px-5 py-3 lg:static lg:mx-0 lg:flex lg:justify-end lg:border-0 lg:bg-transparent lg:p-0">
+              <div className="fixed inset-x-0 bottom-[76px] z-10 grid grid-cols-[1fr_1.7fr] gap-2.5 border-t border-[#1E3663] bg-slate-950 px-5 py-3 md:static md:border-0 md:bg-transparent md:p-0 lg:flex lg:justify-end">
                 <button
                   type="button"
                   onClick={() => setEjercicioActivo(indiceActual - 1)}
