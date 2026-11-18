@@ -2,25 +2,22 @@
 
 import { useState } from 'react'
 import { useAppData } from '@/lib/store'
-import {
-  X,
-  Phone,
-  Lock,
-  Camera,
-  CheckCircle2,
-  CreditCard,
-  Calendar,
-  AlertCircle,
-  Save,
-} from 'lucide-react'
-import { ESTADO_CUENTA_LABEL, ESTADO_CUENTA_STYLES } from '@/lib/types'
+import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ESTADO_CUENTA_STYLES, ESTADO_CUENTA_LABEL } from '@/lib/types'
 import { useToast } from '@/components/ui/toast'
+import { ModalCentroAyuda } from '@/components/modal-centro-ayuda'
 import { useEscapeKey } from '@/lib/use-escape-key'
+import { inicialesDe } from '@/lib/utils'
 
 interface ModalPerfilProps {
   abierto: boolean
   onCerrar: () => void
 }
+
+const claseCampo =
+  'h-[52px] rounded-xl border border-[#2A4677] bg-[#13254A] px-3.5 text-base text-slate-100 outline-none focus:border-blue-400'
+const claseEtiqueta = 'flex flex-col gap-1.5 text-sm text-slate-300'
+const claseTitulo = 'text-[13px] font-semibold uppercase tracking-[.06em] text-[#8296BB]'
 
 export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
   const { toast } = useToast()
@@ -31,108 +28,105 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
     guardarPerfilUsuario,
     actualizarUsuarioActual,
     getEstadoCuenta,
+    cerrarSesion,
   } = useAppData()
 
   const esAlumno = usuarioActual?.rol === 'ALUMNO'
   const alumnoDatos = esAlumno && usuarioActual?.alumnoId
     ? alumnos.find((a) => a.id === usuarioActual.alumnoId)
     : undefined
+  const celularInicial = alumnoDatos?.celular || usuarioActual?.celular || ''
 
-  // Estados de edición de celular
-  const [celular, setCelular] = useState(
-    alumnoDatos?.celular || usuarioActual?.celular || ''
-  )
-  const [guardandoCelular, setGuardandoCelular] = useState(false)
-  const [celularGuardado, setCelularGuardado] = useState(false)
+  const [celular, setCelular] = useState(celularInicial)
+  const [celularGuardado, setCelularGuardado] = useState(celularInicial)
+  const [guardando, setGuardando] = useState(false)
 
-  // Estados de cambio de contraseña
+  const [claveAbierta, setClaveAbierta] = useState(false)
   const [passwordActual, setPasswordActual] = useState('')
   const [passwordNueva, setPasswordNueva] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [errorPassword, setErrorPassword] = useState('')
-  const [guardandoPassword, setGuardandoPassword] = useState(false)
-  const [passwordGuardada, setPasswordGuardada] = useState(false)
 
-  // Estados de foto de perfil
   const [fotoUrl, setFotoUrl] = useState(usuarioActual?.fotoUrl || '')
   const [errorFoto, setErrorFoto] = useState('')
   const [editandoFoto, setEditandoFoto] = useState(false)
 
+  const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+
   if (!abierto || !usuarioActual) return null
 
-  const iniciales = usuarioActual.nombre
-    .split(' ')
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
+  const iniciales = inicialesDe(usuarioActual.nombre)
+  const quiereCambiarClave = claveAbierta && !!(passwordActual || passwordNueva || passwordConfirm)
 
-  const handleGuardarCelular = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setGuardandoCelular(true)
-
-    if (guardarPerfilUsuario) {
-      const res = await guardarPerfilUsuario({ celular })
-      setGuardandoCelular(false)
-      if (!res.ok) {
-        toast(res.error || 'No se pudo actualizar el teléfono de contacto', 'error')
-        return
-      }
-    } else {
-      actualizarUsuarioActual?.({ celular })
-      setGuardandoCelular(false)
-    }
-
-    toast('Teléfono de contacto actualizado correctamente', 'success')
-    setCelularGuardado(true)
-    setTimeout(() => setCelularGuardado(false), 3000)
+  const validarPassword = () => {
+    if (!passwordActual.trim()) return 'Por seguridad, debés ingresar tu contraseña actual.'
+    if (passwordNueva.length < 6) return 'La nueva contraseña debe tener al menos 6 caracteres.'
+    if (passwordNueva !== passwordConfirm) return 'Las contraseñas nuevas ingresadas no coinciden.'
+    return ''
   }
 
-  const handleGuardarPassword = async (e: React.FormEvent) => {
+  const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorPassword('')
+    const cambioCelular = celular.trim() !== celularGuardado.trim()
 
-    if (!passwordActual.trim()) {
-      setErrorPassword('Por seguridad, debés ingresar tu contraseña actual.')
+    if (cambioCelular && !celular.trim()) {
+      toast('Ingresá un celular de contacto', 'error')
       return
     }
-
-    if (passwordNueva.length < 6) {
-      setErrorPassword('La nueva contraseña debe tener al menos 6 caracteres.')
-      return
-    }
-
-    if (passwordNueva !== passwordConfirm) {
-      setErrorPassword('Las contraseñas nuevas ingresadas no coinciden.')
-      return
-    }
-
-    setGuardandoPassword(true)
-    if (guardarPerfilUsuario) {
-      const res = await guardarPerfilUsuario({
-        password: passwordNueva,
-        passwordActual: passwordActual.trim(),
-      })
-      setGuardandoPassword(false)
-      if (!res.ok) {
-        const msg = res.error || 'La contraseña actual ingresada es incorrecta.'
-        setErrorPassword(msg)
-        toast(msg, 'error')
+    if (quiereCambiarClave) {
+      const error = validarPassword()
+      if (error) {
+        setErrorPassword(error)
         return
       }
-    } else {
-      actualizarUsuarioActual?.({
-        password: passwordNueva,
-        passwordActual: passwordActual.trim(),
-      })
-      setGuardandoPassword(false)
+    }
+    if (!cambioCelular && !quiereCambiarClave) {
+      toast('No hay cambios para guardar', 'info')
+      return
     }
 
-    toast('Contraseña modificada exitosamente', 'success')
-    setPasswordGuardada(true)
-    setPasswordActual('')
-    setPasswordNueva('')
-    setPasswordConfirm('')
-    setTimeout(() => setPasswordGuardada(false), 3000)
+    setGuardando(true)
+    try {
+      if (cambioCelular) {
+        if (guardarPerfilUsuario) {
+          const res = await guardarPerfilUsuario({ celular })
+          if (!res.ok) {
+            toast(res.error || 'No se pudo actualizar el teléfono de contacto', 'error')
+            return
+          }
+        } else {
+          actualizarUsuarioActual?.({ celular })
+        }
+        setCelularGuardado(celular)
+        toast('Teléfono de contacto actualizado correctamente', 'success')
+      }
+
+      if (quiereCambiarClave) {
+        if (guardarPerfilUsuario) {
+          const res = await guardarPerfilUsuario({
+            password: passwordNueva,
+            passwordActual: passwordActual.trim(),
+          })
+          if (!res.ok) {
+            const msg = res.error || 'La contraseña actual ingresada es incorrecta.'
+            setErrorPassword(msg)
+            toast(msg, 'error')
+            return
+          }
+        } else {
+          actualizarUsuarioActual?.({ password: passwordNueva, passwordActual: passwordActual.trim() })
+        }
+        toast('Contraseña modificada exitosamente', 'success')
+        setPasswordActual('')
+        setPasswordNueva('')
+        setPasswordConfirm('')
+        setClaveAbierta(false)
+      }
+    } finally {
+      setGuardando(false)
+    }
   }
 
   const handleGuardarFoto = async (nuevaUrl: string) => {
@@ -168,231 +162,209 @@ export function ModalPerfil({ abierto, onCerrar }: ModalPerfilProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex bg-[#0E1B36] md:items-center md:justify-center md:bg-slate-950/80 md:p-4 md:backdrop-blur-sm"
       onClick={onCerrar}
     >
-      <div
-        className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8"
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-perfil"
+        onSubmit={handleGuardar}
         onClick={(e) => e.stopPropagation()}
+        className="flex h-dvh w-full flex-col bg-[#0E1B36] text-slate-100 md:h-auto md:max-h-[90vh] md:max-w-lg md:overflow-hidden md:rounded-3xl md:border md:border-slate-800 md:shadow-2xl"
       >
-        {/* Cabecera de Perfil */}
-        <div className="relative p-6 pb-5 bg-gradient-to-b from-slate-800/80 to-slate-900 border-b border-slate-800 flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              {fotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={fotoUrl}
-                  alt={usuarioActual.nombre}
-                  className="size-16 rounded-full object-cover border-2 border-blue-500 shadow-md"
-                />
-              ) : (
-                <div className="size-16 rounded-full bg-blue-600/20 text-blue-400 border-2 border-blue-500/40 flex items-center justify-center text-xl font-extrabold shadow-md">
-                  {iniciales}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => setEditandoFoto(!editandoFoto)}
-                className="absolute bottom-0 right-0 p-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow transition-transform active:scale-90"
-                title="Cambiar avatar o foto"
-              >
-                <Camera className="size-3.5" />
-              </button>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-white">{usuarioActual.nombre}</h3>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                  {esAlumno ? 'Socio' : 'Coach / Admin'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">{usuarioActual.email}</p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onCerrar}
-            aria-label="Cerrar perfil"
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <X className="size-5" />
+        <header className="flex items-center gap-1 px-3 pb-1 pt-3">
+          <button type="button" onClick={onCerrar} aria-label="Volver" className="flex size-12 items-center justify-center rounded-xl hover:bg-slate-900">
+            <ChevronLeft className="size-[22px]" />
           </button>
-        </div>
+          <h2 id="titulo-perfil" className="text-lg font-semibold">Mi perfil</h2>
+        </header>
 
-        {/* Selector de Foto / Avatar */}
-        {editandoFoto && (
-          <div className="p-4 bg-slate-950/60 border-b border-slate-800 space-y-2 text-xs">
-            <p className="font-bold text-slate-300">Seleccioná un avatar o pegá el enlace seguro de tu foto:</p>
-            {errorFoto && (
-              <p className="text-rose-400 text-[11px] font-semibold">{errorFoto}</p>
+        <div className="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto px-5 pb-6 pt-3">
+          <div className="flex items-center gap-4">
+            {fotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fotoUrl} alt={`Foto de perfil de ${usuarioActual.nombre}`} className="size-[72px] shrink-0 rounded-full border border-slate-700 object-cover" />
+            ) : (
+              <span role="img" aria-label={`Foto de perfil: iniciales ${iniciales}`} className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-slate-700 bg-[#1E3663] text-[22px] font-semibold text-blue-200">
+                {iniciales}
+              </span>
             )}
-            <div className="flex items-center gap-2">
-              <input
-                type="url"
-                value={fotoUrl}
-                onChange={(e) => setFotoUrl(e.target.value)}
-                placeholder="https://ejemplo.com/mi-foto.jpg"
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => handleGuardarFoto(fotoUrl)}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
-              >
-                Guardar
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className="truncate text-lg font-semibold">{usuarioActual.nombre}</p>
+              <p className="text-sm text-[#8296BB]">{esAlumno ? 'Socio' : 'Titular'}</p>
+              <button type="button" onClick={() => setEditandoFoto(!editandoFoto)} aria-expanded={editandoFoto} className="h-11 self-start text-sm text-blue-400">
+                Cambiar foto
               </button>
             </div>
           </div>
-        )}
 
-        {/* Cuerpo del Perfil */}
-        <div className="p-6 space-y-6 text-xs max-h-[70vh] overflow-y-auto">
-          {/* Membresía (Solo alumnos) */}
-          {esAlumno && alumnoDatos && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
-                  <CreditCard className="size-3.5 text-blue-400" />
-                  Membresía y plan
-                </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>
-                  {ESTADO_CUENTA_LABEL[estadoCuenta]}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Plan actual</span>
-                  <span className="text-xs font-bold text-white mt-0.5 block">{alumnoDatos.plan}</span>
-                </div>
-                <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-semibold flex items-center gap-1">
-                    <Calendar className="size-3 text-slate-400" />
-                    Vencimiento
-                  </span>
-                  <span className="text-xs font-bold text-white mt-0.5 block">Día 10 del mes</span>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-500 leading-relaxed italic">
-                * Para solicitar un cambio de plan o consultas sobre aranceles, comunicate directamente con recepción o tu profesor.
-              </p>
+          {editandoFoto && (
+            <div className="-mt-3 flex flex-col gap-2">
+              <label className={claseEtiqueta}>
+                Enlace seguro de tu foto
+                <input
+                  type="url"
+                  value={fotoUrl}
+                  onChange={(e) => setFotoUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/mi-foto.jpg"
+                  className={claseCampo}
+                />
+              </label>
+              {errorFoto && <p className="text-[13px] font-semibold text-rose-400">{errorFoto}</p>}
+              <button type="button" onClick={() => handleGuardarFoto(fotoUrl)} className="h-11 rounded-xl border border-[#2A4677] text-sm font-semibold hover:bg-slate-900">
+                Guardar foto
+              </button>
             </div>
           )}
 
-          {/* Formulario 1: Editar Celular (WhatsApp) */}
-          <form onSubmit={handleGuardarCelular} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label htmlFor="perfil-celular" className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
-                <Phone className="size-3.5 text-blue-400" />
-                Celular / WhatsApp
-              </label>
-              {celularGuardado && (
-                <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">
-                  <CheckCircle2 className="size-3.5" />
-                  ¡Actualizado en todo el sistema!
-                </span>
-              )}
-            </div>
+          {esAlumno && alumnoDatos && (
+            <section aria-labelledby="titulo-membresia" className="flex flex-col gap-1">
+              <h3 id="titulo-membresia" className={claseTitulo}>Membresía</h3>
+              <div className="flex min-h-12 items-center justify-between border-b border-[#1E3663] text-[15px]">
+                <span className="text-[#8296BB]">Plan actual</span>
+                <span>{alumnoDatos.plan}</span>
+              </div>
+              <div className="flex min-h-12 items-center justify-between border-b border-[#1E3663] text-[15px]">
+                <span className="text-[#8296BB]">Estado</span>
+                <span className={`font-semibold ${ESTADO_CUENTA_STYLES[estadoCuenta]}`}>{ESTADO_CUENTA_LABEL[estadoCuenta]}</span>
+              </div>
+              <div className="flex min-h-12 items-center justify-between border-b border-[#1E3663] text-[15px]">
+                <span className="text-[#8296BB]">Vencimiento</span>
+                <span>Día 10 del mes</span>
+              </div>
+              <p className="mt-2 text-[13px] text-[#8296BB]">
+                Para cambiar de plan o consultar aranceles, hablá con recepción o tu profesor.
+              </p>
+            </section>
+          )}
 
-            <div className="flex gap-2">
+          <section aria-labelledby="titulo-datos" className="flex flex-col gap-3.5">
+            <h3 id="titulo-datos" className={claseTitulo}>Mis datos</h3>
+            <label className={claseEtiqueta}>
+              Celular
               <input
-                id="perfil-celular"
                 type="tel"
                 value={celular}
                 onChange={(e) => setCelular(e.target.value)}
                 placeholder="+54 9 261 123-4567"
-                required
-                className="flex-1 bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono"
+                className={claseCampo}
               />
-              <button
-                type="submit"
-                disabled={guardandoCelular}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 shrink-0 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Save className="size-3.5" />
-                {guardandoCelular ? 'Guardando...' : 'Guardar'}
-              </button>
+              <span className="text-[13px] text-[#8296BB]">Lo usamos para los avisos por WhatsApp.</span>
+            </label>
+            <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#1E3663] text-[15px]">
+              <span className="text-[#8296BB]">Usuario</span>
+              <span className="truncate">{usuarioActual.email}</span>
             </div>
+          </section>
 
-            <p className="text-[11px] text-slate-500">
-              {esAlumno
-                ? 'Tu profesor y administración verán este número actualizado inmediatamente para avisos y comprobantes.'
-                : 'Número de contacto oficial del profesor para comunicación interna.'}
-            </p>
-          </form>
-
-          {/* Formulario 2: Cambiar Contraseña */}
-          <form onSubmit={handleGuardarPassword} className="space-y-3 pt-4 border-t border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 text-[11px]">
-                <Lock className="size-3.5 text-blue-400" />
-                Seguridad y contraseña
-              </span>
-              {passwordGuardada && (
-                <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">
-                  <CheckCircle2 className="size-3.5" />
-                  Contraseña cambiada
-                </span>
-              )}
-            </div>
-
-            {errorPassword && (
-              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-                <AlertCircle className="size-4 shrink-0" />
-                <span>{errorPassword}</span>
+          <section aria-labelledby="titulo-seguridad" className="flex flex-col gap-3">
+            <h3 id="titulo-seguridad" className={claseTitulo}>Seguridad</h3>
+            <button
+              type="button"
+              aria-expanded={claveAbierta}
+              onClick={() => setClaveAbierta(!claveAbierta)}
+              className="flex min-h-[52px] items-center justify-between rounded-xl border border-[#2A4677] bg-[#13254A] px-3.5 text-[15px]"
+            >
+              Cambiar contraseña
+              <ChevronDown className={`size-[18px] transition-transform ${claveAbierta ? 'rotate-180' : ''}`} />
+            </button>
+            {claveAbierta && (
+              <div className="flex flex-col gap-2.5">
+                {errorPassword && (
+                  <p role="alert" className="flex items-center gap-2 text-[13px] font-semibold text-rose-400">
+                    <AlertCircle className="size-4 shrink-0" />
+                    {errorPassword}
+                  </p>
+                )}
+                <label className={claseEtiqueta}>
+                  Contraseña actual
+                  <input type="password" autoComplete="current-password" value={passwordActual} onChange={(e) => setPasswordActual(e.target.value)} className={claseCampo} />
+                </label>
+                <label className={claseEtiqueta}>
+                  Nueva contraseña
+                  <input type="password" autoComplete="new-password" value={passwordNueva} onChange={(e) => setPasswordNueva(e.target.value)} className={claseCampo} />
+                  <span className="text-[13px] text-[#8296BB]">Mínimo 6 caracteres.</span>
+                </label>
+                <label className={claseEtiqueta}>
+                  Repetir nueva contraseña
+                  <input type="password" autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className={claseCampo} />
+                </label>
               </div>
             )}
+          </section>
 
-            <input
-              type="password"
-              value={passwordActual}
-              onChange={(e) => setPasswordActual(e.target.value)}
-              placeholder="Contraseña actual (obligatoria para cambiar clave)"
-              className="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500"
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                type="password"
-                value={passwordNueva}
-                onChange={(e) => setPasswordNueva(e.target.value)}
-                placeholder="Nueva contraseña (mín. 6)"
-                className="bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500"
-              />
-              <input
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                placeholder="Repetir nueva contraseña"
-                className="bg-slate-950/60 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={!passwordNueva || !passwordActual || guardandoPassword}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-bold text-xs transition-colors cursor-pointer"
-            >
-              {guardandoPassword ? 'Verificando y actualizando...' : 'Actualizar contraseña'}
-            </button>
-          </form>
+          {!claveAbierta && (
+            <nav aria-label="Otras opciones" className="flex flex-col">
+              <button type="button" onClick={() => setMostrarAyuda(true)} className="flex min-h-[52px] items-center justify-between border-b border-[#1E3663] text-left text-[15px]">
+                {esAlumno ? 'Consultar al profesor' : 'Centro de ayuda'}
+                <ChevronRight className="size-[18px] text-[#8296BB]" />
+              </button>
+              {confirmandoSalida ? (
+                <div className="flex min-h-[52px] items-center justify-between gap-2 border-b border-[#1E3663] py-1 text-[15px]">
+                  <span>¿Cerrar sesión?</span>
+                  <span className="flex gap-2">
+                    <button type="button" onClick={() => setConfirmandoSalida(false)} className="h-11 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold">
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cerrarSesion()
+                        window.location.href = '/login'
+                      }}
+                      className="h-11 rounded-xl bg-[#C4362F] px-3 text-sm font-semibold text-white"
+                    >
+                      Salir
+                    </button>
+                  </span>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setConfirmandoSalida(true)} className="flex min-h-[52px] items-center border-b border-[#1E3663] text-left text-[15px] text-rose-400">
+                  Cerrar sesión
+                </button>
+              )}
+            </nav>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex justify-end">
-          <button
-            type="button"
-            onClick={onCerrar}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors"
-          >
-            Listo, cerrar
+        <div className="border-t border-[#1E3663] px-5 pb-6 pt-3">
+          <button type="submit" disabled={guardando} className="h-[54px] w-full rounded-[14px] bg-blue-600 text-base font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50">
+            {guardando ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
+      </form>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <ModalCentroAyuda abierto={mostrarAyuda} onCerrar={() => setMostrarAyuda(false)} />
       </div>
     </div>
+  )
+}
+
+/** Avatar del encabezado en celular: es la entrada a "Mi perfil" (en escritorio está en el menú lateral). */
+export function BotonPerfilMovil() {
+  const { usuarioActual } = useAppData()
+  const [abierto, setAbierto] = useState(false)
+  if (!usuarioActual) return null
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        aria-label={`Mi perfil: ${usuarioActual.nombre}`}
+        className="flex size-12 items-center justify-center rounded-full md:hidden"
+      >
+        {usuarioActual.fotoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={usuarioActual.fotoUrl} alt="" className="size-10 rounded-full border border-slate-700 object-cover" />
+        ) : (
+          <span className="flex size-10 items-center justify-center rounded-full border border-slate-700 bg-[#1E3663] text-[13px] font-semibold text-blue-200">
+            {inicialesDe(usuarioActual.nombre)}
+          </span>
+        )}
+      </button>
+      <ModalPerfil abierto={abierto} onCerrar={() => setAbierto(false)} />
+    </>
   )
 }

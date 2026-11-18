@@ -21,7 +21,7 @@ export default function PaginaPrivacidad() {
         ← Volver al inicio de sesión
       </Link>
 
-      <h1 className="mt-6 text-2xl font-black text-white">Política de privacidad</h1>
+      <h1 className="mt-6 text-4xl font-black text-white">Política de privacidad</h1>
       <p className="mt-1 text-xs text-slate-400">Última actualización: {d.actualizada}</p>
 
       {pendientes.length > 0 && (

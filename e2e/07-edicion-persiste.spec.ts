@@ -24,7 +24,7 @@ test('editar dos veces a un socio guarda los cambios en el servidor', async ({ p
 
   await iniciarSesionTitular(page)
   await page.goto('/alumnos')
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
 
   await page.getByRole('button', { name: `Editar a ${original}` }).click()
   await page.getByLabel('Nombre y apellido').fill(primera)
@@ -41,7 +41,7 @@ test('editar dos veces a un socio guarda los cambios en el servidor', async ({ p
 
   // Al recargar sigue ahí: quedó guardado en el servidor, no solo en el navegador
   await page.reload()
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await expect(page.getByRole('button', { name: `Editar a ${segunda}` })).toBeVisible()
 })
 

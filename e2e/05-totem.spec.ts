@@ -24,13 +24,13 @@ test('la tablet del tótem se vincula y un socio registra su entrada con el DNI'
 
   // Un DNI que no existe se rechaza
   await page.getByLabel('Ingresar DNI').fill('11111111')
-  await page.getByRole('button', { name: 'Registrar entrada' }).click()
+  await page.getByRole('button', { name: 'Marcar ingreso' }).click()
   await expect(page.getByText(/no (se )?encontr|no figura/i).first()).toBeVisible()
 
   // El socio ficha con su DNI
   await page.goto('/totem')
   await page.getByLabel('Ingresar DNI').fill(dni)
-  await page.getByRole('button', { name: 'Registrar entrada' }).click()
+  await page.getByRole('button', { name: 'Marcar ingreso' }).click()
   await expect(page.getByText(nombre.split(' ')[0]).first()).toBeVisible()
 
   // La asistencia quedó registrada en el servidor
