@@ -1735,7 +1735,8 @@ function ModalRegistrarPago({
           </div>
         ) : (
           <form onSubmit={handleSubmit} aria-busy={guardando} className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <fieldset disabled={guardando || incierto} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden border-0 px-5 pb-4 pt-2">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-4 pt-2">
+            <fieldset disabled={guardando || incierto} className="flex min-w-0 flex-col gap-4 border-0">
               {alumnoSeleccionado && (
                 <div className="flex items-center gap-3 rounded-[14px] bg-[#0E1B36] p-3">
                   <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#1E3663] text-sm font-bold text-blue-200">
@@ -1989,6 +1990,7 @@ function ModalRegistrarPago({
                 </div>
               </details>
             </fieldset>
+            </div>
 
             <div className="flex shrink-0 flex-col gap-3 border-t border-[#2A4677] px-5 pb-6 pt-3">
               {errorValidacion && <p role="alert" className="text-[13px] font-semibold text-rose-400">{errorValidacion}</p>}
