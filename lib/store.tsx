@@ -261,6 +261,14 @@ export interface ErrorSincronizacion {
   mensaje: string;
 }
 
+export type ResultadoAgregarAlumno =
+  | { ok: true; alumno: Alumno }
+  | { ok: false; error: string; status?: number };
+
+export type ResultadoAgregarPago =
+  | { ok: true; pago: Pago }
+  | { ok: false; error: string; esIncierto?: boolean; status?: number };
+
 interface AppDataContextValue {
   alumnos: Alumno[];
   pagos: Pago[];
@@ -285,7 +293,7 @@ interface AppDataContextValue {
     passwordOpcional?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   cerrarSesion: () => void;
-  agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
+  agregarAlumno: (alumno: Omit<Alumno, "id">) => Promise<ResultadoAgregarAlumno>;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
@@ -296,7 +304,10 @@ interface AppDataContextValue {
     filas: FilaImportacionAlumno[]
   ) => Promise<{ ok: boolean; resumen?: RespuestaImportacionMasivaDto; error?: string }>;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
-  agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  agregarPago: (
+    pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+  ) => Promise<ResultadoAgregarPago>;
+  refrescarPagos: () => Promise<boolean>;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   completarSaldoPago: (id: string, metodo?: string) => Promise<{ ok: boolean; error?: string }>;
   datosCobro: DatosCobro;
@@ -483,6 +494,22 @@ function useGymStore(): AppDataContextValue {
     }
     return null;
   });
+
+  // Última versión conocida de socios, rutinas y planes, para armar lo que se manda al servidor al
+  // editar. No se puede sacar de adentro de setX(prev => ...): React puede correr esa función más
+  // tarde, y entonces el PUT no salía (ver lib/store-ediciones-servidor.test.ts).
+  const alumnosRef = useRef(alumnos);
+  const rutinasRef = useRef(rutinas);
+  const planesRef = useRef(planes);
+  useEffect(() => {
+    alumnosRef.current = alumnos;
+  }, [alumnos]);
+  useEffect(() => {
+    rutinasRef.current = rutinas;
+  }, [rutinas]);
+  useEffect(() => {
+    planesRef.current = planes;
+  }, [planes]);
 
   const [datosCobro, setDatosCobro] = useState<DatosCobro>({ alias: "", titular: "" });
 
@@ -1065,7 +1092,7 @@ function useGymStore(): AppDataContextValue {
   }, [usuarioActual]);
 
   const agregarAlumno = useCallback(
-    (alumno: Omit<Alumno, "id">) => {
+    async (alumno: Omit<Alumno, "id">): Promise<ResultadoAgregarAlumno> => {
       const planEncontrado = planes.find(
         (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
       );
@@ -1077,49 +1104,64 @@ function useGymStore(): AppDataContextValue {
         planId: alumno.planId || planEncontrado?.id,
         plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
       };
-      setAlumnos((prev) => [nuevo, ...prev]);
-
-      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo))
-          .then((creadoDto) => {
-            const mapeado = mapAlumnoDtoToFront(creadoDto);
-            setAlumnos((prev) => prev.map((a) => (a.id === tempId ? mapeado : a)));
-          })
-          .catch((err: unknown) => {
-            setAlumnos((prev) => prev.filter((a) => a.id !== tempId));
-            reportarErrorSync(formatearMensajeErrorSync("dar de alta al alumno", err));
-          });
+      // Con servidor, el socio entra a la lista recién cuando el servidor lo confirma: si el pedido
+      // falla o se corta (recargar, cerrar la pestaña), no queda un socio que en realidad no existe.
+      if (isApiRuntimeEnabled()) {
+        if (!getStoredJwtToken()) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+          }
+          return {
+            ok: false,
+            error: "Tu sesión ha expirado. Iniciá sesión nuevamente para dar de alta al socio.",
+            status: 401,
+          };
+        }
+        try {
+          const creadoDto = await apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo));
+          const mapeado = mapAlumnoDtoToFront(creadoDto);
+          setAlumnos((prev) => [mapeado, ...prev.filter((a) => a.id !== mapeado.id)]);
+          return { ok: true, alumno: mapeado };
+        } catch (err: unknown) {
+          const status = (err as { status?: number })?.status;
+          reportarErrorSync(formatearMensajeErrorSync("dar de alta al alumno", err));
+          const error = esErrorDeRed(err)
+            ? "No pudimos confirmar el alta. Buscá al socio por DNI antes de volver a cargarlo."
+            : err instanceof Error && err.message
+            ? err.message
+            : "No se pudo dar de alta al socio.";
+          return { ok: false, error, status };
+        }
       }
 
-      return nuevo;
+      // Modo local / demo (sin backend)
+      setAlumnos((prev) => [nuevo, ...prev]);
+      return { ok: true, alumno: nuevo };
     },
     [planes, reportarErrorSync]
   );
 
   const actualizarAlumno = useCallback(
     (id: string, cambios: Partial<Omit<Alumno, "id">>) => {
-      let alumnoAnterior: Alumno | null = null;
-      let alumnoActualizado: Alumno | null = null;
+      const alumnoAnterior = alumnosRef.current.find((a) => a.id === id) ?? null;
+      if (!alumnoAnterior) return;
 
-      setAlumnos((prev) =>
-        prev.map((a) => {
-          if (a.id !== id) return a;
-          alumnoAnterior = a;
-          let planId = cambios.planId ?? a.planId;
-          let plan = cambios.plan ?? a.plan;
-          if (cambios.plan && !cambios.planId) {
-            const encontrado = planes.find(
-              (p) => p.nombre.toLowerCase() === cambios.plan!.toLowerCase()
-            );
-            if (encontrado) planId = encontrado.id;
-          } else if (cambios.planId && !cambios.plan) {
-            const encontrado = planes.find((p) => p.id === cambios.planId);
-            if (encontrado) plan = encontrado.nombre;
-          }
-          alumnoActualizado = { ...a, ...cambios, planId, plan };
-          return alumnoActualizado;
-        })
-      );
+      let planId = cambios.planId ?? alumnoAnterior.planId;
+      let plan = cambios.plan ?? alumnoAnterior.plan;
+      if (cambios.plan && !cambios.planId) {
+        const encontrado = planes.find(
+          (p) => p.nombre.toLowerCase() === cambios.plan!.toLowerCase()
+        );
+        if (encontrado) planId = encontrado.id;
+      } else if (cambios.planId && !cambios.plan) {
+        const encontrado = planes.find((p) => p.id === cambios.planId);
+        if (encontrado) plan = encontrado.nombre;
+      }
+      const alumnoActualizado: Alumno = { ...alumnoAnterior, ...cambios, planId, plan };
+
+      // La ref se actualiza ya, para que otra edición en el mismo instante parta de esta.
+      alumnosRef.current = alumnosRef.current.map((a) => (a.id === id ? alumnoActualizado : a));
+      setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoActualizado : a)));
 
       if (cambios.activo !== undefined) {
         setPagos((prev) =>
@@ -1128,16 +1170,14 @@ function useGymStore(): AppDataContextValue {
       }
 
       const numId = parseNumericId(id);
-      if (numId != null && alumnoActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarAlumno(numId, mapAlumnoFrontToRequestDto(alumnoActualizado))
           .then((dto) => {
             const mapeado = mapAlumnoDtoToFront(dto);
             setAlumnos((prev) => prev.map((a) => (a.id === id ? mapeado : a)));
           })
           .catch(async (err: unknown) => {
-            if (alumnoAnterior) {
-              setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoAnterior! : a)));
-            }
+            setAlumnos((prev) => prev.map((a) => (a.id === id ? alumnoAnterior : a)));
             // El otro titular cambió la ficha antes: mostrar la versión del servidor, no la vieja
             if (esConflictoDeVersion(err)) {
               const fresco = await apiGetAlumno(numId).catch(() => null);
@@ -1385,13 +1425,76 @@ function useGymStore(): AppDataContextValue {
     [alumnos]
   );
 
+  const refrescarPagos = useCallback(async (): Promise<boolean> => {
+    if (!isApiRuntimeEnabled() || !getStoredJwtToken()) return false;
+    try {
+      const dtos = await apiGetPagos();
+      if (Array.isArray(dtos)) {
+        setPagos(dtos.map(mapPagoDtoToFront));
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const agregarPago = useCallback(
-    (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => {
+    async (
+      pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+    ): Promise<ResultadoAgregarPago> => {
       const { usuarioApp, passwordApp, ...pagoBase } = pago;
       const alumno = alumnos.find((a) => a.id === pagoBase.alumnoId);
-      const usuarioAnterior = alumno?.usuario;
       const alumnoNombreHistorico = pagoBase.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
       const planId = pagoBase.planId || alumno?.planId;
+
+      if (isApiRuntimeEnabled()) {
+        const token = getStoredJwtToken();
+        if (!token) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+          }
+          const msg = "Tu sesión ha expirado. Iniciá sesión nuevamente para registrar el cobro.";
+          return { ok: false, error: msg, status: 401 };
+        }
+
+        try {
+          const reqDto = mapPagoFrontToRequestDto({ ...pago, planId });
+          const dto = await apiRegistrarPago(reqDto);
+          const mapeado = mapPagoDtoToFront(dto);
+
+          setPagos((prev) => {
+            const nuevos = [mapeado, ...prev.filter((p) => p.id !== mapeado.id)];
+            sincronizarEstadoEnAsistenciasHoy(pagoBase.alumnoId, nuevos);
+            return nuevos;
+          });
+
+          if (usuarioApp?.trim()) {
+            setAlumnos((prev) =>
+              prev.map((a) => (a.id === pagoBase.alumnoId ? { ...a, usuario: usuarioApp.trim() } : a))
+            );
+          }
+
+          return { ok: true, pago: mapeado };
+        } catch (err: unknown) {
+          const status = (err as { status?: number })?.status;
+          const esRed = esErrorDeRed(err) || (err instanceof Error &&
+            (err.name === "AbortError" || err.name === "TimeoutError"));
+
+          if (esRed) {
+            const msgIncierto =
+              "No pudimos confirmar el resultado. Revisá los pagos antes de volver a cobrar";
+            reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
+            return { ok: false, error: msgIncierto, esIncierto: true, status };
+          }
+
+          const mensajeError = err instanceof Error ? err.message : "Error al registrar el cobro";
+          reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
+          return { ok: false, error: mensajeError, esIncierto: false, status };
+        }
+      }
+
+      // Modo local / demo / Vitest sin backend (solo cuando isApiRuntimeEnabled() es false)
       const tempId = crypto.randomUUID();
       const esParcial =
         pagoBase.montoAbonado != null &&
@@ -1427,28 +1530,7 @@ function useGymStore(): AppDataContextValue {
         return nuevosPagos;
       });
 
-      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiRegistrarPago(mapPagoFrontToRequestDto({ ...pago, planId }))
-          .then((dto) => {
-            const mapeado = mapPagoDtoToFront(dto);
-            setPagos((prev) => prev.map((p) => (p.id === tempId ? mapeado : p)));
-          })
-          .catch((err: unknown) => {
-            setPagos((prev) => {
-              const revertidos = prev.filter((p) => p.id !== tempId);
-              sincronizarEstadoEnAsistenciasHoy(pagoBase.alumnoId, revertidos);
-              return revertidos;
-            });
-            if (usuarioApp?.trim()) {
-              setAlumnos((prev) =>
-                prev.map((a) =>
-                  a.id === pagoBase.alumnoId ? { ...a, usuario: usuarioAnterior } : a
-                )
-              );
-            }
-            reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
-          });
-      }
+      return { ok: true, pago: nuevoPago };
     },
     [alumnos, usuarioActual, sincronizarEstadoEnAsistenciasHoy, reportarErrorSync]
   );
@@ -1688,28 +1770,21 @@ function useGymStore(): AppDataContextValue {
 
   const actualizarRutina = useCallback(
     (id: string, cambios: Partial<Omit<Rutina, "id">>) => {
-      let rutinaAnterior: Rutina | null = null;
-      let rutinaCombinada: Rutina | null = null;
-      setRutinas((prev) =>
-        prev.map((r) => {
-          if (r.id !== id) return r;
-          rutinaAnterior = r;
-          rutinaCombinada = { ...r, ...cambios };
-          return rutinaCombinada;
-        })
-      );
+      const rutinaAnterior = rutinasRef.current.find((r) => r.id === id) ?? null;
+      if (!rutinaAnterior) return;
+      const rutinaCombinada: Rutina = { ...rutinaAnterior, ...cambios };
+      rutinasRef.current = rutinasRef.current.map((r) => (r.id === id ? rutinaCombinada : r));
+      setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaCombinada : r)));
 
       const numId = parseNumericId(id);
-      if (numId != null && rutinaCombinada && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarRutina(numId, mapRutinaFrontToRequestDto(rutinaCombinada))
           .then((dto) => {
             const mapeada = mapRutinaDtoToFront(dto);
             setRutinas((prev) => prev.map((r) => (r.id === id ? mapeada : r)));
           })
           .catch((err: unknown) => {
-            if (rutinaAnterior) {
-              setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaAnterior! : r)));
-            }
+            setRutinas((prev) => prev.map((r) => (r.id === id ? rutinaAnterior : r)));
             reportarErrorSync(formatearMensajeErrorSync("actualizar la rutina", err));
           });
       }
@@ -1894,28 +1969,21 @@ function useGymStore(): AppDataContextValue {
 
   const actualizarPlan = useCallback(
     (id: string, cambios: Partial<Omit<Plan, "id">>) => {
-      let planAnterior: Plan | null = null;
-      let planActualizado: Plan | null = null;
+      const planAnterior = planesRef.current.find((p) => p.id === id) ?? null;
+      if (!planAnterior) return;
+      const planActualizado: Plan = { ...planAnterior, ...cambios };
       const respaldoAlumnos = alumnos;
 
-      setPlanes((prev) =>
-        prev.map((p) => {
-          if (p.id !== id) return p;
-          planAnterior = p;
-          planActualizado = { ...p, ...cambios };
-          return planActualizado;
-        })
-      );
+      planesRef.current = planesRef.current.map((p) => (p.id === id ? planActualizado : p));
+      setPlanes((prev) => prev.map((p) => (p.id === id ? planActualizado : p)));
       if (cambios.nombre) {
         setAlumnos((prev) => sincronizarNombrePlanEnAlumnos(prev, id, cambios.nombre!));
       }
 
       const numId = parseNumericId(id);
-      if (numId != null && planActualizado && isApiRuntimeEnabled() && getStoredJwtToken()) {
+      if (numId != null && isApiRuntimeEnabled() && getStoredJwtToken()) {
         apiActualizarPlan(numId, mapPlanFrontToRequestDto(planActualizado)).catch((err: unknown) => {
-          if (planAnterior) {
-            setPlanes((prev) => prev.map((p) => (p.id === id ? planAnterior! : p)));
-          }
+          setPlanes((prev) => prev.map((p) => (p.id === id ? planAnterior : p)));
           if (cambios.nombre) {
             setAlumnos(respaldoAlumnos);
           }
@@ -2254,6 +2322,7 @@ function useGymStore(): AppDataContextValue {
       importarAlumnosMasivo,
       marcarAsistenciaAlumno,
       agregarPago,
+      refrescarPagos,
       actualizarEstadoPago,
       completarSaldoPago,
       datosCobro,
@@ -2318,6 +2387,7 @@ function useGymStore(): AppDataContextValue {
       importarAlumnosMasivo,
       marcarAsistenciaAlumno,
       agregarPago,
+      refrescarPagos,
       actualizarEstadoPago,
       completarSaldoPago,
       datosCobro,

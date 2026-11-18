@@ -19,6 +19,8 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await page.getByPlaceholder('Ej. 5491112345678').fill('2611234567')
   await page.getByLabel('Plan asignado').selectOption({ label: `${nombrePlan} — $${pesos(precio)}` })
   await page.getByRole('button', { name: 'Crear alumno' }).click()
+  // El modal confirma recién cuando el servidor guardó el alta (recargar antes cortaba el pedido)
+  await expect(page.getByRole('heading', { name: 'Socio registrado' })).toBeVisible()
 
   // Al recargar, el socio sigue ahí: quedó guardado en el servidor, no solo en el navegador
   await page.reload()
@@ -31,7 +33,7 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await page.getByPlaceholder('Buscar alumno por nombre o DNI...').fill(dni)
   await page.locator('select[aria-label="Alumno"]').selectOption({ index: 0 })
   await page.getByLabel('Monto').fill(String(precio))
-  await page.getByRole('button', { name: /^Registrar pago de/ }).click()
+  await page.getByRole('button', { name: 'Guardar pago' }).click()
 
   // El cobro queda registrado en el servidor, a nombre del titular que lo hizo
   await expect

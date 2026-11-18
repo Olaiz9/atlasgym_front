@@ -243,7 +243,7 @@ export default function FichaAlumnoPage({ params }: { params: Promise<{ id: stri
   const cantidadMarcada = mesesMarcados ?? meses.length;
   const totalACobrar = (planObj?.precio ?? 0) * cantidadMarcada;
   const senia = pagos.find((p) => p.estado === "PARCIAL");
-  const urlCobro = `/finanzas?cobrar=${encodeURIComponent(alumno.id)}`;
+  const urlCobro = `/finanzas?cobrarSocio=${encodeURIComponent(alumno.id)}`;
 
   const celular = alumno.celular && tieneCelularWhatsappValido(alumno.celular) ? alumno.celular : null;
   const mensajeWhatsApp = debeCuota

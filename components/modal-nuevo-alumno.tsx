@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { useAppData } from '@/lib/store'
@@ -17,8 +18,13 @@ interface ModalNuevoAlumnoProps {
 export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const { agregarAlumno, planes, alumnos } = useAppData()
   const { toast } = useToast()
+  const router = useRouter()
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
+  const [alumnoRecienCreado, setAlumnoRecienCreado] = useState<{ nombre: string; dni: string } | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  const enviando = useRef(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const planesActivos = planes.filter((p) => p.activo)
@@ -40,8 +46,12 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }
 
   function handleCerrar() {
+    // Mientras el servidor no responde, el modal no se cierra: así no queda un alta a medias sin aviso.
+    if (enviando.current) return
+    setErrorEnvio(null)
     setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
     setErroresAlumno({})
+    setAlumnoRecienCreado(null)
     onClose()
   }
 
@@ -53,6 +63,10 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
     <dialog
       ref={dialogRef}
       onClose={handleCerrar}
+      onCancel={(e) => {
+        // Escape cierra el <dialog> nativo: no mientras se está guardando el alta
+        if (enviando.current) e.preventDefault()
+      }}
       onClick={(e) => {
         if (e.target === dialogRef.current) handleCerrar()
       }}
@@ -65,30 +79,65 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 id="modal-nuevo-alumno-title" className="text-4xl font-black text-white">Nuevo alumno</h2>
-            <p className="mt-1 text-xs text-slate-400">Agregá los datos personales para crear su perfil y usuario automático en ATLAS.</p>
+            <h2 id="modal-nuevo-alumno-title" className="text-4xl font-black text-white">
+              {alumnoRecienCreado ? 'Socio registrado' : 'Nuevo alumno'}
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              {alumnoRecienCreado
+                ? `Ya dimos de alta a ${alumnoRecienCreado.nombre}. ¿Querés cobrarle la cuota ahora?`
+                : 'Agregá los datos personales para crear su perfil y usuario automático en ATLAS.'}
+            </p>
           </div>
           <button onClick={handleCerrar} aria-label="Cerrar" className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
             <X className="size-5" />
           </button>
         </div>
+        {alumnoRecienCreado ? (
+          <div className="mt-6 flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Listo</Button>
+            <Button
+              type="button"
+              onClick={() => {
+                const dni = alumnoRecienCreado.dni
+                handleCerrar()
+                router.push(`/finanzas?cobrar=${encodeURIComponent(dni)}`)
+              }}
+              className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95"
+            >
+              Cobrar ahora
+            </Button>
+          </div>
+        ) : (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            if (!validarAlumno()) return
-            agregarAlumno({
-              nombre: formAlumno.nombre,
-              dni: formAlumno.dni,
-              email: formAlumno.email.trim() || undefined,
-              celular: formAlumno.celular,
-              planId: formAlumno.planId || undefined,
-              plan: formAlumno.plan,
-              fechaAlta: fechaLocalHoy(),
-              activo: true,
-            })
-            toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
-            handleCerrar()
+            if (enviando.current || !validarAlumno()) return
+            enviando.current = true
+            setGuardando(true)
+            setErrorEnvio(null)
+            try {
+              const resultado = await agregarAlumno({
+                nombre: formAlumno.nombre,
+                dni: formAlumno.dni,
+                email: formAlumno.email.trim() || undefined,
+                celular: formAlumno.celular,
+                planId: formAlumno.planId || undefined,
+                plan: formAlumno.plan,
+                fechaAlta: fechaLocalHoy(),
+                activo: true,
+              })
+              if (!resultado.ok) {
+                setErrorEnvio(resultado.error)
+                return
+              }
+              toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
+              setAlumnoRecienCreado({ nombre: formAlumno.nombre, dni: formAlumno.dni })
+            } finally {
+              enviando.current = false
+              setGuardando(false)
+            }
           }}
+          aria-busy={guardando}
           className="mt-6 flex flex-col gap-4"
         >
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
@@ -185,11 +234,18 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.plan}</span>}
           </label>
 
+          {errorEnvio && (
+            <p role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-300">
+              {errorEnvio}
+            </p>
+          )}
+
           <div className="mt-4 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
-            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+            <Button type="button" variant="outline" onClick={handleCerrar} disabled={guardando} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
+            <Button type="submit" disabled={guardando} className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-60">{guardando ? 'Guardando…' : 'Crear alumno'}</Button>
           </div>
         </form>
+        )}
       </div>
     </dialog>
   )

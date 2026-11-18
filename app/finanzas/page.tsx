@@ -1,7 +1,8 @@
 // app/finanzas/page.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   Clock,
@@ -19,7 +20,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
-import { useAppData } from "@/lib/store";
+import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
 import { inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
@@ -339,12 +340,38 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
 }
 
 // ---------- Componente principal ----------
+function CobrarPorParametro({
+  alumnos,
+  onSeleccionar,
+}: {
+  alumnos: Alumno[];
+  onSeleccionar: (dni: string) => void;
+}) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const procesadoRef = useRef<string | null>(null);
+  const cobrarDni = searchParams.get("cobrar");
+
+  useEffect(() => {
+    if (!cobrarDni || procesadoRef.current === cobrarDni) return;
+    // Esperamos a que el socio tenga ID numérico del servidor (mientras está en alta optimista tiene UUID).
+    const socio = alumnos.find((a) => a.dni === cobrarDni && /^\d+$/.test(a.id));
+    if (!socio) return;
+    procesadoRef.current = cobrarDni;
+    onSeleccionar(cobrarDni);
+    router.replace("/finanzas", { scroll: false });
+  }, [cobrarDni, alumnos, onSeleccionar, router]);
+
+  return null;
+}
+
 export default function FinanzasPage() {
   const {
     alumnos,
     planes,
     pagos,
     agregarPago,
+    refrescarPagos,
     actualizarEstadoPago,
     completarSaldoPago,
     anularPago,
@@ -366,6 +393,7 @@ export default function FinanzasPage() {
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cobroPreseleccionado, setCobroPreseleccionado] = useState<CobroPreseleccionado | null>(null);
+  const [dniPreseleccionado, setDniPreseleccionado] = useState<string | null>(null);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
   const [fechaArqueo, setFechaArqueo] = useState<string>(() => fechaLocalHoy());
@@ -441,7 +469,7 @@ export default function FinanzasPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setModalAbierto(false);
+        setModalAbierto(false); setDniPreseleccionado(null);
         setPagoAAnular(null);
         setPagoACompletar(null);
       }
@@ -450,10 +478,10 @@ export default function FinanzasPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // La ficha del socio llega con ?cobrar=<id>&periodo=YYYY-MM&meses=N o ?completar=<idPago>
+  // La ficha del socio llega con ?cobrarSocio=<id>&periodo=YYYY-MM&meses=N o ?completar=<idPago>
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const alumnoId = params.get("cobrar");
+    const alumnoId = params.get("cobrarSocio");
     const pagoId = params.get("completar");
     if (!alumnoId && !pagoId) return;
     if (alumnoId) {
@@ -529,19 +557,9 @@ export default function FinanzasPage() {
   const handleNuevoPago = async (
     nuevo: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
   ) => {
-    agregarPago(nuevo);
-    if (nuevo.alumnoId && nuevo.usuarioApp?.trim() && nuevo.passwordApp?.trim()) {
-      try {
-        await asignarCredencialesAlumno(
-          nuevo.alumnoId,
-          nuevo.usuarioApp.trim(),
-          nuevo.passwordApp.trim()
-        );
-      } catch (err) {
-        console.warn("No se pudieron sincronizar las credenciales con el backend:", err);
-      }
-    }
-    setModalAbierto(false);
+    const resultado = await agregarPago(nuevo);
+    if (!resultado.ok) return resultado;
+    setModalAbierto(false); setDniPreseleccionado(null);
     if (nuevo.usuarioApp && nuevo.passwordApp) {
       toast(
         `Pago registrado y credenciales activadas para "${nuevo.usuarioApp}"`,
@@ -552,6 +570,7 @@ export default function FinanzasPage() {
     } else {
       toast("Pago registrado con éxito", "success");
     }
+    return resultado;
   };
 
   const confirmarAnulacion = async (motivo: string) => {
@@ -1020,6 +1039,16 @@ export default function FinanzasPage() {
         </div>
       </section>
 
+      <Suspense fallback={null}>
+        <CobrarPorParametro
+          alumnos={alumnos}
+          onSeleccionar={(dni) => {
+            setCobroPreseleccionado(null);
+            setDniPreseleccionado(dni);
+            setModalAbierto(true);
+          }}
+        />
+      </Suspense>
       {modalAbierto && (
         <ModalRegistrarPago
           alumnos={alumnos}
@@ -1028,8 +1057,10 @@ export default function FinanzasPage() {
           getEstadoCuenta={getEstadoCuenta}
           cobrador={usuarioActual.nombre}
           preseleccion={cobroPreseleccionado}
-          onClose={() => setModalAbierto(false)}
+          alumnoInicialDni={dniPreseleccionado ?? undefined}
+          onClose={() => { setModalAbierto(false); setDniPreseleccionado(null); }}
           onSubmit={handleNuevoPago}
+          onConsultarPagos={refrescarPagos}
           onAsignarCredenciales={asignarCredencialesAlumno}
         />
       )}
@@ -1423,8 +1454,10 @@ function ModalRegistrarPago({
   getEstadoCuenta,
   cobrador,
   preseleccion,
+  alumnoInicialDni,
   onClose,
   onSubmit,
+  onConsultarPagos,
   onAsignarCredenciales,
 }: {
   alumnos: Alumno[];
@@ -1433,11 +1466,16 @@ function ModalRegistrarPago({
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
   cobrador: string;
   preseleccion: CobroPreseleccionado | null;
+  alumnoInicialDni?: string;
   onClose: () => void;
-  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => Promise<ResultadoAgregarPago>;
+  onConsultarPagos: () => Promise<boolean>;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
-  const primerAlumno = alumnos.find((a) => a.id === preseleccion?.alumnoId) ?? alumnos[0];
+  const primerAlumno =
+    alumnos.find((a) => a.id === preseleccion?.alumnoId) ??
+    (alumnoInicialDni ? alumnos.find((a) => a.dni === alumnoInicialDni) : undefined) ??
+    alumnos[0];
   const obtenerPlanYPrecio = (alumno?: Alumno) => {
     if (!alumno) return { planNombre: "", planPrecio: "" };
     const planObj = planes.find(
@@ -1473,6 +1511,21 @@ function ModalRegistrarPago({
   const [usuarioApp, setUsuarioApp] = useState(() => sugerirUsuarioAlumno(primerAlumno));
   const [passwordApp, setPasswordApp] = useState("");
   const [errorValidacion, setErrorValidacion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [incierto, setIncierto] = useState(false);
+  const [consultando, setConsultando] = useState(false);
+  const enviando = useRef(false);
+  const cerrar = () => { if (!enviando.current && !consultando) onClose(); };
+  const consultar = async () => {
+    if (consultando) return;
+    setConsultando(true);
+    try {
+      if (await onConsultarPagos()) onClose();
+      else setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } catch {
+      setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } finally { setConsultando(false); }
+  };
 
   const alumnosFiltrados = alumnos.filter(
     (a) =>
@@ -1563,8 +1616,9 @@ function ModalRegistrarPago({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (enviando.current || incierto) return;
     const montoNum = Number(form.monto);
     if (!form.alumnoId) {
       setErrorValidacion("Seleccioná un alumno");
@@ -1616,7 +1670,10 @@ function ModalRegistrarPago({
     const incluyeCredenciales =
       tipoMensaje === "bienvenida" && usuarioApp.trim() && passwordApp.trim();
 
-    onSubmit({
+    enviando.current = true;
+    setGuardando(true);
+    try {
+    const resultado = await onSubmit({
       ...form,
       estado: estadoFinal,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
@@ -1631,10 +1688,16 @@ function ModalRegistrarPago({
           }
         : {}),
     });
+    if (!resultado.ok) {
+      setErrorValidacion(resultado.error);
+      setIncierto(Boolean(resultado.esIncierto));
+    }
+    } catch {
+      setErrorValidacion("No pudimos confirmar el resultado. Revisá los pagos antes de volver a cobrar.");
+      setIncierto(true);
+    } finally { enviando.current = false; setGuardando(false); }
   };
 
-  const montoHoy = Number(esSeniaParcial ? montoSenia : form.monto);
-  const importeCta = montoHoy > 0 ? ` de $${montoHoy.toLocaleString("es-AR")}` : "";
   const saldoSenia = Number(form.monto) - Number(montoSenia);
   const opcionesVigencia = OPCIONES_VIGENCIA_MESES.some((o) => o.value === form.cantidadMeses)
     ? OPCIONES_VIGENCIA_MESES
@@ -1643,7 +1706,7 @@ function ModalRegistrarPago({
     `h-11 rounded-[10px] text-[15px] ${activo ? "bg-blue-600 font-bold text-white" : "font-semibold text-slate-300"}`;
 
   return (
-    <div onClick={onClose} className={claseFondoHoja}>
+    <div onClick={cerrar} className={claseFondoHoja}>
       <div
         role="dialog"
         aria-modal="true"
@@ -1655,7 +1718,7 @@ function ModalRegistrarPago({
           <span aria-hidden="true" className="h-[5px] w-11 self-center rounded-full bg-slate-700 md:hidden" />
           <div className="flex items-center justify-between">
             <h2 id="titulo-cobrar" className="text-[26px] font-extrabold uppercase text-white">Cobrar cuota</h2>
-            <button type="button" onClick={onClose} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-xl text-slate-300 hover:bg-slate-800">
+            <button type="button" onClick={cerrar} disabled={guardando || consultando} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-xl text-slate-300 hover:bg-slate-800 disabled:opacity-40">
               <X className="size-5" />
             </button>
           </div>
@@ -1671,8 +1734,8 @@ function ModalRegistrarPago({
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-5 pb-4 pt-2">
+          <form onSubmit={handleSubmit} aria-busy={guardando} className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <fieldset disabled={guardando || incierto} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden border-0 px-5 pb-4 pt-2">
               {alumnoSeleccionado && (
                 <div className="flex items-center gap-3 rounded-[14px] bg-[#0E1B36] p-3">
                   <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#1E3663] text-sm font-bold text-blue-200">
@@ -1925,7 +1988,7 @@ function ModalRegistrarPago({
                   />
                 </div>
               </details>
-            </div>
+            </fieldset>
 
             <div className="flex shrink-0 flex-col gap-3 border-t border-[#2A4677] px-5 pb-6 pt-3">
               {errorValidacion && <p role="alert" className="text-[13px] font-semibold text-rose-400">{errorValidacion}</p>}
@@ -1936,9 +1999,18 @@ function ModalRegistrarPago({
                   ? `Hoy ${new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
                   : formatFechaAR(form.fecha)}
               </p>
-              <button type="submit" className="min-h-14 rounded-[14px] bg-blue-600 px-3 text-[17px] font-bold text-white transition-colors hover:bg-blue-500">
-                {esSeniaParcial ? `Registrar seña${importeCta}` : `Registrar pago${importeCta}`} en {form.metodo.toLowerCase()}
+              <button
+                type="submit"
+                disabled={guardando || incierto}
+                className="min-h-14 rounded-[14px] bg-blue-600 px-3 text-[17px] font-bold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+              >
+                {guardando ? "Registrando…" : esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
               </button>
+              {incierto && (
+                <button type="button" disabled={consultando} onClick={consultar} className="min-h-11 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold text-slate-100 disabled:opacity-60">
+                  {consultando ? "Consultando…" : "Consultar pagos registrados"}
+                </button>
+              )}
             </div>
           </form>
         )}

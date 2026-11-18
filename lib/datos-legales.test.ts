@@ -8,6 +8,11 @@ describe('Datos legales de /privacidad', () => {
     expect(datosLegalesPendientes({ ...base, contactoPrivacidad: 'consultas@gimnasio.com' })).toEqual([])
   })
 
+  it('los datos reales del gimnasio están completos: /privacidad no muestra el cartel de "pendientes"', () => {
+    expect(datosLegalesPendientes()).toEqual([])
+    expect(DATOS_LEGALES.contactoPrivacidad).toContain('@')
+  })
+
   it('el contacto de privacidad sigue siendo obligatorio', () => {
     expect(datosLegalesPendientes(base)).toEqual(['contacto para consultas de privacidad'])
   })
