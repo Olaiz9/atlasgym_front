@@ -279,11 +279,14 @@ export default function AvisosPage() {
     () => new Set(getAvisosParaUsuario(usuarioActual).filter((a) => !a.leidoPor.includes(usuarioActual?.id ?? '')).map((a) => a.id))
   )
 
+  const cantidadNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
+
+  // Depende de la cantidad: una recarga del servidor puede traer avisos sin leer con la pantalla abierta.
   useEffect(() => {
-    if (usuarioActual?.id) {
+    if (usuarioActual?.id && cantidadNoLeidos > 0) {
       marcarTodosAvisosLeidos(usuarioActual.id)
     }
-  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
+  }, [cantidadNoLeidos, marcarTodosAvisosLeidos, usuarioActual?.id])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -291,7 +294,6 @@ export default function AvisosPage() {
 
   const esAdmin = usuarioActual?.rol === 'ADMIN'
   const avisosVisibles = getAvisosParaUsuario(usuarioActual)
-  const cantidadNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   const alumnosMap = useMemo(() => {
     return new Map(alumnos.map((a) => [a.id, a.nombre]))
