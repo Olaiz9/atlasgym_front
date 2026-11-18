@@ -24,8 +24,8 @@ Objetivo: que la app real quede **igual que los mocks**, conservando **todo** lo
 | `LoginAlumno.dc.html` | `/login` | ✅ hecho |
 | `PortalSocio.dc.html` | `/` alumno en **celular** | ✅ hecho |
 | `PortalWeb2.dc.html` (dos columnas) | `/` alumno en **escritorio** | ✅ hecho |
-| `RutinaAlumno.dc.html` + `RutinaWeb.dc.html` | `/rutinas` alumno | pendiente |
-| `EntrenoAlumno.dc.html` | entrenamiento en curso de `/rutinas` (botón **Anterior** + lista para saltar de ejercicio) | pendiente |
+| `RutinaAlumno.dc.html` + `RutinaWeb.dc.html` | `/rutinas` alumno | ✅ hecho |
+| `EntrenoAlumno.dc.html` | entrenamiento en curso de `/rutinas` (botón **Anterior** + lista para saltar de ejercicio) | ✅ hecho |
 | `CuotasAlumno.dc.html` | `/finanzas` alumno (`VistaCuotasAlumno`) | ✅ hecho |
 | `AvisosAlumno.dc.html` | `/avisos` | ✅ hecho |
 | `VideotecaAlumno.dc.html` | `/videoteca` (con textos alternativos descriptivos en GIF y videos) | ✅ hecho |

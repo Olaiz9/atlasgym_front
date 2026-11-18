@@ -17,21 +17,19 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Sparkles,
   Users,
   Check,
   X,
   AlertCircle,
   Flame,
   Search,
-  PlayCircle,
-  Save,
   CheckCircle2,
   Copy,
   Play,
   Pause,
   RotateCcw,
   Volume2,
+  ChevronLeft,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useEscapeKey } from '@/lib/use-escape-key'
@@ -1511,171 +1509,25 @@ function ModalVideoTecnica({ video, onClose }: { video: VideoTecnica; onClose: (
 }
 
 // ── Subcomponentes de Tarjeta Desplegable ─────────────────────────────────
-function BadgeEstadoEjercicio({
-  todasCompletas,
-  seriesCompletas,
-  totalSeries,
-}: {
-  todasCompletas: boolean
-  seriesCompletas: number
-  totalSeries: number
-}) {
-  if (todasCompletas) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-        <Check className="size-3 text-emerald-400" strokeWidth={3} />
-        Completado
-      </span>
-    )
-  }
-  if (seriesCompletas > 0) {
-    return (
-      <span className="text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">
-        {seriesCompletas}/{totalSeries} series
-      </span>
-    )
-  }
-  return (
-    <span className="text-xs font-medium text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
-      {totalSeries} series
-    </span>
-  )
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 text-slate-600">|</span>
 }
 
-function TablaSeries({
-  seriesData,
-  sesionPrevia,
-  onCambioSerie,
-  onToggleCompletada,
-}: {
-  seriesData: RegistroSerie[]
-  sesionPrevia: SesionEjercicio | undefined
-  onCambioSerie: (numSerie: number, campo: 'kg' | 'reps', valor: number) => void
-  onToggleCompletada: (numSerie: number) => void
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 shadow-inner">
-        {/* Header de tabla */}
-        <div className="grid grid-cols-[40px_1fr_75px_70px_46px] gap-2 px-3 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs font-black text-slate-400">
-          <span className="text-center">Serie</span>
-          <span>Previa</span>
-          <span className="text-center">KG</span>
-          <span className="text-center">Repes</span>
-          <span className="text-center">✓</span>
-        </div>
+const textoDescanso = (s: number) => (s % 60 === 0 ? `${s / 60} min` : `${s} s`)
 
-        {/* Filas de series */}
-        {seriesData.map((serie) => {
-          const previaData = sesionPrevia?.series.find((s) => s.serieNumero === serie.serieNumero)
-          return (
-            <div
-              key={serie.serieNumero}
-              className={`grid grid-cols-[40px_1fr_75px_70px_46px] gap-2 items-center px-3 py-2.5 border-b border-slate-800/60 last:border-0 transition-colors duration-150 ${
-                serie.completada ? 'bg-blue-600/10' : 'hover:bg-slate-900/30'
-              }`}
-            >
-              {/* Número de serie */}
-              <div className="flex items-center justify-center">
-                <span className={`text-xs font-black font-mono size-6 rounded-md flex items-center justify-center ${
-                  serie.completada ? 'bg-blue-600/20 text-blue-400' : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {serie.serieNumero}
-                </span>
-              </div>
-
-              {/* Previa */}
-              <div className="truncate pr-1">
-                {previaData && typeof previaData.kg === 'number' && typeof previaData.reps === 'number' ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-300">
-                    <span className="text-blue-400 font-extrabold">{previaData.kg}</span>
-                    <span className="text-xs text-slate-500 font-sans">kg</span>
-                    <span className="text-slate-500 font-sans mx-0.5 font-bold">×</span>
-                    <span className="text-blue-400 font-extrabold">{previaData.reps}</span>
-                  </span>
-                ) : (
-                  <span className="text-xs font-mono text-slate-500 px-1 font-bold select-none">—</span>
-                )}
-              </div>
-
-              {/* Input KG */}
-              <div className="relative">
-                <input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  value={serie.kg || ''}
-                  onChange={(e) => onCambioSerie(serie.serieNumero, 'kg', parseFloat(e.target.value) || 0)}
-                  aria-label={`KG serie ${serie.serieNumero}`}
-                  placeholder="0"
-                  className="w-full text-center bg-slate-900 border border-slate-800 text-white font-mono font-bold text-sm rounded-lg px-1 py-1.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Input REPES */}
-              <div className="relative">
-                <input
-                  type="number"
-                  min={0}
-                  value={serie.reps || ''}
-                  onChange={(e) => onCambioSerie(serie.serieNumero, 'reps', parseInt(e.target.value, 10) || 0)}
-                  aria-label={`Repeticiones serie ${serie.serieNumero}`}
-                  placeholder="0"
-                  className="w-full text-center bg-slate-900 border border-slate-800 text-white font-mono font-bold text-sm rounded-lg px-1 py-1.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Checkbox circular de completado */}
-              <div className="flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => onToggleCompletada(serie.serieNumero)}
-                  aria-label={serie.completada ? 'Marcar como pendiente' : 'Marcar como completada'}
-                  className={`size-7 rounded-full flex items-center justify-center transition-[background-color,border-color,transform] duration-150 active:scale-90 border-2 ${
-                    serie.completada
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/30'
-                      : 'bg-slate-900/80 border-slate-700 hover:border-slate-500 text-transparent'
-                  }`}
-                >
-                  <Check className={`size-3.5 transition-opacity ${serie.completada ? 'opacity-100' : 'opacity-0'}`} strokeWidth={3} />
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+function metaEjercicio(ej: Ejercicio) {
+  const partes = [`${ej.series} × ${ej.repeticiones}`]
+  if (ej.tipoSerie === 'DROP_SET') partes.push('drop set')
+  if (ej.descansoSegundos) partes.push(`descanso ${textoDescanso(ej.descansoSegundos)}`)
+  return partes.join(' | ')
 }
 
-// ── Tarjeta de Ejercicio Desplegable (Acordeón / Cortina) ───────────────────
-function TarjetaEjercicioAlumno({
-  ejercicio,
-  index,
-  seriesData,
-  sesionPrevia,
-  videos,
-  onChange,
-  onIniciarDescanso,
-}: {
-  ejercicio: Ejercicio
-  index: number
-  seriesData: RegistroSerie[]
-  sesionPrevia: SesionEjercicio | undefined
-  videos: VideoTecnica[]
-  onChange: (series: RegistroSerie[]) => void
-  onIniciarDescanso?: (ejercicioNombre: string, segundos: number) => void
-}) {
-  const [expandido, setExpandido] = useState(index === 0)
-  const [videoAbierto, setVideoAbierto] = useState(false)
-  const [mostrarNotas, setMostrarNotas] = useState(false)
+function useVideoEjercicio(nombre: string, videos: VideoTecnica[]) {
   const [videoApi, setVideoApi] = useState<VideoTecnica | null>(null)
-  const videoMatch = useMemo(() => buscarVideoParaEjercicio(ejercicio.nombre, videos) || videoApi || undefined, [ejercicio.nombre, videos, videoApi])
-
   useEffect(() => {
-    if (!buscarVideoParaEjercicio(ejercicio.nombre, videos) && ejercicio.nombre) {
+    if (!buscarVideoParaEjercicio(nombre, videos) && nombre) {
       let cancelado = false
-      fetch(`/api/ejercicios?q=${encodeURIComponent(ejercicio.nombre)}&limit=1`)
+      fetch(`/api/ejercicios?q=${encodeURIComponent(nombre)}&limit=1`)
         .then((r) => r.json())
         .then((d) => {
           if (!cancelado && d.ejercicios && d.ejercicios.length > 0) {
@@ -1687,171 +1539,209 @@ function TarjetaEjercicioAlumno({
         cancelado = true
       }
     }
-  }, [ejercicio.nombre, videos])
+  }, [nombre, videos])
+  return useMemo(() => buscarVideoParaEjercicio(nombre, videos) || videoApi || undefined, [nombre, videos, videoApi])
+}
 
-  const seriesCompletas = seriesData.filter((s) => s.completada).length
-  const totalSeriesActuales = seriesData.length || ejercicio.series
-  const todasCompletas = seriesCompletas === totalSeriesActuales && totalSeriesActuales > 0
-
-  const handleCambioSerie = useCallback(
-    (numSerie: number, campo: 'kg' | 'reps', valor: number) => {
-      const actualizadas = seriesData.map((s) =>
-        s.serieNumero === numSerie ? { ...s, [campo]: valor } : s
-      )
-      onChange(actualizadas)
-    },
-    [seriesData, onChange]
-  )
-
-  const toggleCompletada = useCallback(
-    (numSerie: number) => {
-      const serieTarget = seriesData.find((s) => s.serieNumero === numSerie)
-      const vaACompletar = serieTarget ? !serieTarget.completada : false
-      const actualizadas = seriesData.map((s) =>
-        s.serieNumero === numSerie ? { ...s, completada: !s.completada } : s
-      )
-      onChange(actualizadas)
-      if (vaACompletar && onIniciarDescanso) {
-        onIniciarDescanso(ejercicio.nombre, ejercicio.descansoSegundos || 60)
-      }
-    },
-    [seriesData, onChange, onIniciarDescanso, ejercicio.nombre, ejercicio.descansoSegundos]
-  )
-
-  const contenedorClass = todasCompletas
-    ? 'border-emerald-500/40 bg-slate-950/90'
-    : expandido
-    ? 'border-blue-600/50 bg-slate-950'
-    : 'border-slate-800 hover:border-slate-700 bg-slate-950/60'
-
-  const numeroClass = todasCompletas
-    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-    : expandido
-    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-    : 'bg-blue-600/15 text-blue-400 border border-blue-600/20'
+function FilaEjercicio({
+  ejercicio,
+  index,
+  series,
+  activo,
+  videos,
+  onElegir,
+}: {
+  ejercicio: Ejercicio
+  index: number
+  series: RegistroSerie[]
+  activo: boolean
+  videos: VideoTecnica[]
+  onElegir: () => void
+}) {
+  const video = useVideoEjercicio(ejercicio.nombre, videos)
+  const [videoAbierto, setVideoAbierto] = useState(false)
+  const hechas = series.filter((s) => s.completada).length
+  const completo = series.length > 0 && hechas === series.length
 
   return (
-    <>
-      <div className={`rounded-2xl border bg-slate-950 transition-[border-color,background-color] duration-200 overflow-hidden ${contenedorClass}`}>
-        {/* Cabecera clickeable (Interruptor de Cortina) */}
+    <li
+      className={`flex items-center gap-1 rounded-[14px] bg-[#162A50] pr-3 lg:border lg:pr-0 ${
+        activo ? 'lg:border-2 lg:border-blue-400 lg:bg-[#1E3663]' : 'lg:border-[#22396A] lg:bg-[#0E1B36]'
+      }`}
+    >
+      <button type="button" onClick={onElegir} aria-current={activo ? 'step' : undefined} className="flex min-h-[60px] min-w-0 flex-1 items-center gap-3 p-3 text-left">
+        <span className="w-7 shrink-0 font-display text-2xl font-extrabold text-slate-500">{index + 1}</span>
+        <span className="min-w-0 flex-1">
+          {ejercicio.tipoSerie === 'BI_SERIE' && <span className="block text-[13px] font-semibold text-amber-400">Bi-serie</span>}
+          <span className="block font-semibold text-white">{ejercicio.nombre}</span>
+          <span className="block text-[13px] text-slate-400">
+            {metaEjercicio(ejercicio)}
+            {hechas > 0 && !completo && (
+              <>
+                <Separador />
+                {hechas} de {series.length}
+              </>
+            )}
+          </span>
+        </span>
+        {completo && <Check className="size-[18px] shrink-0 text-[#5BE3A0]" aria-label="Hecho" />}
+      </button>
+      {video && (
         <button
           type="button"
-          onClick={() => setExpandido((prev) => !prev)}
-          aria-expanded={expandido}
-          className="w-full p-4 md:p-5 flex items-center justify-between gap-3 text-left transition-[background-color] duration-150 hover:bg-slate-900/40 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl"
+          onClick={() => setVideoAbierto(true)}
+          aria-label={`Ver técnica de ${ejercicio.nombre}`}
+          className="h-11 shrink-0 rounded-[10px] border border-[#2A4677] bg-[#0E1B36] px-3 text-[13px] font-semibold text-slate-300 lg:hidden"
         >
-          <div className="flex items-center gap-3.5 flex-1 min-w-0">
-            {/* Número del ejercicio */}
-            <span className={`size-8 rounded-xl font-mono font-black text-xs flex items-center justify-center shrink-0 transition-colors duration-200 ${numeroClass}`}>
-              {String(index + 1).padStart(2, '0')}
-            </span>
-
-            {/* Nombre y Badges de estado */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-bold text-white break-words">{ejercicio.nombre}</h3>
-                {ejercicio.tipoSerie === 'BI_SERIE' && (
-                  <span className="inline-flex items-center text-xs sm:text-xs font-extrabold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35 shadow-sm shrink-0">
-                    Bi-serie
-                  </span>
-                )}
-                {ejercicio.tipoSerie === 'DROP_SET' && (
-                  <span className="inline-flex items-center text-xs sm:text-xs font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-sm shrink-0">
-                    Drop Set
-                  </span>
-                )}
-                <BadgeEstadoEjercicio
-                  todasCompletas={todasCompletas}
-                  seriesCompletas={seriesCompletas}
-                  totalSeries={totalSeriesActuales}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Lateral derecho: Descanso y Chevron */}
-          <div className="flex items-center gap-3 shrink-0">
-            {ejercicio.descansoSegundos ? (
-              <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 shadow-sm" title={`Descanso sugerido entre series: ${ejercicio.descansoSegundos} segundos`}>
-                <Clock className="size-3 text-blue-400" />
-                {ejercicio.descansoSegundos}s descanso
-              </span>
-            ) : null}
-            <div
-              className={`size-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-transform duration-200 ${
-                expandido ? 'rotate-180 text-blue-400 border-blue-500/30' : ''
-              }`}
-            >
-              <ChevronDown className="size-4" />
-            </div>
-          </div>
+          Técnica
         </button>
+      )}
+      {videoAbierto && video && <ModalVideoTecnica video={video} onClose={() => setVideoAbierto(false)} />}
+    </li>
+  )
+}
 
-        {/* Contenido desplegable (Cuerpo de la Cortina estilo Hevy / Alpha Progression) */}
-        {expandido && (
-          <div className="p-4 md:p-5 pt-0 space-y-4 border-t border-slate-800/50 mt-1 animate-in fade-in duration-200">
-            {/* Píldoras de acción rápida (Tutorial, Notas, Descanso) */}
-            <div className="flex items-center gap-2 pt-3 flex-wrap">
-              {videoMatch && (
-                <button
-                  type="button"
-                  onClick={() => setVideoAbierto(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-blue-500/40 text-slate-300 hover:text-blue-400 text-xs font-bold transition-colors"
-                >
-                  <PlayCircle className="size-3.5 text-blue-400" />
-                  Tutorial
-                </button>
-              )}
+function PanelEjercicio({
+  ejercicio,
+  seriesData,
+  sesionPrevia,
+  videos,
+  onChange,
+  onIniciarDescanso,
+}: {
+  ejercicio: Ejercicio
+  seriesData: RegistroSerie[]
+  sesionPrevia: SesionEjercicio | undefined
+  videos: VideoTecnica[]
+  onChange: (series: RegistroSerie[]) => void
+  onIniciarDescanso: (ejercicioNombre: string, segundos: number) => void
+}) {
+  const video = useVideoEjercicio(ejercicio.nombre, videos)
+  const [videoAbierto, setVideoAbierto] = useState(false)
+  const esGif = Boolean(video && (video.gifUrl || video.formato === 'GIF'))
+  const cambiarSerie = (numSerie: number, campo: 'kg' | 'reps', valor: number) =>
+    onChange(seriesData.map((s) => (s.serieNumero === numSerie ? { ...s, [campo]: valor } : s)))
+  const alternarSerie = (numSerie: number) => {
+    const vaACompletar = !seriesData.find((s) => s.serieNumero === numSerie)?.completada
+    onChange(seriesData.map((s) => (s.serieNumero === numSerie ? { ...s, completada: !s.completada } : s)))
+    if (vaACompletar) onIniciarDescanso(ejercicio.nombre, ejercicio.descansoSegundos || 60)
+  }
+  const claseInput =
+    'h-11 w-full rounded-[10px] border border-[#2A4677] bg-[#0E1B36] text-center text-base text-slate-100 outline-none focus:border-blue-400'
+  const columnas = 'grid grid-cols-[34px_minmax(0,1fr)_68px_56px_48px] items-center gap-1.5 sm:grid-cols-[40px_minmax(0,1fr)_80px_72px_48px] sm:gap-2'
 
-              {ejercicio.notas && (
-                <button
-                  type="button"
-                  onClick={() => setMostrarNotas((prev) => !prev)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors ${
-                    mostrarNotas
-                      ? 'bg-blue-600/20 text-blue-400 border-blue-500/30'
-                      : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  Notas {mostrarNotas ? '▲' : '▼'}
-                </button>
-              )}
-
-              {ejercicio.descansoSegundos ? (
-                <button
-                  type="button"
-                  onClick={() => onIniciarDescanso && onIniciarDescanso(ejercicio.nombre, ejercicio.descansoSegundos || 60)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-blue-500/40 text-slate-300 hover:text-blue-400 text-xs font-bold transition-colors"
-                  title="Iniciar cronómetro de descanso"
-                >
-                  <Clock className="size-3.5 text-blue-400" />
-                  {ejercicio.descansoSegundos}s descanso
-                </button>
-              ) : null}
-            </div>
-
-            {/* Cuadro de notas expandido o siempre visible si tiene notas */}
-            {(mostrarNotas || !videoMatch) && ejercicio.notas && (
-              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 italic">
-                {ejercicio.notas}
-              </div>
-            )}
-
-            {/* Tabla de series moderna */}
-            <TablaSeries
-              seriesData={seriesData}
-              sesionPrevia={sesionPrevia}
-              onCambioSerie={handleCambioSerie}
-              onToggleCompletada={toggleCompletada}
+  return (
+    <div className="flex flex-col gap-4 lg:gap-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap lg:gap-5">
+        <div className="relative flex h-[168px] flex-1 basis-64 items-center justify-center overflow-hidden rounded-2xl bg-[#13254A] text-[13px] text-[#8296BB] lg:h-[220px]">
+          {video && esGif ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={video.gifUrl || video.videoUrl}
+              alt={`GIF de la técnica de ${ejercicio.nombre}${video.descripcion ? `: ${video.descripcion}` : ''}`}
+              className="size-full object-contain p-2"
             />
+          ) : video ? (
+            <button type="button" onClick={() => setVideoAbierto(true)} aria-label={`Ver video de técnica de ${ejercicio.nombre}`} className="flex size-14 items-center justify-center rounded-full bg-blue-600 text-white">
+              <Play className="ml-0.5 size-[22px] fill-current" />
+            </button>
+          ) : (
+            'Sin video de técnica cargado'
+          )}
+        </div>
+        <div className="flex flex-1 basis-56 flex-col gap-2">
+          <h2 className="font-display text-[32px] font-bold uppercase leading-none text-white">{ejercicio.nombre}</h2>
+          <p className="text-sm text-[#8296BB]">
+            {ejercicio.tipoSerie === 'BI_SERIE' && (
+              <>
+                Bi-serie
+                <Separador />
+              </>
+            )}
+            {metaEjercicio(ejercicio)}
+          </p>
+          <div className="flex flex-wrap gap-x-4">
+            {video && (
+              <button type="button" onClick={() => setVideoAbierto(true)} className="h-11 text-sm font-semibold text-blue-400">Ver técnica completa</button>
+            )}
+            {ejercicio.descansoSegundos ? (
+              <button type="button" onClick={() => onIniciarDescanso(ejercicio.nombre, ejercicio.descansoSegundos || 60)} className="h-11 text-sm font-semibold text-blue-400">
+                Iniciar descanso
+              </button>
+            ) : null}
           </div>
-        )}
+          {ejercicio.notas && <p className="text-sm text-slate-300">{ejercicio.notas}</p>}
+          {video?.consejosClave && video.consejosClave.length > 0 && (
+            <div className="hidden lg:block">
+              <h3 className="mb-1 text-[13px] font-bold uppercase tracking-[.06em] text-slate-500">Tips de técnica</h3>
+              <ul className="list-disc pl-[18px] text-[15px] leading-normal text-slate-200">
+                {video.consejosClave.slice(0, 3).map((tip) => <li key={tip}>{tip}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
-      {videoAbierto && videoMatch && (
-        <ModalVideoTecnica video={videoMatch} onClose={() => setVideoAbierto(false)} />
-      )}
-    </>
+      <div role="table" aria-label="Series" className="flex flex-col gap-2">
+        <div role="row" className={`${columnas} pl-3 pr-2 text-[13px] text-[#8296BB]`}>
+          <span role="columnheader">Serie</span>
+          <span role="columnheader">Previa</span>
+          <span role="columnheader">Kg</span>
+          <span role="columnheader">Repes</span>
+          <span role="columnheader" className="text-center">Hecha</span>
+        </div>
+        {seriesData.map((serie) => {
+          const previa = sesionPrevia?.series.find((s) => s.serieNumero === serie.serieNumero)
+          return (
+            <div key={serie.serieNumero} role="row" className={`${columnas} rounded-xl py-1.5 pl-3 pr-2 ${serie.completada ? 'bg-[#5BE3A0]/10' : 'bg-[#13254A]'}`}>
+              <span role="cell" className="font-semibold text-white">{serie.serieNumero}</span>
+              <span role="cell" className="text-[13px] text-[#8296BB]">
+                {previa && typeof previa.kg === 'number' && typeof previa.reps === 'number' ? `${previa.kg} kg × ${previa.reps}` : '—'}
+              </span>
+              <span role="cell">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={0.5}
+                  value={serie.kg || ''}
+                  onChange={(e) => cambiarSerie(serie.serieNumero, 'kg', parseFloat(e.target.value) || 0)}
+                  aria-label={`KG serie ${serie.serieNumero}`}
+                  placeholder="0"
+                  className={claseInput}
+                />
+              </span>
+              <span role="cell">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={serie.reps || ''}
+                  onChange={(e) => cambiarSerie(serie.serieNumero, 'reps', parseInt(e.target.value, 10) || 0)}
+                  aria-label={`Repeticiones serie ${serie.serieNumero}`}
+                  placeholder="0"
+                  className={claseInput}
+                />
+              </span>
+              <span role="cell" className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => alternarSerie(serie.serieNumero)}
+                  aria-pressed={serie.completada}
+                  aria-label={serie.completada ? `Serie ${serie.serieNumero} hecha` : `Marcar serie ${serie.serieNumero} como hecha`}
+                  className={`flex size-12 items-center justify-center rounded-xl ${
+                    serie.completada ? 'bg-[#5BE3A0] text-[#0B2A1D]' : 'border border-slate-700 text-[#8296BB]'
+                  }`}
+                >
+                  <Check className="size-5" strokeWidth={3} />
+                </button>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      {videoAbierto && video && <ModalVideoTecnica video={video} onClose={() => setVideoAbierto(false)} />}
+    </div>
   )
 }
 
@@ -1986,6 +1876,9 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
 
   const [guardado, setGuardado] = useState(false)
   const [modalIncompletoAbierto, setModalIncompletoAbierto] = useState(false)
+  const [ejercicioActivo, setEjercicioActivo] = useState(0)
+  const [entrenando, setEntrenando] = useState(false)
+  const [listaAbierta, setListaAbierta] = useState(false)
 
   // Temporizador de descanso automático entre series
   const [temporizador, setTemporizador] = useState<{
@@ -2188,192 +2081,232 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     }
   }, [dia, completados, total, ejecutarGuardado])
 
+  // Al guardar, en celular se vuelve a la lista del día
+  useEffect(() => {
+    if (guardado) setEntrenando(false)
+  }, [guardado])
+
+  const ejercicios = dia?.ejercicios ?? []
+  const indiceActual = Math.min(ejercicioActivo, Math.max(0, ejercicios.length - 1))
+  const ejercicioActual = ejercicios[indiceActual]
+  const esUltimo = indiceActual === ejercicios.length - 1
+  const seriesDe = (ej: Ejercicio) => seriesPorEjercicio[ej.id] ?? []
+  const estaCompleto = (ej: Ejercicio) => seriesDe(ej).length > 0 && seriesDe(ej).every((s) => s.completada)
+  const irA = (i: number) => {
+    setEjercicioActivo(i)
+    setEntrenando(true)
+    setListaAbierta(false)
+  }
+  const terminar = () => {
+    if (seriesTotales.completadas > 0) handleGuardar()
+    else setEntrenando(false)
+  }
+  const claseBarra = 'sticky bottom-[76px] z-10 -mx-5 border-t border-[#1E3663] bg-slate-950 px-5 py-3 lg:hidden'
+
   return (
-    <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-6">
-      {/* Cabecera Principal con Resumen de Rutina */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+    <div className="mx-auto flex max-w-[1240px] flex-col gap-3.5 px-5 pb-6 pt-[22px] md:px-10 lg:gap-6 lg:pb-12 lg:pt-8">
+      <header className={`${entrenando ? 'hidden lg:flex' : 'flex'} flex-col gap-3.5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between`}>
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-400 mb-3">
-            <Dumbbell className="size-3.5" />
-            Plan activo
-          </span>
-          <h1 className="text-5xl font-black text-white md:text-7xl">
+          <p className="text-[13px] font-semibold text-slate-500 lg:mb-1.5 lg:text-sm">
             {rutina.nombre}
-          </h1>
-          <p className="text-sm sm:text-base text-slate-400 mt-2 max-w-2xl leading-relaxed">
-            {rutina.descripcion || 'Plan de entrenamiento personalizado diseñado por tus profesores.'}
+            {rutina.objetivo && (
+              <>
+                <Separador />
+                {rutina.objetivo}
+              </>
+            )}
           </p>
+          <h1 className="mt-0.5 text-[34px] font-extrabold uppercase leading-[.95] text-white lg:text-[44px]">Mi rutina</h1>
+          {rutina.descripcion && <p className="mt-1.5 hidden max-w-2xl text-sm text-slate-400 lg:block">{rutina.descripcion}</p>}
         </div>
-
-        {/* Resumen HUD: Métricas rápidas del día */}
-        {dia && (
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 bg-slate-900/60 border border-slate-800 p-2 sm:p-2.5 rounded-2xl">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-xs font-bold text-slate-500 block">Ejercicios</span>
-              <span className="text-lg font-black font-mono text-white">
-                <span className="text-blue-400">{completados}</span>/{total}
-              </span>
-            </div>
-            <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-xs font-bold text-slate-500 block">Series</span>
-              <span className="text-lg font-black font-mono text-white">
-                <span className="text-emerald-400">{seriesTotales.completadas}</span>/{seriesTotales.total}
-              </span>
-            </div>
-            <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-center min-w-[76px]">
-              <span className="text-xs font-bold text-slate-500 block">Progreso</span>
-              <span className="text-lg font-black font-mono text-blue-400">
-                {total > 0 ? Math.round((completados / total) * 100) : 0}%
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Selector de Días tipo Segmented Tabs Premium */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 p-1.5 rounded-2xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-md">
-        {rutina.dias.map((d, index) => {
-          const esActivo = diaActivo === index
-          const diaSeries = seriesPorDia[d.id] ?? {}
-          let dCompletos = 0
-          d.ejercicios.forEach((ej) => {
-            const s = diaSeries[ej.id] ?? []
-            if (s.length > 0 && s.every((item) => item.completada)) dCompletos++
-          })
-          const dTerminado = dCompletos === d.ejercicios.length && d.ejercicios.length > 0
-
-          return (
-            <button
-              key={d.id}
-              onClick={() => handleCambioDia(index)}
-              className={`flex-1 sm:flex-initial flex items-center justify-between sm:justify-center gap-3 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 active:scale-95 cursor-pointer ${
-                esActivo
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-black'
-                  : 'bg-slate-900/80 text-slate-400 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <span className="truncate">{d.nombre}</span>
-              <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold shrink-0 ${
-                esActivo
-                  ? 'bg-blue-700/60 text-blue-100'
-                  : dTerminado
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-slate-800 text-slate-400'
-              }`}>
-                {dTerminado ? '✓ Listo' : `${d.ejercicios.length} ej.`}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Layout Principal: Dos columnas en pantallas grandes (Izquierda: Guía/Info + Guardado sticky, Derecha: Lista de Ejercicios) */}
-      {dia && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Columna Izquierda (Sidebar del Día & Acciones) */}
-          <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
-            {/* Tarjeta de Resumen del Día Actual */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur-xl space-y-5">
-              <div>
-                <span className="text-xs font-bold text-blue-400 block mb-1">
-                  Sesión de hoy
-                </span>
-                <h2 className="text-4xl font-black text-white">{dia.nombre}</h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  {dia.ejercicios.length} ejercicios diseñados para esta jornada.
-                </p>
-              </div>
-
-              {/* Barra de progreso global del día */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-400">Progreso del entrenamiento</span>
-                  <span className={completados === total && total > 0 ? 'text-emerald-400' : 'text-blue-400'}>
-                    {completados} de {total} completados
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      completados === total && total > 0 ? 'bg-emerald-500' : 'bg-blue-600'
-                    }`}
-                    style={{ width: `${total > 0 ? (completados / total) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Tips rápidos para el alumno */}
-              <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
-                <p className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-blue-400" />
-                  Consejo de ejecución
-                </p>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Completá cada serie presionando el botón <strong className="text-white">✓</strong>. Se activará automáticamente el temporizador de descanso óptimo.
-                </p>
-              </div>
-
-              {/* Botón de Finalizar y Guardar Sesión */}
+        <div role="tablist" aria-label="Días de la rutina" className="grid auto-cols-fr grid-flow-col gap-1.5 rounded-xl bg-[#13254A] p-1 lg:flex">
+          {rutina.dias.map((d, index) => {
+            const activo = diaActivo === index
+            const series = seriesPorDia[d.id] ?? {}
+            const terminado = d.ejercicios.length > 0 && d.ejercicios.every((ej) => (series[ej.id] ?? []).length > 0 && series[ej.id].every((s) => s.completada))
+            return (
               <button
+                key={d.id}
                 type="button"
-                onClick={handleGuardar}
-                className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl text-sm font-bold transition-[color,background-color,transform] duration-200 active:scale-95 cursor-pointer shadow-lg ${
-                  guardado
-                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 shadow-emerald-950/20'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25'
+                role="tab"
+                aria-selected={activo}
+                aria-label={d.nombre}
+                onClick={() => {
+                  handleCambioDia(index)
+                  setEjercicioActivo(0)
+                }}
+                className={`flex h-11 items-center justify-center gap-1 rounded-[10px] text-sm lg:px-[18px] lg:text-[15px] ${
+                  activo ? 'bg-blue-600 font-bold text-white' : 'font-semibold text-slate-300'
                 }`}
               >
-                {guardado ? (
-                  <>
-                    <CheckCircle2 className="size-4" />
-                    {completados === total && total > 0
-                      ? '¡Entrenamiento completado! 🎉'
-                      : '¡Progreso parcial guardado!'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4" />
-                    {completados === total && total > 0
-                      ? 'Finalizar y guardar entreno'
-                      : 'Guardar entreno'}
-                  </>
-                )}
+                Día {index + 1}
+                {terminado && <Check className="size-3.5 text-[#5BE3A0]" aria-label="terminado" />}
               </button>
-            </div>
-          </div>
+            )
+          })}
+        </div>
+      </header>
 
-          {/* Columna Derecha (Lista de Ejercicios Desplegables con Diseño Alpha / Hevy) */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-bold text-slate-400">
-                Ejercicios ({dia.ejercicios.length})
-              </h3>
-              <span className="text-xs text-slate-500">
-                Tocá cada tarjeta para desplegar o registrar
+      {dia && (
+        <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-[minmax(320px,1fr)_minmax(0,1.6fr)] lg:items-start lg:gap-5">
+          <section aria-labelledby="titulo-dia" className={`${entrenando ? 'hidden lg:flex' : 'flex'} flex-col gap-2.5 lg:gap-2 lg:rounded-[20px] lg:border lg:border-[#22396A] lg:bg-[#162A50] lg:p-[18px]`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm text-slate-400 lg:px-1 lg:pb-2">
+              <h2 id="titulo-dia" className="font-bold text-slate-100 lg:text-lg">{dia.nombre}</h2>
+              <span className="text-[13px]">
+                <span className="lg:hidden">{dia.ejercicios.length} ejercicios</span>
+                <span className="hidden lg:inline">{completados} de {total} hecho</span>
               </span>
             </div>
-
-            <div className="flex flex-col gap-3.5">
-              {dia.ejercicios.map((ej, i) => (
-                <TarjetaEjercicioAlumno
+            <div aria-hidden="true" className="mx-1 mb-2 hidden h-1.5 overflow-hidden rounded-full bg-[#0E1B36] lg:block">
+              <span className="block h-full bg-[#5BE3A0]" style={{ width: `${total > 0 ? (completados / total) * 100 : 0}%` }} />
+            </div>
+            <ol className="flex flex-col gap-2.5 lg:gap-2">
+              {ejercicios.map((ej, i) => (
+                <FilaEjercicio
                   key={ej.id}
                   ejercicio={ej}
                   index={i}
-                  seriesData={seriesPorEjercicio[ej.id] ?? []}
-                  sesionPrevia={sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ej.id)}
+                  series={seriesDe(ej)}
+                  activo={i === indiceActual}
                   videos={videosTecnica}
-                  onChange={(series) => handleChangeSeries(ej.id, series)}
-                  onIniciarDescanso={iniciarDescanso}
+                  onElegir={() => irA(i)}
                 />
               ))}
+            </ol>
+            {ejercicios.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Este día todavía no tiene ejercicios.</p>}
+          </section>
+
+          {!entrenando && ejercicios.length > 0 && (
+            <div className={claseBarra}>
+              {guardado && (
+                <p role="status" className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[#5BE3A0]">
+                  <CheckCircle2 className="size-4" />
+                  {completados === total ? 'Entrenamiento completado' : 'Progreso parcial guardado'}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => irA(Math.max(0, ejercicios.findIndex((ej) => !estaCompleto(ej))))}
+                className="flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[14px] bg-blue-600 text-[17px] font-bold text-white"
+              >
+                <Play className="size-[18px] fill-current" />
+                {seriesTotales.completadas > 0 ? 'Seguir entrenamiento' : 'Empezar entrenamiento'}
+              </button>
             </div>
-          </div>
+          )}
+
+          {ejercicioActual && (
+            <section aria-label="Entrenamiento en curso" className={`${entrenando ? 'flex' : 'hidden lg:flex'} flex-col gap-4 lg:gap-[18px] lg:rounded-[20px] lg:border lg:border-[#22396A] lg:bg-[#162A50] lg:p-[22px]`}>
+              <div className="flex items-center gap-1 lg:hidden">
+                <button type="button" onClick={() => setListaAbierta(true)} aria-label="Ver todos los ejercicios de hoy" className="min-h-12 flex-1 text-left text-slate-100">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    Ejercicio {indiceActual + 1} de {ejercicios.length}
+                    <ChevronDown className="size-4" />
+                  </span>
+                  <span aria-hidden="true" className="mt-2 flex gap-1">
+                    {ejercicios.map((ej, i) => (
+                      <span key={ej.id} className={`h-[5px] flex-1 rounded-full ${i === indiceActual ? 'bg-blue-400' : estaCompleto(ej) ? 'bg-[#5BE3A0]' : 'bg-[#1E3663]'}`} />
+                    ))}
+                  </span>
+                </button>
+                <button type="button" onClick={terminar} className="min-h-12 px-3 text-sm text-slate-300">Terminar</button>
+              </div>
+
+              <PanelEjercicio
+                key={ejercicioActual.id}
+                ejercicio={ejercicioActual}
+                seriesData={seriesDe(ejercicioActual)}
+                sesionPrevia={sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ejercicioActual.id)}
+                videos={videosTecnica}
+                onChange={(series) => handleChangeSeries(ejercicioActual.id, series)}
+                onIniciarDescanso={iniciarDescanso}
+              />
+
+              {guardado && (
+                <p role="status" className="hidden items-center justify-end gap-1.5 text-sm font-semibold text-[#5BE3A0] lg:flex">
+                  <CheckCircle2 className="size-4" />
+                  {completados === total ? 'Entrenamiento completado' : 'Progreso parcial guardado'}
+                </p>
+              )}
+              <div className="sticky bottom-[76px] z-10 -mx-5 grid grid-cols-[1fr_1.7fr] gap-2.5 border-t border-[#1E3663] bg-slate-950 px-5 py-3 lg:static lg:mx-0 lg:flex lg:justify-end lg:border-0 lg:bg-transparent lg:p-0">
+                <button
+                  type="button"
+                  onClick={() => setEjercicioActivo(indiceActual - 1)}
+                  disabled={indiceActual === 0}
+                  className="flex h-14 items-center justify-center gap-1.5 rounded-[14px] border border-[#2A4677] text-[15px] font-medium text-slate-100 disabled:opacity-40 lg:h-[50px] lg:px-4"
+                >
+                  <ChevronLeft className="size-[18px]" />
+                  Anterior
+                </button>
+                <button type="button" onClick={handleGuardar} className="hidden h-[50px] rounded-xl border border-[#2A4677] px-[18px] text-[15px] font-semibold text-slate-100 lg:block">
+                  Guardar y terminar acá
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (esUltimo ? handleGuardar() : setEjercicioActivo(indiceActual + 1))}
+                  className="h-14 rounded-[14px] bg-blue-600 px-3 font-semibold text-white hover:bg-blue-500 lg:h-[50px] lg:rounded-xl lg:px-[22px] lg:text-[15px] lg:font-bold"
+                >
+                  {esUltimo ? 'Finalizar entrenamiento' : 'Siguiente ejercicio'}
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {listaAbierta && dia && (
+        <div className="fixed inset-0 z-50 flex items-end bg-[#060D1F]/70 lg:hidden" onClick={() => setListaAbierta(false)}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-lista"
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[85dvh] w-full flex-col gap-1.5 overflow-y-auto rounded-t-3xl bg-[#13254A] px-5 pb-6 pt-2.5"
+          >
+            <span aria-hidden="true" className="mb-2 h-[5px] w-11 shrink-0 self-center rounded-full bg-slate-700" />
+            <div className="flex items-center justify-between">
+              <h2 id="titulo-lista" className="text-lg font-semibold text-white">Ejercicios de hoy</h2>
+              <button type="button" onClick={() => setListaAbierta(false)} aria-label="Cerrar lista" className="flex size-12 items-center justify-center rounded-xl text-slate-300">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="mb-1.5 text-sm text-[#8296BB]">Tocá uno para ir directo. Lo que ya marcaste queda guardado.</p>
+            {ejercicios.map((ej, i) => {
+              const hechas = seriesDe(ej).filter((s) => s.completada).length
+              const totalSeries = seriesDe(ej).length
+              const estado =
+                i === indiceActual
+                  ? `Ahora, ${hechas} de ${totalSeries} series`
+                  : estaCompleto(ej)
+                  ? 'Hecho'
+                  : hechas > 0
+                  ? `${hechas} de ${totalSeries} series`
+                  : 'Pendiente'
+              return (
+                <button
+                  key={ej.id}
+                  type="button"
+                  onClick={() => irA(i)}
+                  aria-current={i === indiceActual ? 'step' : undefined}
+                  className={`flex min-h-14 items-center gap-3 rounded-xl border px-3 py-1.5 text-left ${
+                    i === indiceActual ? 'border-slate-700 bg-[#1E3663]' : 'border-transparent'
+                  }`}
+                >
+                  <span className="w-6 text-[15px] text-[#8296BB]">{i + 1}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold text-slate-100">{ej.nombre}</span>
+                    <span className="block text-[13px] text-[#8296BB]">{estado}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </section>
         </div>
       )}
 
       {/* Barra Flotante de Temporizador de Descanso Automático */}
       {temporizador && (
-        <div className="fixed bottom-22 md:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-[160px] left-1/2 z-40 w-[94%] max-w-md -translate-x-1/2 animate-in slide-in-from-bottom-5 duration-200 lg:bottom-6">
           <div
             className={`rounded-2xl border p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] ${
               temporizador.segundosRestantes === 0
