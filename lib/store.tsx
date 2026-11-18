@@ -261,6 +261,10 @@ export interface ErrorSincronizacion {
   mensaje: string;
 }
 
+export type ResultadoAgregarAlumno =
+  | { ok: true; alumno: Alumno }
+  | { ok: false; error: string; status?: number };
+
 export type ResultadoAgregarPago =
   | { ok: true; pago: Pago }
   | { ok: false; error: string; esIncierto?: boolean; status?: number };
@@ -289,7 +293,7 @@ interface AppDataContextValue {
     passwordOpcional?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   cerrarSesion: () => void;
-  agregarAlumno: (alumno: Omit<Alumno, "id">) => Alumno;
+  agregarAlumno: (alumno: Omit<Alumno, "id">) => Promise<ResultadoAgregarAlumno>;
   actualizarAlumno: (id: string, cambios: Partial<Omit<Alumno, "id">>) => void;
   eliminarAlumno: (id: string) => void;
   asignarCredencialesAlumno: (alumnoId: string, usuario: string, password: string) => Promise<void>;
@@ -1088,7 +1092,7 @@ function useGymStore(): AppDataContextValue {
   }, [usuarioActual]);
 
   const agregarAlumno = useCallback(
-    (alumno: Omit<Alumno, "id">) => {
+    async (alumno: Omit<Alumno, "id">): Promise<ResultadoAgregarAlumno> => {
       const planEncontrado = planes.find(
         (p) => p.id === alumno.planId || p.nombre.toLowerCase() === alumno.plan.toLowerCase()
       );
@@ -1100,21 +1104,39 @@ function useGymStore(): AppDataContextValue {
         planId: alumno.planId || planEncontrado?.id,
         plan: planEncontrado ? planEncontrado.nombre : alumno.plan,
       };
-      setAlumnos((prev) => [nuevo, ...prev]);
-
-      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo))
-          .then((creadoDto) => {
-            const mapeado = mapAlumnoDtoToFront(creadoDto);
-            setAlumnos((prev) => prev.map((a) => (a.id === tempId ? mapeado : a)));
-          })
-          .catch((err: unknown) => {
-            setAlumnos((prev) => prev.filter((a) => a.id !== tempId));
-            reportarErrorSync(formatearMensajeErrorSync("dar de alta al alumno", err));
-          });
+      // Con servidor, el socio entra a la lista recién cuando el servidor lo confirma: si el pedido
+      // falla o se corta (recargar, cerrar la pestaña), no queda un socio que en realidad no existe.
+      if (isApiRuntimeEnabled()) {
+        if (!getStoredJwtToken()) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+          }
+          return {
+            ok: false,
+            error: "Tu sesión ha expirado. Iniciá sesión nuevamente para dar de alta al socio.",
+            status: 401,
+          };
+        }
+        try {
+          const creadoDto = await apiCrearAlumno(mapAlumnoFrontToRequestDto(nuevo));
+          const mapeado = mapAlumnoDtoToFront(creadoDto);
+          setAlumnos((prev) => [mapeado, ...prev.filter((a) => a.id !== mapeado.id)]);
+          return { ok: true, alumno: mapeado };
+        } catch (err: unknown) {
+          const status = (err as { status?: number })?.status;
+          reportarErrorSync(formatearMensajeErrorSync("dar de alta al alumno", err));
+          const error = esErrorDeRed(err)
+            ? "No pudimos confirmar el alta. Buscá al socio por DNI antes de volver a cargarlo."
+            : err instanceof Error && err.message
+            ? err.message
+            : "No se pudo dar de alta al socio.";
+          return { ok: false, error, status };
+        }
       }
 
-      return nuevo;
+      // Modo local / demo (sin backend)
+      setAlumnos((prev) => [nuevo, ...prev]);
+      return { ok: true, alumno: nuevo };
     },
     [planes, reportarErrorSync]
   );
