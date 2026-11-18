@@ -18,6 +18,12 @@ describe('Web App Manifest (app/manifest.ts)', () => {
 
     expect(Array.isArray(data.icons)).toBe(true)
     expect(data.icons!.length).toBeGreaterThan(0)
+    expect(data.icons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }),
+        expect.objectContaining({ src: '/icon-512x512.png', sizes: '512x512', type: 'image/png' }),
+      ])
+    )
 
     for (const icon of data.icons!) {
       const rutaEnPublic = path.join(process.cwd(), 'public', icon.src.replace(/^\//, ''))
