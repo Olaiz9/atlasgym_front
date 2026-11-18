@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Dos iniciales para el avatar ("Diego Ramírez" -> "DR"). */
+export function inicialesDe(nombre: string): string {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 export function generarPassword(length: number = 8): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = new Uint8Array(length);

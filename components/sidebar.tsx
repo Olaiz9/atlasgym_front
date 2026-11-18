@@ -54,7 +54,7 @@ function SidebarUserCard({
           type="button"
           onClick={onAbrirPerfil}
           title={`Mi perfil: ${usuario.nombre} (${rolLabel})`}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-all cursor-pointer overflow-hidden active:scale-95"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-xs font-bold text-blue-400 hover:ring-2 hover:ring-blue-500/60 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer overflow-hidden active:scale-95"
         >
           {usuario.fotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -94,7 +94,7 @@ function SidebarUserCard({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-bold text-slate-200">{usuario.nombre}</p>
-          <p className="text-[11px] font-medium text-slate-500">{rolLabel}</p>
+          <p className="text-xs font-medium text-slate-500">{rolLabel}</p>
         </div>
       </button>
       <button
@@ -126,7 +126,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-300 ${
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-slate-800/50 bg-slate-950 md:flex transition-[width] duration-150 ease-out motion-reduce:transition-none ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -136,7 +136,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           className="absolute -right-3 top-24 flex size-6 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-400 shadow-md transition-[color,border-color,transform] duration-200 hover:text-white hover:border-blue-600 active:scale-90"
         >
-          <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeft className={`size-3.5 transition-transform duration-150 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
 
         <div className="flex h-20 items-center justify-center border-b border-slate-800/50 px-4 shrink-0">
@@ -164,9 +164,9 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         </div>
 
         <div className="flex flex-1 flex-col justify-between px-3.5 py-6 overflow-y-auto overflow-x-hidden min-h-0">
-          <nav className="flex flex-col gap-2.5 pb-5 shrink-0" aria-label="Navegación principal">
+          <nav className="flex flex-col gap-1 pb-5 shrink-0" aria-label="Navegación principal">
             {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-1 px-3.5 text-sm font-semibold text-slate-400">
                 {esAlumno ? 'Portal del alumno' : 'Panel principal'}
               </p>
             )}
@@ -178,12 +178,12 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                   key={label}
                   href={href}
                   title={collapsed ? (esAvisos && cantNoLeidos > 0 ? `${label} (${cantNoLeidos} nuevos)` : label) : undefined}
-                  className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-[color,background-color,transform] duration-200 ${
+                  className={`flex items-center gap-3.5 min-h-11 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold transition-[color,background-color] duration-200 ${
                     collapsed ? 'justify-center' : ''
                   } ${
                     active
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
-                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1'
+                      ? 'bg-blue-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-900 hover:text-white'
                   }`}
                 >
                   <div className="relative">
@@ -211,7 +211,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             <button
               onClick={() => setMostrarAyuda(true)}
               title={collapsed ? (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda') : undefined}
-              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-400 transition-[color,background-color,transform] duration-200 hover:bg-slate-800/50 hover:text-slate-100 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             >
               <HelpCircle className="size-5 shrink-0 text-amber-500" />
               {!collapsed && (esAlumno ? 'Consultar al profesor' : 'Centro de ayuda')}

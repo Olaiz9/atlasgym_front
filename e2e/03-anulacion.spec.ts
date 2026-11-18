@@ -11,15 +11,16 @@ test('el titular anula un cobro con motivo y queda auditado, sin borrarse', asyn
   await iniciarSesionTitular(page)
   await page.goto('/finanzas')
   await page.getByPlaceholder('Buscar socio u operador...').fill(nombre)
+  await page.getByLabel(`Más acciones para ${nombre}`).click()
   await page.getByRole('button', { name: `Anular comprobante de ${nombre}` }).click()
 
   // El motivo es obligatorio
-  await page.getByRole('button', { name: 'Confirmar anulación' }).click()
-  await expect(page.getByText('Indicá brevemente el motivo de anulación')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Anular', exact: true })).toBeDisabled()
 
   const motivo = 'Importe mal cargado (prueba E2E)'
-  await page.getByLabel('Motivo de anulación').fill(motivo)
-  await page.getByRole('button', { name: 'Confirmar anulación' }).click()
+  await page.getByRole('radio', { name: 'Otro motivo' }).click()
+  await page.getByLabel('Contanos qué pasó').fill(motivo)
+  await page.getByRole('button', { name: 'Anular', exact: true }).click()
 
   // En el servidor el comprobante sigue existiendo, marcado como ANULADO con titular y motivo
   await expect

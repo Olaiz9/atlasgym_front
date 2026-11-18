@@ -10,7 +10,7 @@ test('dar de baja a un socio lo pasa a Inactivos sin borrarlo', async ({ page, r
 
   await iniciarSesionTitular(page)
   await page.goto('/alumnos')
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await page.getByRole('button', { name: `Dar de baja a ${nombre}` }).click()
 
   // Modal de confirmación: avisa que va a Inactivos (no es un borrado definitivo)
@@ -23,7 +23,7 @@ test('dar de baja a un socio lo pasa a Inactivos sin borrarlo', async ({ page, r
   // Después de recargar, aparece en la pestaña Inactivos
   await page.reload()
   await page.getByRole('button', { name: /Inactivos/ }).first().click()
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await expect(page.getByText(nombre).first()).toBeVisible()
   // ...solo se puede reactivar: el socio nunca se borra (si vuelve, conserva ficha e historial)
   await expect(page.getByRole('button', { name: `Reactivar a ${nombre}` })).toBeVisible()

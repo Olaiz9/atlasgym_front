@@ -3,18 +3,13 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Users,
-  UserCheck,
-  UserX,
-  AlertCircle,
-  Clock,
   Dumbbell,
   Plus,
   Search,
   Pencil,
-  ChevronRight,
   Download,
   Upload,
+  UserX,
   X,
   FileSpreadsheet,
   CheckCircle2,
@@ -22,11 +17,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAppData } from "@/lib/store";
-import { formatDiasIngreso } from "@/lib/date-utils";
+import { calcularDiasDesde, fechaLocalHoy, formatDiasIngreso } from "@/lib/date-utils";
+import { extraerLimiteDiasSemana, filtrarAsistenciasActivas } from "@/lib/asistencia-utils";
+import { inicialesDe } from "@/lib/utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
+import { ModalConfirmarBaja } from "@/components/modal-confirmar-baja";
 import { AccesoRestringido } from "@/components/acceso-restringido";
-import { MetricCard } from "@/components/ui/metric-card";
+import { EstadoCuentaEtiqueta } from "@/components/estado-cuenta-etiqueta";
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
@@ -56,15 +54,30 @@ import {
   EstadoCuenta,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
+  mesesAdeudados,
+  RegistroAsistencia,
+  saldosDeSeniaPorAlumno,
 } from "@/lib/types";
 
-const FILTROS_ALUMNOS: { label: string; value: EstadoCuenta | "TODOS" }[] = [
-  { label: "Todos", value: "TODOS" },
-  { label: "Al día", value: "AL_DIA" },
-  { label: "Pendientes", value: "PENDIENTE" },
-  { label: "Morosos", value: "MOROSO" },
-  { label: "Inactivos", value: "INACTIVO" },
-];
+type FiltroAlumnos = EstadoCuenta | "TODOS" | "SENIA";
+type AlumnoConEstado = Alumno & { estadoCuenta: EstadoCuenta };
+
+const claseIcono =
+  "flex size-11 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-800 hover:text-white";
+const claseReactivar =
+  "h-11 shrink-0 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-800";
+
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 text-slate-600">|</span>;
+}
+
+function Avatar({ nombre }: { nombre: string }) {
+  return (
+    <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#1E3663] text-sm font-bold text-blue-200">
+      {inicialesDe(nombre)}
+    </span>
+  );
+}
 
 export default function AlumnosPage() {
   const {
@@ -73,7 +86,8 @@ export default function AlumnosPage() {
     eliminarAlumno,
     importarAlumnosMasivo,
     getEstadoCuenta,
-    getPagosDeAlumno,
+    pagos,
+    asistencias,
     planes,
     usuarioActual,
     datosCobro,
@@ -81,7 +95,7 @@ export default function AlumnosPage() {
   const { toast } = useToast();
 
   const [busqueda, setBusqueda] = useState("");
-  const [filtro, setFiltro] = useState<EstadoCuenta | "TODOS">("TODOS");
+  const [filtro, setFiltro] = useState<FiltroAlumnos>("TODOS");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [alumnoAEditar, setAlumnoAEditar] = useState<Alumno | null>(null);
@@ -92,12 +106,32 @@ export default function AlumnosPage() {
     [alumnos, getEstadoCuenta]
   );
 
+  const saldosSenia = useMemo(() => saldosDeSeniaPorAlumno(pagos), [pagos]);
+
+  // Último ingreso de hoy por socio, para el detalle de cada fila
+  const ingresosHoy = useMemo(() => {
+    const hoy = fechaLocalHoy();
+    const porSocio = new Map<string, RegistroAsistencia>();
+    for (const a of asistencias) {
+      if (a.fecha !== hoy) continue;
+      const previo = porSocio.get(a.alumnoId);
+      if (!previo || a.timestamp > previo.timestamp) porSocio.set(a.alumnoId, a);
+    }
+    return porSocio;
+  }, [asistencias]);
+
   const metrica = useMemo(() => {
-    const alDia = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "AL_DIA").length;
-    const morosos = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta === "MOROSO").length;
-    const inactivos = alumnosConEstado.filter((a) => !a.activo || a.estadoCuenta === "INACTIVO").length;
-    return { total: alumnosConEstado.length, alDia, morosos, inactivos };
-  }, [alumnosConEstado]);
+    const activos = alumnosConEstado.filter((a) => a.activo && a.estadoCuenta !== "INACTIVO");
+    const contar = (estado: EstadoCuenta) => activos.filter((a) => a.estadoCuenta === estado).length;
+    return {
+      total: alumnosConEstado.length,
+      alDia: contar("AL_DIA"),
+      pendientes: contar("PENDIENTE"),
+      morosos: contar("MOROSO"),
+      senias: activos.filter((a) => saldosSenia.has(a.id)).length,
+      inactivos: alumnosConEstado.length - activos.length,
+    };
+  }, [alumnosConEstado, saldosSenia]);
 
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [paginaActual, setPaginaActual] = useState(1);
@@ -106,11 +140,14 @@ export default function AlumnosPage() {
   const alumnosFiltrados = useMemo(() => {
     const q = busquedaDebounced.trim().toLowerCase();
     return alumnosConEstado.filter((a) => {
+      const activo = a.activo !== false && a.estadoCuenta !== "INACTIVO";
       const coincideFiltro =
         filtro === "TODOS"
-          ? a.activo !== false && a.estadoCuenta !== "INACTIVO"
+          ? activo
           : filtro === "INACTIVO"
-          ? a.activo === false || a.estadoCuenta === "INACTIVO"
+          ? !activo
+          : filtro === "SENIA"
+          ? activo && saldosSenia.has(a.id)
           : a.activo !== false && a.estadoCuenta === filtro;
       const coincideBusqueda =
         !q ||
@@ -122,7 +159,7 @@ export default function AlumnosPage() {
         (a.plan && a.plan.toLowerCase().includes(q));
       return coincideFiltro && coincideBusqueda;
     });
-  }, [alumnosConEstado, filtro, busquedaDebounced]);
+  }, [alumnosConEstado, filtro, busquedaDebounced, saldosSenia]);
 
   useEffect(() => {
     setPaginaActual(1);
@@ -197,310 +234,333 @@ export default function AlumnosPage() {
 
   const urlPortal = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
 
+  const reactivar = (alumno: Alumno) => {
+    actualizarAlumno(alumno.id, { activo: true });
+    toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
+  };
+
+  const planDe = (alumno: Alumno) =>
+    planes.find(
+      (p) => p.id === alumno.planId || p.nombre.toLowerCase() === (alumno.plan || "").toLowerCase()
+    );
+
+  const whatsappDe = (alumno: AlumnoConEstado) => {
+    if (!alumno.celular || !tieneCelularWhatsappValido(alumno.celular)) return null;
+    const debe = alumno.estadoCuenta === "MOROSO" || alumno.estadoCuenta === "PENDIENTE";
+    const mensaje = debe
+      ? mensajeRecordatorioCuotaWhatsapp({
+          nombre: alumno.nombre,
+          plan: alumno.plan,
+          estadoCuenta: alumno.estadoCuenta,
+          montoTotal: planDe(alumno)?.precio,
+          aliasPago: datosCobro.alias,
+        })
+      : mensajeCredencialesBienvenidaWhatsapp({
+          nombre: alumno.nombre,
+          usuario: alumno.usuario || alumno.dni || "-",
+          claveInicial: alumno.dni ? alumno.dni.replace(/\D/g, "") : "tu DNI",
+          urlPortal,
+        });
+    return { debe, href: construirUrlWaMe(alumno.celular, mensaje) };
+  };
+
+  const situacionDe = (alumno: AlumnoConEstado) => {
+    if (alumno.activo === false) return "dado de baja";
+    const saldo = saldosSenia.get(alumno.id);
+    if (saldo) return `falta $${saldo.toLocaleString("es-AR")}`;
+    if (alumno.estadoCuenta === "MOROSO" || alumno.estadoCuenta === "PENDIENTE") {
+      const meses = mesesAdeudados(alumno.id, pagos, alumno.fechaAlta).length;
+      if (meses > 0) return `debe ${meses} ${meses === 1 ? "mes" : "meses"}`;
+    }
+    const ingreso = ingresosHoy.get(alumno.id);
+    if (ingreso) {
+      return filtrarAsistenciasActivas([ingreso]).length > 0
+        ? "en sala ahora"
+        : `vino hoy ${ingreso.hora.slice(0, 5)}`;
+    }
+    if (!alumno.ultimaAsistencia) return "sin ingresos";
+    const dias = calcularDiasDesde(alumno.ultimaAsistencia);
+    return dias > 7 ? `sin ingresos en ${dias} días` : formatDiasIngreso(alumno.ultimaAsistencia).toLowerCase();
+  };
+
+  const detalleAlumno = (alumno: AlumnoConEstado) => {
+    const plan = planDe(alumno);
+    const limite = plan ? extraerLimiteDiasSemana(plan.diasPorSemana) : null;
+    const frecuencia = !plan ? alumno.plan || "Sin plan" : limite ? `${limite} ${limite === 1 ? "día" : "días"}` : "Libre";
+    return (
+      <>
+        {frecuencia}
+        <Separador />
+        {situacionDe(alumno)}
+      </>
+    );
+  };
+
+  const filtrosAlumnos: { label: string; value: FiltroAlumnos; cantidad?: number; soloEscritorio?: boolean }[] = [
+    { label: "Todos", value: "TODOS" },
+    { label: "Al día", value: "AL_DIA", cantidad: metrica.alDia, soloEscritorio: true },
+    { label: "Seña", value: "SENIA", cantidad: metrica.senias },
+    { label: "Pendientes", value: "PENDIENTE", cantidad: metrica.pendientes },
+    { label: "Vencidos", value: "MOROSO", cantidad: metrica.morosos },
+    { label: "Inactivos", value: "INACTIVO", cantidad: metrica.inactivos, soloEscritorio: true },
+  ];
+
+
   return (
-    <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Alumnos</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            El estado de cuenta e inactividad se calculan automáticamente según los pagos en Finanzas.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap">
-          <button
-            onClick={() => setModalImportarAbierto(true)}
-            title="Importar padrón masivo desde Excel / CSV"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
-          >
-            <Upload className="w-4 h-4 text-blue-400" />
-            Importar CSV
-          </button>
-          <button
-            onClick={exportarCSVAlumnos}
-            title="Exportar listado a archivo CSV / Excel"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold h-11 px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
-          >
-            <Download className="w-4 h-4 text-slate-400" />
-            Exportar CSV
-          </button>
-          <button
-            onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            Agregar alumno
-          </button>
-        </div>
-      </div>
-
-      {/* Tarjetas de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          icon={<Users className="size-6" />}
-          label="Total de alumnos"
-          value={`${metrica.total}`}
-          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
-        />
-        <MetricCard
-          icon={<UserCheck className="size-6" />}
-          label="Al día"
-          value={`${metrica.alDia}`}
-          tint={{ bg: "bg-emerald-500/15 border border-emerald-500/30", text: "text-emerald-400", bar: "bg-emerald-500" }}
-        />
-        <MetricCard
-          icon={<AlertCircle className="size-6" />}
-          label="Morosos"
-          value={`${metrica.morosos}`}
-          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
-        />
-        <MetricCard
-          icon={<UserX className="size-6" />}
-          label="Inactivos"
-          value={`${metrica.inactivos}`}
-          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
-        />
-      </div>
-
-      {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
-          <div className="flex gap-2 flex-wrap">
-            {FILTROS_ALUMNOS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFiltro(f.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                  filtro === f.value
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-5 px-5 pb-28 pt-5 md:gap-8 md:px-14 md:pb-16 md:pt-12">
+      <header className="flex flex-col gap-3 md:gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">
+            Alumnos <span className="text-2xl text-slate-500 md:text-[28px]">{metrica.total - metrica.inactivos}</span>
+          </h1>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setModalImportarAbierto(true)}
+              aria-label="Importar CSV"
+              title="Importar padrón masivo desde Excel / CSV"
+              className="flex size-11 items-center justify-center gap-2 rounded-xl bg-[#162A50] text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-800 md:w-auto md:px-4"
+            >
+              <Download className="size-5 md:size-4" />
+              <span className="hidden md:inline">Importar CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={exportarCSVAlumnos}
+              title="Exportar listado a archivo CSV / Excel"
+              className="hidden h-11 items-center gap-2 rounded-xl bg-[#162A50] px-4 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-800 md:flex"
+            >
+              <Upload className="size-4" />
+              Exportar CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalAbierto(true)}
+              aria-label="Agregar alumno"
+              className="flex size-11 items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white transition-colors hover:bg-blue-500 md:w-auto md:px-5"
+            >
+              <Plus className="size-5" />
+              <span className="hidden md:inline">Agregar alumno</span>
+            </button>
           </div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row-reverse md:items-center md:justify-between">
+          <label className="flex h-12 items-center gap-2 rounded-xl border border-[#2A4677] bg-[#162A50] px-3.5 focus-within:border-blue-400 md:h-11 md:w-80">
+            <Search className="size-[18px] shrink-0 text-slate-500" />
             <input
               id="buscar-alumnos"
+              type="search"
               aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar alumno..."
-              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              placeholder="Nombre, DNI o celular"
+              className="min-w-0 flex-1 bg-transparent text-base text-slate-100 outline-none placeholder:text-slate-500 md:text-sm"
             />
+          </label>
+
+          <div role="group" aria-label="Filtrar por estado" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0">
+            {filtrosAlumnos.map((f) => {
+              const activo = filtro === f.value
+              return (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={activo}
+                  onClick={() => setFiltro(f.value)}
+                  className={`flex h-11 shrink-0 items-center rounded-full px-3.5 text-sm transition-colors ${
+                    activo
+                      ? 'bg-slate-100 font-bold text-[#0E1B36]'
+                      : 'border border-[#2A4677] font-semibold text-slate-300 hover:bg-slate-900'
+                  }`}
+                >
+                  {f.label}
+                  {f.cantidad !== undefined && (
+                    <span
+                      className={`ml-2 h-[22px] min-w-[22px] items-center justify-center rounded-full bg-slate-600/30 px-1.5 text-xs font-bold ${
+                        f.soloEscritorio ? 'hidden md:inline-flex' : 'inline-flex'
+                      }`}
+                    >
+                      {f.cantidad}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
+      </header>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400 border-b border-slate-800">
-                <th className="font-bold px-6 py-3.5">Alumno</th>
-                <th className="font-bold px-6 py-3.5">Plan</th>
-                <th className="font-bold px-6 py-3.5">Rutina</th>
-                <th className="font-bold px-6 py-3.5">Último ingreso</th>
-                <th className="font-bold px-6 py-3.5">Estado de cuenta</th>
-                <th className="font-bold px-6 py-3.5 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alumnosPaginados.map((alumno) => {
-                const tieneWa = tieneCelularWhatsappValido(alumno.celular);
-                const debeCuota =
-                  alumno.estadoCuenta === "MOROSO" || alumno.estadoCuenta === "PENDIENTE";
-                const planObj = planes.find(
-                  (p) =>
-                    p.id === alumno.planId ||
-                    p.nombre.toLowerCase() === (alumno.plan || "").toLowerCase()
-                );
-                const mensajeWa = debeCuota
-                  ? mensajeRecordatorioCuotaWhatsapp({
-                      nombre: alumno.nombre,
-                      plan: alumno.plan,
-                      estadoCuenta: alumno.estadoCuenta,
-                      montoTotal: planObj?.precio,
-                      aliasPago: datosCobro.alias,
-                    })
-                  : mensajeCredencialesBienvenidaWhatsapp({
-                      nombre: alumno.nombre,
-                      usuario: alumno.usuario || alumno.dni || "-",
-                      claveInicial: alumno.dni ? alumno.dni.replace(/\D/g, "") : "tu DNI",
-                      urlPortal,
-                    });
-
-                return (
-                  <tr
-                    key={alumno.id}
-                    className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-bold text-white">
-                      <Link
-                        href={`/alumnos/${alumno.id}`}
-                        className="hover:text-blue-400 hover:underline underline-offset-2 flex items-center gap-1.5"
-                      >
-                        {alumno.nombre}
-                        <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-                      </Link>
-                      {(alumno.usuario || alumno.dni) && (
-                        <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
-                          {alumno.usuario && (
-                            <span className="font-mono text-blue-400">@{alumno.usuario}</span>
-                          )}
-                          {alumno.dni && <span>DNI: {alumno.dni}</span>}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">{alumno.plan}</td>
-                    <td className="px-6 py-4">
-                      {alumno.tieneRutina ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                          <Dumbbell className="w-3 h-3" />
-                          Asignada
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60">
-                          Sin rutina
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-slate-300 font-medium">
-                      {alumno.ultimaAsistencia ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          {formatDiasIngreso(alumno.ultimaAsistencia)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 text-xs italic">Sin registros</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_CUENTA_STYLES[alumno.estadoCuenta]}`}
-                      >
-                        {ESTADO_CUENTA_LABEL[alumno.estadoCuenta]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
-                        {tieneWa && alumno.celular && (
-                          <a
-                            href={construirUrlWaMe(alumno.celular, mensajeWa)}
-                            target="atlas_whatsapp_tab"
-                            rel="noopener noreferrer"
-                            title={
-                              debeCuota
-                                ? `Recordar cuota por WhatsApp a ${alumno.nombre}`
-                                : `Enviar acceso del portal por WhatsApp a ${alumno.nombre}`
-                            }
-                            aria-label={`WhatsApp a ${alumno.nombre}`}
-                            className={`p-2 rounded-lg transition-colors active:scale-90 ${
-                              debeCuota
-                                ? "text-emerald-400 hover:bg-emerald-500/15"
-                                : "text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400"
-                            }`}
-                          >
-                            <WhatsAppIcon className="w-4 h-4 fill-current" />
-                          </a>
-                        )}
-                        {alumno.activo === false && (
-                          <button
-                            onClick={() => {
-                              actualizarAlumno(alumno.id, { activo: true });
-                              toast(`Alumno "${alumno.nombre}" reactivado con éxito`, "success");
-                            }}
-                            aria-label={`Reactivar a ${alumno.nombre}`}
-                            title={`Reactivar a ${alumno.nombre}`}
-                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors duration-150 active:scale-95"
-                          >
-                            Reactivar
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setAlumnoAEditar(alumno)}
-                          aria-label={`Editar a ${alumno.nombre}`}
-                          title="Editar ficha"
-                          className="p-2 rounded-lg text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors duration-150 active:scale-90"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        {alumno.activo !== false && (
-                          <button
-                            onClick={() => setAlumnoAEliminar(alumno)}
-                            aria-label={`Dar de baja a ${alumno.nombre}`}
-                            title="Dar de baja (enviar a Inactivos)"
-                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                          >
-                            <UserX className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {alumnosFiltrados.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
-                    {alumnos.length === 0
-                      ? "Todavía no hay alumnos cargados. Podés importar tu planilla Excel en segundos con 'Importar CSV'."
-                      : "No se encontraron alumnos con ese criterio."}
-                  </td>
+      {alumnosFiltrados.length === 0 ? (
+        <p className="rounded-2xl border border-slate-800 px-5 py-10 text-center text-sm text-slate-500">
+          {alumnos.length === 0
+            ? "Todavía no hay alumnos cargados. Podés importar tu planilla Excel en segundos con 'Importar CSV'."
+            : 'No se encontraron alumnos con ese criterio.'}
+        </p>
+      ) : (
+        <>
+          {/* La tabla va primero: en escritorio es la visible y las búsquedas por texto dan con ella. */}
+          <div className="hidden overflow-x-auto rounded-2xl border border-slate-800 md:block">
+            <table className="w-full min-w-[860px] border-collapse text-[15px]">
+              <thead>
+                <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                  <th className="px-5 py-3 font-medium">Alumno</th>
+                  <th className="px-5 py-3 font-medium">Plan</th>
+                  <th className="px-5 py-3 font-medium">Rutina</th>
+                  <th className="px-5 py-3 font-medium">Último ingreso</th>
+                  <th className="px-5 py-3 font-medium">Estado</th>
+                  <th className="px-5 py-3 text-right font-medium">Acciones</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {alumnosPaginados.map((alumno) => {
+                  const wa = whatsappDe(alumno)
+                  return (
+                    <tr key={alumno.id} className="border-t border-slate-800 transition-colors hover:bg-slate-900/40">
+                      <td className="px-5 py-3">
+                        <Link href={`/alumnos/${alumno.id}`} className="flex items-center gap-3 font-semibold text-white hover:text-blue-300">
+                          <Avatar nombre={alumno.nombre} />
+                          <span className="min-w-0">
+                            <span className="block">{alumno.nombre}</span>
+                            {(alumno.usuario || alumno.dni) && (
+                              <span className="block text-[13px] font-normal text-slate-500">
+                                {alumno.usuario && `@${alumno.usuario}`}
+                                {alumno.usuario && alumno.dni && <Separador />}
+                                {alumno.dni && `DNI ${alumno.dni}`}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3 text-slate-300">{alumno.plan}</td>
+                      <td className="px-5 py-3 text-slate-300">
+                        {alumno.tieneRutina ? (
+                          <span className="inline-flex items-center gap-1.5"><Dumbbell className="size-3.5 text-slate-500" />Asignada</span>
+                        ) : (
+                          <span className="text-slate-500">Sin rutina</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-slate-300">
+                        {alumno.ultimaAsistencia ? formatDiasIngreso(alumno.ultimaAsistencia) : <span className="text-slate-500">Sin registros</span>}
+                      </td>
+                      <td className="px-5 py-3">
+                        <EstadoCuentaEtiqueta estado={alumno.estadoCuenta} conSenia={saldosSenia.has(alumno.id)} />
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {wa && (
+                            <a
+                              href={wa.href}
+                              target="atlas_whatsapp_tab"
+                              rel="noopener noreferrer"
+                              title={wa.debe ? `Recordar cuota por WhatsApp a ${alumno.nombre}` : `Enviar acceso del portal por WhatsApp a ${alumno.nombre}`}
+                              aria-label={`WhatsApp a ${alumno.nombre}`}
+                              className={claseIcono}
+                            >
+                              <WhatsAppIcon className="size-[18px] fill-current" />
+                            </a>
+                          )}
+                          {alumno.activo === false && (
+                            <button type="button" onClick={() => reactivar(alumno)} aria-label={`Reactivar a ${alumno.nombre}`} className={claseReactivar}>
+                              Reactivar
+                            </button>
+                          )}
+                          <button type="button" onClick={() => setAlumnoAEditar(alumno)} aria-label={`Editar a ${alumno.nombre}`} title="Editar ficha" className={claseIcono}>
+                            <Pencil className="size-[18px]" />
+                          </button>
+                          {alumno.activo !== false && (
+                            <button type="button" onClick={() => setAlumnoAEliminar(alumno)} aria-label={`Dar de baja a ${alumno.nombre}`} title="Dar de baja (enviar a Inactivos)" className={claseIcono}>
+                              <UserX className="size-[18px]" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Paginación */}
-        {alumnosFiltrados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
-            <div className="flex items-center gap-2">
-              <span>Mostrar</span>
+          {/* Celular: filas simples; editar y dar de baja están en la ficha del socio. */}
+          <ul className="md:hidden">
+            {alumnosPaginados.map((alumno) => {
+              const wa = whatsappDe(alumno)
+              return (
+                <li key={alumno.id} className="flex items-center gap-3 border-b border-slate-800 py-3 last:border-0">
+                  <Avatar nombre={alumno.nombre} />
+                  <Link href={`/alumnos/${alumno.id}`} className="min-w-0 flex-1 text-white">
+                    <span className="block truncate font-semibold">{alumno.nombre}</span>
+                    <span className="block truncate text-[13px] text-slate-400">{detalleAlumno(alumno)}</span>
+                  </Link>
+                  {wa?.debe && (
+                    <a
+                      href={wa.href}
+                      target="atlas_whatsapp_tab"
+                      rel="noopener noreferrer"
+                      aria-label={`WhatsApp a ${alumno.nombre}`}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-[10px] border border-[#2A4677] text-slate-200"
+                    >
+                      <WhatsAppIcon className="size-[18px] fill-current" />
+                    </a>
+                  )}
+                  {alumno.activo === false ? (
+                    <button type="button" onClick={() => reactivar(alumno)} aria-label={`Reactivar a ${alumno.nombre}`} className={claseReactivar}>
+                      Reactivar
+                    </button>
+                  ) : (
+                    <EstadoCuentaEtiqueta estado={alumno.estadoCuenta} conSenia={saldosSenia.has(alumno.id)} />
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+
+          <div className="flex flex-col items-center justify-between gap-3 text-[13px] text-slate-500 md:flex-row">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <select
                 aria-label="Alumnos por página"
                 value={elementosPorPagina}
                 onChange={(e) => {
-                  setElementosPorPagina(Number(e.target.value));
-                  setPaginaActual(1);
+                  setElementosPorPagina(Number(e.target.value))
+                  setPaginaActual(1)
                 }}
-                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
+                className="h-11 rounded-xl border border-slate-800 bg-slate-950 px-2.5 text-slate-200 outline-none"
               >
-                <option value={15} className="bg-slate-900 text-white">15 por página</option>
-                <option value={30} className="bg-slate-900 text-white">30 por página</option>
-                <option value={50} className="bg-slate-900 text-white">50 por página</option>
-                <option value={100} className="bg-slate-900 text-white">100 por página</option>
+                {[15, 30, 50, 100].map((n) => (
+                  <option key={n} value={n}>{n} por página</option>
+                ))}
               </select>
               <span>
-                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
-                {Math.min(paginaActual * elementosPorPagina, alumnosFiltrados.length)} de{" "}
-                {alumnosFiltrados.length} alumnos
+                {(paginaActual - 1) * elementosPorPagina + 1} a {Math.min(paginaActual * elementosPorPagina, alumnosFiltrados.length)} de {alumnosFiltrados.length}
               </span>
+              <button type="button" onClick={exportarCSVAlumnos} className="flex h-11 items-center gap-2 px-1 font-medium text-blue-300 md:hidden">
+                <Upload className="size-4" />
+                Exportar CSV
+              </button>
             </div>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
                 disabled={paginaActual === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-3.5 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Anterior
               </button>
-              <span className="px-2 font-bold text-slate-300">
-                Página {paginaActual} de {totalPaginas}
-              </span>
+              <span className="px-1 text-slate-300">Página {paginaActual} de {totalPaginas}</span>
               <button
+                type="button"
                 onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
                 disabled={paginaActual === totalPaginas}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-3.5 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Siguiente
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       <ModalNuevoAlumno
         isOpen={modalAbierto}
@@ -554,7 +614,7 @@ export default function AlumnosPage() {
       )}
 
       {alumnoAEliminar && (
-        <ModalConfirmarEliminar
+        <ModalConfirmarBaja
           alumno={alumnoAEliminar}
           onCancel={() => setAlumnoAEliminar(null)}
           onConfirm={confirmarEliminar}
@@ -667,7 +727,7 @@ function ModalImportarAlumnosCsv({
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">
+              <h2 className="text-3xl font-black text-white">
                 Importar padrón de socios (CSV / Excel)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -780,7 +840,7 @@ function ModalImportarAlumnosCsv({
                   </tbody>
                 </table>
                 {resultado.filasValidas.length > 8 && (
-                  <p className="px-3 py-2 text-[11px] text-slate-500 bg-slate-950/50">
+                  <p className="px-3 py-2 text-xs text-slate-500 bg-slate-950/50">
                     + {resultado.filasValidas.length - 8} socio(s) adicionales en el lote.
                   </p>
                 )}
@@ -928,49 +988,3 @@ function ModalImportarAlumnosCsv({
   );
 }
 
-// ---------- Modal: confirmar baja ----------
-function ModalConfirmarEliminar({
-  alumno,
-  onCancel,
-  onConfirm,
-}: {
-  alumno: Alumno;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
-      >
-        <div className="flex size-12 items-center justify-center rounded-2xl mb-4 bg-amber-500/15 text-amber-400 border border-amber-500/30">
-          <UserX className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-black text-white">
-          {`¿Dar de baja a ${alumno.nombre}?`}
-        </h2>
-        <p className="mt-1.5 text-sm text-slate-400">
-          El socio pasará a la pestaña de Inactivos. Si vuelve, lo reactivás desde ahí y conserva su ficha, su historial y sus pagos.
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-[color,background-color] duration-200 active:scale-95"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className="h-11 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition-[color,background-color] duration-200 active:scale-95 bg-amber-600 shadow-amber-600/20 hover:bg-amber-500"
-          >
-            Dar de baja
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
