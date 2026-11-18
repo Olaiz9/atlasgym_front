@@ -7,19 +7,14 @@ import { useRouter } from 'next/navigation'
 import { useAppData } from '@/lib/store'
 import { useEscapeKey } from '@/lib/use-escape-key'
 import {
-  Mail,
-  Lock,
   Eye,
   EyeOff,
-  ArrowRight,
   Smartphone,
   X,
   KeyRound,
   Copy,
   Check,
   MessageCircle,
-  ShieldCheck,
-  Clock,
   ChevronRight,
   DownloadCloud,
   Share2,
@@ -37,7 +32,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [recordarme, setRecordarme] = useState(true)
   const [cargando, setCargando] = useState(false)
   const [plataformaTutorial, setPlataformaTutorial] = useState<'ANDROID' | 'IOS'>('ANDROID')
   const [mostrarModalTutorial, setMostrarModalTutorial] = useState(false)
@@ -102,181 +96,115 @@ export default function LoginPage() {
     } catch {}
   }
 
+  const claseCampo =
+    'h-[54px] w-full rounded-[14px] border border-[#2A4677] bg-[#13254A] px-4 text-[17px] font-normal text-slate-100 outline-none placeholder:text-slate-500 focus:border-2 focus:border-blue-600'
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-12">
-      {/* Imagen de fondo nítida y visible con atmósfera cinematográfica oscura */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <Image
-          src="/login-bg.jpg"
-          alt="Gimnasio Atlas"
-          fill
-          priority
-          className="object-cover object-center opacity-55 filter blur-[1.5px] scale-105"
-        />
-        {/* Capa de viñeta oscura para garantizar legibilidad óptima de la tarjeta */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/65 to-slate-950/90" />
-      </div>
+    <div className="min-h-dvh bg-[#0A1530] text-slate-100">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col gap-7 px-6 pb-7 pt-14">
+        <Image src="/logo-atlas-blanco.png" alt="ATLAS Gym" width={160} height={90} className="h-10 w-auto self-start object-contain" priority />
 
-      {/* Fondo con resplandores sutiles */}
-      <div className="pointer-events-none absolute -top-40 left-1/4 -translate-x-1/2 size-[650px] rounded-full bg-blue-600/15 blur-[130px] z-0" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 -translate-x-1/2 size-[550px] rounded-full bg-blue-500/10 blur-[150px] z-0" />
-
-      <div className="relative z-10 w-full max-w-[490px]">
-        {/* Logo & Marca Superior */}
-        <div className="mb-7 text-center flex flex-col items-center">
-          <Image
-            src="/logo-atlas-blanco.png"
-            alt="ATLAS GYM"
-            width={240}
-            height={135}
-            className="h-16 w-auto object-contain mb-3 drop-shadow-[0_10px_25px_rgba(37,99,235,0.25)]"
-            priority
-          />
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-950/40 px-3.5 py-1 text-xs font-semibold text-blue-300 backdrop-blur-md">
-            <span className="size-1.5 rounded-full bg-blue-400 animate-pulse" />
-            Portal Oficial de Gestión y Entrenamiento
-          </div>
+        <div>
+          <h1 className="text-[44px] font-extrabold uppercase leading-[.9] text-white">
+            Tu entreno,
+            <br />
+            en tu bolsillo
+          </h1>
+          <p className="mt-3 text-base text-slate-400">Rutina, cuotas y avisos del gimnasio.</p>
         </div>
 
-        {/* Tarjeta Principal de Login */}
-        <div className="rounded-3xl border border-slate-800/90 bg-slate-900/80 p-7 sm:p-9 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-white">Ingresá a tu cuenta</h1>
-            <p className="mt-1 text-xs text-slate-400 leading-relaxed">
-              Accedé a tus rutinas personalizadas, estado de cuotas o gestión administrativa.
-            </p>
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label htmlFor="login-email" className="flex flex-col gap-1.5 text-sm font-semibold text-slate-300">
+            Usuario
+            <input
+              id="login-email"
+              type="text"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Ingresá tu usuario, DNI o correo"
+              className={claseCampo}
+            />
+            <span className="text-[13px] font-normal text-slate-500">La primera vez, tu usuario es tu DNI.</span>
+          </label>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input Usuario / DNI / Email */}
-            <div>
-              <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                Usuario, DNI o correo electrónico
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                <input
-                  id="login-email"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ingresá tu usuario, DNI o correo"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
-                />
-              </div>
-            </div>
-
-            {/* Input Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="login-password" className="text-xs font-bold text-slate-300">Contraseña</label>
-                <button
-                  type="button"
-                  onClick={() => setMostrarModalRecuperar(true)}
-                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-12 w-full rounded-xl border border-slate-800 bg-slate-950/70 pl-10 pr-11 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500/70 focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 cursor-pointer"
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Recordar sesión */}
-            <div className="flex items-center gap-2 pt-0.5">
+          <label htmlFor="login-password" className="flex flex-col gap-1.5 text-sm font-semibold text-slate-300">
+            Contraseña
+            <span className="relative block">
               <input
-                id="recordar"
-                type="checkbox"
-                checked={recordarme}
-                onChange={(e) => setRecordarme(e.target.checked)}
-                className="size-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`${claseCampo} pr-[52px]`}
               />
-              <label htmlFor="recordar" className="text-xs font-medium text-slate-400 cursor-pointer select-none">
-                Recordar mi sesión en este equipo
-              </label>
-            </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-200"
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              </button>
+            </span>
+          </label>
 
-            {/* Mensaje de error */}
-            {error && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs font-semibold text-rose-400">
-                {error}
-              </div>
+          {error && (
+            <p role="alert" className="text-sm font-semibold text-rose-400">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={cargando}
+            className="mt-1 flex h-14 items-center justify-center rounded-[14px] bg-blue-600 text-[17px] font-bold text-white transition-colors hover:bg-blue-500 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {cargando ? (
+              <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            ) : (
+              'Ingresar'
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMostrarModalRecuperar(true)}
+            className="min-h-11 self-center px-2 text-sm font-semibold text-blue-400 hover:text-blue-300"
+          >
+            ¿Olvidaste tu contraseña? Pedila en recepción
+          </button>
+        </form>
 
-            {/* Botón Submit */}
-            <button
-              type="submit"
-              disabled={cargando}
-              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/25 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-            >
-              {cargando ? (
-                <span className="inline-block size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-              ) : (
-                <>
-                  Iniciar sesión
-                  <ArrowRight className="size-4" />
-                </>
-              )}
-            </button>
-          </form>
+        <div className="mt-auto flex flex-col gap-4">
+          <button
+            type="button"
+            onClick={abrirModalTutorial}
+            className="flex items-center gap-3.5 rounded-2xl border border-[#2A4677] bg-[#13254A] px-4 py-3.5 text-left text-slate-100 transition-colors hover:bg-[#162A50]"
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#1E3663]">
+              <Smartphone className="size-[22px]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold">Agregá ATLAS a tu pantalla</span>
+              <span className="block text-[13px] text-slate-400">
+                Como una app, en 1 toque <span aria-hidden="true" className="mx-1 text-slate-600">|</span> Chrome o Safari
+              </span>
+            </span>
+            <ChevronRight className="size-[18px] shrink-0 text-slate-400" />
+          </button>
 
-          {/* Micro indicadores de seguridad y servicio (sin emojis) */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs text-slate-400">
-            <div className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2.5 border border-slate-800/40">
-              <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
-              <span className="leading-tight">Acceso seguro y protegido</span>
-            </div>
-            <div className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2.5 border border-slate-800/40">
-              <Clock className="size-4 text-blue-400 shrink-0" />
-              <span className="leading-tight">Disponible 24/7 online</span>
-            </div>
-          </div>
-
-          {/* Botón ¿Cómo anclarlo en mi celular? */}
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={abrirModalTutorial}
-              className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 py-3 px-4 text-xs font-semibold text-slate-300 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
-                  <Smartphone className="size-4" />
-                </div>
-                <span>¿Cómo anclar ATLAS a la pantalla de tu celular?</span>
-              </div>
-              <ChevronRight className="size-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
-            </button>
-          </div>
+          <p className="text-center text-xs text-slate-500">
+            ATLAS Gym Platform <span aria-hidden="true" className="mx-1 text-slate-600">|</span> {VERSION_APP}{' '}
+            <span aria-hidden="true" className="mx-1 text-slate-600">|</span>{' '}
+            <Link href="/privacidad" className="underline underline-offset-2 hover:text-slate-300">
+              Política de privacidad
+            </Link>
+          </p>
         </div>
-
-        {/* Footer */}
-        <p className="mt-7 text-center text-xs font-medium text-slate-500">
-          ATLAS Gym Platform · {VERSION_APP} ·{' '}
-          <Link href="/privacidad" className="underline underline-offset-2 hover:text-slate-300">
-            Política de privacidad
-          </Link>
-        </p>
       </div>
 
       {/* Modal Tutorial de Instalación PWA */}

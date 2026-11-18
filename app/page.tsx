@@ -5,16 +5,17 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, Plus, WalletCards, ChevronRight, Dumbbell, Sparkles, Calendar, CheckCircle2, Clock, AlertCircle, MessageCircle } from 'lucide-react'
+import { Search, Plus, ChevronRight, Dumbbell, Play, Clock, AlertCircle, MessageCircle } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { ESTADO_CUENTA_LABEL, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago } from '@/lib/types'
+import { Ejercicio, ESTADO_CUENTA_LABEL, obtenerMaxPeriodoCubiertoAlumno, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago, UsuarioSesion } from '@/lib/types'
+import { EstadoCuentaEtiqueta } from '@/components/estado-cuenta-etiqueta'
 import { calcularVencimientoCuota, fechaLocalHoy } from '@/lib/date-utils'
 import { construirUrlWaMe, mensajeRecordatorioCuotaWhatsapp, tieneCelularWhatsappValido } from '@/lib/whatsapp-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
 import { BotonPerfilMovil } from '@/components/modal-perfil'
-import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
+import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type SemanaAlumno } from '@/lib/asistencia-utils'
 
 
 
@@ -54,293 +55,207 @@ function HeaderStatusSection({
   )
 }
 
-function AvisoBannerDestacado({ aviso }: { aviso: { fecha: string; titulo: string } }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-500/30 bg-blue-950/40 p-4 backdrop-blur-md">
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400">
-          <Bell className="size-5" />
-        </span>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-              Aviso del gimnasio
-            </span>
-            <span className="text-xs text-slate-400 font-medium">{aviso.fecha}</span>
-          </div>
-          <p className="text-sm font-bold text-white mt-0.5">{aviso.titulo}</p>
-        </div>
-      </div>
-      <Link
-        href="/avisos"
-        className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
-      >
-        Leer aviso completo <ChevronRight className="size-3.5" />
-      </Link>
-    </div>
-  )
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 opacity-60">|</span>
 }
 
-function AlumnoCardsSection({
-  alumno,
-  estadoCuenta,
-  rutina,
-  fechaHoy,
-  constancia,
-}: {
-  alumno: any
-  estadoCuenta: string
-  rutina: any
-  fechaHoy?: Date | null
-  constancia: ConstanciaAlumno
-}) {
-  const diaUno = rutina?.dias[0]
-  const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
-  const subtituloRutina = diaUno ? diaUno.nombre : (rutina ? 'Rutina activa' : 'Consultá a tu profesor')
-  const detalleRutina = diaUno
-    ? `${diaUno.ejercicios.length} ejercicios para hoy`
-    : (rutina ? `${rutina.dias.length} días de plan` : 'Pedí tu rutina en recepción')
-
-  const etiquetaEstadoCuota =
-    estadoCuenta === 'MOROSO'
-      ? 'Vencido'
-      : (ESTADO_CUENTA_LABEL[estadoCuenta as keyof typeof ESTADO_CUENTA_LABEL] || estadoCuenta)
-
-  const colorSubtituloCuota =
-    estadoCuenta === 'AL_DIA'
-      ? 'text-emerald-600'
-      : estadoCuenta === 'PENDIENTE'
-      ? 'text-amber-600'
-      : 'text-rose-600'
+function TuSemana({ semana, entrenosMes, ultimaVisita }: { semana: SemanaAlumno; entrenosMes: number; ultimaVisita?: string | null }) {
+  const resumen =
+    semana.limite == null
+      ? `Viniste ${semana.diasAsistidos} ${semana.diasAsistidos === 1 ? 'día' : 'días'} esta semana. Tu plan es libre.`
+      : semana.excedido
+      ? `Viniste ${semana.diasAsistidos} días y tu plan es de ${semana.limite}. Hablalo en el mostrador para cambiar de plan.`
+      : semana.restantes === 0
+      ? `Ya usaste los ${semana.limite} días de tu plan esta semana. El lunes se renuevan.`
+      : `Te ${semana.restantes === 1 ? 'queda 1 día' : `quedan ${semana.restantes} días`} de tu plan esta semana.`
 
   return (
-    <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]">
-      {/* Tarjeta 1: Mi Rutina */}
-      <Link
-        href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-400">Mi rutina de hoy</span>
-            <p className="mt-2 text-2xl font-black text-white break-words text-balance">{nombreRutina}</p>
-            <p className="mt-1 text-sm font-semibold text-blue-400">{subtituloRutina}</p>
-            <p className="mt-4 text-xs font-medium text-slate-400">{detalleRutina}</p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-blue-600 group-hover:text-white shadow-sm shrink-0">
-            <Dumbbell className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
-          <span>{rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'}</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-500" />
-      </Link>
-
-      {/* Tarjeta 2: Mi Cuota */}
-      <Link
-        href="/finanzas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-400">Estado de mi cuota</span>
-            <p className="mt-2 text-2xl font-black text-white">{etiquetaEstadoCuota}</p>
-            <p className={`mt-1 text-sm font-semibold ${colorSubtituloCuota}`}>{alumno?.plan || 'Plan Musculación'}</p>
-            <p className="mt-4 text-xs font-medium text-slate-400">
-              Vence el {calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined)}
-            </p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-emerald-600 group-hover:text-white shadow-sm shrink-0">
-            <WalletCards className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">
-          <span>Ver mis pagos y datos de cuota</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
-      </Link>
-
-      {/* Tarjeta 3: Mi Constancia */}
-      <Link
-        href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,border-color] duration-200 hover:shadow-xl hover:shadow-amber-950/30 text-slate-100 border border-slate-800 hover:border-amber-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-400">Mi constancia</span>
-            <p className="mt-2 text-2xl font-black text-white">
-              {constancia.entrenosMes} {constancia.entrenosMes === 1 ? 'entreno' : 'entrenos'}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-slate-400">registrados este mes</p>
-            <p className="mt-4 text-xs font-medium text-slate-500">
-              {constancia.ultimaVisita ? `Última visita: ${constancia.ultimaVisita}` : 'Todavía no registraste ingresos'}
-            </p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-amber-500 group-hover:text-white shadow-sm shrink-0">
-            <Sparkles className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
-          <span>¡Mantené el ritmo esta semana!</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
-      </Link>
-    </div>
+    <section aria-labelledby="titulo-tu-semana" className="rounded-2xl bg-[#162A50] p-4 md:rounded-[20px] md:border md:border-[#22396A] md:px-7 md:py-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="titulo-tu-semana" className="text-[17px] font-bold text-white md:text-lg md:font-semibold">Tu semana</h2>
+        {semana.limite != null && (
+          <span className={`font-display text-[26px] font-extrabold ${semana.excedido ? 'text-amber-400' : 'text-white'}`}>
+            {semana.diasAsistidos} <span className="text-lg text-slate-500">/ {semana.limite}</span>
+          </span>
+        )}
+      </div>
+      <ol aria-label="Días de esta semana" className="mt-3 grid grid-cols-7 gap-1.5 text-center text-xs text-slate-500 md:mt-4 md:gap-2 md:text-[13px]">
+        {semana.dias.map((d) => (
+          <li key={d.fecha}>
+            <span
+              className={`mb-1 block h-[38px] rounded-lg md:mb-1.5 md:h-9 ${
+                d.fue ? 'bg-blue-600' : d.futuro ? 'border border-dashed border-slate-700' : 'bg-[#1E3663]'
+              } ${d.esHoy ? 'outline outline-2 outline-offset-2 outline-blue-400' : ''}`}
+            />
+            {d.esHoy ? <strong className="text-slate-100">Hoy</strong> : d.letra}
+            <span className="sr-only">: {d.fue ? 'viniste' : d.futuro ? 'todavía no llegó' : 'no viniste'}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-sm text-slate-400">
+        {resumen} <span className="hidden md:inline">Este mes llevás {entrenosMes} {entrenosMes === 1 ? 'entrenamiento' : 'entrenamientos'}.</span>
+      </p>
+      {ultimaVisita && <p className="mt-1 hidden text-[13px] text-slate-500 md:block">Última visita: {ultimaVisita}</p>}
+    </section>
   )
 }
 
 // ---------- Home personalizado para el Alumno ----------
-function HomeAlumno({
-  usuario,
-  fechaHoy,
-  ubicacion,
-}: {
-  usuario: any
-  fechaHoy: Date | null
-  ubicacion: string
-}) {
-  const { alumnos, planes, asistencias, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario } = useAppData()
+function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: Date | null }) {
+  const { alumnos, planes, asistencias, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, getAvisosParaUsuario } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const constancia = useMemo(
     () => calcularConstanciaAlumno(asistencias, alumno?.id),
     [asistencias, alumno?.id]
   )
-  const planDelAlumno =
+  const plan =
     (alumno?.planId ? planes.find((p) => p.id === alumno.planId) : undefined) ||
     planes.find((p) => p.nombre.trim().toLowerCase() === (alumno?.plan || '').trim().toLowerCase())
   const semana = useMemo(
-    () => calcularSemanaAlumno(asistencias, alumno?.id, planDelAlumno?.diasPorSemana ?? alumno?.plan),
-    [asistencias, alumno?.id, planDelAlumno?.diasPorSemana, alumno?.plan]
+    () => calcularSemanaAlumno(asistencias, alumno?.id, plan?.diasPorSemana ?? alumno?.plan),
+    [asistencias, alumno?.id, plan?.diasPorSemana, alumno?.plan]
   )
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
-
-  const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuario)
-  const avisosAlumno = getAvisosParaUsuario(usuario)
-  const ultimoAvisoNoLeido = avisosAlumno.find((av) => !av.leidoPor.includes(usuario.id))
-
+  const dia = rutina?.dias[0]
+  const avisos = getAvisosParaUsuario(usuario)
+  const pagos = alumno ? getPagosDeAlumno(alumno.id).filter((p) => p.estado !== 'ANULADO') : []
+  const vencimiento = calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined, obtenerMaxPeriodoCubiertoAlumno(pagos))
+  const planTexto = semana.limite ? `${semana.limite} ${semana.limite === 1 ? 'día' : 'días'}` : alumno?.plan || 'Sin plan'
+  const detalleEjercicio = (ej: Ejercicio) =>
+    ej.tipoSerie === 'BI_SERIE'
+      ? `Bi-serie, ${ej.series} vueltas`
+      : ej.tipoSerie === 'DROP_SET'
+      ? `Drop set, ${ej.series} series`
+      : `${ej.series} series de ${ej.repeticiones}`
 
   return (
     <>
-      {/* Header Superior */}
-      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-4 sm:px-6 md:px-10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center md:hidden shrink-0">
-            <Image
-              src="/logo-atlas-blanco.png"
-              alt="ATLAS GYM"
-              width={120}
-              height={67}
-              className="h-8 w-auto object-contain"
-              priority
-            />
-          </div>
-          <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold shrink-0">
-            Portal del alumno
-          </span>
-        </div>
-        <HeaderStatusSection
-          cantNoLeidos={cantAvisosNoLeidos}
-          fechaHoy={fechaHoy}
-          ubicacion={ubicacion}
-        />
+      <header className="flex items-center justify-between px-5 pb-2 pt-5 md:hidden">
+        <Image src="/logo-atlas-blanco.png" alt="ATLAS Gym" width={120} height={67} className="h-[26px] w-auto object-contain" priority />
+        <BotonPerfilMovil />
       </header>
 
-      <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-8">
-        {/* Banner de Aviso no leído si existe */}
-        {ultimoAvisoNoLeido && <AvisoBannerDestacado aviso={ultimoAvisoNoLeido} />}
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-3.5 px-5 pb-28 pt-1.5 md:gap-8 md:px-14 md:pb-16 md:pt-12">
+        <header>
+          <p className="mb-2 hidden text-sm text-[#8296BB] md:block">
+            {fechaHoy
+              ? capitalizar(fechaHoy.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }))
+              : ' '}
+          </p>
+          <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px] md:font-bold md:leading-none">
+            Hola, {usuario.nombre.split(' ')[0]}
+          </h1>
+        </header>
 
-        {/* Bienvenida Alumno */}
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-sm font-semibold text-slate-400">Mi panel de entrenamiento</p>
-            <h1 className="text-5xl font-black text-white md:text-7xl">
-              ¡Hola, {usuario.nombre.split(' ')[0]}!
-            </h1>
-            <p className="mt-2 text-base text-slate-400">
-              Tenés todo listo para romperla en tu entrenamiento de hoy.
-            </p>
-          </div>
-          <Link
-            href="/rutinas"
-            className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 active:scale-95 text-sm"
-          >
-            <Dumbbell className="size-4" />
-            Empezar entrenamiento
-          </Link>
-        </div>
-
-        {/* 3 Tarjetas de Impacto */}
-        <AlumnoCardsSection
-          alumno={alumno}
-          estadoCuenta={estadoCuenta}
-          rutina={rutina}
-          fechaHoy={fechaHoy}
-          constancia={constancia}
-        />
-
-        {/* Tu semana: qué días vino y cuántos le quedan según su plan (misma cuenta que el tótem) */}
-        <section aria-labelledby="titulo-tu-semana" className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 id="titulo-tu-semana" className="text-4xl font-black text-white">Tu semana</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                {semana.limite == null
-                  ? `Viniste ${semana.diasAsistidos} ${semana.diasAsistidos === 1 ? 'día' : 'días'} esta semana. Tu plan es libre.`
-                  : semana.excedido
-                  ? `Viniste ${semana.diasAsistidos} días y tu plan es de ${semana.limite}. Hablalo en el mostrador para cambiar de plan.`
-                  : semana.restantes === 0
-                  ? `Ya usaste los ${semana.limite} días de tu plan esta semana. El lunes se renuevan.`
-                  : `Te ${semana.restantes === 1 ? 'queda 1 día' : `quedan ${semana.restantes} días`} de los ${semana.limite} de tu plan.`}
-              </p>
-            </div>
-            {semana.limite != null && (
-              <p className={`font-display text-5xl font-black leading-none tabular-nums ${semana.excedido ? 'text-amber-400' : 'text-white'}`}>
-                {semana.diasAsistidos}
-                <span className="text-2xl text-slate-500">/{semana.limite}</span>
-              </p>
-            )}
-          </div>
-
-          <ol className="mt-6 grid grid-cols-7 gap-2" aria-label="Días de esta semana">
-            {semana.dias.map((d) => (
-              <li key={d.fecha} className="flex flex-col items-center gap-2">
-                <span className={`text-xs font-bold ${d.esHoy ? 'text-blue-400' : 'text-slate-500'}`}>{d.letra}</span>
-                <span
-                  aria-label={`${d.fecha}: ${d.fue ? 'viniste' : d.futuro ? 'todavía no llegó' : 'no viniste'}${d.esHoy ? ' (hoy)' : ''}`}
-                  className={`flex aspect-square w-full max-w-14 items-center justify-center rounded-xl border-2 text-sm font-bold ${
-                    d.fue
-                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300'
-                      : d.esHoy
-                      ? 'border-blue-500 border-dashed text-blue-300'
-                      : d.futuro
-                      ? 'border-slate-800 text-slate-600'
-                      : 'border-slate-700 bg-slate-950/60 text-slate-500'
-                  }`}
-                >
-                  {d.fue ? <CheckCircle2 className="size-5" /> : Number(d.fecha.slice(8))}
+        <div className="flex flex-col gap-3.5 md:gap-8 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 flex-col gap-3.5 md:gap-8 lg:flex-[2]">
+            <div className="order-2 md:order-1">
+              {/* Celular: la rutina es un solo botón grande */}
+              <Link href="/rutinas" className="flex items-center gap-3.5 rounded-2xl bg-blue-600 p-4 text-white md:hidden">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                  <Dumbbell className="size-6" />
                 </span>
-              </li>
-            ))}
-          </ol>
-        </section>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] opacity-85">Mi rutina de hoy</span>
+                  <span className="block truncate font-display text-2xl font-bold uppercase">{dia?.nombre ?? rutina?.nombre ?? 'Sin rutina asignada'}</span>
+                  <span className="block text-[13px] opacity-85">
+                    {dia ? `${dia.ejercicios.length} ejercicios` : 'Consultá a tu profesor'}
+                  </span>
+                </span>
+                <ChevronRight className="size-5 shrink-0" />
+              </Link>
 
-        {/* Sección: Información & Horarios de ATLAS */}
-        <div className="rounded-2xl border border-slate-800/80 bg-slate-950 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-blue-600/10 text-blue-400 flex items-center justify-center shrink-0">
-              <Calendar className="size-5" />
+              <section aria-labelledby="titulo-rutina-hoy" className="hidden flex-col gap-5 rounded-[20px] border border-[#22396A] bg-[#162A50] p-7 md:flex">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-[#8296BB]">
+                      Mi rutina de hoy{rutina && rutina.dias.length > 1 ? `, día 1 de ${rutina.dias.length}` : ''}
+                    </p>
+                    <h2 id="titulo-rutina-hoy" className="mt-1.5 text-[26px] font-semibold text-white">{dia?.nombre ?? rutina?.nombre ?? 'Sin rutina asignada'}</h2>
+                    <p className="mt-1 text-sm text-[#8296BB]">{dia ? `${dia.ejercicios.length} ejercicios` : 'Consultá a tu profesor'}</p>
+                  </div>
+                  <Link href="/rutinas" className="flex h-[52px] items-center gap-2.5 rounded-[14px] bg-blue-600 px-5 font-semibold text-white transition-colors hover:bg-blue-500">
+                    <Play className="size-4 fill-current" />
+                    {rutina ? 'Empezar entrenamiento' : 'Ver rutinas'}
+                  </Link>
+                </div>
+                {dia && dia.ejercicios.length > 0 && (
+                  <ol className="border-t border-[#22396A]">
+                    {dia.ejercicios.slice(0, 5).map((ej, i) => (
+                      <li key={ej.id} className="flex min-h-12 items-center gap-4 border-b border-[#22396A] last:border-0">
+                        <span className="w-6 text-sm text-[#8296BB]">{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-slate-100">{ej.nombre}</span>
+                        <span className="text-sm text-[#8296BB]">{detalleEjercicio(ej)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
             </div>
-            <div>
-              <p className="font-bold text-slate-200">Horarios de atención de ATLAS Gym</p>
-              <p className="text-xs text-slate-500">Lunes a Viernes: 07:00 a 22:00 hs · Sábados: 09:00 a 14:00 hs</p>
+
+            <div className="order-1 md:order-2">
+              <TuSemana semana={semana} entrenosMes={constancia.entrenosMes} ultimaVisita={constancia.ultimaVisita} />
             </div>
           </div>
-          <p className="text-xs font-semibold text-slate-500">ATLAS Gym · Tu mejor versión cada día</p>
+
+          <aside aria-label="Tu cuenta y el gimnasio" className="flex min-w-0 flex-col gap-3.5 md:gap-8 lg:flex-1">
+            <section aria-labelledby="titulo-mi-cuota" className="flex flex-col gap-2.5 rounded-2xl bg-[#162A50] p-4 md:border md:border-[#22396A] md:bg-transparent md:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="titulo-mi-cuota" className="text-[17px] font-bold text-white md:text-lg md:font-semibold">Mi cuota</h2>
+                <EstadoCuentaEtiqueta estado={estadoCuenta} />
+              </div>
+              <div className="flex justify-between gap-3 text-[15px]">
+                <span className="text-slate-400">Plan</span>
+                <span className="text-right text-slate-100">
+                  {planTexto}
+                  {plan && (
+                    <>
+                      <Separador />${plan.precio.toLocaleString('es-AR')} / mes
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3 text-[15px]">
+                <span className="text-slate-400">Próximo vencimiento</span>
+                <span className="text-right text-slate-100">{vencimiento}</span>
+              </div>
+              <Link href="/finanzas" className="flex min-h-11 items-center text-sm font-semibold text-blue-400 hover:text-blue-300">
+                Ver mis pagos y cómo transferir
+              </Link>
+            </section>
+
+            {avisos.length > 0 && (
+              <section aria-labelledby="titulo-avisos-inicio" className="flex flex-col gap-3">
+                <div className="hidden items-baseline justify-between md:flex">
+                  <h2 id="titulo-avisos-inicio" className="text-lg font-semibold text-white">Avisos</h2>
+                  <Link href="/avisos" className="text-sm text-blue-400 hover:text-blue-300">Ver todos</Link>
+                </div>
+                {avisos.slice(0, 2).map((aviso, i) => (
+                  <Link
+                    key={aviso.id}
+                    href="/avisos"
+                    className={`rounded-2xl border border-[#2A4677] bg-[#13254A] px-4 py-3.5 md:border-[#22396A] md:bg-transparent md:px-5 md:py-4 ${i > 0 ? 'hidden md:block' : 'block'}`}
+                  >
+                    <span className="block text-[13px] font-bold uppercase tracking-[.06em] text-amber-400 md:font-normal md:normal-case md:tracking-normal md:text-[#8296BB]">
+                      <span className="md:hidden">Aviso del gimnasio</span>
+                      <span className="hidden md:inline">{aviso.fecha}</span>
+                    </span>
+                    <span className="mt-1 block text-[15px] text-slate-100">{aviso.titulo}</span>
+                  </Link>
+                ))}
+              </section>
+            )}
+
+            <section aria-labelledby="titulo-horarios" className="hidden flex-col gap-2 md:flex">
+              <h2 id="titulo-horarios" className="text-lg font-semibold text-white">Horarios</h2>
+              <p className="text-sm leading-relaxed text-slate-400">
+                Lunes a viernes de 07:00 a 22:00
+                <br />
+                Sábados de 09:00 a 14:00
+              </p>
+            </section>
+          </aside>
         </div>
       </div>
     </>
@@ -527,7 +442,7 @@ export default function Page() {
   }
 
   if (usuarioActual.rol === 'ALUMNO') {
-    return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} ubicacion={ubicacion} />
+    return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} />
   }
 
   return (

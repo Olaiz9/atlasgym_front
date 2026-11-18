@@ -196,193 +196,144 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  const heroe = {
+    AL_DIA: {
+      caja: "border-[#2E6B57] bg-[#0F3B2B]",
+      texto: "text-[#C8F5DD]",
+      Icono: Check,
+      icono: "text-[#5BE3A0]",
+      estado: "Estás al día",
+      titulo: maxPeriodoCubierto
+        ? `${formatearMes(maxPeriodoCubierto).replace(` de ${new Date().getFullYear()}`, "")} pagado`
+        : "Acceso habilitado",
+    },
+    PENDIENTE: {
+      caja: "border-amber-500/40 bg-amber-500/10",
+      texto: "text-amber-300",
+      Icono: Clock,
+      icono: "text-amber-400",
+      estado: "Tenés un pago pendiente",
+      titulo: "Cuota pendiente",
+    },
+    MOROSO: {
+      caja: "border-rose-400/40 bg-rose-500/10",
+      texto: "text-rose-300",
+      Icono: AlertCircle,
+      icono: "text-rose-400",
+      estado: "Regularizá para seguir entrenando",
+      titulo: "Cuota vencida",
+    },
+    INACTIVO: {
+      caja: "border-slate-700 bg-[#162A50]",
+      texto: "text-slate-300",
+      Icono: AlertCircle,
+      icono: "text-slate-400",
+      estado: "Acercate a recepción",
+      titulo: "Membresía inactiva",
+    },
+  }[estadoCuenta];
+  const etiquetaPago = (pago: Pago) =>
+    ({ PAGADO: "Pagado", PARCIAL: "Seña", PENDIENTE: "Pendiente", VENCIDO: "Vencido", ANULADO: "Anulado" })[pago.estado];
+  const IconoPago = (pago: Pago) => (pago.estado === "PAGADO" ? Check : pago.estado === "VENCIDO" ? AlertCircle : Clock);
+
   return (
-    <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
-      <div>
-        <p className="text-xs font-bold text-blue-400 mb-1">
-          Portal del alumno
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3.5 px-5 pb-28 pt-[22px] md:gap-5 md:pb-16 md:pt-12">
+      <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">Mis cuotas</h1>
+
+      <section aria-labelledby="estado-cuota" className={`flex flex-col gap-1.5 rounded-[18px] border p-[18px] ${heroe.caja}`}>
+        <h2 id="estado-cuota" className={`flex items-center gap-2 text-sm font-bold ${heroe.texto}`}>
+          <heroe.Icono className={`size-[18px] ${heroe.icono}`} aria-hidden="true" />
+          {heroe.estado}
+        </h2>
+        <p className="font-display text-[34px] font-extrabold uppercase leading-none text-white">{heroe.titulo}</p>
+        <p className={`text-sm ${heroe.texto}`}>
+          Próximo vencimiento: {calcularVencimientoCuota(estadoCuenta, new Date(), maxPeriodoCubierto)}
+          <Separador />
+          se abona del 1 al 10
         </p>
-        <h1 className="text-5xl font-black text-white md:text-6xl">
-          Mis cuotas y pagos
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Hola, <strong className="text-white">{usuario.nombre}</strong>. Revisá el estado de tu suscripción en Atlas Gym y consultá los datos para abonar.
-        </p>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400">Estado de mi cuota</p>
-          <div className="mt-3 flex items-center gap-2">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-black ${
-                ESTADO_CUENTA_STYLES[estadoCuenta]
-              }`}
-            >
-              {ESTADO_CUENTA_LABEL[estadoCuenta]}
-            </span>
-          </div>
-          <p className="mt-3 text-xs text-slate-400 font-medium leading-relaxed">
-            {estadoCuenta === "AL_DIA"
-              ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
-              : estadoCuenta === "PENDIENTE"
-              ? "Tu cuota del mes figura pendiente de abono o con saldo parcial a completar."
-              : estadoCuenta === "MOROSO"
-              ? "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."
-              : "Tu membresía se encuentra inactiva. Acercate a recepción para regularizar tu cuenta."}
-          </p>
+      <section aria-label="Mi plan" className="rounded-2xl bg-[#162A50] px-4 py-1">
+        <div className="flex justify-between gap-4 border-b border-[#22396A] py-3 text-[15px]">
+          <span className="text-slate-400">Mi plan</span>
+          <span className="text-right text-slate-100">{alumno.plan || "Musculación"}</span>
         </div>
-
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400">Mi plan actual</p>
-          <p className="mt-2 text-2xl font-black text-white">{alumno?.plan || "Musculación"}</p>
-          <p className="mt-1 text-sm font-bold text-blue-400">
-            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-500 font-medium">/ mes</span>
-          </p>
+        <div className="flex items-center justify-between gap-4 py-3 text-[15px]">
+          <span className="text-slate-400">Valor</span>
+          <span className="font-display text-xl font-bold text-slate-100">${planMonto.toLocaleString("es-AR")} / mes</span>
         </div>
+      </section>
 
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400">Próximo vencimiento</p>
-          <p className="mt-2 text-2xl font-black text-white">
-            {calcularVencimientoCuota(
-              estadoCuenta,
-              new Date(),
-              maxPeriodoCubierto
-            )}
-          </p>
-          <p className="mt-1 text-xs text-slate-500 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 text-white shadow-xl backdrop-blur-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
-              Datos para abonar tu cuota
-            </span>
-            {datosCobro.alias ? (
-            <>
-            <h2 className="text-3xl font-black">Transferencia bancaria o Mercado Pago</h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
-            </p>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
-                <span className="text-xs text-slate-400 font-semibold">Alias:</span>
-                <span className="text-sm font-mono font-black text-blue-400">{datosCobro.alias}</span>
-                <button
-                  type="button"
-                  onClick={copiarAlias}
-                  className="ml-2 text-xs text-slate-300 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg font-bold active:scale-95"
-                >
-                  {copiado ? "¡Copiado! ✓" : "Copiar"}
-                </button>
-              </div>
-              {datosCobro.titular && (
-                <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
-                  <span className="text-slate-400">Titular:</span> <strong>{datosCobro.titular}</strong>
-                </div>
-              )}
+      <section aria-labelledby="como-pagar" className="flex flex-col gap-3 rounded-2xl bg-[#162A50] p-4">
+        <h2 id="como-pagar" className="text-[17px] font-bold text-white">Cómo pagar</h2>
+        {datosCobro.alias ? (
+          <div className="flex items-center gap-3 rounded-xl bg-[#0E1B36] p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] text-slate-400">
+                Transferencia o Mercado Pago
+                <Separador />
+                Alias
+              </p>
+              <p className="mt-0.5 break-words font-bold text-white">{datosCobro.alias}</p>
+              {datosCobro.titular && <p className="mt-0.5 text-[13px] text-slate-500">Titular: {datosCobro.titular}</p>}
             </div>
-            </>
-            ) : (
-            <>
-            <h2 className="text-3xl font-black">Abonás en recepción</h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Consultá en recepción o por WhatsApp los medios de pago disponibles (efectivo, transferencia o tarjeta).
-            </p>
-            </>
-            )}
+            <button type="button" onClick={copiarAlias} className="h-11 shrink-0 rounded-[10px] bg-blue-600 px-3.5 text-sm font-bold text-white hover:bg-blue-500">
+              {copiado ? "Copiado" : "Copiar"}
+            </button>
           </div>
+        ) : null}
+        <p className="text-sm text-slate-400">
+          {datosCobro.alias
+            ? "También podés abonar en recepción, en efectivo o con tarjeta."
+            : "Abonás en recepción, en efectivo, con transferencia o con tarjeta."}
+        </p>
+        <a
+          href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
+            `Hola! Soy ${alumno.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
+          )}`}
+          target="atlas_whatsapp_tab"
+          rel="noopener noreferrer"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold text-slate-100 hover:bg-slate-900"
+        >
+          <WhatsAppIcon className="size-[18px] fill-current" />
+          Enviar comprobante por WhatsApp
+        </a>
+      </section>
 
-          <div className="shrink-0">
-            <a
-              href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
-                `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
-              )}`}
-              target="atlas_whatsapp_tab"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform] duration-200 active:scale-95 text-sm"
-            >
-              <WhatsAppIcon className="w-5 h-5 fill-white" />
-              Enviar comprobante por WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden text-slate-100 shadow-sm backdrop-blur-md">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div>
-            <h2 className="text-2xl font-black text-white">Historial de mis cuotas</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Registro histórico de tus pagos</p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400 border-b border-slate-800 bg-slate-950/20">
-                <th className="font-bold px-6 py-3.5">Plan / Concepto</th>
-                <th className="font-bold px-6 py-3.5">Monto</th>
-                <th className="font-bold px-6 py-3.5">Fecha</th>
-                <th className="font-bold px-6 py-3.5">Medio de pago</th>
-                <th className="font-bold px-6 py-3.5">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {misPagos.map((pago) => {
-                const esParcial = pago.estado === "PARCIAL";
-                const abonado = obtenerMontoRecaudadoPago(pago);
-                const saldo = obtenerSaldoPendientePago(pago);
-                return (
-                  <tr key={pago.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors">
-                    <td className="px-6 py-4 font-bold text-white">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span>{pago.plan}</span>
-                        {(pago.cantidadMeses ?? 1) > 1 && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                            ×{pago.cantidadMeses} meses
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-black text-white">
-                      ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
-                      {esParcial && (
-                        <div className="text-xs font-bold text-amber-400">
-                          Resta ${saldo.toLocaleString("es-AR")}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
+      <section aria-labelledby="historial-cuotas" className="rounded-2xl bg-[#162A50] px-4 py-1.5">
+        <h2 id="historial-cuotas" className="pb-1.5 pt-2.5 text-[17px] font-bold text-white">Historial</h2>
+        {misPagos.length === 0 ? (
+          <p className="border-t border-[#22396A] py-6 text-center text-sm text-slate-500">No tenés pagos registrados en el sistema todavía.</p>
+        ) : (
+          <ul>
+            {misPagos.map((pago) => {
+              const esParcial = pago.estado === "PARCIAL";
+              const Icono = IconoPago(pago);
+              return (
+                <li key={pago.id} className="flex items-center gap-2.5 border-t border-[#22396A] py-[11px] text-[15px]">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white">
+                      {formatearMes(pago.periodoMes || pago.fecha.slice(0, 7)).replace(` de ${new Date().getFullYear()}`, "")}
+                      {(pago.cantidadMeses ?? 1) > 1 && <span className="ml-1 font-normal text-slate-500">({pago.cantidadMeses} meses)</span>}
+                    </p>
+                    <p className="text-[13px] text-slate-500">
                       {formatFechaAR(pago.fecha)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          ESTADO_STYLES[pago.estado]
-                        }`}
-                      >
-                        {esParcial ? "SEÑA PARCIAL" : pago.estado}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {misPagos.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                    No tenés pagos registrados en el sistema todavía.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      <Separador />
+                      {pago.metodo}
+                    </p>
+                    {esParcial && <p className="text-[13px] text-amber-400">Resta ${obtenerSaldoPendientePago(pago).toLocaleString("es-AR")}</p>}
+                  </div>
+                  <span className="tabular-nums text-slate-100">${(esParcial ? obtenerMontoRecaudadoPago(pago) : pago.monto).toLocaleString("es-AR")}</span>
+                  <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] font-semibold ${ESTADO_STYLES[pago.estado]}`}>
+                    <Icono className="size-3.5" aria-hidden="true" />
+                    {etiquetaPago(pago)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

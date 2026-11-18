@@ -41,8 +41,10 @@ const principalesAlumno: ItemNav[] = [
   { label: 'Mi rutina', href: '/rutinas', icon: Dumbbell },
   { label: 'Mis cuotas', href: '/finanzas', icon: WalletCards },
   { label: 'Avisos', href: '/avisos', icon: Bell },
+  { label: 'Videoteca', href: '/videoteca', icon: Video },
 ]
-const secundariosAlumno: ItemNav[] = [{ label: 'Videoteca', href: '/videoteca', icon: Video }]
+// El socio no tiene "Más": ayuda y cerrar sesión están en Mi perfil (avatar del Inicio).
+const secundariosAlumno: ItemNav[] = []
 
 function Pastilla({ activo, children }: { activo: boolean; children: React.ReactNode }) {
   return (
@@ -109,7 +111,7 @@ export function MobileNav() {
           )
         })}
 
-        <button
+        {!esAlumno && <button
           type="button"
           onClick={() => setMostrarMas(true)}
           aria-haspopup="dialog"
@@ -122,7 +124,7 @@ export function MobileNav() {
             {avisosEnMas && <Contador cantidad={cantNoLeidos} />}
           </Pastilla>
           <span className="w-full truncate px-0.5 text-center text-xs font-semibold tracking-tight">Más</span>
-        </button>
+        </button>}
       </nav>
 
       {mostrarMas && (
