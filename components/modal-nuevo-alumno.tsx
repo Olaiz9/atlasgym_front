@@ -22,6 +22,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const [alumnoRecienCreado, setAlumnoRecienCreado] = useState<{ nombre: string; dni: string } | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  const enviando = useRef(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const planesActivos = planes.filter((p) => p.activo)
@@ -43,6 +46,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }
 
   function handleCerrar() {
+    // Mientras el servidor no responde, el modal no se cierra: así no queda un alta a medias sin aviso.
+    if (enviando.current) return
+    setErrorEnvio(null)
     setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
     setErroresAlumno({})
     setAlumnoRecienCreado(null)
@@ -57,6 +63,10 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
     <dialog
       ref={dialogRef}
       onClose={handleCerrar}
+      onCancel={(e) => {
+        // Escape cierra el <dialog> nativo: no mientras se está guardando el alta
+        if (enviando.current) e.preventDefault()
+      }}
       onClick={(e) => {
         if (e.target === dialogRef.current) handleCerrar()
       }}
@@ -99,22 +109,35 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
           </div>
         ) : (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            if (!validarAlumno()) return
-            agregarAlumno({
-              nombre: formAlumno.nombre,
-              dni: formAlumno.dni,
-              email: formAlumno.email.trim() || undefined,
-              celular: formAlumno.celular,
-              planId: formAlumno.planId || undefined,
-              plan: formAlumno.plan,
-              fechaAlta: fechaLocalHoy(),
-              activo: true,
-            })
-            toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
-            setAlumnoRecienCreado({ nombre: formAlumno.nombre, dni: formAlumno.dni })
+            if (enviando.current || !validarAlumno()) return
+            enviando.current = true
+            setGuardando(true)
+            setErrorEnvio(null)
+            try {
+              const resultado = await agregarAlumno({
+                nombre: formAlumno.nombre,
+                dni: formAlumno.dni,
+                email: formAlumno.email.trim() || undefined,
+                celular: formAlumno.celular,
+                planId: formAlumno.planId || undefined,
+                plan: formAlumno.plan,
+                fechaAlta: fechaLocalHoy(),
+                activo: true,
+              })
+              if (!resultado.ok) {
+                setErrorEnvio(resultado.error)
+                return
+              }
+              toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
+              setAlumnoRecienCreado({ nombre: formAlumno.nombre, dni: formAlumno.dni })
+            } finally {
+              enviando.current = false
+              setGuardando(false)
+            }
           }}
+          aria-busy={guardando}
           className="mt-6 flex flex-col gap-4"
         >
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
@@ -211,9 +234,15 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.plan}</span>}
           </label>
 
+          {errorEnvio && (
+            <p role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-300">
+              {errorEnvio}
+            </p>
+          )}
+
           <div className="mt-4 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
-            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+            <Button type="button" variant="outline" onClick={handleCerrar} disabled={guardando} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
+            <Button type="submit" disabled={guardando} className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">{guardando ? 'Guardando…' : 'Crear alumno'}</Button>
           </div>
         </form>
         )}
