@@ -6,23 +6,7 @@ import { VideoTecnica } from '@/lib/types'
 import { CLASICOS_CURADOS, EjercicioCatalogo } from '@/lib/clasicos-curados'
 import { useDebounce } from '@/lib/use-debounce'
 import { useEscapeKey } from '@/lib/use-escape-key'
-import {
-  Video,
-  Play,
-  Search,
-  Plus,
-  Trash2,
-  X,
-  CheckCircle2,
-  Clock,
-  Dumbbell,
-  Shield,
-  Layers,
-  Flame,
-  Crosshair,
-  CircleDot,
-  type LucideIcon,
-} from 'lucide-react'
+import { Play, Search, Plus, Trash2, X, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const GRUPOS_MUSCULARES = [
@@ -36,51 +20,6 @@ const GRUPOS_MUSCULARES = [
 ] as const
 
 type GrupoValido = 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Core'
-
-const INFO_GRUPOS: Record<GrupoValido, { icono: LucideIcon; titulo: string; descripcion: string; color: string; iconColor: string }> = {
-  Pecho: {
-    icono: Shield,
-    titulo: 'Pecho',
-    descripcion: 'Press de banca, aperturas y variantes para desarrollo y potencia del pectoral.',
-    color: 'from-blue-600/15 via-blue-500/5 to-transparent border-blue-500/30 text-blue-400',
-    iconColor: 'text-blue-400',
-  },
-  Espalda: {
-    icono: Layers,
-    titulo: 'Espalda',
-    descripcion: 'Dominadas, remos, jalones y tracciones para amplitud, densidad y salud postural.',
-    color: 'from-emerald-600/15 via-emerald-500/5 to-transparent border-emerald-500/30 text-emerald-400',
-    iconColor: 'text-emerald-400',
-  },
-  Piernas: {
-    icono: Flame,
-    titulo: 'Piernas',
-    descripcion: 'Sentadillas, peso muerto, prensa y ejercicios para tren inferior completo.',
-    color: 'from-amber-600/15 via-amber-500/5 to-transparent border-amber-500/30 text-amber-400',
-    iconColor: 'text-amber-400',
-  },
-  Hombros: {
-    icono: Crosshair,
-    titulo: 'Hombros',
-    descripcion: 'Press militar, elevaciones laterales y posteriores para hombros redondos y estables.',
-    color: 'from-purple-600/15 via-purple-500/5 to-transparent border-purple-500/30 text-purple-400',
-    iconColor: 'text-purple-400',
-  },
-  Brazos: {
-    icono: Dumbbell,
-    titulo: 'Brazos',
-    descripcion: 'Curls variados, extensiones, fondos y antebrazos con técnica estricta.',
-    color: 'from-rose-600/15 via-rose-500/5 to-transparent border-rose-500/30 text-rose-400',
-    iconColor: 'text-rose-400',
-  },
-  Core: {
-    icono: CircleDot,
-    titulo: 'Core',
-    descripcion: 'Planchas, elevaciones de piernas y estabilidad lumbopélvica profunda.',
-    color: 'from-cyan-600/15 via-cyan-500/5 to-transparent border-cyan-500/30 text-cyan-400',
-    iconColor: 'text-cyan-400',
-  },
-}
 
 const TOTALES_INICIALES: Record<GrupoValido, number> = {
   Pecho: 192,
@@ -291,28 +230,16 @@ export default function VideotecaPage() {
   if (!usuarioActual) return null
 
   return (
-    <div className="mx-auto max-w-[1550px] px-4 py-6 md:px-8 md:py-8 space-y-8">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-3.5 px-5 pb-28 pt-[22px] md:gap-8 md:px-14 md:pb-16 md:pt-12">
       {/* Header superior */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
-            <Video className="size-4" />
-            <span>Videoteca biomecánica ATLAS</span>
-          </div>
-          <h1 className="text-5xl font-black text-white md:text-6xl">
-            Técnica por <span className="text-blue-400">grupo muscular</span>
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
-            {esAdmin
-              ? 'Biblioteca completa dividida por grupos musculares. Podés agregar videos propios de coaching o consultar los 1.500 bucles biomecánicos con técnica estricta.'
-              : 'Elegí el músculo que vas a entrenar para ver la técnica exacta, consejos de postura y evitar lesiones durante tu rutina.'}
-          </p>
-        </div>
-
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">
+          {esAdmin ? 'Técnica por grupo muscular' : 'Videoteca'}
+        </h1>
         {esAdmin && (
           <Button
             onClick={() => setModalNuevoAbierto(true)}
-            className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 hover:bg-blue-500 active:scale-95 shrink-0 cursor-pointer"
+            className="h-11 shrink-0 cursor-pointer rounded-xl bg-blue-600 px-4 font-semibold text-white hover:bg-blue-500"
           >
             <Plus className="mr-2 size-4" />
             Nuevo video coach
@@ -321,58 +248,41 @@ export default function VideotecaPage() {
       </div>
 
       {/* Barra de Filtros por Músculo y Buscador */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+      <div className="flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between md:gap-4">
         {/* Buscador */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+        <label className="flex h-12 items-center gap-2 rounded-xl border border-[#2A4677] bg-[#162A50] px-3.5 focus-within:border-blue-400 md:h-11 md:w-80 md:shrink-0">
+          <Search className="size-[18px] shrink-0 text-slate-500" />
           <input
             id="buscar-video"
-            type="text"
-            aria-label="Buscar ejercicio o músculo"
-            placeholder="Buscar ejercicio (ej. Banca, Sentadilla, Curl, Polea)..."
+            type="search"
+            aria-label="Buscar ejercicio"
+            placeholder="Buscar ejercicio (ej: sentadilla)"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-800 bg-slate-900/80 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200"
+            className="min-w-0 flex-1 bg-transparent text-base text-slate-100 outline-none placeholder:text-slate-500 md:text-sm"
           />
-          {busqueda && (
-            <button
-              type="button"
-              aria-label="Limpiar búsqueda"
-              onClick={() => setBusqueda('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors p-1"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
+        </label>
 
         {/* Pestañas de Grupos Musculares con Conteo */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+        <div role="group" aria-label="Grupo muscular" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0">
           {GRUPOS_MUSCULARES.map((grupo) => {
             const activo = filtroGrupo === grupo
             const totalGrupo = grupo === 'TODOS' ? totalGeneral : totalesPorGrupo[grupo as GrupoValido] || 0
-
             return (
               <button
                 key={grupo}
+                type="button"
+                aria-pressed={activo}
                 onClick={() => {
                   setFiltroGrupo(grupo)
                   setBusqueda('')
                 }}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 shrink-0 cursor-pointer ${
-                  activo
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'bg-slate-900/80 text-slate-400 border border-slate-800/80 hover:bg-slate-800 hover:text-slate-200'
+                className={`flex h-11 shrink-0 items-center rounded-full px-3.5 text-sm transition-colors ${
+                  activo ? 'bg-slate-100 font-bold text-[#0E1B36]' : 'border border-[#2A4677] font-semibold text-slate-300 hover:bg-slate-900'
                 }`}
               >
-                <span>{grupo}</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-xs font-mono font-bold ${
-                    activo ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {totalGrupo}
-                </span>
+                {grupo === 'TODOS' ? 'Todos' : grupo}
+                {esAdmin && <span className="ml-2 text-xs opacity-70">{totalGrupo}</span>}
               </button>
             )
           })}
@@ -393,7 +303,7 @@ export default function VideotecaPage() {
           </div>
 
           {cargandoBusqueda && resultadosBusqueda.length === 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
                   <div className="h-44 rounded-xl bg-slate-800/60" />
@@ -413,7 +323,7 @@ export default function VideotecaPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
               {resultadosBusqueda.map((video) => (
                 <TarjetaEjercicio
                   key={video.id}
@@ -428,53 +338,33 @@ export default function VideotecaPage() {
         </div>
       ) : (
         /* VISTA 2: SECCIONES ORGANIZADAS POR GRUPO MUSCULAR */
-        <div className="space-y-12">
+        <div className="space-y-6 md:space-y-10">
           {gruposAMostrar.map((grupo) => {
-            const info = INFO_GRUPOS[grupo]
             const videosGym = videosGymPorGrupo[grupo] || []
             const ejerciciosCatalogo = ejerciciosPorGrupo[grupo] || []
             const totalDisponibles = totalesPorGrupo[grupo] || ejerciciosCatalogo.length
             const estaCargando = cargandoGrupo[grupo] || false
             const quedanMas = ejerciciosCatalogo.length < totalDisponibles
 
-            const IconoGrupo = info.icono
-
             return (
-              <section key={grupo} className="space-y-6">
-                {/* Encabezado del Grupo Muscular */}
-                <div className={`p-5 rounded-2xl border bg-gradient-to-r ${info.color} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
-                  <div className="flex items-center gap-3.5">
-                    <div className={`size-12 rounded-2xl bg-slate-950/80 border border-slate-800/90 flex items-center justify-center shrink-0 shadow-sm ${info.iconColor}`}>
-                      <IconoGrupo className="size-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-4xl font-black text-white">{info.titulo}</h2>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-950/80 border border-slate-800 text-slate-300">
-                          {totalDisponibles} ejercicios
-                        </span>
-                      </div>
-                      <p className="text-xs md:text-sm text-slate-400 mt-1 max-w-2xl">{info.descripcion}</p>
-                    </div>
-                  </div>
-
-                  {filtroGrupo === 'TODOS' && (
-                    <button
-                      onClick={() => setFiltroGrupo(grupo)}
-                      className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:bg-slate-800 transition-colors self-start md:self-auto cursor-pointer"
-                    >
+              <section key={grupo} aria-label={grupo} className="space-y-2.5 md:space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-[13px] font-bold uppercase tracking-[.06em] text-slate-500">
+                    Técnicas <span aria-hidden="true" className="mx-1 text-slate-600">|</span> {grupo}
+                  </h2>
+                  {filtroGrupo === 'TODOS' ? (
+                    <button type="button" onClick={() => setFiltroGrupo(grupo)} className="h-11 text-sm font-medium text-blue-400 hover:text-blue-300">
                       Ver solo {grupo}
                     </button>
+                  ) : (
+                    <span className="text-[13px] text-slate-500">{ejerciciosCatalogo.length} de {totalDisponibles}</span>
                   )}
                 </div>
 
                 {/* Videos Exclusivos de Coaching ATLAS Gym (si existen) */}
                 {videosGym.length > 0 && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
-                      <span>Tutoriales exclusivos de los coaches</span>
-                    </div>
-                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
                       {videosGym.map((video) => (
                         <TarjetaEjercicio
                           key={video.id}
@@ -491,18 +381,8 @@ export default function VideotecaPage() {
 
                 {/* Grilla de Ejercicios y Técnica del Catálogo */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                    <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
-                      <Dumbbell className="size-3.5 text-slate-400" />
-                      Ejercicios y biomecánica en bucles (loop)
-                    </span>
-                    <span>
-                      Mostrando <strong className="text-white">{ejerciciosCatalogo.length}</strong> de{' '}
-                      <strong className="text-white">{totalDisponibles}</strong>
-                    </span>
-                  </div>
 
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
                     {ejerciciosCatalogo.map((video) => (
                       <TarjetaEjercicio
                         key={video.id}
@@ -522,7 +402,7 @@ export default function VideotecaPage() {
                       type="button"
                       disabled={estaCargando}
                       onClick={() => cargarMasDeGrupo(grupo)}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-slate-200 font-bold text-xs md:text-sm shadow-md transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="flex h-11 items-center gap-2 rounded-xl border border-[#2A4677] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-900 disabled:opacity-50"
                     >
                       {estaCargando ? (
                         <>
@@ -575,7 +455,7 @@ export default function VideotecaPage() {
                 type="button"
                 aria-label="Cerrar reproductor"
                 onClick={() => setVideoSeleccionado(null)}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+                className="flex size-11 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="size-5" />
               </button>
@@ -728,145 +608,59 @@ function TarjetaEjercicio({
   onSeleccionar: () => void
   onEliminar: () => void
 }) {
-  const [hoverActivo, setHoverActivo] = useState(false)
   const [gifCargado, setGifCargado] = useState(false)
 
   const esGif = Boolean(video.gifUrl || video.formato === 'GIF')
   const urlMedio = video.gifUrl || video.videoUrl
 
   return (
-    <div
-      onMouseEnter={() => setHoverActivo(true)}
-      onMouseLeave={() => setHoverActivo(false)}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 hover:shadow-xl ${
-        esTutorialCoach
-          ? 'border-blue-500/40 bg-gradient-to-b from-blue-950/30 to-slate-900/60 hover:shadow-blue-900/30'
-          : 'border-slate-800 bg-slate-900/60 hover:border-blue-500/40 hover:shadow-blue-950/40'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onSeleccionar}
-        aria-label={`Ver técnica: ${video.titulo}`}
-        className="relative h-44 w-full bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-800/60 text-left cursor-pointer group-hover:border-blue-500/30"
-      >
-        {esGif ? (
-          <>
-            {/* Poster liviano por defecto para apertura en 0ms */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
-              <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:12px_12px]" />
-              <div className="size-12 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-2 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200">
-                <Play className="size-5 fill-current ml-0.5" />
-              </div>
-              <span className="text-xs font-bold text-slate-300 group-hover:text-blue-400 transition-colors">
-                Ver loop biomecánico
-              </span>
-            </div>
-
-            {/* El GIF carga lazy automáticamente (se eliminó el check hoverActivo para que siempre se muestre la previsualización) */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={urlMedio}
-              alt={video.titulo}
-              onLoad={() => setGifCargado(true)}
-              className={`absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-200 ${
-                gifCargado ? 'opacity-100' : 'opacity-0'
-              }`}
-              loading="lazy"
-              decoding="async"
-            />
-          </>
-        ) : (
-          /* Video de YouTube de coach */
-          <>
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-            <div className="relative size-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-900/50 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 group-hover:bg-blue-500">
-              <Play className="size-5 fill-white ml-0.5" />
-            </div>
-          </>
-        )}
-
-        {/* Badge superior de grupo / equipo */}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-          <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-xs font-bold text-blue-300 border border-blue-500/30">
-            {video.grupoMuscular}
-          </span>
-          {video.equipo && (
-            <span className="rounded-md bg-slate-950/85 backdrop-blur-md px-2 py-0.5 text-xs font-semibold text-slate-300 border border-slate-800">
-              {video.equipo}
-            </span>
-          )}
-        </div>
-
-        {/* Badge inferior de duración o GIF */}
-        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-md bg-slate-950/90 px-2 py-0.5 text-xs font-mono font-bold text-slate-300 border border-slate-800 backdrop-blur-sm">
+    <div className={`group relative overflow-hidden rounded-[14px] bg-[#162A50] ${esTutorialCoach ? 'col-span-2' : ''}`}>
+      <button type="button" onClick={onSeleccionar} aria-label={`Ver técnica: ${video.titulo}`} className="block w-full text-left">
+        <span className={`relative flex items-center justify-center overflow-hidden bg-[#13254A] ${esTutorialCoach ? 'h-[150px]' : 'h-24 md:h-36'}`}>
           {esGif ? (
-            <span className="text-blue-400 font-extrabold flex items-center gap-1">Loop GIF</span>
-          ) : (
             <>
-              <Clock className="size-3 text-slate-400" />
-              {video.duracion}
+              {!gifCargado && <Play className="size-5 text-slate-500" aria-hidden="true" />}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={urlMedio}
+                alt={`GIF: técnica de ${video.titulo}, ejercicio de ${video.grupoMuscular.toLowerCase()}`}
+                onLoad={() => setGifCargado(true)}
+                className={`absolute inset-0 size-full object-contain p-1.5 transition-opacity duration-200 ${gifCargado ? 'opacity-100' : 'opacity-0'}`}
+                loading="lazy"
+                decoding="async"
+              />
             </>
-          )}
-        </div>
-
-        {esTutorialCoach && (
-          <div className="absolute top-2.5 right-2.5">
-            <span className="rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 backdrop-blur-md px-2 py-0.5 text-xs font-bold flex items-center gap-1">
-              Coach ATLAS
+          ) : (
+            <span role="img" aria-label={`Miniatura del video: ${video.titulo}`} className="flex size-14 items-center justify-center rounded-full bg-blue-600">
+              <Play className="ml-0.5 size-[22px] fill-white text-white" aria-hidden="true" />
             </span>
-          </div>
-        )}
+          )}
+          {esTutorialCoach && (
+            <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-[#1A1206]">Video de ATLAS</span>
+          )}
+        </span>
+        <span className={`block ${esTutorialCoach ? 'px-3.5 py-3' : 'px-3 py-2.5'}`}>
+          <span className={`block font-semibold text-slate-100 ${esTutorialCoach ? 'text-base font-bold' : 'line-clamp-2 text-sm'}`}>{video.titulo}</span>
+          {esTutorialCoach ? (
+            <span className="mt-0.5 block text-[13px] text-slate-400">
+              Explicado por los coaches{video.duracion ? <><span aria-hidden="true" className="mx-1.5 text-slate-600">|</span>{video.duracion}</> : null}
+            </span>
+          ) : (
+            <span className="mt-0.5 hidden text-[13px] text-slate-500 md:block">{video.nivel}</span>
+          )}
+        </span>
       </button>
-
-      {/* Contenido de la tarjeta */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
-              {video.nivel}
-            </span>
-
-            {esAdmin && !video.id.startsWith('cat-') && !video.id.startsWith('ex-') && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEliminar()
-                }}
-                className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                title="Eliminar video tutorial"
-                aria-label={`Eliminar video ${video.titulo}`}
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            )}
-          </div>
-
-          <h3 className="font-bold text-white text-sm md:text-base leading-snug group-hover:text-blue-400 transition-colors line-clamp-1">
-            {video.titulo}
-          </h3>
-
-          {video.descripcion && (
-            <p className="mt-1.5 text-xs text-slate-400 line-clamp-2 leading-relaxed">{video.descripcion}</p>
-          )}
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onSeleccionar}
-            className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-          >
-            <Play className="size-3 fill-blue-400" />
-            <span>Ver técnica</span>
-          </button>
-
-          <span className="text-xs font-medium text-slate-500">
-            {esTutorialCoach ? 'ATLAS Coach' : 'Biomecánica'}
-          </span>
-        </div>
-      </div>
+      {esAdmin && !video.id.startsWith('cat-') && !video.id.startsWith('ex-') && (
+        <button
+          type="button"
+          onClick={onEliminar}
+          title="Eliminar video tutorial"
+          aria-label={`Eliminar video ${video.titulo}`}
+          className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-xl bg-[#0A1530]/75 text-slate-300 hover:text-rose-400"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      )}
     </div>
   )
 }

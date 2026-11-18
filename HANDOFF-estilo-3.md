@@ -27,8 +27,8 @@ Objetivo: que la app real quede **igual que los mocks**, conservando **todo** lo
 | `RutinaAlumno.dc.html` + `RutinaWeb.dc.html` | `/rutinas` alumno | pendiente |
 | `EntrenoAlumno.dc.html` | entrenamiento en curso de `/rutinas` (botón **Anterior** + lista para saltar de ejercicio) | pendiente |
 | `CuotasAlumno.dc.html` | `/finanzas` alumno (`VistaCuotasAlumno`) | ✅ hecho |
-| `AvisosAlumno.dc.html` | `/avisos` | pendiente |
-| `VideotecaAlumno.dc.html` | `/videoteca` (con textos alternativos descriptivos en GIF y videos) | pendiente |
+| `AvisosAlumno.dc.html` | `/avisos` | ✅ hecho |
+| `VideotecaAlumno.dc.html` | `/videoteca` (con textos alternativos descriptivos en GIF y videos) | ✅ hecho |
 
 **Descartados:** `PortalWeb.dc.html` (portal web original) y `PortalWeb2Movil.dc.html`.
 
