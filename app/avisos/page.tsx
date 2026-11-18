@@ -5,7 +5,6 @@ import {
   Bell,
   Plus,
   Search,
-  Check,
   MessageCircle,
   Trash2,
   Users,
@@ -275,12 +274,16 @@ export default function AvisosPage() {
     getCantidadAvisosNoLeidos,
   } = useAppData()
 
+  // Se toma antes de marcarlos: "Nuevos" muestra lo que no había leído al entrar.
+  const [nuevosAlEntrar] = useState(
+    () => new Set(getAvisosParaUsuario(usuarioActual).filter((a) => !a.leidoPor.includes(usuarioActual?.id ?? '')).map((a) => a.id))
+  )
+
   useEffect(() => {
-    // El socio ve "Nuevos" y los marca él; para el titular no hay nada que separar.
-    if (usuarioActual?.id && usuarioActual.rol === 'ADMIN') {
+    if (usuarioActual?.id) {
       marcarTodosAvisosLeidos(usuarioActual.id)
     }
-  }, [marcarTodosAvisosLeidos, usuarioActual?.id, usuarioActual?.rol])
+  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -304,17 +307,16 @@ export default function AvisosPage() {
   }
 
   if (!esAdmin) {
-    const nuevos = avisosFiltrados.filter((a) => !a.leidoPor.includes(usuarioActual.id))
-    const anteriores = avisosFiltrados.filter((a) => a.leidoPor.includes(usuarioActual.id))
+    const nuevos = avisosFiltrados.filter((a) => nuevosAlEntrar.has(a.id))
+    const anteriores = avisosFiltrados.filter((a) => !nuevosAlEntrar.has(a.id))
     const filtros = [
       { valor: 'TODOS', label: 'Todos' },
-      { valor: 'NO_LEIDOS', label: 'No leídos' },
       ...(['IMPORTANTE', 'NOVEDAD', 'HORARIO'] as const).map((c) => ({ valor: c, label: CATEGORIA_AVISO_LABEL[c] })),
     ]
     const claseSeccion = 'text-[13px] font-bold uppercase tracking-[.06em] text-slate-500'
     const encabezado = (aviso: Aviso) => (
       <div className="flex items-center gap-2 text-[13px]">
-        {!aviso.leidoPor.includes(usuarioActual.id) && <span aria-hidden="true" className="size-[9px] rounded-full bg-blue-400" />}
+        {nuevosAlEntrar.has(aviso.id) && <span aria-hidden="true" className="size-[9px] rounded-full bg-blue-400" />}
         {aviso.paraTodos ? (
           <span className="font-semibold text-amber-400">{CATEGORIA_AVISO_LABEL[aviso.categoria]}</span>
         ) : (
@@ -337,18 +339,7 @@ export default function AvisosPage() {
 
     return (
       <div className="mx-auto flex max-w-[720px] flex-col gap-3.5 px-5 pb-28 pt-[22px] md:pb-16 md:pt-12">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">Avisos</h1>
-          {cantidadNoLeidos > 0 && (
-            <button
-              type="button"
-              onClick={() => marcarTodosAvisosLeidos(usuarioActual.id)}
-              className="h-11 px-1 text-sm font-semibold text-blue-400 hover:text-blue-300"
-            >
-              Marcar todo leído
-            </button>
-          )}
-        </div>
+        <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">Avisos</h1>
 
         {avisosVisibles.length > 4 && (
           <>
@@ -395,17 +386,7 @@ export default function AvisosPage() {
             {encabezado(aviso)}
             <h3 className="text-lg font-bold text-white">{aviso.titulo}</h3>
             <p className="whitespace-pre-line text-[15px] leading-normal text-slate-300">{aviso.mensaje}</p>
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => marcarAvisoLeido(aviso.id, usuarioActual.id)}
-                className="flex h-11 items-center gap-1.5 text-sm font-semibold text-slate-300 hover:text-white"
-              >
-                <Check className="size-4" />
-                Marcar como leído
-              </button>
-              {consulta(aviso)}
-            </div>
+            <div className="self-end">{consulta(aviso)}</div>
           </article>
         ))}
 
