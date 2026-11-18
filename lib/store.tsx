@@ -261,6 +261,10 @@ export interface ErrorSincronizacion {
   mensaje: string;
 }
 
+export type ResultadoAgregarPago =
+  | { ok: true; pago: Pago }
+  | { ok: false; error: string; esIncierto?: boolean; status?: number };
+
 interface AppDataContextValue {
   alumnos: Alumno[];
   pagos: Pago[];
@@ -296,7 +300,10 @@ interface AppDataContextValue {
     filas: FilaImportacionAlumno[]
   ) => Promise<{ ok: boolean; resumen?: RespuestaImportacionMasivaDto; error?: string }>;
   marcarAsistenciaAlumno: (id: string, fecha?: string) => void;
-  agregarPago: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  agregarPago: (
+    pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+  ) => Promise<ResultadoAgregarPago>;
+  refrescarPagos: () => Promise<boolean>;
   actualizarEstadoPago: (id: string, estado: EstadoPago) => void;
   completarSaldoPago: (id: string, metodo?: string) => Promise<{ ok: boolean; error?: string }>;
   datosCobro: DatosCobro;
@@ -1396,13 +1403,76 @@ function useGymStore(): AppDataContextValue {
     [alumnos]
   );
 
+  const refrescarPagos = useCallback(async (): Promise<boolean> => {
+    if (!isApiRuntimeEnabled() || !getStoredJwtToken()) return false;
+    try {
+      const dtos = await apiGetPagos();
+      if (Array.isArray(dtos)) {
+        setPagos(dtos.map(mapPagoDtoToFront));
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const agregarPago = useCallback(
-    (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => {
+    async (
+      pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
+    ): Promise<ResultadoAgregarPago> => {
       const { usuarioApp, passwordApp, ...pagoBase } = pago;
       const alumno = alumnos.find((a) => a.id === pagoBase.alumnoId);
-      const usuarioAnterior = alumno?.usuario;
       const alumnoNombreHistorico = pagoBase.alumnoNombreHistorico || alumno?.nombre || "Alumno Atlas";
       const planId = pagoBase.planId || alumno?.planId;
+
+      if (isApiRuntimeEnabled()) {
+        const token = getStoredJwtToken();
+        if (!token) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+          }
+          const msg = "Tu sesión ha expirado. Iniciá sesión nuevamente para registrar el cobro.";
+          return { ok: false, error: msg, status: 401 };
+        }
+
+        try {
+          const reqDto = mapPagoFrontToRequestDto({ ...pago, planId });
+          const dto = await apiRegistrarPago(reqDto);
+          const mapeado = mapPagoDtoToFront(dto);
+
+          setPagos((prev) => {
+            const nuevos = [mapeado, ...prev.filter((p) => p.id !== mapeado.id)];
+            sincronizarEstadoEnAsistenciasHoy(pagoBase.alumnoId, nuevos);
+            return nuevos;
+          });
+
+          if (usuarioApp?.trim()) {
+            setAlumnos((prev) =>
+              prev.map((a) => (a.id === pagoBase.alumnoId ? { ...a, usuario: usuarioApp.trim() } : a))
+            );
+          }
+
+          return { ok: true, pago: mapeado };
+        } catch (err: unknown) {
+          const status = (err as { status?: number })?.status;
+          const esRed = esErrorDeRed(err) || (err instanceof Error &&
+            (err.name === "AbortError" || err.name === "TimeoutError"));
+
+          if (esRed) {
+            const msgIncierto =
+              "No pudimos confirmar el resultado. Revisá los pagos antes de volver a cobrar";
+            reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
+            return { ok: false, error: msgIncierto, esIncierto: true, status };
+          }
+
+          const mensajeError = err instanceof Error ? err.message : "Error al registrar el cobro";
+          reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
+          return { ok: false, error: mensajeError, esIncierto: false, status };
+        }
+      }
+
+      // Modo local / demo / Vitest sin backend (solo cuando isApiRuntimeEnabled() es false)
       const tempId = crypto.randomUUID();
       const esParcial =
         pagoBase.montoAbonado != null &&
@@ -1438,28 +1508,7 @@ function useGymStore(): AppDataContextValue {
         return nuevosPagos;
       });
 
-      if (isApiRuntimeEnabled() && getStoredJwtToken()) {
-        apiRegistrarPago(mapPagoFrontToRequestDto({ ...pago, planId }))
-          .then((dto) => {
-            const mapeado = mapPagoDtoToFront(dto);
-            setPagos((prev) => prev.map((p) => (p.id === tempId ? mapeado : p)));
-          })
-          .catch((err: unknown) => {
-            setPagos((prev) => {
-              const revertidos = prev.filter((p) => p.id !== tempId);
-              sincronizarEstadoEnAsistenciasHoy(pagoBase.alumnoId, revertidos);
-              return revertidos;
-            });
-            if (usuarioApp?.trim()) {
-              setAlumnos((prev) =>
-                prev.map((a) =>
-                  a.id === pagoBase.alumnoId ? { ...a, usuario: usuarioAnterior } : a
-                )
-              );
-            }
-            reportarErrorSync(formatearMensajeErrorSync("registrar el cobro de cuota", err));
-          });
-      }
+      return { ok: true, pago: nuevoPago };
     },
     [alumnos, usuarioActual, sincronizarEstadoEnAsistenciasHoy, reportarErrorSync]
   );
@@ -2251,6 +2300,7 @@ function useGymStore(): AppDataContextValue {
       importarAlumnosMasivo,
       marcarAsistenciaAlumno,
       agregarPago,
+      refrescarPagos,
       actualizarEstadoPago,
       completarSaldoPago,
       datosCobro,
@@ -2315,6 +2365,7 @@ function useGymStore(): AppDataContextValue {
       importarAlumnosMasivo,
       marcarAsistenciaAlumno,
       agregarPago,
+      refrescarPagos,
       actualizarEstadoPago,
       completarSaldoPago,
       datosCobro,
