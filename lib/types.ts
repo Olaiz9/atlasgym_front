@@ -525,10 +525,19 @@ export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {
 };
 
 export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {
-  AL_DIA: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-  PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-  MOROSO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
-  INACTIVO: "bg-slate-800 text-slate-400 border border-slate-700",
+  AL_DIA: "text-slate-300",
+  PENDIENTE: "text-amber-400",
+  MOROSO: "text-rose-400",
+  INACTIVO: "text-slate-400",
+};
+
+// Etiquetas sin relleno: lo que está bien queda neutro y solo resaltan los problemas.
+export const ESTADO_PAGO_STYLES: Record<EstadoPago, string> = {
+  PAGADO: "text-slate-300",
+  PARCIAL: "text-amber-400",
+  PENDIENTE: "text-amber-400",
+  VENCIDO: "text-rose-400",
+  ANULADO: "text-slate-400",
 };
 
 export type CategoriaAviso = "IMPORTANTE" | "NOVEDAD" | "HORARIO";
