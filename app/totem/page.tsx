@@ -65,7 +65,7 @@ interface ResultadoFeedback {
 
 export default function TotemPage() {
   const router = useRouter()
-  const { registrarAsistenciaPorDni, usuarioActual } = useAppData()
+  const { registrarAsistenciaPorDni, usuarioActual, cerrarSesion } = useAppData()
   const [montado, setMontado] = useState(false)
   const [terminalAutorizada, setTerminalAutorizada] = useState(false)
   const [bloqueadaManualmente, setBloqueadaManualmente] = useState(false)
@@ -79,6 +79,9 @@ export default function TotemPage() {
   }, [pinInput])
 
   const [mostrarConfirmDesvincular, setMostrarConfirmDesvincular] = useState(false)
+  const [pinSalidaInput, setPinSalidaInput] = useState('')
+  const [errorPinSalida, setErrorPinSalida] = useState(false)
+  const [pinSalidaVerificado, setPinSalidaVerificado] = useState(false)
   const [dni, setDni] = useState('')
   const [estado, setEstado] = useState<EstadoTotem>('IDLE')
   const [resultado, setResultado] = useState<ResultadoFeedback | null>(null)
@@ -205,9 +208,31 @@ export default function TotemPage() {
 
   const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
 
-  // Auto-enfoque de inputs según pantalla activa
+  // Trampa de historial en modo kiosco: evita que el botón "Atrás" de la tablet Android
+  // saque al socio de /totem y lo devuelva al panel administrativo.
+  useEffect(() => {
+    if (!montado || !esAutorizada || typeof window === 'undefined') return
+    try {
+      window.history.pushState({ totemKiosco: true }, '', '/totem')
+    } catch {}
+    const bloquearBotonAtras = () => {
+      try {
+        window.history.pushState({ totemKiosco: true }, '', '/totem')
+      } catch {}
+    }
+    window.addEventListener('popstate', bloquearBotonAtras)
+    return () => window.removeEventListener('popstate', bloquearBotonAtras)
+  }, [montado, esAutorizada])
+
+  // Auto-enfoque de inputs según pantalla activa (solo en dispositivos con puntero fino / PC,
+  // para que en tablets/celulares no se abra solo el teclado virtual nativo de Android/iOS).
   useEffect(() => {
     if (!montado) return
+    const esPantallaTactil =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+    if (esPantallaTactil) return
     if (!esAutorizada) {
       inputPinRef.current?.focus()
     } else if (estado === 'IDLE') {
@@ -221,6 +246,9 @@ export default function TotemPage() {
       if (nuevoPin === pinEsperado) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
+        }
+        if (usuarioActual) {
+          cerrarSesion()
         }
         setBloqueadaManualmente(false)
         setTerminalAutorizada(true)
@@ -237,7 +265,7 @@ export default function TotemPage() {
         }, 900)
       }
     }
-  }, [])
+  }, [usuarioActual, cerrarSesion])
 
   const manejarDigitoPin = useCallback((digito: string) => {
     const actual = pinInputRef.current
@@ -726,7 +754,7 @@ export default function TotemPage() {
           <input
             ref={inputPinRef}
             type="password"
-            inputMode="numeric"
+            inputMode="none"
             pattern="[0-9]*"
             maxLength={4}
             value={pinInput}
@@ -742,14 +770,12 @@ export default function TotemPage() {
               }
             }}
             className="sr-only"
-            autoFocus
             aria-label="PIN de terminal"
           />
 
           {/* Casilleros visibles de 4 dígitos */}
           <div
-            onClick={() => inputPinRef.current?.focus()}
-            className="mt-6 flex justify-center gap-3 cursor-pointer"
+            className="mt-6 flex justify-center gap-3"
           >
             {[0, 1, 2, 3].map((idx) => {
               const tieneValor = pinInput.length > idx
@@ -892,7 +918,12 @@ export default function TotemPage() {
             {/* PIN: bloquear la pantalla del tótem */}
             <button
               type="button"
-              onClick={() => setMostrarConfirmDesvincular(true)}
+              onClick={() => {
+                setPinSalidaInput('')
+                setErrorPinSalida(false)
+                setPinSalidaVerificado(false)
+                setMostrarConfirmDesvincular(true)
+              }}
               title="Bloquear pantalla del tótem"
               aria-label="Bloquear pantalla del tótem"
               className="p-2 rounded-xl border border-slate-800 bg-slate-900/90 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
@@ -934,13 +965,12 @@ export default function TotemPage() {
 
               {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
               <div
-                onClick={() => inputDniRef.current?.focus()}
-                className="w-full h-20 md:h-26 rounded-2xl md:rounded-[20px] border-2 border-blue-600 bg-slate-900 px-5 md:px-7 flex items-center cursor-text"
+                className="w-full h-20 md:h-26 rounded-2xl md:rounded-[20px] border-2 border-blue-600 bg-slate-900 px-5 md:px-7 flex items-center"
               >
                 <input
                   ref={inputDniRef}
                   type="tel"
-                  inputMode="numeric"
+                  inputMode="none"
                   pattern="[0-9]*"
                   maxLength={9}
                   value={dni}
@@ -949,7 +979,6 @@ export default function TotemPage() {
                     setDni(val)
                   }}
                   className="sr-only"
-                  autoFocus
                   tabIndex={0}
                   aria-label="Ingresar DNI"
                 />
@@ -1146,7 +1175,7 @@ export default function TotemPage() {
         <p className="text-xs sm:text-xs hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
 
-      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR */}
+      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR (PROTEGIDO POR PIN DE 4 DÍGITOS) */}
       {mostrarConfirmDesvincular && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
@@ -1156,36 +1185,152 @@ export default function TotemPage() {
               </div>
               <h3 className="text-lg font-black text-white">Bloquear Terminal</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                ¿Querés desvincular o bloquear esta terminal de recepción? Al hacerlo, se requerirá nuevamente el PIN de terminal para volver a habilitar el registro de asistencias.
+                {pinSalidaVerificado
+                  ? 'PIN verificado. Elegí si querés bloquear la pantalla o salir del modo tótem.'
+                  : 'Ingresá el PIN de 4 dígitos de la terminal para bloquear la pantalla o salir del modo tótem.'}
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={desvincularTerminal}
-                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
-              >
-                Bloquear terminal ahora
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMostrarConfirmDesvincular(false)
-                  router.push('/asistencias')
-                }}
-                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
-              >
-                Ir al panel de asistencias
-              </button>
-              <button
-                type="button"
-                onClick={() => setMostrarConfirmDesvincular(false)}
-                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
-              >
-                Cancelar y seguir en tótem
-              </button>
-            </div>
+            {!pinSalidaVerificado ? (
+              <div className="mt-5">
+                <div className="flex justify-center gap-2.5">
+                  {[0, 1, 2, 3].map((idx) => {
+                    const tieneValor = pinSalidaInput.length > idx
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex size-12 items-center justify-center rounded-xl border-2 text-xl font-black select-none ${
+                          errorPinSalida
+                            ? 'border-rose-500 bg-rose-500/15 text-rose-400'
+                            : tieneValor
+                            ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                            : 'border-slate-800 bg-slate-950/70 text-slate-500'
+                        }`}
+                      >
+                        {tieneValor ? '●' : ''}
+                      </div>
+                    )
+                  })}
+                </div>
+                {errorPinSalida && (
+                  <p className="mt-2 text-center text-xs font-bold text-rose-400">
+                    PIN incorrecto.
+                  </p>
+                )}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        if (pinSalidaInput.length >= 4) return
+                        const nuevo = pinSalidaInput + n
+                        setPinSalidaInput(nuevo)
+                        setErrorPinSalida(false)
+                        if (nuevo.length === 4) {
+                          const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+                          if (nuevo === pinEsperado) {
+                            setPinSalidaVerificado(true)
+                          } else {
+                            setErrorPinSalida(true)
+                            setTimeout(() => {
+                              setPinSalidaInput('')
+                              setErrorPinSalida(false)
+                            }, 700)
+                          }
+                        }
+                      }}
+                      className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinSalidaInput('')
+                      setErrorPinSalida(false)
+                    }}
+                    className="h-12 rounded-xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer select-none"
+                  >
+                    Borrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pinSalidaInput.length >= 4) return
+                      const nuevo = pinSalidaInput + '0'
+                      setPinSalidaInput(nuevo)
+                      setErrorPinSalida(false)
+                      if (nuevo.length === 4) {
+                        const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+                        if (nuevo === pinEsperado) {
+                          setPinSalidaVerificado(true)
+                        } else {
+                          setErrorPinSalida(true)
+                          setTimeout(() => {
+                            setPinSalidaInput('')
+                            setErrorPinSalida(false)
+                          }, 700)
+                        }
+                      }
+                    }}
+                    className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
+                  >
+                    0
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinSalidaInput((prev) => prev.slice(0, -1))
+                      setErrorPinSalida(false)
+                    }}
+                    aria-label="Retroceso PIN salida"
+                    className="h-12 rounded-xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer select-none"
+                  >
+                    <Delete className="size-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmDesvincular(false)}
+                  className="mt-4 w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Cancelar y seguir en tótem
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={desvincularTerminal}
+                  className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Bloquear terminal ahora
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('atlas_totem_terminal_autorizada')
+                    }
+                    setTerminalAutorizada(false)
+                    setMostrarConfirmDesvincular(false)
+                    router.push('/login')
+                  }}
+                  className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Salir del modo tótem e ir al login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmDesvincular(false)}
+                  className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Cancelar y seguir en tótem
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1241,6 +1386,13 @@ export default function TotemPage() {
                     return
                   }
                   setStoredTotemSecret(claveTerminalInput)
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
+                  }
+                  setTerminalAutorizada(true)
+                  if (usuarioActual) {
+                    cerrarSesion()
+                  }
                   setClaveTerminalInput('')
                   guardarPadronCacheTotem(res.padron)
                   setPadronSincronizadoCount(res.padron.length)

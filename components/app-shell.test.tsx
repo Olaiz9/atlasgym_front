@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AppShell } from "./app-shell";
 
+const replaceMock = vi.fn();
 let usuarioActualMock: {
   id: string;
   nombre: string;
@@ -12,7 +13,7 @@ let usuarioActualMock: {
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
 }));
 
 vi.mock("@/components/sidebar", () => ({
@@ -45,6 +46,25 @@ vi.mock("@/lib/store", () => ({
 describe("AppShell — Cambio de clave provisoria obligatorio", () => {
   beforeEach(() => {
     usuarioActualMock = null;
+    replaceMock.mockClear();
+    localStorage.clear();
+  });
+
+  it("redirige automáticamente a /totem cuando el dispositivo está autorizado como terminal de tótem", () => {
+    localStorage.setItem("atlas_totem_terminal_autorizada", "true");
+    usuarioActualMock = {
+      id: "admin-1",
+      nombre: "Titular",
+      rol: "ADMIN",
+    };
+
+    render(
+      <AppShell>
+        <div>Contenido</div>
+      </AppShell>
+    );
+
+    expect(replaceMock).toHaveBeenCalledWith("/totem");
   });
 
   it("muestra el texto de la instalación para un ADMIN con requiereCambioPassword", () => {

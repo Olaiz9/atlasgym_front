@@ -46,6 +46,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const rutaPublica = pathname === '/totem' || pathname === '/privacidad'
 
   useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      localStorage.getItem('atlas_totem_terminal_autorizada') === 'true' &&
+      pathname !== '/totem'
+    ) {
+      router.replace('/totem')
+      return
+    }
     if (rutaPublica) {
       return
     }
