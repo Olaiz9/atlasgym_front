@@ -5,7 +5,6 @@ import {
   Bell,
   Plus,
   Search,
-  Check,
   MessageCircle,
   Trash2,
   Users,
@@ -36,77 +35,6 @@ function CategoriaBadge({ categoria }: { categoria: CategoriaAviso }) {
   )
 }
 
-function AvisoCardAlumno({
-  aviso,
-  esLeido,
-  onMarcarLeido,
-}: {
-  aviso: Aviso
-  esLeido: boolean
-  onMarcarLeido: () => void
-}) {
-  const whatsappMensaje = `${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
-    `Hola Atlas Gym! Tengo una consulta sobre el aviso: "${aviso.titulo}"`
-  )}`
-
-  return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
-        <div className="flex items-center gap-2">
-          <CategoriaBadge categoria={aviso.categoria} />
-          {!esLeido && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-              Nuevo
-            </span>
-          )}
-        </div>
-        <span className="text-xs font-semibold text-slate-400">{aviso.fecha}</span>
-      </div>
-
-      <div className="mt-3">
-        <h3 className="text-lg font-bold text-white">{aviso.titulo}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300 whitespace-pre-line">
-          {aviso.mensaje}
-        </p>
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-4">
-        <button
-          type="button"
-          onClick={onMarcarLeido}
-          className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
-            esLeido
-              ? 'bg-slate-800 text-slate-400 border border-slate-700'
-              : 'bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30'
-          }`}
-        >
-          {esLeido ? (
-            <>
-              <CheckCircle2 className="size-3.5 text-emerald-400" />
-              Leído
-            </>
-          ) : (
-            <>
-              <Check className="size-3.5" />
-              Marcar como leído
-            </>
-          )}
-        </button>
-
-        <a
-          href={whatsappMensaje}
-          target="atlas_whatsapp_tab"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-400 transition-colors hover:bg-emerald-500/25"
-        >
-          <MessageCircle className="size-3.5 text-emerald-400" />
-          Consultar por WhatsApp
-        </a>
-      </div>
-    </article>
-  )
-}
-
 function AvisoCardAdmin({
   aviso,
   nombreAlumno,
@@ -117,17 +45,17 @@ function AvisoCardAdmin({
   onEliminar: () => void
 }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/70 p-6 shadow-lg shadow-slate-950/40 transition-[transform,border-color] duration-200 hover:shadow-xl hover:border-slate-600">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
           <CategoriaBadge categoria={aviso.categoria} />
           {aviso.paraTodos ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 border border-slate-700 px-2 py-0.5 text-[11px] font-bold text-slate-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 border border-slate-700 px-2 py-0.5 text-xs font-bold text-slate-300">
               <Users className="size-3" />
               Todos los alumnos
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[11px] font-bold text-indigo-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-xs font-bold text-indigo-300">
               <User className="size-3" />
               Para: {nombreAlumno || 'Alumno'}
             </span>
@@ -280,7 +208,7 @@ function AvisosFiltrosBar({
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar aviso..."
           aria-label="Buscar aviso"
-          className="h-10 w-full rounded-xl border border-slate-800 bg-slate-950 pl-9 pr-4 text-xs font-medium text-slate-200 outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="h-10 w-full rounded-xl border border-slate-800 bg-slate-950 pl-9 pr-4 text-xs font-medium text-slate-200 outline-none transition-[border-color] duration-200 placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
     </div>
@@ -329,14 +257,7 @@ function AvisosList({
             />
           )
         }
-        return (
-          <AvisoCardAlumno
-            key={aviso.id}
-            aviso={aviso}
-            esLeido={aviso.leidoPor.includes(usuarioActualId)}
-            onMarcarLeido={() => onMarcarLeido(aviso.id)}
-          />
-        )
+        return null
       })}
     </div>
   )
@@ -353,11 +274,19 @@ export default function AvisosPage() {
     getCantidadAvisosNoLeidos,
   } = useAppData()
 
+  // Se toma antes de marcarlos: "Nuevos" muestra lo que no había leído al entrar.
+  const [nuevosAlEntrar] = useState(
+    () => new Set(getAvisosParaUsuario(usuarioActual).filter((a) => !a.leidoPor.includes(usuarioActual?.id ?? '')).map((a) => a.id))
+  )
+
+  const cantidadNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
+
+  // Depende de la cantidad: una recarga del servidor puede traer avisos sin leer con la pantalla abierta.
   useEffect(() => {
-    if (usuarioActual?.id) {
+    if (usuarioActual?.id && cantidadNoLeidos > 0) {
       marcarTodosAvisosLeidos(usuarioActual.id)
     }
-  }, [marcarTodosAvisosLeidos, usuarioActual?.id])
+  }, [cantidadNoLeidos, marcarTodosAvisosLeidos, usuarioActual?.id])
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -365,7 +294,6 @@ export default function AvisosPage() {
 
   const esAdmin = usuarioActual?.rol === 'ADMIN'
   const avisosVisibles = getAvisosParaUsuario(usuarioActual)
-  const cantidadNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
 
   const alumnosMap = useMemo(() => {
     return new Map(alumnos.map((a) => [a.id, a.nombre]))
@@ -380,17 +308,114 @@ export default function AvisosPage() {
     return null
   }
 
+  if (!esAdmin) {
+    const nuevos = avisosFiltrados.filter((a) => nuevosAlEntrar.has(a.id))
+    const anteriores = avisosFiltrados.filter((a) => !nuevosAlEntrar.has(a.id))
+    const filtros = [
+      { valor: 'TODOS', label: 'Todos' },
+      ...(['IMPORTANTE', 'NOVEDAD', 'HORARIO'] as const).map((c) => ({ valor: c, label: CATEGORIA_AVISO_LABEL[c] })),
+    ]
+    const claseSeccion = 'text-[13px] font-bold uppercase tracking-[.06em] text-slate-500'
+    const encabezado = (aviso: Aviso) => (
+      <div className="flex items-center gap-2 text-[13px]">
+        {nuevosAlEntrar.has(aviso.id) && <span aria-hidden="true" className="size-[9px] rounded-full bg-blue-400" />}
+        {aviso.paraTodos ? (
+          <span className="font-semibold text-amber-400">{CATEGORIA_AVISO_LABEL[aviso.categoria]}</span>
+        ) : (
+          <span className="rounded-full bg-blue-400 px-2 py-0.5 text-xs font-bold text-[#0E1B36]">Para vos</span>
+        )}
+        <span className="ml-auto text-slate-500">{aviso.fecha}</span>
+      </div>
+    )
+    const consulta = (aviso: Aviso) => (
+      <a
+        href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(`Hola Atlas Gym! Tengo una consulta sobre el aviso: "${aviso.titulo}"`)}`}
+        target="atlas_whatsapp_tab"
+        rel="noopener noreferrer"
+        className="flex h-11 items-center gap-1.5 text-sm font-semibold text-blue-400 hover:text-blue-300"
+      >
+        <MessageCircle className="size-4" />
+        Consultar
+      </a>
+    )
+
+    return (
+      <div className="mx-auto flex max-w-[720px] flex-col gap-3.5 px-5 pb-28 pt-[22px] md:pb-16 md:pt-12">
+        <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">Avisos</h1>
+
+        {avisosVisibles.length > 4 && (
+          <>
+            <label className="flex h-12 items-center gap-2 rounded-xl border border-[#2A4677] bg-[#162A50] px-3.5 focus-within:border-blue-400">
+              <Search className="size-[18px] shrink-0 text-slate-500" />
+              <input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar aviso..."
+                aria-label="Buscar aviso"
+                className="min-w-0 flex-1 bg-transparent text-base text-slate-100 outline-none placeholder:text-slate-500"
+              />
+            </label>
+            <div role="group" aria-label="Filtrar avisos" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0">
+              {filtros.map((f) => (
+                <button
+                  key={f.valor}
+                  type="button"
+                  aria-pressed={filtroCategoria === f.valor}
+                  onClick={() => setFiltroCategoria(f.valor)}
+                  className={`h-11 shrink-0 rounded-full px-3.5 text-sm ${
+                    filtroCategoria === f.valor ? 'bg-slate-100 font-bold text-[#0E1B36]' : 'border border-[#2A4677] font-semibold text-slate-300'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {avisosFiltrados.length === 0 && (
+          <p className="py-10 text-center text-sm text-slate-500">No hay avisos para mostrar.</p>
+        )}
+
+        {nuevos.length > 0 && (
+          <h2 className={`${claseSeccion} mt-1`}>
+            Nuevos <span aria-hidden="true" className="mx-1 text-slate-600">|</span> {nuevos.length}
+          </h2>
+        )}
+        {nuevos.map((aviso) => (
+          <article key={aviso.id} className="flex flex-col gap-2 rounded-2xl border border-slate-700 bg-[#162A50] p-4">
+            {encabezado(aviso)}
+            <h3 className="text-lg font-bold text-white">{aviso.titulo}</h3>
+            <p className="whitespace-pre-line text-[15px] leading-normal text-slate-300">{aviso.mensaje}</p>
+            <div className="self-end">{consulta(aviso)}</div>
+          </article>
+        ))}
+
+        {anteriores.length > 0 && <h2 className={`${claseSeccion} mt-2`}>Anteriores</h2>}
+        {anteriores.map((aviso) => (
+          <article key={aviso.id} className="flex flex-col gap-1.5 rounded-2xl bg-[#13254A] p-4">
+            {encabezado(aviso)}
+            <h3 className="font-semibold text-slate-200">{aviso.titulo}</h3>
+            <p className="whitespace-pre-line text-sm text-slate-400">{aviso.mensaje}</p>
+            <div className="self-end">{consulta(aviso)}</div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
       {/* Cabecera Principal */}
       <header className="border-b border-slate-800/80 bg-slate-950 px-5 py-8 md:px-10">
         <div className="mx-auto flex max-w-5xl flex-col justify-between gap-5 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
               <Bell className="size-4" />
               {esAdmin ? 'Centro de comunicación' : 'Avisos y comunicados'}
             </div>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+            <h1 className="mt-1 text-5xl font-black text-white md:text-6xl">
               {esAdmin ? 'Avisos del gimnasio' : 'Novedades y notificaciones'}
             </h1>
             <p className="mt-1 text-sm text-slate-400">

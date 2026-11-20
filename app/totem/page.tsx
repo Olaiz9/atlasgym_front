@@ -40,12 +40,10 @@ import { INTERVALO_LATIDO_MS } from '@/lib/totem-estado'
 import { useEscapeKey } from '@/lib/use-escape-key'
 import { Alumno, EstadoCuenta, RegistroAsistencia } from '@/lib/types'
 import {
-  CheckCircle2,
   AlertTriangle,
   XCircle,
   Delete,
   Check,
-  RotateCcw,
   Clock,
   ShieldCheck,
   Lock,
@@ -67,7 +65,7 @@ interface ResultadoFeedback {
 
 export default function TotemPage() {
   const router = useRouter()
-  const { registrarAsistenciaPorDni, usuarioActual } = useAppData()
+  const { registrarAsistenciaPorDni, usuarioActual, cerrarSesion } = useAppData()
   const [montado, setMontado] = useState(false)
   const [terminalAutorizada, setTerminalAutorizada] = useState(false)
   const [bloqueadaManualmente, setBloqueadaManualmente] = useState(false)
@@ -81,6 +79,9 @@ export default function TotemPage() {
   }, [pinInput])
 
   const [mostrarConfirmDesvincular, setMostrarConfirmDesvincular] = useState(false)
+  const [pinSalidaInput, setPinSalidaInput] = useState('')
+  const [errorPinSalida, setErrorPinSalida] = useState(false)
+  const [pinSalidaVerificado, setPinSalidaVerificado] = useState(false)
   const [dni, setDni] = useState('')
   const [estado, setEstado] = useState<EstadoTotem>('IDLE')
   const [resultado, setResultado] = useState<ResultadoFeedback | null>(null)
@@ -205,11 +206,38 @@ export default function TotemPage() {
     setMontado(true)
   }, [])
 
+  // En modo tótem no puede quedar abierta la sesión de nadie.
+  useEffect(() => {
+    if (terminalAutorizada && usuarioActual) cerrarSesion()
+  }, [terminalAutorizada, usuarioActual, cerrarSesion])
+
   const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
 
-  // Auto-enfoque de inputs según pantalla activa
+  // Trampa de historial en modo kiosco: evita que el botón "Atrás" de la tablet Android
+  // saque al socio de /totem y lo devuelva al panel administrativo.
+  useEffect(() => {
+    if (!montado || !esAutorizada || typeof window === 'undefined') return
+    try {
+      window.history.pushState({ totemKiosco: true }, '', '/totem')
+    } catch {}
+    const bloquearBotonAtras = () => {
+      try {
+        window.history.pushState({ totemKiosco: true }, '', '/totem')
+      } catch {}
+    }
+    window.addEventListener('popstate', bloquearBotonAtras)
+    return () => window.removeEventListener('popstate', bloquearBotonAtras)
+  }, [montado, esAutorizada])
+
+  // Auto-enfoque de inputs según pantalla activa (solo en dispositivos con puntero fino / PC,
+  // para que en tablets/celulares no se abra solo el teclado virtual nativo de Android/iOS).
   useEffect(() => {
     if (!montado) return
+    const esPantallaTactil =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+    if (esPantallaTactil) return
     if (!esAutorizada) {
       inputPinRef.current?.focus()
     } else if (estado === 'IDLE') {
@@ -237,6 +265,23 @@ export default function TotemPage() {
           setErrorPin(false)
           setMensajeErrorPin('')
         }, 900)
+      }
+    }
+  }, [])
+
+  const procesarPinSalida = useCallback((nuevo: string) => {
+    setPinSalidaInput(nuevo)
+    setErrorPinSalida(false)
+    if (nuevo.length === 4) {
+      const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+      if (nuevo === pinEsperado) {
+        setPinSalidaVerificado(true)
+      } else {
+        setErrorPinSalida(true)
+        setTimeout(() => {
+          setPinSalidaInput('')
+          setErrorPinSalida(false)
+        }, 700)
       }
     }
   }, [])
@@ -715,8 +760,8 @@ export default function TotemPage() {
             <div className="size-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 shadow-inner">
               <ShieldCheck className="size-6" />
             </div>
-            <h1 className="text-xl font-black text-white tracking-tight">Terminal de Recepción</h1>
-            <span className="mt-1 text-[11px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
+            <h1 className="text-4xl font-black text-white">Terminal de Recepción</h1>
+            <span className="mt-1 text-xs font-bold bg-slate-800 text-slate-300 px-3 py-0.5 rounded-full border border-slate-700">
               Modo Kiosco Protegido
             </span>
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
@@ -728,7 +773,7 @@ export default function TotemPage() {
           <input
             ref={inputPinRef}
             type="password"
-            inputMode="numeric"
+            inputMode="none"
             pattern="[0-9]*"
             maxLength={4}
             value={pinInput}
@@ -744,26 +789,24 @@ export default function TotemPage() {
               }
             }}
             className="sr-only"
-            autoFocus
             aria-label="PIN de terminal"
           />
 
           {/* Casilleros visibles de 4 dígitos */}
           <div
-            onClick={() => inputPinRef.current?.focus()}
-            className="mt-6 flex justify-center gap-3 cursor-pointer"
+            className="mt-6 flex justify-center gap-3"
           >
             {[0, 1, 2, 3].map((idx) => {
               const tieneValor = pinInput.length > idx
               return (
                 <div
                   key={idx}
-                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-all duration-200 select-none ${
+                  className={`flex size-14 items-center justify-center rounded-2xl border-2 text-2xl font-black transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 select-none ${
                     errorPin
                       ? 'border-rose-500 bg-rose-500/15 text-rose-400 scale-95'
                       : tieneValor
                       ? 'border-blue-500 bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/25 scale-105'
-                      : 'border-slate-800 bg-slate-950/70 text-slate-600'
+                      : 'border-slate-800 bg-slate-950/70 text-slate-500'
                   }`}
                 >
                   {tieneValor ? '●' : ''}
@@ -777,7 +820,7 @@ export default function TotemPage() {
               {mensajeErrorPin || 'PIN de terminal incorrecto'}
             </p>
           ) : (
-            <p className="mt-3 text-center text-[11px] text-slate-500">
+            <p className="mt-3 text-center text-xs text-slate-500">
               Ingresá el código de autorización de 4 dígitos
             </p>
           )}
@@ -789,7 +832,7 @@ export default function TotemPage() {
                 key={n}
                 type="button"
                 onClick={() => manejarDigitoPin(n)}
-                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+                className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
               >
                 {n}
               </button>
@@ -797,21 +840,21 @@ export default function TotemPage() {
             <button
               type="button"
               onClick={manejarLimpiarPin}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
             >
               Borrar
             </button>
             <button
               type="button"
               onClick={() => manejarDigitoPin('0')}
-              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800 bg-slate-800/80 text-2xl font-bold text-white shadow-sm hover:bg-slate-700 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
             >
               0
             </button>
             <button
               type="button"
               onClick={manejarBorrarPin}
-              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer select-none"
+              className="h-14 rounded-2xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer select-none"
               aria-label="Retroceso"
             >
               <Delete className="size-5" />
@@ -835,7 +878,7 @@ export default function TotemPage() {
   return (
     <main className="h-dvh max-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-3 sm:p-5 select-none overflow-hidden">
       {/* CABECERA KIOSCO */}
-      <header className="flex items-center justify-between gap-3 border-b border-slate-800/80 pb-3 max-w-4xl w-full mx-auto shrink-0">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-800/80 pb-3 max-w-6xl w-full mx-auto shrink-0">
         <div className="flex items-center gap-3">
           <Image
             src="/logo-atlas-blanco.png"
@@ -845,7 +888,7 @@ export default function TotemPage() {
             className="h-7 sm:h-9 w-auto object-contain drop-shadow"
             priority
           />
-          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
+          <span className="text-xs font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded-full">
             Terminal de asistencias
           </span>
         </div>
@@ -854,7 +897,7 @@ export default function TotemPage() {
         <div className="flex items-center gap-3 sm:gap-4 text-right">
           <div className="hidden sm:block">
             <p className="text-xl sm:text-2xl font-black tracking-tight font-mono text-white">{horaActual || '--:--:--'}</p>
-            <p className="text-[11px] font-medium text-slate-400 capitalize">{fechaActual}</p>
+            <p className="text-xs font-medium text-slate-400 capitalize">{fechaActual}</p>
           </div>
           <div className="flex items-center gap-2">
             {pendientesOutbox > 0 && (
@@ -862,7 +905,7 @@ export default function TotemPage() {
                 type="button"
                 onClick={() => vaciarColaOutbox()}
                 title="Reintentar sincronización de ingresos registrados sin Internet"
-                className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-1.5 text-amber-300 text-[11px] font-bold cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-1.5 text-amber-300 text-xs font-bold cursor-pointer"
               >
                 <CloudUpload className="size-3.5 shrink-0" />
                 <span>{pendientesOutbox} pend. sync</span>
@@ -894,7 +937,12 @@ export default function TotemPage() {
             {/* PIN: bloquear la pantalla del tótem */}
             <button
               type="button"
-              onClick={() => setMostrarConfirmDesvincular(true)}
+              onClick={() => {
+                setPinSalidaInput('')
+                setErrorPinSalida(false)
+                setPinSalidaVerificado(false)
+                setMostrarConfirmDesvincular(true)
+              }}
               title="Bloquear pantalla del tótem"
               aria-label="Bloquear pantalla del tótem"
               className="p-2 rounded-xl border border-slate-800 bg-slate-900/90 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
@@ -905,275 +953,223 @@ export default function TotemPage() {
         </div>
       </header>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <section className="flex-1 flex items-center justify-center py-2 w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto overflow-hidden">
-        {/* ESTADO 1: EN ESPERA / DIGITANDO DNI */}
-        {estado === 'IDLE' && (
-          <div className="w-full flex flex-col items-center">
-            <div className="text-center mb-2 sm:mb-3">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">Marcá tu ingreso</h1>
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Ingresá tu DNI para registrar tu asistencia hoy</p>
-            </div>
+      {/* Sin señal: los ingresos se guardan en la tablet y se envían solos */}
+      {estadoTerminal === 'SIN_CONEXION' && (
+        <div
+          role="status"
+          className="max-w-6xl w-full mx-auto mt-3 rounded-xl bg-amber-300 text-amber-950 px-4 py-2.5 text-sm md:text-base font-bold flex items-center justify-center gap-2 shrink-0"
+        >
+          <CloudUpload className="size-5 shrink-0" />
+          <span>
+            Sin conexión: los ingresos se guardan y se envían solos al volver el Wi-Fi
+            {pendientesOutbox > 0 ? ` (${pendientesOutbox} en espera)` : ''}
+          </span>
+        </div>
+      )}
 
-            {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
-            <div
-              onClick={() => inputDniRef.current?.focus()}
-              className="w-full rounded-2xl border-2 border-slate-800 bg-slate-900/90 py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 text-center shadow-lg shadow-blue-950/20 mb-2.5 sm:mb-3.5 transition-all focus-within:border-blue-500 cursor-text"
-            >
-              <input
-                ref={inputDniRef}
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={9}
-                value={dni}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 9)
-                  setDni(val)
-                }}
-                className="sr-only"
-                autoFocus
-                tabIndex={0}
-                aria-label="Ingresar DNI"
-              />
-              <p className="text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 mb-0.5">Documento nacional de identidad</p>
-              <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center">
+      {/* CONTENIDO PRINCIPAL: dos mitades en tablet (mensaje a la izquierda, teclado a la derecha) */}
+      <section className="flex-1 min-h-0 w-full max-w-6xl mx-auto py-4 md:py-8 flex flex-col md:flex-row gap-5 md:gap-12 overflow-hidden">
+        <div className="md:flex-[1.15] min-w-0 flex flex-col justify-center gap-5 md:gap-7">
+          {/* ESTADO 1: EN ESPERA / DIGITANDO DNI */}
+          {estado === 'IDLE' && (
+            <>
+              <div>
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold uppercase leading-[0.9] text-[#FF7A8E]">
+                  Marcá tu
+                  <br />
+                  ingreso
+                </h1>
+                <p className="text-base md:text-xl text-slate-300 mt-3 md:mt-5">Escribí tu DNI, sin puntos.</p>
+              </div>
+
+              {/* VISOR DE DNI CON ENFOQUE ACTIVO */}
+              <div
+                className="w-full h-20 md:h-26 rounded-2xl md:rounded-[20px] border-2 border-blue-600 bg-slate-900 px-5 md:px-7 flex items-center"
+              >
+                <input
+                  ref={inputDniRef}
+                  type="tel"
+                  inputMode="none"
+                  pattern="[0-9]*"
+                  maxLength={9}
+                  value={dni}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 9)
+                    setDni(val)
+                  }}
+                  className="sr-only"
+                  tabIndex={0}
+                  aria-label="Ingresar DNI"
+                />
                 {dni ? (
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-mono font-black tracking-widest text-blue-400 animate-in fade-in zoom-in-95 duration-150">
+                  <span className="font-display text-4xl md:text-6xl font-bold tracking-[0.08em] tabular-nums text-white">
                     {formatearDniVisual(dni)}
                   </span>
                 ) : (
-                  <span className="text-xl sm:text-2xl md:text-3xl font-mono font-bold tracking-widest text-slate-600 animate-pulse">
-                    _ _ . _ _ _ . _ _ _
-                  </span>
+                  <span className="font-display text-4xl md:text-6xl font-bold tracking-[0.08em] text-slate-500">— — —</span>
                 )}
               </div>
+            </>
+          )}
+
+          {/* ESTADO 2: ACCESO AUTORIZADO (AL DÍA) */}
+          {estado === 'EXITO' && resultado?.alumno && (
+            <div
+              role="status"
+              className="md:flex-1 rounded-3xl md:rounded-[28px] border-2 border-emerald-400 bg-[#0F3B2B] p-6 md:p-10 flex flex-col justify-center gap-4 md:gap-5 animate-in zoom-in-95 duration-200"
+            >
+              <span className="flex size-16 md:size-22 items-center justify-center rounded-full bg-emerald-400 text-emerald-950">
+                <Check className="size-9 md:size-12" strokeWidth={3} />
+              </span>
+              <h2 className="font-display text-5xl md:text-7xl lg:text-8xl font-extrabold uppercase leading-[0.9] text-white">
+                ¡Buen entreno,
+                <br />
+                {resultado.alumno.nombre.split(' ')[0]}!
+              </h2>
+              <p className="text-base md:text-xl text-emerald-100">
+                Cuota al día <span aria-hidden="true" className="text-slate-500">|</span> {resultado.alumno.plan}
+              </p>
+              <TemporizadorCierre tiempoRestante={tiempoRestante} color="bg-emerald-400" />
             </div>
+          )}
 
-            {/* TECLADO NUMÉRICO TÁCTIL */}
-            <div className="w-full grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-2.5 mb-2.5 sm:mb-3.5">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => agregarDigito(num)}
-                  className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
-                >
-                  {num}
-                </button>
-              ))}
+          {/* ESTADO 3: ALERTA (CUOTA PENDIENTE O VENCIDA / MOROSO / YA REGISTRADO) */}
+          {estado === 'ALERTA' && resultado?.alumno && (
+            <div
+              role="status"
+              className="md:flex-1 rounded-3xl md:rounded-[28px] border-2 border-rose-300 bg-[#3A1714] p-6 md:p-10 flex flex-col justify-center gap-4 md:gap-5 animate-in zoom-in-95 duration-200"
+            >
+              <span className="flex size-16 md:size-22 items-center justify-center rounded-full bg-amber-300 text-amber-950">
+                {resultado.esDuplicado ? <Check className="size-9 md:size-12" strokeWidth={3} /> : <AlertTriangle className="size-8 md:size-11" />}
+              </span>
+              <p className="text-sm md:text-base font-bold text-amber-300">
+                {resultado.esDuplicado
+                  ? 'Ingreso ya registrado'
+                  : resultado.estadoCuenta === 'PENDIENTE'
+                  ? 'Cuota pendiente'
+                  : 'Cuota vencida'}
+              </p>
+              <h2 className="font-display text-5xl md:text-7xl lg:text-8xl font-extrabold uppercase leading-[0.9] text-white">
+                Pasá, {resultado.alumno.nombre.split(' ')[0]}
+              </h2>
+              <p className="text-base md:text-xl text-rose-100">
+                {resultado.motivo ||
+                  (resultado.estadoCuenta === 'PENDIENTE'
+                    ? 'Tu cuota del mes está pendiente. Acercate al mostrador cuando puedas.'
+                    : 'Tu cuota está vencida. Acercate al mostrador cuando puedas.')}
+              </p>
+              <p className="text-sm md:text-base text-slate-300">Plan: {resultado.alumno.plan}</p>
+              <TemporizadorCierre tiempoRestante={tiempoRestante} color="bg-amber-300" />
+            </div>
+          )}
 
-              <Tooltip content="Limpiar DNI ingresado">
-                <button
-                  type="button"
-                  onClick={limpiar}
-                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-rose-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-                >
-                  <RotateCcw className="size-4 md:size-5 text-slate-400" />
-                  <span>Limpiar</span>
-                </button>
-              </Tooltip>
+          {/* ESTADO 4: ERROR (DNI NO ENCONTRADO, INACTIVO O ERROR DE TERMINAL) */}
+          {estado === 'ERROR' && (
+            <div
+              role="status"
+              className="md:flex-1 rounded-3xl md:rounded-[28px] border-2 border-slate-600 bg-slate-900 p-6 md:p-10 flex flex-col justify-center gap-4 md:gap-5 animate-in zoom-in-95 duration-200"
+            >
+              <span className="flex size-16 md:size-22 items-center justify-center rounded-full bg-slate-700 text-white">
+                <XCircle className="size-9 md:size-12" />
+              </span>
+              <p className="text-sm md:text-base font-bold text-slate-300">Acceso no registrado</p>
+              <h2 className="font-display text-4xl md:text-6xl font-extrabold uppercase leading-[0.95] text-white">
+                {resultado?.tituloError || 'No identificamos tu DNI'}
+              </h2>
+              <p className="text-base md:text-xl text-slate-300">
+                {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está inactivo.'}
+              </p>
+              <p className="text-sm md:text-base text-slate-400">Acercate a recepción para verificar tus datos de inscripción.</p>
+              <TemporizadorCierre tiempoRestante={tiempoRestante} color="bg-slate-400" />
+            </div>
+          )}
+        </div>
 
+        {/* TECLADO NUMÉRICO TÁCTIL + BOTÓN PRINCIPAL */}
+        <div className={`md:flex-1 min-w-0 flex flex-col gap-3 md:gap-4 ${estado === 'IDLE' ? '' : 'hidden md:flex'}`}>
+          <div className="flex-1 grid grid-cols-3 grid-rows-4 gap-2.5 md:gap-3.5" role="group" aria-label="Teclado numérico">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => agregarDigito(num)}
+                disabled={estado !== 'IDLE'}
+                className="min-h-14 rounded-2xl md:rounded-[20px] bg-slate-900 hover:bg-slate-800 active:bg-blue-600 font-display text-4xl md:text-5xl font-bold text-white transition-[background-color,transform] active:scale-95 disabled:opacity-40 flex items-center justify-center cursor-pointer"
+              >
+                {num}
+              </button>
+            ))}
+
+            <Tooltip content="Limpiar DNI ingresado">
               <button
                 type="button"
-                onClick={() => agregarDigito('0')}
-                className="h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 active:bg-blue-600 text-xl sm:text-2xl md:text-3xl font-black text-white border border-slate-800/90 shadow-sm transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer"
+                onClick={limpiar}
+                disabled={estado !== 'IDLE'}
+                className="w-full h-full min-h-14 rounded-2xl md:rounded-[20px] border-2 border-slate-700 bg-transparent hover:bg-slate-900 text-lg md:text-2xl font-semibold text-slate-300 transition-[background-color,transform] active:scale-95 disabled:opacity-40 flex items-center justify-center cursor-pointer"
               >
-                0
+                Limpiar
               </button>
+            </Tooltip>
 
-              <Tooltip content="Borrar último dígito">
-                <button
-                  type="button"
-                  onClick={borrarUltimo}
-                  className="w-full h-11 sm:h-13 md:h-15 lg:h-16 rounded-xl sm:rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 active:bg-amber-950/80 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-slate-200 border border-slate-800/80 shadow-sm transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-                >
-                  <Delete className="size-4 md:size-5 text-slate-400" />
-                  <span>Borrar</span>
-                </button>
-              </Tooltip>
-            </div>
+            <button
+              type="button"
+              onClick={() => agregarDigito('0')}
+              disabled={estado !== 'IDLE'}
+              className="min-h-14 rounded-2xl md:rounded-[20px] bg-slate-900 hover:bg-slate-800 active:bg-blue-600 font-display text-4xl md:text-5xl font-bold text-white transition-[background-color,transform] active:scale-95 disabled:opacity-40 flex items-center justify-center cursor-pointer"
+            >
+              0
+            </button>
 
-            {/* BOTÓN REGISTRAR */}
+            <Tooltip content="Borrar último dígito">
+              <button
+                type="button"
+                onClick={borrarUltimo}
+                disabled={estado !== 'IDLE'}
+                aria-label="Borrar último número"
+                className="w-full h-full min-h-14 rounded-2xl md:rounded-[20px] border-2 border-slate-700 bg-transparent hover:bg-slate-900 text-lg md:text-2xl font-semibold text-slate-300 transition-[background-color,transform] active:scale-95 disabled:opacity-40 flex items-center justify-center cursor-pointer"
+              >
+                Borrar
+              </button>
+            </Tooltip>
+          </div>
+
+          {estado === 'IDLE' ? (
             <button
               type="button"
               disabled={dni.length < 6 || procesando}
               onClick={() => manejarEnvio()}
-              className={`w-full h-11 sm:h-13 md:h-14 lg:h-15 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg tracking-wide flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg ${
-                dni.length >= 6 && !procesando
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 active:scale-98'
-                  : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
-              }`}
+              className="h-18 md:h-24 rounded-2xl md:rounded-[20px] bg-blue-600 hover:bg-blue-500 text-white font-display text-3xl md:text-4xl font-extrabold uppercase tracking-wide transition-[background-color,transform,opacity] active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Check className="size-5 md:size-6" />
-              <span>{procesando ? 'Verificando...' : 'Registrar entrada'}</span>
+              {procesando ? 'Verificando…' : 'Marcar ingreso'}
             </button>
-          </div>
-        )}
+          ) : (
+            <button
+              type="button"
+              onClick={reiniciarAIdle}
+              className="h-18 md:h-24 rounded-2xl md:rounded-[20px] bg-blue-600 hover:bg-blue-500 text-white font-display text-3xl md:text-4xl font-extrabold uppercase tracking-wide transition-[background-color,transform] active:scale-98 cursor-pointer"
+            >
+              {estado === 'ERROR' ? 'Reintentar' : 'Siguiente socio'}
+            </button>
+          )}
+        </div>
 
-        {/* ESTADO 2: ACCESO AUTORIZADO (AL DÍA) */}
-        {estado === 'EXITO' && resultado?.alumno && (
-          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-emerald-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mb-3 shadow-lg shadow-emerald-500/20 animate-bounce">
-              <CheckCircle2 className="size-8 sm:size-10" />
-            </div>
-
-            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Acceso autorizado</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">¡Hola, {resultado.alumno.nombre}!</h2>
-            <p className="text-xs sm:text-sm font-semibold text-emerald-300/90 mt-1">Cuota al día · ¡Que tengas un excelente entrenamiento!</p>
-
-            <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-emerald-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
-              <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Plan contratado</p>
-                <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
-              </div>
-              <div className="h-7 w-px bg-slate-800" />
-              <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Estado de cuenta</p>
-                <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                  Al día
-                </span>
-              </div>
-            </div>
-
-            {/* Temporizador y botón siguiente */}
-            <div className="flex items-center justify-between gap-3 mt-4">
-              <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full bg-emerald-500 transition-all duration-100 ease-linear rounded-full"
-                    style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
-              >
-                Siguiente socio
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ESTADO 3: ALERTA (CUOTA PENDIENTE O VENCIDA / MOROSO) */}
-        {estado === 'ALERTA' && resultado?.alumno && (
-          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-amber-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-3 shadow-lg shadow-amber-500/20">
-              {resultado.esDuplicado ? <Check className="size-8 sm:size-10" /> : <AlertTriangle className="size-8 sm:size-10" />}
-            </div>
-
-            <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">
-              {resultado.esDuplicado
-                ? 'Ingreso ya registrado'
-                : resultado.estadoCuenta === 'PENDIENTE'
-                ? 'Atención · Cuota pendiente'
-                : 'Atención · Cuota vencida'}
-            </p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Hola, {resultado.alumno.nombre}</h2>
-            <p className="text-xs sm:text-sm font-semibold text-amber-200/90 mt-1 max-w-sm mx-auto">
-              {resultado.motivo ||
-                (resultado.estadoCuenta === 'PENDIENTE'
-                  ? 'Tu cuota del mes se encuentra pendiente de acreditación. Por favor consultá en recepción para regularizarla.'
-                  : 'Tu cuota se encuentra vencida. Por favor regularizá tu situación en recepción antes de entrenar.')}
-            </p>
-
-            <div className="my-4 rounded-xl sm:rounded-2xl bg-slate-900/80 border border-amber-500/20 p-3 sm:p-4 flex items-center justify-around text-left">
-              <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Plan</p>
-                <p className="text-sm sm:text-base font-black text-white">{resultado.alumno.plan}</p>
-              </div>
-              <div className="h-7 w-px bg-slate-800" />
-              <div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">Condición</p>
-                <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
-                    resultado.esDuplicado && resultado.estadoCuenta === 'AL_DIA'
-                      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                      : resultado.estadoCuenta === 'PENDIENTE'
-                      ? 'text-amber-300 bg-amber-500/15 border-amber-400/40'
-                      : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
-                  }`}
-                >
-                  {resultado.esDuplicado
-                    ? 'Sesión activa'
-                    : resultado.estadoCuenta === 'PENDIENTE'
-                    ? 'Pago pendiente'
-                    : 'Renovar cuota'}
-                </span>
-              </div>
-            </div>
-
-            {/* Temporizador y botón siguiente */}
-            <div className="flex items-center justify-between gap-3 mt-4">
-              <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full bg-amber-500 transition-all duration-100 ease-linear rounded-full"
-                    style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
-              >
-                Siguiente socio
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ESTADO 4: ERROR (DNI NO ENCONTRADO, INACTIVO O ERROR DE TERMINAL) */}
-        {estado === 'ERROR' && (
-          <div className="w-full rounded-2xl sm:rounded-3xl border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/70 to-slate-950 p-5 sm:p-7 text-center shadow-2xl shadow-rose-950/40 animate-in zoom-in-95 duration-200">
-            <div className="inline-flex items-center justify-center size-14 sm:size-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 mb-3 shadow-lg shadow-rose-500/20">
-              <XCircle className="size-8 sm:size-10" />
-            </div>
-
-            <p className="text-[11px] font-black uppercase tracking-widest text-rose-400">Acceso no registrado</p>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
-              {resultado?.tituloError || 'No identificamos tu DNI'}
-            </h2>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1 max-w-sm mx-auto">
-              {resultado?.motivo || 'El DNI ingresado no figura en el sistema de socios o el plan está inactivo.'}
-            </p>
-
-            <div className="my-4 rounded-xl bg-slate-900/80 border border-rose-500/20 p-3 text-xs font-semibold text-slate-400">
-              Acercate a recepción para verificar tus datos de inscripción.
-            </div>
-
-            <div className="flex items-center justify-between gap-3 mt-4">
-              <div className="flex-1 text-left">
-                <p className="text-[10px] font-medium text-slate-500">Cierre automático en {tiempoRestante}s...</p>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full bg-rose-500 transition-all duration-100 ease-linear rounded-full"
-                    style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={reiniciarAIdle}
-                className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-200 border border-slate-700 transition-all cursor-pointer"
-              >
-                Reintentar
-              </button>
-            </div>
-          </div>
+        {/* En celular el teclado se oculta con el resultado: el botón para seguir queda abajo del mensaje */}
+        {estado !== 'IDLE' && (
+          <button
+            type="button"
+            onClick={reiniciarAIdle}
+            className="md:hidden h-16 rounded-2xl bg-blue-600 text-white font-display text-2xl font-extrabold uppercase cursor-pointer"
+          >
+            {estado === 'ERROR' ? 'Reintentar' : 'Siguiente socio'}
+          </button>
         )}
       </section>
 
       {/* PIE DE PÁGINA KIOSCO */}
-      <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-4xl w-full mx-auto text-[11px] sm:text-xs text-slate-500 shrink-0">
+      <footer className="flex items-center justify-between border-t border-slate-900 pt-2 sm:pt-3 max-w-6xl w-full mx-auto text-xs sm:text-xs text-slate-500 shrink-0">
         <div className="flex items-center gap-2.5">
           <p className="flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5 text-blue-500" />
+            <ShieldCheck className="size-3.5 text-blue-400" />
             <span>Terminal kiosco protegida por ATLAS GYM</span>
           </p>
           <button
@@ -1184,7 +1180,7 @@ export default function TotemPage() {
               setErrorVinculacion(null)
               setModalVinculacionAbierto(true)
             }}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/70 hover:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
             title="Configurar clave local de terminal (solo administradores)"
           >
             <KeyRound className="size-3" />
@@ -1195,10 +1191,10 @@ export default function TotemPage() {
             </span>
           </button>
         </div>
-        <p className="text-[10px] sm:text-[11px] hidden sm:block">Soporte táctil y teclado físico habilitados</p>
+        <p className="text-xs sm:text-xs hidden sm:block">Soporte táctil y teclado físico habilitados</p>
       </footer>
 
-      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR */}
+      {/* MODAL CONFIRMACIÓN BLOQUEO / DESVINCULAR (PROTEGIDO POR PIN DE 4 DÍGITOS) */}
       {mostrarConfirmDesvincular && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl">
@@ -1208,36 +1204,124 @@ export default function TotemPage() {
               </div>
               <h3 className="text-lg font-black text-white">Bloquear Terminal</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                ¿Querés desvincular o bloquear esta terminal de recepción? Al hacerlo, se requerirá nuevamente el PIN de terminal para volver a habilitar el registro de asistencias.
+                {pinSalidaVerificado
+                  ? 'PIN verificado. Elegí si querés bloquear la pantalla o salir del modo tótem.'
+                  : 'Ingresá el PIN de 4 dígitos de la terminal para bloquear la pantalla o salir del modo tótem.'}
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={desvincularTerminal}
-                className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
-              >
-                Bloquear terminal ahora
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMostrarConfirmDesvincular(false)
-                  router.push('/asistencias')
-                }}
-                className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-all cursor-pointer"
-              >
-                Ir al panel de asistencias
-              </button>
-              <button
-                type="button"
-                onClick={() => setMostrarConfirmDesvincular(false)}
-                className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-all cursor-pointer"
-              >
-                Cancelar y seguir en tótem
-              </button>
-            </div>
+            {!pinSalidaVerificado ? (
+              <div className="mt-5">
+                <div className="flex justify-center gap-2.5">
+                  {[0, 1, 2, 3].map((idx) => {
+                    const tieneValor = pinSalidaInput.length > idx
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex size-12 items-center justify-center rounded-xl border-2 text-xl font-black select-none ${
+                          errorPinSalida
+                            ? 'border-rose-500 bg-rose-500/15 text-rose-400'
+                            : tieneValor
+                            ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                            : 'border-slate-800 bg-slate-950/70 text-slate-500'
+                        }`}
+                      >
+                        {tieneValor ? '●' : ''}
+                      </div>
+                    )
+                  })}
+                </div>
+                {errorPinSalida && (
+                  <p className="mt-2 text-center text-xs font-bold text-rose-400">
+                    PIN incorrecto.
+                  </p>
+                )}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        if (pinSalidaInput.length >= 4) return
+                        procesarPinSalida(pinSalidaInput + n)
+                      }}
+                      className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinSalidaInput('')
+                      setErrorPinSalida(false)
+                    }}
+                    className="h-12 rounded-xl border border-slate-800/80 bg-slate-950/80 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer select-none"
+                  >
+                    Borrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pinSalidaInput.length >= 4) return
+                      procesarPinSalida(pinSalidaInput + '0')
+                    }}
+                    className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
+                  >
+                    0
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinSalidaInput((prev) => prev.slice(0, -1))
+                      setErrorPinSalida(false)
+                    }}
+                    aria-label="Retroceso PIN salida"
+                    className="h-12 rounded-xl border border-slate-800/80 bg-slate-950/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer select-none"
+                  >
+                    <Delete className="size-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmDesvincular(false)}
+                  className="mt-4 w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Cancelar y seguir en tótem
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={desvincularTerminal}
+                  className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Bloquear terminal ahora
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('atlas_totem_terminal_autorizada')
+                    }
+                    setTerminalAutorizada(false)
+                    setMostrarConfirmDesvincular(false)
+                    router.push('/login')
+                  }}
+                  className="w-full h-11 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Salir del modo tótem e ir al login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmDesvincular(false)}
+                  className="w-full h-10 rounded-xl bg-transparent hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] cursor-pointer"
+                >
+                  Cancelar y seguir en tótem
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1293,6 +1377,10 @@ export default function TotemPage() {
                     return
                   }
                   setStoredTotemSecret(claveTerminalInput)
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
+                  }
+                  setTerminalAutorizada(true)
                   setClaveTerminalInput('')
                   guardarPadronCacheTotem(res.padron)
                   setPadronSincronizadoCount(res.padron.length)
@@ -1310,5 +1398,19 @@ export default function TotemPage() {
         </div>
       )}
     </main>
+  )
+}
+
+function TemporizadorCierre({ tiempoRestante, color }: { tiempoRestante: number; color: string }) {
+  return (
+    <div>
+      <p className="text-sm text-slate-400">Cierre automático en {tiempoRestante}s...</p>
+      <div className="w-full h-1.5 bg-black/30 rounded-full overflow-hidden mt-1.5">
+        <div
+          className={`h-full ${color} transition-[width] duration-100 ease-linear rounded-full`}
+          style={{ width: `${(tiempoRestante / 3.5) * 100}%` }}
+        />
+      </div>
+    </div>
   )
 }

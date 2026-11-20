@@ -115,6 +115,17 @@ export function periodoMesActual(referencia: Date = new Date()): string {
   return `${anio}-${mes}`;
 }
 
+/** Nombre legible de un período "YYYY-MM" (ej: "Noviembre de 2026"). */
+export function formatearMes(mesStr: string): string {
+  const [anio, mesNum] = mesStr.split("-").map(Number);
+  if (!anio || !mesNum) return mesStr;
+  const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 /**
  * Suma (o resta) meses a un período "YYYY-MM" sin usar Date UTC.
  */

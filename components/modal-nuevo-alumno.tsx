@@ -22,6 +22,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   const [formAlumno, setFormAlumno] = useState({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
   const [erroresAlumno, setErroresAlumno] = useState<Record<string, string>>({})
   const [alumnoRecienCreado, setAlumnoRecienCreado] = useState<{ nombre: string; dni: string } | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  const enviando = useRef(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const planesActivos = planes.filter((p) => p.activo)
@@ -43,6 +46,9 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
   }
 
   function handleCerrar() {
+    // Mientras el servidor no responde, el modal no se cierra: así no queda un alta a medias sin aviso.
+    if (enviando.current) return
+    setErrorEnvio(null)
     setFormAlumno({ nombre: '', email: '', dni: '', celular: '', plan: '', planId: '' })
     setErroresAlumno({})
     setAlumnoRecienCreado(null)
@@ -57,6 +63,10 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
     <dialog
       ref={dialogRef}
       onClose={handleCerrar}
+      onCancel={(e) => {
+        // Escape cierra el <dialog> nativo: no mientras se está guardando el alta
+        if (enviando.current) e.preventDefault()
+      }}
       onClick={(e) => {
         if (e.target === dialogRef.current) handleCerrar()
       }}
@@ -69,7 +79,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 id="modal-nuevo-alumno-title" className="text-2xl font-black text-white">
+            <h2 id="modal-nuevo-alumno-title" className="text-4xl font-black text-white">
               {alumnoRecienCreado ? 'Socio registrado' : 'Nuevo alumno'}
             </h2>
             <p className="mt-1 text-xs text-slate-400">
@@ -92,29 +102,42 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 handleCerrar()
                 router.push(`/finanzas?cobrar=${encodeURIComponent(dni)}`)
               }}
-              className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+              className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95"
             >
               Cobrar ahora
             </Button>
           </div>
         ) : (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            if (!validarAlumno()) return
-            agregarAlumno({
-              nombre: formAlumno.nombre,
-              dni: formAlumno.dni,
-              email: formAlumno.email.trim() || undefined,
-              celular: formAlumno.celular,
-              planId: formAlumno.planId || undefined,
-              plan: formAlumno.plan,
-              fechaAlta: fechaLocalHoy(),
-              activo: true,
-            })
-            toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
-            setAlumnoRecienCreado({ nombre: formAlumno.nombre, dni: formAlumno.dni })
+            if (enviando.current || !validarAlumno()) return
+            enviando.current = true
+            setGuardando(true)
+            setErrorEnvio(null)
+            try {
+              const resultado = await agregarAlumno({
+                nombre: formAlumno.nombre,
+                dni: formAlumno.dni,
+                email: formAlumno.email.trim() || undefined,
+                celular: formAlumno.celular,
+                planId: formAlumno.planId || undefined,
+                plan: formAlumno.plan,
+                fechaAlta: fechaLocalHoy(),
+                activo: true,
+              })
+              if (!resultado.ok) {
+                setErrorEnvio(resultado.error)
+                return
+              }
+              toast(`Alumno "${formAlumno.nombre}" registrado con éxito en el padrón`, 'success')
+              setAlumnoRecienCreado({ nombre: formAlumno.nombre, dni: formAlumno.dni })
+            } finally {
+              enviando.current = false
+              setGuardando(false)
+            }
           }}
+          aria-busy={guardando}
           className="mt-6 flex flex-col gap-4"
         >
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
@@ -125,7 +148,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               value={formAlumno.nombre}
               onChange={(e) => setFormAlumno({ ...formAlumno, nombre: soloLetras(e.target.value) })}
               maxLength={60}
-              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.nombre ? 'border-rose-500' : 'border-slate-700'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.nombre ? 'border-rose-500' : 'border-slate-700'}`}
               placeholder="Ej. Martín Gómez"
             />
             {erroresAlumno.nombre && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.nombre}</span>}
@@ -140,7 +163,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 value={formAlumno.dni}
                 onChange={(e) => setFormAlumno({ ...formAlumno, dni: soloNumeros(e.target.value).slice(0, 8) })}
                 maxLength={8}
-                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.dni ? 'border-rose-500' : 'border-slate-700'}`}
+                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.dni ? 'border-rose-500' : 'border-slate-700'}`}
                 placeholder="Ej. 32456789"
               />
               {erroresAlumno.dni && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.dni}</span>}
@@ -154,7 +177,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                 value={formAlumno.celular}
                 onChange={(e) => setFormAlumno({ ...formAlumno, celular: soloNumeros(e.target.value).slice(0, 13) })}
                 maxLength={13}
-                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.celular ? 'border-rose-500' : 'border-slate-700'}`}
+                className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.celular ? 'border-rose-500' : 'border-slate-700'}`}
                 placeholder="Ej. 5491112345678"
               />
               {erroresAlumno.celular && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.celular}</span>}
@@ -163,7 +186,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
 
           <div className="rounded-xl border border-slate-800 bg-slate-800/40 px-4 py-2.5 text-xs text-slate-400">
             <span className="font-semibold text-slate-300">Acceso a la plataforma ATLAS:</span>
-            <p className="mt-0.5 text-[11px] text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-400">
               Podés darle acceso a la app al registrar su primer pago en Finanzas (“Primera inscripción”) o desde su ficha con “Generar clave temporal”.
             </p>
           </div>
@@ -175,7 +198,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
               value={formAlumno.email}
               onChange={(e) => setFormAlumno({ ...formAlumno, email: e.target.value })}
               maxLength={80}
-              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-500' : 'border-slate-700'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white placeholder:text-slate-500 outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${erroresAlumno.email ? 'border-rose-500' : 'border-slate-700'}`}
               placeholder="correo@ejemplo.com"
             />
             {erroresAlumno.email && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.email}</span>}
@@ -199,7 +222,7 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
                   setErroresAlumno((prev) => ({ ...prev, plan: '' }))
                 }
               }}
-              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 cursor-pointer ${erroresAlumno.plan ? 'border-rose-500' : 'border-slate-700'}`}
+              className={`h-11 rounded-xl border bg-slate-800/80 px-4 text-sm text-white outline-none transition-[border-color,background-color] duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 cursor-pointer ${erroresAlumno.plan ? 'border-rose-500' : 'border-slate-700'}`}
             >
               <option value="" disabled className="bg-slate-900 text-slate-400">Seleccioná un plan activo</option>
               {planesActivos.map((p) => (
@@ -211,9 +234,15 @@ export function ModalNuevoAlumno({ isOpen, onClose }: ModalNuevoAlumnoProps) {
             {erroresAlumno.plan && <span className="text-xs font-semibold text-rose-400">{erroresAlumno.plan}</span>}
           </label>
 
+          {errorEnvio && (
+            <p role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-300">
+              {errorEnvio}
+            </p>
+          )}
+
           <div className="mt-4 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCerrar} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
-            <Button type="submit" className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">Crear alumno</Button>
+            <Button type="button" variant="outline" onClick={handleCerrar} disabled={guardando} className="h-11 rounded-xl border-slate-700 bg-transparent px-5 font-bold text-slate-300 hover:bg-slate-800 hover:text-white">Cancelar</Button>
+            <Button type="submit" disabled={guardando} className="h-11 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-60">{guardando ? 'Guardando…' : 'Crear alumno'}</Button>
           </div>
         </form>
         )}

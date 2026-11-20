@@ -19,10 +19,12 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await page.getByPlaceholder('Ej. 5491112345678').fill('2611234567')
   await page.getByLabel('Plan asignado').selectOption({ label: `${nombrePlan} — $${pesos(precio)}` })
   await page.getByRole('button', { name: 'Crear alumno' }).click()
+  // El modal confirma recién cuando el servidor guardó el alta (recargar antes cortaba el pedido)
+  await expect(page.getByRole('heading', { name: 'Socio registrado' })).toBeVisible()
 
   // Al recargar, el socio sigue ahí: quedó guardado en el servidor, no solo en el navegador
   await page.reload()
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await expect(page.getByText(nombre).first()).toBeVisible()
 
   // --- Cobro desde Finanzas ---
@@ -47,14 +49,9 @@ test('el titular da de alta un socio y le cobra la cuota en efectivo', async ({ 
   await page.getByPlaceholder('Buscar socio u operador...').fill(nombre)
   await expect(page.getByText(nombre).first()).toBeVisible()
 
-  // Y aparece en el arqueo de caja del día, en efectivo y a nombre del titular
-  // (el panel es el bloque más chico que contiene el título y la línea "Por operador")
-  const arqueo = page
-    .locator('div')
-    .filter({ has: page.getByRole('heading', { name: 'Arqueo de Caja del Día' }) })
-    .filter({ hasText: 'Por operador:' })
-    .last()
-  await expect(arqueo.getByText(`${E2E.titular.nombre}:`)).toBeVisible()
-  const efectivo = arqueo.locator('div').filter({ hasText: 'Efectivo en cajón' }).last()
+  // Y aparece en la caja del día, en efectivo y a nombre del titular
+  const caja = page.locator('section[aria-labelledby="titulo-caja"]')
+  await expect(caja.getByText(/^Por titular:/)).toContainText(`${E2E.titular.nombre} $${pesos(precio)}`)
+  const efectivo = caja.locator('div').filter({ has: page.getByText('Efectivo', { exact: true }) }).last()
   await expect(efectivo).toContainText(`$${pesos(precio)}`)
 })

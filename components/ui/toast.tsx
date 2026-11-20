@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300 animate-in slide-in-from-bottom-5 fade-in ${
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-[color,background-color,border-color,opacity,transform,translate,scale,rotate] duration-200 animate-in slide-in-from-bottom-5 fade-in ${
               t.tipo === 'success'
                 ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200'
                 : t.tipo === 'error'

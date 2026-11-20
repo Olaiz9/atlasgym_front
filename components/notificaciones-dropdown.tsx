@@ -10,7 +10,7 @@ import { CATEGORIA_AVISO_STYLES, CategoriaAviso, Aviso } from '@/lib/types'
 function DropdownCategoriaBadge({ categoria }: { categoria: CategoriaAviso }) {
   const estilo = CATEGORIA_AVISO_STYLES[categoria]
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${estilo.badge}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${estilo.badge}`}>
       {categoria === 'IMPORTANTE' && <AlertCircle className="size-2.5 text-rose-600" />}
       {categoria === 'NOVEDAD' && <Info className="size-2.5 text-blue-600" />}
       {categoria === 'HORARIO' && <Clock className="size-2.5 text-emerald-600" />}
@@ -43,10 +43,10 @@ function DropdownItem({
           {!esLeido && <span className="size-2 rounded-full bg-rose-500 shrink-0" />}
           <DropdownCategoriaBadge categoria={aviso.categoria} />
         </div>
-        <span className="text-[10px] font-medium text-slate-500">{aviso.fecha}</span>
+        <span className="text-xs font-medium text-slate-500">{aviso.fecha}</span>
       </div>
       <p className="text-xs font-bold text-white line-clamp-1">{aviso.titulo}</p>
-      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{aviso.mensaje}</p>
+      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{aviso.mensaje}</p>
     </button>
   )
 }
@@ -135,11 +135,11 @@ export function NotificacionesDropdown() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-white">Notificaciones</h3>
               {cantNoLeidos > 0 ? (
-                <span className="rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 text-[10px] font-black">
+                <span className="rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 text-xs font-black">
                   {cantNoLeidos} nuevas
                 </span>
               ) : (
-                <span className="rounded-full bg-slate-800 text-slate-400 px-2 py-0.5 text-[10px] font-bold">
+                <span className="rounded-full bg-slate-800 text-slate-400 px-2 py-0.5 text-xs font-bold">
                   Al día
                 </span>
               )}
@@ -149,7 +149,7 @@ export function NotificacionesDropdown() {
               <button
                 type="button"
                 onClick={handleMarcarTodasLeidas}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
               >
                 <CheckCheck className="size-3.5" />
                 Marcar leídas
@@ -165,7 +165,7 @@ export function NotificacionesDropdown() {
                   <Inbox className="size-5" />
                 </div>
                 <p className="mt-2 text-xs font-bold text-slate-300">No hay notificaciones</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Todo está al día en el gimnasio.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Todo está al día en el gimnasio.</p>
               </div>
             ) : (
               ultimosAvisos.map((aviso) => (

@@ -5,28 +5,20 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, Plus, WalletCards, Users, ArrowUpRight, ChevronRight, Dumbbell, PlayCircle, Sparkles, Calendar, UserCheck } from 'lucide-react'
+import { Search, Plus, ChevronRight, Dumbbell, Play, Clock, AlertCircle, MessageCircle } from 'lucide-react'
 import { useAppData } from '@/lib/store'
-import { ESTADO_CUENTA_LABEL, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago } from '@/lib/types'
-import { calcularVencimientoCuota } from '@/lib/date-utils'
+import { Ejercicio, ESTADO_CUENTA_LABEL, obtenerMaxPeriodoCubiertoAlumno, obtenerMontoRecaudadoPago, obtenerSaldoPendientePago, UsuarioSesion } from '@/lib/types'
+import { EstadoCuentaEtiqueta } from '@/components/estado-cuenta-etiqueta'
+import { calcularVencimientoCuota, fechaLocalHoy } from '@/lib/date-utils'
+import { diaInicialDeRutina } from '@/lib/rutina-utils'
+import { construirUrlWaMe, mensajeRecordatorioCuotaWhatsapp, tieneCelularWhatsappValido } from '@/lib/whatsapp-utils'
 import { obtenerCiudadPorCoordenadas } from '@/lib/geocoding'
 import { ModalNuevoAlumno } from '@/components/modal-nuevo-alumno'
 import { NotificacionesDropdown } from '@/components/notificaciones-dropdown'
-import { calcularConstanciaAlumno, filtrarAsistenciasActivas, type ConstanciaAlumno } from '@/lib/asistencia-utils'
+import { BotonPerfilMovil } from '@/components/modal-perfil'
+import { calcularConstanciaAlumno, calcularSemanaAlumno, filtrarAsistenciasActivas, type SemanaAlumno } from '@/lib/asistencia-utils'
 
 
-function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-base font-bold text-white">{title}</h2>
-      {action && (
-        <Link href={href || "/finanzas"} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-          {action}<ChevronRight className="size-3" />
-        </Link>
-      )}
-    </div>
-  )
-}
 
 function capitalizar(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
@@ -42,8 +34,9 @@ function HeaderStatusSection({
   ubicacion: string
 }) {
   return (
-    <div className="ml-auto flex items-center gap-6">
+    <div className="ml-auto flex items-center gap-1 sm:gap-6">
       <NotificacionesDropdown />
+      <BotonPerfilMovil />
       <div className="hidden h-8 w-px bg-slate-800 sm:block" />
       <p className="hidden text-right text-sm font-semibold sm:block text-slate-200">
         {fechaHoy
@@ -63,303 +56,208 @@ function HeaderStatusSection({
   )
 }
 
-function AvisoBannerDestacado({ aviso }: { aviso: { fecha: string; titulo: string } }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-500/30 bg-blue-950/40 p-4 backdrop-blur-md">
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400">
-          <Bell className="size-5" />
-        </span>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-              Aviso del gimnasio
-            </span>
-            <span className="text-xs text-slate-400 font-medium">{aviso.fecha}</span>
-          </div>
-          <p className="text-sm font-bold text-white mt-0.5">{aviso.titulo}</p>
-        </div>
-      </div>
-      <Link
-        href="/avisos"
-        className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
-      >
-        Leer aviso completo <ChevronRight className="size-3.5" />
-      </Link>
-    </div>
-  )
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 opacity-60">|</span>
 }
 
-function AlumnoCardsSection({
-  alumno,
-  estadoCuenta,
-  rutina,
-  fechaHoy,
-  constancia,
-}: {
-  alumno: any
-  estadoCuenta: string
-  rutina: any
-  fechaHoy?: Date | null
-  constancia: ConstanciaAlumno
-}) {
-  const diaUno = rutina?.dias[0]
-  const nombreRutina = rutina ? rutina.nombre : 'Sin rutina asignada'
-  const subtituloRutina = diaUno ? diaUno.nombre : (rutina ? 'Rutina activa' : 'Consultá a tu profesor')
-  const detalleRutina = diaUno
-    ? `${diaUno.ejercicios.length} ejercicios para hoy`
-    : (rutina ? `${rutina.dias.length} días de plan` : 'Pedí tu rutina en recepción')
-
-  const etiquetaEstadoCuota =
-    estadoCuenta === 'MOROSO'
-      ? 'Vencido'
-      : (ESTADO_CUENTA_LABEL[estadoCuenta as keyof typeof ESTADO_CUENTA_LABEL] || estadoCuenta)
-
-  const colorSubtituloCuota =
-    estadoCuenta === 'AL_DIA'
-      ? 'text-emerald-600'
-      : estadoCuenta === 'PENDIENTE'
-      ? 'text-amber-600'
-      : 'text-rose-600'
+function TuSemana({ semana, entrenosMes, ultimaVisita }: { semana: SemanaAlumno; entrenosMes: number; ultimaVisita?: string | null }) {
+  const resumen =
+    semana.limite == null
+      ? `Viniste ${semana.diasAsistidos} ${semana.diasAsistidos === 1 ? 'día' : 'días'} esta semana. Tu plan es libre.`
+      : semana.excedido
+      ? `Viniste ${semana.diasAsistidos} días y tu plan es de ${semana.limite}. Hablalo en el mostrador para cambiar de plan.`
+      : semana.restantes === 0
+      ? `Ya usaste los ${semana.limite} días de tu plan esta semana. El lunes se renuevan.`
+      : `Te ${semana.restantes === 1 ? 'queda 1 día' : `quedan ${semana.restantes} días`} de tu plan esta semana.`
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
-      {/* Tarjeta 1: Mi Rutina */}
-      <Link
-        href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Mi rutina de hoy</span>
-            <p className="mt-2 text-2xl font-black text-white">{nombreRutina}</p>
-            <p className="mt-1 text-sm font-semibold text-blue-400">{subtituloRutina}</p>
-            <p className="mt-4 text-xs font-medium text-slate-400">{detalleRutina}</p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-sm shrink-0">
-            <Dumbbell className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
-          <span>{rutina ? 'Ver ejercicios y series' : 'Explorar rutinas'}</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-blue-500" />
-      </Link>
-
-      {/* Tarjeta 2: Mi Cuota */}
-      <Link
-        href="/finanzas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Estado de mi cuota</span>
-            <p className="mt-2 text-2xl font-black text-white">{etiquetaEstadoCuota}</p>
-            <p className={`mt-1 text-sm font-semibold ${colorSubtituloCuota}`}>{alumno?.plan || 'Plan Musculación'}</p>
-            <p className="mt-4 text-xs font-medium text-slate-400">
-              Vence el {calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined)}
-            </p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white shadow-sm shrink-0">
-            <WalletCards className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">
-          <span>Ver mis pagos y datos de cuota</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-emerald-500" />
-      </Link>
-
-      {/* Tarjeta 3: Mi Constancia */}
-      <Link
-        href="/rutinas"
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-950/30 text-slate-100 border border-slate-800 hover:border-amber-500/40 cursor-pointer backdrop-blur-md"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Mi constancia</span>
-            <p className="mt-2 text-2xl font-black text-white">
-              {constancia.entrenosMes} {constancia.entrenosMes === 1 ? 'entreno' : 'entrenos'}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-slate-400">registrados este mes</p>
-            <p className="mt-4 text-xs font-medium text-slate-500">
-              {constancia.ultimaVisita ? `Última visita: ${constancia.ultimaVisita}` : 'Todavía no registraste ingresos'}
-            </p>
-          </div>
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white shadow-sm shrink-0">
-            <Sparkles className="size-7" />
-          </div>
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
-          <span>¡Mantené el ritmo esta semana!</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500" />
-      </Link>
-    </div>
+    <section aria-labelledby="titulo-tu-semana" className="rounded-2xl bg-[#162A50] p-4 md:rounded-[20px] md:border md:border-[#22396A] md:px-7 md:py-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="titulo-tu-semana" className="text-[17px] font-bold text-white md:text-lg md:font-semibold">Tu semana</h2>
+        {semana.limite != null && (
+          <span className={`font-display text-[26px] font-extrabold ${semana.excedido ? 'text-amber-400' : 'text-white'}`}>
+            {semana.diasAsistidos} <span className="text-lg text-slate-500">/ {semana.limite}</span>
+          </span>
+        )}
+      </div>
+      <ol aria-label="Días de esta semana" className="mt-3 grid grid-cols-7 gap-1.5 text-center text-xs text-slate-500 md:mt-4 md:gap-2 md:text-[13px]">
+        {semana.dias.map((d) => (
+          <li key={d.fecha}>
+            <span
+              className={`mb-1 block h-[38px] rounded-lg md:mb-1.5 md:h-9 ${
+                d.fue ? 'bg-blue-600' : d.futuro ? 'border border-dashed border-slate-700' : 'bg-[#1E3663]'
+              } ${d.esHoy ? 'outline outline-2 outline-offset-2 outline-blue-400' : ''}`}
+            />
+            {d.esHoy ? <strong className="text-slate-100">Hoy</strong> : d.letra}
+            <span className="sr-only">: {d.fue ? 'viniste' : d.futuro ? 'todavía no llegó' : 'no viniste'}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-sm text-slate-400">
+        {resumen} <span className="hidden md:inline">Este mes llevás {entrenosMes} {entrenosMes === 1 ? 'entrenamiento' : 'entrenamientos'}.</span>
+      </p>
+      {ultimaVisita && <p className="mt-1 hidden text-[13px] text-slate-500 md:block">Última visita: {ultimaVisita}</p>}
+    </section>
   )
 }
 
 // ---------- Home personalizado para el Alumno ----------
-function HomeAlumno({
-  usuario,
-  fechaHoy,
-  ubicacion,
-}: {
-  usuario: any
-  fechaHoy: Date | null
-  ubicacion: string
-}) {
-  const { alumnos, asistencias, getEstadoCuenta, getRutinaDeAlumno, getCantidadAvisosNoLeidos, getAvisosParaUsuario, videosTecnica } = useAppData()
+function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: Date | null }) {
+  const { alumnos, planes, asistencias, sesionesEntrenamiento, getEstadoCuenta, getPagosDeAlumno, getRutinaDeAlumno, getAvisosParaUsuario } = useAppData()
   const alumno = usuario.alumnoId ? alumnos.find((a) => a.id === usuario.alumnoId) : undefined
   const constancia = useMemo(
     () => calcularConstanciaAlumno(asistencias, alumno?.id),
     [asistencias, alumno?.id]
   )
+  const plan =
+    (alumno?.planId ? planes.find((p) => p.id === alumno.planId) : undefined) ||
+    planes.find((p) => p.nombre.trim().toLowerCase() === (alumno?.plan || '').trim().toLowerCase())
+  const semana = useMemo(
+    () => calcularSemanaAlumno(asistencias, alumno?.id, plan?.diasPorSemana ?? alumno?.plan),
+    [asistencias, alumno?.id, plan?.diasPorSemana, alumno?.plan]
+  )
   const estadoCuenta = alumno ? getEstadoCuenta(alumno.id) : 'AL_DIA'
   const rutina = alumno ? getRutinaDeAlumno(alumno.id) : undefined
-
-  const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuario)
-  const avisosAlumno = getAvisosParaUsuario(usuario)
-  const ultimoAvisoNoLeido = avisosAlumno.find((av) => !av.leidoPor.includes(usuario.id))
-
-  const videosDestacados = useMemo(() => {
-    const gradients = [
-      'bg-gradient-to-br from-blue-900/60 to-slate-900',
-      'bg-gradient-to-br from-indigo-900/60 to-slate-900',
-      'bg-gradient-to-br from-cyan-900/60 to-slate-900',
-    ];
-    return videosTecnica.slice(0, 3).map((v, i) => ({
-      ...v,
-      thumbnail: gradients[i % gradients.length],
-    }));
-  }, [videosTecnica])
+  const indiceDia = rutina && alumno ? diaInicialDeRutina(rutina, sesionesEntrenamiento, alumno.id, fechaLocalHoy()) : 0
+  const dia = rutina?.dias[indiceDia]
+  const avisos = getAvisosParaUsuario(usuario)
+  const pagos = alumno ? getPagosDeAlumno(alumno.id).filter((p) => p.estado !== 'ANULADO') : []
+  const vencimiento = calcularVencimientoCuota(estadoCuenta, fechaHoy || undefined, obtenerMaxPeriodoCubiertoAlumno(pagos))
+  const planTexto = semana.limite ? `${semana.limite} ${semana.limite === 1 ? 'día' : 'días'}` : alumno?.plan || 'Sin plan'
+  const detalleEjercicio = (ej: Ejercicio) =>
+    ej.tipoSerie === 'BI_SERIE'
+      ? `Bi-serie, ${ej.series} vueltas`
+      : ej.tipoSerie === 'DROP_SET'
+      ? `Drop set, ${ej.series} series`
+      : `${ej.series} series de ${ej.repeticiones}`
 
   return (
     <>
-      {/* Header Superior */}
-      <header className="flex h-20 items-center justify-between border-b border-slate-800/50 bg-slate-950 px-4 sm:px-6 md:px-10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center md:hidden shrink-0">
-            <Image
-              src="/logo-atlas-blanco.png"
-              alt="ATLAS GYM"
-              width={120}
-              height={67}
-              className="h-8 w-auto object-contain"
-              priority
-            />
-          </div>
-          <span className="px-3 py-1 rounded-full bg-blue-600/15 text-blue-400 border border-blue-500/20 text-xs font-bold shrink-0">
-            Portal del alumno
-          </span>
-        </div>
-        <HeaderStatusSection
-          cantNoLeidos={cantAvisosNoLeidos}
-          fechaHoy={fechaHoy}
-          ubicacion={ubicacion}
-        />
+      <header className="flex items-center justify-between px-5 pb-2 pt-5 md:hidden">
+        <Image src="/logo-atlas-blanco.png" alt="ATLAS Gym" width={120} height={67} className="h-[26px] w-auto object-contain" priority />
+        <BotonPerfilMovil />
       </header>
 
-      <div className="mx-auto max-w-[1400px] px-5 py-8 md:px-10 md:py-10 space-y-8">
-        {/* Banner de Aviso no leído si existe */}
-        {ultimoAvisoNoLeido && <AvisoBannerDestacado aviso={ultimoAvisoNoLeido} />}
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-3.5 px-5 pb-28 pt-1.5 md:gap-8 md:px-14 md:pb-16 md:pt-12">
+        <header>
+          <p className="mb-2 hidden text-sm text-[#8296BB] md:block">
+            {fechaHoy
+              ? capitalizar(fechaHoy.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }))
+              : ' '}
+          </p>
+          <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px] md:font-bold md:leading-none">
+            Hola, {usuario.nombre.split(' ')[0]}
+          </h1>
+        </header>
 
-        {/* Bienvenida Alumno */}
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">Mi panel de entrenamiento</p>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
-              ¡Hola, <span className="text-blue-500">{usuario.nombre.split(' ')[0]}</span>!
-            </h1>
-            <p className="mt-2 text-base text-slate-400">
-              Tenés todo listo para romperla en tu entrenamiento de hoy.
-            </p>
-          </div>
-          <Link
-            href="/rutinas"
-            className="inline-flex items-center gap-2 h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-95 text-sm"
-          >
-            <Dumbbell className="size-4" />
-            Empezar entrenamiento
-          </Link>
-        </div>
-
-        {/* 3 Tarjetas de Impacto */}
-        <AlumnoCardsSection
-          alumno={alumno}
-          estadoCuenta={estadoCuenta}
-          rutina={rutina}
-          fechaHoy={fechaHoy}
-          constancia={constancia}
-        />
-
-        {/* Sección: Videoteca Destacada */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 md:p-8 backdrop-blur-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">
-                <PlayCircle className="size-4" />
-                Videoteca ATLAS
-              </div>
-              <h2 className="text-2xl font-black text-white">Técnica y ejecución de ejercicios</h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Mirá los videos de técnica correcta para optimizar tu entrenamiento y prevenir lesiones.
-              </p>
-            </div>
-            <Link
-              href="/videoteca"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors shrink-0"
-            >
-              Explorar videoteca completa <ChevronRight className="size-4" />
-            </Link>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {videosDestacados.map((v) => (
-              <Link
-                key={v.id}
-                href="/videoteca"
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 transition-[transform,box-shadow,border-color] duration-300 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/20"
-              >
-                <div className={`h-36 w-full rounded-xl ${v.thumbnail} flex items-center justify-center relative overflow-hidden border border-slate-800 group-hover:border-blue-500/30 transition-colors`}>
-                  <div className="size-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110">
-                    <PlayCircle className="size-6" />
-                  </div>
-                  <span className="absolute bottom-2 right-2 rounded-md bg-slate-950/80 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-300 border border-slate-800">
-                    {v.duracion}
+        <div className="flex flex-col gap-3.5 md:gap-8 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 flex-col gap-3.5 md:gap-8 lg:flex-[2]">
+            <div className="order-2 md:order-1">
+              {/* Celular: la rutina es un solo botón grande */}
+              <Link href="/rutinas" className="flex items-center gap-3.5 rounded-2xl bg-blue-600 p-4 text-white md:hidden">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                  <Dumbbell className="size-6" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] opacity-85">Mi rutina de hoy</span>
+                  <span className="block truncate font-display text-2xl font-bold uppercase">{dia?.nombre ?? rutina?.nombre ?? 'Sin rutina asignada'}</span>
+                  <span className="block text-[13px] opacity-85">
+                    {dia ? `${dia.ejercicios.length} ejercicios` : 'Consultá a tu profesor'}
                   </span>
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-[10px] font-bold text-blue-400 border border-blue-500/20">
-                      {v.grupoMuscular}
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-500">{v.nivel}</span>
-                  </div>
-                  <h3 className="mt-2 text-base font-bold text-white group-hover:text-blue-400 transition-colors">
-                    {v.titulo}
-                  </h3>
-                </div>
+                </span>
+                <ChevronRight className="size-5 shrink-0" />
               </Link>
-            ))}
-          </div>
-        </div>
 
-        {/* Sección: Información & Horarios de ATLAS */}
-        <div className="rounded-2xl border border-slate-800/80 bg-slate-950 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-blue-600/10 text-blue-400 flex items-center justify-center shrink-0">
-              <Calendar className="size-5" />
+              <section aria-labelledby="titulo-rutina-hoy" className="hidden flex-col gap-5 rounded-[20px] border border-[#22396A] bg-[#162A50] p-7 md:flex">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-[#8296BB]">
+                      Mi rutina de hoy{rutina && rutina.dias.length > 1 ? `, día ${indiceDia + 1} de ${rutina.dias.length}` : ''}
+                    </p>
+                    <h2 id="titulo-rutina-hoy" className="mt-1.5 text-[26px] font-semibold text-white">{dia?.nombre ?? rutina?.nombre ?? 'Sin rutina asignada'}</h2>
+                    <p className="mt-1 text-sm text-[#8296BB]">{dia ? `${dia.ejercicios.length} ejercicios` : 'Consultá a tu profesor'}</p>
+                  </div>
+                  <Link href="/rutinas" className="flex h-[52px] items-center gap-2.5 rounded-[14px] bg-blue-600 px-5 font-semibold text-white transition-colors hover:bg-blue-500">
+                    <Play className="size-4 fill-current" />
+                    {rutina ? 'Empezar entrenamiento' : 'Ver rutinas'}
+                  </Link>
+                </div>
+                {dia && dia.ejercicios.length > 0 && (
+                  <ol className="border-t border-[#22396A]">
+                    {dia.ejercicios.slice(0, 5).map((ej, i) => (
+                      <li key={ej.id} className="flex min-h-12 items-center gap-4 border-b border-[#22396A] last:border-0">
+                        <span className="w-6 text-sm text-[#8296BB]">{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-slate-100">{ej.nombre}</span>
+                        <span className="text-sm text-[#8296BB]">{detalleEjercicio(ej)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
             </div>
-            <div>
-              <p className="font-bold text-slate-200">Horarios de atención de ATLAS Gym</p>
-              <p className="text-xs text-slate-500">Lunes a Viernes: 07:00 a 22:00 hs · Sábados: 09:00 a 14:00 hs</p>
+
+            <div className="order-1 md:order-2">
+              <TuSemana semana={semana} entrenosMes={constancia.entrenosMes} ultimaVisita={constancia.ultimaVisita} />
             </div>
           </div>
-          <p className="text-xs font-semibold text-slate-500">ATLAS Gym · Tu mejor versión cada día</p>
+
+          <aside aria-label="Tu cuenta y el gimnasio" className="flex min-w-0 flex-col gap-3.5 md:gap-8 lg:flex-1">
+            <section aria-labelledby="titulo-mi-cuota" className="flex flex-col gap-2.5 rounded-2xl bg-[#162A50] p-4 md:border md:border-[#22396A] md:bg-transparent md:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="titulo-mi-cuota" className="text-[17px] font-bold text-white md:text-lg md:font-semibold">Mi cuota</h2>
+                <EstadoCuentaEtiqueta estado={estadoCuenta} />
+              </div>
+              <div className="flex justify-between gap-3 text-[15px]">
+                <span className="text-slate-400">Plan</span>
+                <span className="text-right text-slate-100">
+                  {planTexto}
+                  {plan && (
+                    <>
+                      <Separador />${plan.precio.toLocaleString('es-AR')} / mes
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3 text-[15px]">
+                <span className="text-slate-400">Próximo vencimiento</span>
+                <span className="text-right text-slate-100">{vencimiento}</span>
+              </div>
+              <Link href="/finanzas" className="flex min-h-11 items-center text-sm font-semibold text-blue-400 hover:text-blue-300">
+                Ver mis pagos y cómo transferir
+              </Link>
+            </section>
+
+            {avisos.length > 0 && (
+              <section aria-labelledby="titulo-avisos-inicio" className="flex flex-col gap-3">
+                <div className="hidden items-baseline justify-between md:flex">
+                  <h2 id="titulo-avisos-inicio" className="text-lg font-semibold text-white">Avisos</h2>
+                  <Link href="/avisos" className="text-sm text-blue-400 hover:text-blue-300">Ver todos</Link>
+                </div>
+                {avisos.slice(0, 2).map((aviso, i) => (
+                  <Link
+                    key={aviso.id}
+                    href="/avisos"
+                    className={`rounded-2xl border border-[#2A4677] bg-[#13254A] px-4 py-3.5 md:border-[#22396A] md:bg-transparent md:px-5 md:py-4 ${i > 0 ? 'hidden md:block' : 'block'}`}
+                  >
+                    <span className="block text-[13px] font-bold uppercase tracking-[.06em] text-amber-400 md:font-normal md:normal-case md:tracking-normal md:text-[#8296BB]">
+                      <span className="md:hidden">Aviso del gimnasio</span>
+                      <span className="hidden md:inline">{aviso.fecha}</span>
+                    </span>
+                    <span className="mt-1 block text-[15px] text-slate-100">{aviso.titulo}</span>
+                  </Link>
+                ))}
+              </section>
+            )}
+
+            <section aria-labelledby="titulo-horarios" className="hidden flex-col gap-2 md:flex">
+              <h2 id="titulo-horarios" className="text-lg font-semibold text-white">Horarios</h2>
+              <p className="text-sm leading-relaxed text-slate-400">
+                Lunes a viernes de 07:00 a 22:00
+                <br />
+                Sábados de 09:00 a 14:00
+              </p>
+            </section>
+          </aside>
         </div>
       </div>
     </>
@@ -367,7 +265,7 @@ function HomeAlumno({
 }
 
 export default function Page() {
-  const { usuarioActual, alumnos, pagos, planes, rutinas, asistencias, getCantidadAvisosNoLeidos, getEstadoCuenta } = useAppData()
+  const { usuarioActual, alumnos, pagos, planes, rutinas, asistencias, datosCobro, getCantidadAvisosNoLeidos, getEstadoCuenta } = useAppData()
   const [showModal, setShowModal] = useState(false)
   const [query, setQuery] = useState('')
   const cantAvisosNoLeidos = getCantidadAvisosNoLeidos(usuarioActual)
@@ -430,6 +328,89 @@ export default function Page() {
     return res;
   }, [pagosOrdenados, alumnosMap, query]);
 
+  // Estilo 3 (panel "Hoy"): cifras del día y la lista de cosas para resolver
+  const hoyIso = fechaLocalHoy();
+  const { cobradoHoy, saldoSenias } = useMemo(() => {
+    let cobrado = 0;
+    let senias = 0;
+    for (const p of pagos) {
+      if (p.estado === 'ANULADO') continue;
+      if (p.fecha === hoyIso) cobrado += obtenerMontoRecaudadoPago(p);
+      if (p.estado === 'PARCIAL') senias += obtenerSaldoPendientePago(p);
+    }
+    return { cobradoHoy: cobrado, saldoSenias: senias };
+  }, [pagos, hoyIso]);
+
+  // Primero las señas (completar saldo), después los socios con cuota impaga (recordar por WhatsApp)
+  const paraResolver = useMemo(() => {
+    const filas: {
+      id: string;
+      alumno: (typeof alumnos)[number] | undefined;
+      nombre: string;
+      plan: string;
+      tipo: 'SENIA' | 'DEUDA';
+      detalle: string;
+      monto: number;
+      pago?: (typeof pagos)[number];
+      estadoCuenta?: ReturnType<typeof getEstadoCuenta>;
+    }[] = [];
+    const conSenia = new Set<string>();
+    const deudas: typeof filas = [];
+    // Mismo criterio que la métrica "Cuotas impagas": comprobantes abiertos + socios PENDIENTE/MOROSO sin comprobante
+    for (const p of pagos) {
+      if (p.estado !== 'PENDIENTE' && p.estado !== 'VENCIDO') continue;
+      const al = alumnosMap.get(p.alumnoId);
+      conSenia.add(p.alumnoId);
+      deudas.push({
+        id: `p-${p.id}`,
+        alumno: al,
+        nombre: al ? al.nombre : p.alumnoNombreHistorico || 'Alumno Atlas',
+        plan: p.plan,
+        tipo: 'DEUDA',
+        detalle: p.estado === 'VENCIDO' ? 'Cuota vencida' : 'Cuota pendiente',
+        monto: obtenerSaldoPendientePago(p),
+        pago: p,
+        estadoCuenta: p.estado === 'VENCIDO' ? 'MOROSO' : 'PENDIENTE',
+      });
+    }
+    for (const p of pagos) {
+      if (p.estado !== 'PARCIAL') continue;
+      const al = alumnosMap.get(p.alumnoId);
+      conSenia.add(p.alumnoId);
+      filas.push({
+        id: `p-${p.id}`,
+        alumno: al,
+        nombre: al ? al.nombre : p.alumnoNombreHistorico || 'Alumno Atlas',
+        plan: p.plan,
+        tipo: 'SENIA',
+        detalle: p.periodoMes || p.fecha.slice(0, 7),
+        monto: obtenerSaldoPendientePago(p),
+        pago: p,
+      });
+    }
+    for (const a of alumnos) {
+      if (!a.activo || conSenia.has(a.id)) continue;
+      const estado = getEstadoCuenta(a.id);
+      if (estado !== 'PENDIENTE' && estado !== 'MOROSO') continue;
+      filas.push({
+        id: `a-${a.id}`,
+        alumno: a,
+        nombre: a.nombre,
+        plan: a.plan,
+        tipo: 'DEUDA',
+        detalle: estado === 'MOROSO' ? 'Cuota vencida' : 'Cuota pendiente',
+        monto: planes.find((pl) => pl.id === a.planId)?.precio ?? 0,
+        estadoCuenta: estado,
+      });
+    }
+    return [...filas.filter((f) => f.tipo === 'SENIA'), ...deudas, ...filas.filter((f) => f.tipo === 'DEUDA')];
+  }, [pagos, alumnos, alumnosMap, planes, getEstadoCuenta]);
+
+  const ingresosHoy = useMemo(
+    () => asistencias.filter((a) => a.fecha === hoyIso).sort((a, b) => b.timestamp - a.timestamp).slice(0, 5),
+    [asistencias, hoyIso]
+  );
+
   const [fechaHoy, setFechaHoy] = useState<Date | null>(null);
   const [ubicacion, setUbicacion] = useState("Detectando ubicación...")
 
@@ -463,7 +444,7 @@ export default function Page() {
   }
 
   if (usuarioActual.rol === 'ALUMNO') {
-    return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} ubicacion={ubicacion} />
+    return <HomeAlumno usuario={usuarioActual} fechaHoy={fechaHoy} />
   }
 
   return (
@@ -482,13 +463,13 @@ export default function Page() {
           />
         </div>
         <div className="relative hidden w-80 sm:block group">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar en pagos recientes..."
             aria-label="Buscar en pagos recientes"
-            className="h-10 w-full rounded-full border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10"
+            className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/50 pl-10 pr-4 text-sm text-slate-200 outline-none transition-[border-color,background-color] duration-200 placeholder:text-slate-500 focus:border-blue-500/50 focus:bg-slate-900"
           />
         </div>
         <HeaderStatusSection
@@ -498,153 +479,309 @@ export default function Page() {
         />
       </header>
 
-      <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-10 md:py-10">
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-10 px-5 pb-28 pt-8 md:gap-12 md:px-14 md:pb-16 md:pt-12">
 
-        {/* SECCIÓN BIENVENIDA */}
+        {/* TÍTULO Y ACCIONES */}
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-500">Resumen de actividad</p>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">Hola, <span className="text-blue-500">{usuarioActual.nombre}.</span></h1>
-            <p className="mt-2 text-base text-slate-400">Esto es lo que está pasando en tu gimnasio hoy.</p>
+            <p className="mb-2 text-sm text-slate-500">
+              {fechaHoy
+                ? capitalizar(
+                    fechaHoy.toLocaleDateString('es-AR', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      timeZone: 'America/Argentina/Buenos_Aires',
+                    })
+                  )
+                : ' '}
+            </p>
+            <h1 className="text-4xl font-bold uppercase text-white md:text-[40px]">
+              <span className="md:hidden">Hola, {usuarioActual.nombre.split(' ')[0]}</span>
+              <span className="hidden md:inline">Hoy en ATLAS</span>
+            </h1>
           </div>
-          <Button onClick={() => setShowModal(true)} className="h-12 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-lg shadow-blue-600/20 border-transparent transition-[color,background-color,transform,box-shadow] duration-200 hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95">
-            <Plus data-icon="inline-start" className="mr-2 size-5" />Nuevo alumno
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => setShowModal(true)}
+              className="h-11 rounded-xl border border-slate-800 bg-transparent px-4 font-medium text-slate-300 hover:bg-slate-900"
+            >
+              <Plus data-icon="inline-start" className="mr-1.5 size-4" />Nuevo alumno
+            </Button>
+            <Link
+              href="/finanzas"
+              className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-blue-500"
+            >
+              <Plus className="size-4" />Cobrar
+            </Link>
+          </div>
         </div>
 
-        {/* TARJETAS SUPERIORES (DARK SLATE Y FLOTANTES) */}
-        <section className="mt-10 grid gap-6 md:grid-cols-3">
-          <Link
-            href="/alumnos"
-            className="group relative block overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm backdrop-blur-md transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/30 text-slate-100 border border-slate-800 hover:border-blue-500/40 cursor-pointer"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-bold text-slate-400">Alumnos activos</p>
-                <p className="mt-2 text-4xl font-black tracking-tight text-white">{alumnosActivos}</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-blue-400">
-                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  {alumnos.length} registrados <span className="font-medium text-slate-500">en total</span>
-                </p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-sm">
-                <Users className="size-7" />
-              </div>
-            </div>
-            <div
-              className="absolute bottom-0 left-0 h-1.5 bg-blue-500 transition-[width] duration-500"
-              style={{ width: `${alumnos.length > 0 ? Math.round((alumnosActivos / alumnos.length) * 100) : 0}%` }}
-            />
-          </Link>
-
-          <Link
-            href="/asistencias"
-            className="group relative block overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm backdrop-blur-md transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/30 text-slate-100 border border-slate-800 hover:border-emerald-500/40 cursor-pointer"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-400">En sala ahora</p>
-                  <span className="flex size-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
-                  </span>
-                </div>
-                <p className="mt-2 text-4xl font-black tracking-tight text-white">{sociosEnSala.length}</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-emerald-400">
-                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  Sesión activa <span className="font-medium text-slate-500">&lt; 1h 40m</span>
-                </p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white shadow-sm">
-                <UserCheck className="size-7" />
-              </div>
-            </div>
-            <div
-              className="absolute bottom-0 left-0 h-1.5 bg-emerald-500 transition-[width] duration-500"
-              style={{ width: `${Math.min(100, sociosEnSala.length * 20)}%` }}
-            />
-          </Link>
-
-          <Link
-            href="/finanzas"
-            className="group relative block overflow-hidden rounded-2xl bg-slate-900/60 p-7 shadow-sm backdrop-blur-md transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-950/30 text-slate-100 border border-slate-800 hover:border-rose-500/40 cursor-pointer"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-bold text-slate-400">Cuotas pendientes</p>
-                <p className="mt-2 text-4xl font-black tracking-tight text-white">${totalPendiente.toLocaleString('es-AR')}</p>
-                <p className="mt-3 flex items-center gap-1 text-xs font-bold text-rose-400">
-                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  {sociosQueDeben} {sociosQueDeben === 1 ? 'socio' : 'socios'} <span className="font-medium text-slate-500">con cuota impaga</span>
-                </p>
-              </div>
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/25 transition-all duration-300 group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white shadow-sm">
-                <WalletCards className="size-7" />
-              </div>
-            </div>
-            <div
-              className="absolute bottom-0 left-0 h-1.5 bg-rose-500 transition-[width] duration-500"
-              style={{ width: `${alumnosActivos > 0 ? Math.min(100, Math.round((sociosQueDeben / alumnosActivos) * 100)) : 0}%` }}
-            />
-          </Link>
+        {/* FRANJA DE MÉTRICAS: chica y neutra, la tabla es lo importante */}
+        <section aria-label="Resumen de hoy" className="grid grid-cols-2 border-y border-slate-800 lg:grid-cols-4">
+          {[
+            { href: '/asistencias', label: 'En sala ahora', valor: String(sociosEnSala.length) },
+            { href: '/finanzas', label: 'Cobrado hoy', valor: `$${cobradoHoy.toLocaleString('es-AR')}` },
+            { href: '#para-resolver', label: 'Saldos por completar', valor: `$${saldoSenias.toLocaleString('es-AR')}` },
+            {
+              href: '#para-resolver',
+              label: 'Cuotas impagas',
+              valor: `${sociosQueDeben} ${sociosQueDeben === 1 ? 'socio' : 'socios'}`,
+            },
+          ].map((m, i) => (
+            <Link
+              key={m.label}
+              href={m.href}
+              className={`flex min-w-0 flex-col gap-1 py-4 text-white transition-colors hover:bg-slate-900/40 md:py-5 ${
+                i % 2 === 1 ? 'border-l border-slate-800 pl-4 md:pl-6' : 'pr-4 lg:pr-6'
+              } ${i === 2 ? 'border-t border-slate-800 lg:border-l lg:border-t-0 lg:pl-6' : ''} ${
+                i === 3 ? 'border-t lg:border-t-0' : ''
+              }`}
+            >
+              <span className="text-[13px] text-slate-500">{m.label}</span>
+              <span className="truncate text-xl font-semibold md:text-2xl">{m.valor}</span>
+            </Link>
+          ))}
         </section>
 
-        {/* LISTAS INFERIORES (DARK SLATE Y FLOTANTES) */}
-        <section className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-slate-900/60 p-7 shadow-sm backdrop-blur-md transition-shadow duration-300 hover:shadow-lg text-slate-100 border border-slate-800">
-            <SectionHeader title="Pagos recientes" action="Ver finanzas" />
-            <div className="mt-2 flex flex-col">
-              {ultimosPagos.length === 0 ? (
-                <p className="py-6 text-sm text-slate-500 text-center font-medium">No hay pagos registrados aún.</p>
-              ) : (
-                ultimosPagos.map((p) => (
-                  <div key={p.id} className="group flex items-center gap-4 border-b border-slate-800/60 py-4 last:border-0 hover:bg-slate-800/40 -mx-4 px-4 rounded-xl transition-colors">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-blue-500/15 border border-blue-500/20 text-sm font-black text-blue-400 transition-colors group-hover:bg-blue-600 group-hover:text-white">{p.initials}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-bold text-white">{p.name}</p>
-                      <p className="text-sm font-medium text-slate-400">{p.plan} · {p.time}</p>
-                    </div>
-                    <p className="text-base font-black text-white">{p.amount}</p>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* PARA RESOLVER HOY */}
+        <section id="para-resolver" aria-labelledby="titulo-resolver" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-resolver" className="text-xl font-semibold text-white">Para resolver hoy</h2>
+            <Link href="/finanzas" className="text-sm text-blue-300 hover:text-blue-200">Ver todos en Finanzas</Link>
           </div>
-
-          <div className="rounded-2xl bg-slate-900/60 p-7 shadow-sm backdrop-blur-md transition-shadow duration-300 hover:shadow-lg text-slate-100 border border-slate-800">
-            <SectionHeader title="Rutinas activas" action="Ver todas" href="/rutinas" />
-            <div className="mt-4 flex flex-col gap-5">
-              {rutinas.slice(0, 3).map((r, idx) => {
-                const alumnosAsignados = alumnos.filter((a) => a.rutinaId === r.id);
-                const nombresAlumnos = alumnosAsignados.length > 0 
-                  ? alumnosAsignados.map(a => a.nombre).join(', ')
-                  : 'Sin alumnos asignados';
-                const colores = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400'];
-                const porcentajes = [85, 60, 40];
-                return (
-                  <div key={r.id} className="group">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-base font-bold text-white">{r.nombre}</p>
-                        <p className="mt-0.5 text-xs font-medium text-slate-400 truncate max-w-[240px]">{nombresAlumnos}</p>
-                      </div>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">{r.objetivo}</span>
-                    </div>
-                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div className={`h-full rounded-full ${colores[idx % colores.length]} transition-[width] duration-1000 ease-out`} style={{ width: `${porcentajes[idx % porcentajes.length]}%` }} />
-                    </div>
+          {paraResolver.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+              No hay señas ni cuotas impagas. Todo al día.
+            </p>
+          ) : (
+            <>
+            {/* Celular: filas simples con la acción al lado */}
+            <ul className="md:hidden">
+              {paraResolver.slice(0, 5).map((f) => (
+                <li key={f.id} className="flex items-center gap-3 border-b border-slate-800 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{f.nombre}</p>
+                    <p
+                      className={`mt-0.5 flex items-center gap-1.5 text-sm ${
+                        f.tipo === 'SENIA' || f.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {f.tipo === 'SENIA' ? <Clock className="size-3.5 shrink-0" /> : <AlertCircle className="size-3.5 shrink-0" />}
+                      {f.tipo === 'SENIA' ? `Resta $${f.monto.toLocaleString('es-AR')} de la seña` : f.detalle}
+                    </p>
                   </div>
-                );
-              })}
+                  {f.tipo === 'SENIA' ? (
+                    <Link href="/finanzas" className="flex h-11 items-center rounded-xl bg-blue-600 px-3.5 text-sm font-semibold text-white">
+                      Completar
+                    </Link>
+                  ) : f.alumno?.celular && tieneCelularWhatsappValido(f.alumno.celular) ? (
+                    <a
+                      href={construirUrlWaMe(
+                        f.alumno.celular,
+                        mensajeRecordatorioCuotaWhatsapp({
+                          nombre: f.nombre,
+                          plan: f.plan,
+                          estadoCuenta: f.estadoCuenta,
+                          montoTotal: f.monto,
+                          aliasPago: datosCobro.alias,
+                        })
+                      )}
+                      target="atlas_whatsapp_tab"
+                      rel="noopener noreferrer"
+                      aria-label={`Recordar cuota por WhatsApp a ${f.nombre}`}
+                      className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-700 text-slate-200"
+                    >
+                      <MessageCircle className="size-5" />
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-2xl border border-slate-800 md:block">
+              <table className="w-full min-w-[680px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                    <th className="px-5 py-3 font-medium">Socio</th>
+                    <th className="px-5 py-3 font-medium">Situación</th>
+                    <th className="px-5 py-3 text-right font-medium">Monto</th>
+                    <th className="px-5 py-3"><span className="sr-only">Acción</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paraResolver.slice(0, 5).map((f) => (
+                    <tr key={f.id} className="border-t border-slate-800">
+                      <td className="px-5 py-4">
+                        <span className="block font-semibold text-white">{f.nombre}</span>
+                        <span className="mt-0.5 block text-[13px] text-slate-500">{f.plan}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-sm ${
+                            f.tipo === 'SENIA' || f.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'
+                          }`}
+                        >
+                          {f.tipo === 'SENIA' ? <Clock className="size-3.5" /> : <AlertCircle className="size-3.5" />}
+                          {f.tipo === 'SENIA' ? 'Dejó seña' : f.detalle}
+                        </span>
+                        {f.tipo === 'SENIA' && <span className="mt-0.5 block text-[13px] text-slate-500">{f.detalle}</span>}
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums">
+                        <span className="block text-white">${f.monto.toLocaleString('es-AR')}</span>
+                        {f.tipo === 'SENIA' && <span className="mt-0.5 block text-[13px] text-slate-500">resta pagar</span>}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {f.tipo === 'SENIA' ? (
+                          <Link
+                            href="/finanzas"
+                            className="inline-flex h-11 items-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
+                          >
+                            Completar saldo
+                          </Link>
+                        ) : f.alumno?.celular && tieneCelularWhatsappValido(f.alumno.celular) ? (
+                          <a
+                            href={construirUrlWaMe(
+                              f.alumno.celular,
+                              mensajeRecordatorioCuotaWhatsapp({
+                                nombre: f.nombre,
+                                plan: f.plan,
+                                estadoCuenta: f.estadoCuenta,
+                                montoTotal: f.monto,
+                                aliasPago: datosCobro.alias,
+                              })
+                            )}
+                            target="atlas_whatsapp_tab"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm font-medium text-slate-200 hover:bg-slate-900"
+                          >
+                            <MessageCircle className="size-4" />Recordar por WhatsApp
+                          </a>
+                        ) : (
+                          <span className="text-[13px] text-slate-500">Sin celular cargado</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+            </>
+          )}
+          {paraResolver.length > 5 && (
+            <p className="text-[13px] text-slate-500">
+              Mostrando 5 de {paraResolver.length} pendientes. Primero los que dejaron seña, después las cuotas impagas.
+            </p>
+          )}
         </section>
 
-        <div className="mt-12 flex items-center justify-between border-t border-slate-800/50 pt-6 text-sm font-medium text-slate-500">
-          <p>Datos sincronizados con el servidor del gimnasio</p>
-          <p>ATLAS Admin · v2.4.0</p>
-        </div>
+        {/* ÚLTIMOS INGRESOS */}
+        <section aria-labelledby="titulo-ingresos" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-ingresos" className="text-xl font-semibold text-white">Últimos ingresos</h2>
+            <Link href="/asistencias" className="text-sm text-blue-300 hover:text-blue-200">Ver asistencias</Link>
+          </div>
+          {ingresosHoy.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+              Todavía no entró nadie hoy.
+            </p>
+          ) : (
+            <>
+            <ul className="md:hidden">
+              {ingresosHoy.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 border-b border-slate-800 py-3 text-[15px]">
+                  <span className="w-11 tabular-nums text-[13px] text-slate-500">{a.hora.slice(0, 5)}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-white">{a.alumnoNombre}</span>
+                  {a.excedeLimiteSemanal ? (
+                    <span className="flex items-center gap-1 text-[13px] text-amber-400"><Plus className="size-3.5" />Días extra</span>
+                  ) : (
+                    <span className={`text-[13px] ${a.estadoCuenta === 'AL_DIA' ? 'text-slate-400' : a.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'}`}>
+                      {ESTADO_CUENTA_LABEL[a.estadoCuenta]}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-2xl border border-slate-800 md:block">
+              <table className="w-full min-w-[600px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                    <th className="px-5 py-3 font-medium">Hora</th>
+                    <th className="px-5 py-3 font-medium">Socio</th>
+                    <th className="px-5 py-3 font-medium">Semana</th>
+                    <th className="px-5 py-3 font-medium">Cuota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingresosHoy.map((a) => (
+                    <tr key={a.id} className="border-t border-slate-800">
+                      <td className="px-5 py-3.5 tabular-nums text-slate-500">{a.hora.slice(0, 5)}</td>
+                      <td className="px-5 py-3.5 font-semibold text-white">{a.alumnoNombre}</td>
+                      <td className="px-5 py-3.5">
+                        {a.excedeLimiteSemanal ? (
+                          <span className="inline-flex items-center gap-1.5 text-sm text-amber-400">
+                            <Plus className="size-3.5" />
+                            {a.asistenciasSemana} de {a.limiteDiasSemana} días
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">
+                            {a.limiteDiasSemana ? `${a.asistenciasSemana ?? 1} de ${a.limiteDiasSemana} días` : 'Plan libre'}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`px-5 py-3.5 ${a.estadoCuenta === 'AL_DIA' ? 'text-slate-300' : a.estadoCuenta === 'PENDIENTE' ? 'text-amber-400' : 'text-rose-400'}`}>
+                        {ESTADO_CUENTA_LABEL[a.estadoCuenta]}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
+        </section>
+
+        {/* PAGOS RECIENTES (lo que ya tenía el inicio, con el buscador de arriba) */}
+        <section aria-labelledby="titulo-pagos" className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="titulo-pagos" className="text-xl font-semibold text-white">Pagos recientes</h2>
+            <Link href="/finanzas" className="text-sm text-blue-300 hover:text-blue-200">Ver finanzas</Link>
+          </div>
+          {ultimosPagos.length === 0 ? (
+            <p className="rounded-2xl border border-slate-800 px-5 py-8 text-center text-sm text-slate-500">No hay pagos registrados aún.</p>
+          ) : (
+            <ul className="rounded-2xl border border-slate-800">
+              {ultimosPagos.map((p) => (
+                <li key={p.id} className="flex items-center gap-4 border-t border-slate-800 px-5 py-3.5 first:border-t-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{p.name}</p>
+                    <p className="text-[13px] text-slate-500">{p.plan} <span aria-hidden="true">|</span> {p.time}</p>
+                  </div>
+                  <p className="tabular-nums text-white">{p.amount}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ACCESOS A LO SECUNDARIO */}
+        <nav aria-label="Más información" className="flex flex-wrap gap-3">
+          {[
+            { href: '/finanzas', label: 'Ir al arqueo de caja' },
+            { href: '/asistencias', label: 'Ir al aforo de la semana' },
+            { href: '/rutinas', label: `Ir a rutinas (${rutinas.length})` },
+            { href: '/alumnos', label: `Ir a alumnos (${alumnosActivos} activos)` },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="flex h-11 items-center rounded-xl border border-slate-800 px-4 text-sm text-slate-300 hover:bg-slate-900"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
+        <p className="border-t border-slate-800/50 pt-6 text-sm text-slate-500">Datos sincronizados con el servidor del gimnasio</p>
       </div>
 
       {/* MODAL NUEVO ALUMNO */}
@@ -652,3 +789,4 @@ export default function Page() {
     </>
   )
 }
+

@@ -46,6 +46,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const rutaPublica = pathname === '/totem' || pathname === '/privacidad'
 
   useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      localStorage.getItem('atlas_totem_terminal_autorizada') === 'true' &&
+      pathname !== '/totem'
+    ) {
+      router.replace('/totem')
+      return
+    }
     if (rutaPublica) {
       return
     }
@@ -129,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30 pb-24 md:pb-0">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-      <main className={`min-w-0 w-full overflow-x-hidden transition-[padding-left] duration-300 ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+      <main className={`min-w-0 w-full overflow-x-hidden ${collapsed ? 'md:pl-20' : 'md:pl-64'}`}>
         {usuarioActual.rol === 'ADMIN' && <AvisoTotemSinSenal />}
         {children}
       </main>
@@ -146,12 +154,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span>Actualizá tu contraseña inicial</span>
             </div>
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Estás ingresando con tu contraseña provisoria (la que te pasó el gimnasio, o tu DNI si te cargaron desde la planilla). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.
+              {usuarioActual.rol === 'ADMIN'
+                ? 'Estás ingresando con la contraseña provisoria de la instalación. Definí una clave personal antes de continuar.'
+                : 'Estás ingresando con tu contraseña provisoria (la que te pasó el gimnasio, o tu DNI si te cargaron desde la planilla). Por privacidad de tu cuenta y tus rutinas, definí una clave personal antes de continuar.'}
             </p>
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Contraseña provisoria actual
                 </label>
                 <input
@@ -163,7 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Nueva contraseña personal (mínimo 6 caracteres)
                 </label>
                 <input
@@ -175,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-400 mb-1">
                   Confirmar nueva contraseña
                 </label>
                 <input

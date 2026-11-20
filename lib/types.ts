@@ -399,6 +399,44 @@ export function obtenerMaxPeriodoCubiertoAlumno(pagos: Pago[]): string | undefin
 }
 
 /**
+ * Meses que debe un socio, del más viejo al más nuevo: desde el mes siguiente al último cubierto
+ * (pagado o con seña) hasta hoy. El mes en curso recién se debe pasado el día 10; un socio que
+ * nunca pagó lo debe desde su alta.
+ */
+export function mesesAdeudados(
+  alumnoId: string,
+  pagos: Pago[],
+  fechaAlta?: string,
+  fechaReferencia: Date = new Date()
+): string[] {
+  let cubierto: string | undefined;
+  for (const p of pagos) {
+    if (p.alumnoId !== alumnoId || (p.estado !== "PAGADO" && p.estado !== "PARCIAL")) continue;
+    const fin = obtenerPeriodoFinCubierto(p);
+    if (fin && (!cubierto || fin > cubierto)) cubierto = fin;
+  }
+  const actual = periodoMesActual(fechaReferencia);
+  const ultimo = !cubierto || fechaReferencia.getDate() > 10 ? actual : sumarMesesPeriodo(actual, -1);
+  let mes = cubierto ? sumarMesesPeriodo(cubierto, 1) : fechaAlta?.slice(0, 7) || actual;
+  const meses: string[] = [];
+  while (mes <= ultimo) {
+    meses.push(mes);
+    mes = sumarMesesPeriodo(mes, 1);
+  }
+  return meses;
+}
+
+/** Saldo que falta completar por socio, sumando sus señas abiertas. */
+export function saldosDeSeniaPorAlumno(pagos: Pago[]): Map<string, number> {
+  const saldos = new Map<string, number>();
+  for (const p of pagos) {
+    if (p.estado !== "PARCIAL") continue;
+    saldos.set(p.alumnoId, (saldos.get(p.alumnoId) ?? 0) + obtenerSaldoPendientePago(p));
+  }
+  return saldos;
+}
+
+/**
  * Calcula dinámicamente el estado de cuenta según la política oficial de Atlas Gym (Opción A),
  * 100% homóloga a AlumnoService.calcularEstadoCuenta en Spring Boot:
  * - Baja administrativa (!socioActivo) -> INACTIVO.
@@ -525,10 +563,19 @@ export const ESTADO_CUENTA_LABEL: Record<EstadoCuenta, string> = {
 };
 
 export const ESTADO_CUENTA_STYLES: Record<EstadoCuenta, string> = {
-  AL_DIA: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-  PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-  MOROSO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
-  INACTIVO: "bg-slate-800 text-slate-400 border border-slate-700",
+  AL_DIA: "text-slate-300",
+  PENDIENTE: "text-amber-400",
+  MOROSO: "text-rose-400",
+  INACTIVO: "text-slate-400",
+};
+
+// Etiquetas sin relleno: lo que está bien queda neutro y solo resaltan los problemas.
+export const ESTADO_PAGO_STYLES: Record<EstadoPago, string> = {
+  PAGADO: "text-slate-300",
+  PARCIAL: "text-amber-400",
+  PENDIENTE: "text-amber-400",
+  VENCIDO: "text-rose-400",
+  ANULADO: "text-slate-400",
 };
 
 export type CategoriaAviso = "IMPORTANTE" | "NOVEDAD" | "HORARIO";

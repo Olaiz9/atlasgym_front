@@ -4,10 +4,8 @@
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  DollarSign,
   AlertCircle,
   Clock,
-  Users,
   Plus,
   X,
   Search,
@@ -18,14 +16,15 @@ import {
   Download,
   Copy,
   Check,
-  Wallet,
-  ShieldCheck,
   Landmark,
+  MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
-import { useAppData } from "@/lib/store";
+import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
+import { inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
+  formatearMes,
   calcularVencimientoCuota,
   fechaLocalHoy,
   periodoMesActual,
@@ -37,6 +36,7 @@ import {
   Pago,
   ESTADO_CUENTA_LABEL,
   ESTADO_CUENTA_STYLES,
+  ESTADO_PAGO_STYLES,
   UsuarioSesion,
   Alumno,
   Plan,
@@ -55,7 +55,6 @@ import {
   tieneCelularWhatsappValido,
 } from "@/lib/whatsapp-utils";
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
-import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
 import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "@/lib/pago-historial";
@@ -78,20 +77,26 @@ const OPCIONES_VIGENCIA_MESES: { value: number; label: string }[] = [
   { value: 12, label: "12 meses (Anual)" },
 ];
 
-const ESTADO_STYLES: Record<EstadoPago, string> = {
-  PAGADO: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-  PARCIAL: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
-  PENDIENTE: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-  VENCIDO: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
-  ANULADO: "bg-slate-800 text-slate-400 border border-slate-700",
-};
+const ESTADO_STYLES = ESTADO_PAGO_STYLES;
 
-const MOTIVOS_ANULACION_RAPIDOS = [
-  "Importe mal tipeado",
-  "Período / mes equivocado",
-  "Socio equivocado",
-  "Medio de pago erróneo",
-];
+const MOTIVO_OTRO = "Otro motivo";
+const MOTIVOS_ANULACION_RAPIDOS = ["Cargado por error", "Monto incorrecto", "Socio equivocado", MOTIVO_OTRO];
+
+type CobroPreseleccionado = { alumnoId: string; periodo?: string; meses?: number };
+
+// Hoja inferior en celular, ventana centrada en escritorio
+const claseFondoHoja =
+  "fixed inset-0 z-50 flex items-end justify-center bg-[#060D1F]/80 backdrop-blur-sm md:items-center md:p-4";
+const claseHoja =
+  "flex max-h-[92dvh] w-full min-w-0 flex-col rounded-t-3xl bg-[#13254A] text-slate-100 shadow-2xl md:max-h-[90vh] md:max-w-md md:rounded-3xl";
+const claseCampoHoja =
+  "h-11 w-full rounded-xl border border-[#2A4677] bg-[#0E1B36] px-3 text-[15px] text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-400";
+const claseMontoGrande =
+  "min-w-0 flex-1 bg-transparent font-display text-4xl font-bold text-slate-100 outline-none";
+
+function Separador() {
+  return <span aria-hidden="true" className="mx-1.5 text-slate-600">|</span>;
+}
 
 const NOMBRES_MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -113,7 +118,7 @@ function SelectorMes({
 
   return (
     <div
-      className={`flex items-center h-11 rounded-full border border-slate-200 bg-white transition-opacity ${
+      className={`flex items-center h-11 rounded-full border border-slate-800 bg-slate-900 transition-opacity ${
         disabled ? "opacity-40" : ""
       }`}
     >
@@ -124,37 +129,26 @@ function SelectorMes({
         onChange={(e) =>
           onChange(`${anioStr}-${String(Number(e.target.value) + 1).padStart(2, "0")}`)
         }
-        className="h-full pl-4 pr-2 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-4 pr-2 bg-transparent text-sm font-medium text-slate-200 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {NOMBRES_MESES.map((nombre, i) => (
-          <option key={nombre} value={i}>{nombre}</option>
+          <option key={nombre} value={i} className="bg-slate-900 text-white">{nombre}</option>
         ))}
       </select>
-      <div className="h-5 w-px bg-slate-200 shrink-0" />
+      <div className="h-5 w-px bg-slate-700 shrink-0" />
       <select
         disabled={disabled}
         aria-label="Seleccionar año"
         value={anioStr}
         onChange={(e) => onChange(`${e.target.value}-${mesStr}`)}
-        className="h-full pl-2 pr-4 bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
+        className="h-full pl-2 pr-4 bg-transparent text-sm font-medium text-slate-200 outline-none cursor-pointer disabled:cursor-not-allowed appearance-none"
       >
         {anios.map((a) => (
-          <option key={a} value={a}>{a}</option>
+          <option key={a} value={a} className="bg-slate-900 text-white">{a}</option>
         ))}
       </select>
     </div>
   );
-}
-
-function formatearMes(mesStr: string) {
-  const [anio, mesNum] = mesStr.split("-").map(Number);
-  if (!anio || !mesNum) return mesStr;
-  const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric",
-  });
-
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function mesActualISO() {
@@ -174,7 +168,7 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
         <div className="mx-auto size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
           <AlertCircle className="size-8" />
         </div>
-        <h1 className="text-2xl font-black text-white">Ficha de alumno no vinculada</h1>
+        <h1 className="text-4xl font-black text-white">Ficha de alumno no vinculada</h1>
         <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">
           Tu usuario ({usuario.email}) no tiene una ficha de socio activa asociada en el gimnasio.
           Por favor consultá en recepción para que vinculen tu cuenta.
@@ -203,193 +197,144 @@ function VistaCuotasAlumno({ usuario }: { usuario: UsuarioSesion }) {
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  const heroe = {
+    AL_DIA: {
+      caja: "border-[#2E6B57] bg-[#0F3B2B]",
+      texto: "text-[#C8F5DD]",
+      Icono: Check,
+      icono: "text-[#5BE3A0]",
+      estado: "Estás al día",
+      titulo: maxPeriodoCubierto
+        ? `${formatearMes(maxPeriodoCubierto).replace(` de ${new Date().getFullYear()}`, "")} pagado`
+        : "Acceso habilitado",
+    },
+    PENDIENTE: {
+      caja: "border-amber-500/40 bg-amber-500/10",
+      texto: "text-amber-300",
+      Icono: Clock,
+      icono: "text-amber-400",
+      estado: "Tenés un pago pendiente",
+      titulo: "Cuota pendiente",
+    },
+    MOROSO: {
+      caja: "border-rose-400/40 bg-rose-500/10",
+      texto: "text-rose-300",
+      Icono: AlertCircle,
+      icono: "text-rose-400",
+      estado: "Regularizá para seguir entrenando",
+      titulo: "Cuota vencida",
+    },
+    INACTIVO: {
+      caja: "border-slate-700 bg-[#162A50]",
+      texto: "text-slate-300",
+      Icono: AlertCircle,
+      icono: "text-slate-400",
+      estado: "Acercate a recepción",
+      titulo: "Membresía inactiva",
+    },
+  }[estadoCuenta];
+  const etiquetaPago = (pago: Pago) =>
+    ({ PAGADO: "Pagado", PARCIAL: "Seña", PENDIENTE: "Pendiente", VENCIDO: "Vencido", ANULADO: "Anulado" })[pago.estado];
+  const IconoPago = (pago: Pago) => (pago.estado === "PAGADO" ? Check : pago.estado === "VENCIDO" ? AlertCircle : Clock);
+
   return (
-    <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500 mb-1">
-          Portal del alumno
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3.5 px-5 pb-28 pt-[22px] md:gap-5 md:pb-16 md:pt-12">
+      <h1 className="text-[34px] font-extrabold uppercase leading-[.95] text-white md:text-[40px]">Mis cuotas</h1>
+
+      <section aria-labelledby="estado-cuota" className={`flex flex-col gap-1.5 rounded-[18px] border p-[18px] ${heroe.caja}`}>
+        <h2 id="estado-cuota" className={`flex items-center gap-2 text-sm font-bold ${heroe.texto}`}>
+          <heroe.Icono className={`size-[18px] ${heroe.icono}`} aria-hidden="true" />
+          {heroe.estado}
+        </h2>
+        <p className="font-display text-[34px] font-extrabold uppercase leading-none text-white">{heroe.titulo}</p>
+        <p className={`text-sm ${heroe.texto}`}>
+          Próximo vencimiento: {calcularVencimientoCuota(estadoCuenta, new Date(), maxPeriodoCubierto)}
+          <Separador />
+          se abona del 1 al 10
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-          Mis cuotas y pagos
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Hola, <strong className="text-white">{usuario.nombre}</strong>. Revisá el estado de tu suscripción en Atlas Gym y consultá los datos para abonar.
-        </p>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado de mi cuota</p>
-          <div className="mt-3 flex items-center gap-2">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-black ${
-                ESTADO_CUENTA_STYLES[estadoCuenta]
-              }`}
-            >
-              {ESTADO_CUENTA_LABEL[estadoCuenta]}
-            </span>
-          </div>
-          <p className="mt-3 text-xs text-slate-400 font-medium leading-relaxed">
-            {estadoCuenta === "AL_DIA"
-              ? "¡Estás al día! Tu acceso al gimnasio está completamente habilitado."
-              : estadoCuenta === "PENDIENTE"
-              ? "Tu cuota del mes figura pendiente de abono o con saldo parcial a completar."
-              : estadoCuenta === "MOROSO"
-              ? "Tu cuota se encuentra vencida. Por favor regularizá para seguir entrenando."
-              : "Tu membresía se encuentra inactiva. Acercate a recepción para regularizar tu cuenta."}
-          </p>
+      <section aria-label="Mi plan" className="rounded-2xl bg-[#162A50] px-4 py-1">
+        <div className="flex justify-between gap-4 border-b border-[#22396A] py-3 text-[15px]">
+          <span className="text-slate-400">Mi plan</span>
+          <span className="text-right text-slate-100">{alumno.plan || "Musculación"}</span>
         </div>
-
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mi plan actual</p>
-          <p className="mt-2 text-2xl font-black text-white">{alumno?.plan || "Musculación"}</p>
-          <p className="mt-1 text-sm font-bold text-blue-400">
-            ${planMonto.toLocaleString("es-AR")} <span className="text-xs text-slate-500 font-medium">/ mes</span>
-          </p>
+        <div className="flex items-center justify-between gap-4 py-3 text-[15px]">
+          <span className="text-slate-400">Valor</span>
+          <span className="font-display text-xl font-bold text-slate-100">${planMonto.toLocaleString("es-AR")} / mes</span>
         </div>
+      </section>
 
-        <div className="rounded-2xl bg-slate-900/60 p-6 shadow-sm border border-slate-800 text-slate-100 backdrop-blur-md">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximo vencimiento</p>
-          <p className="mt-2 text-2xl font-black text-white">
-            {calcularVencimientoCuota(
-              estadoCuenta,
-              new Date(),
-              maxPeriodoCubierto
-            )}
-          </p>
-          <p className="mt-1 text-xs text-slate-500 font-medium">Las cuotas se abonan del 1 al 10 de cada mes</p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 text-white shadow-xl backdrop-blur-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold mb-3 border border-blue-500/30">
-              Datos para abonar tu cuota
-            </span>
-            {datosCobro.alias ? (
-            <>
-            <h2 className="text-xl font-black">Transferencia bancaria o Mercado Pago</h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Podés transferir directamente con el alias del gimnasio y enviar tu comprobante por WhatsApp para que te registremos el pago.
-            </p>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800">
-                <span className="text-xs text-slate-400 font-semibold">Alias:</span>
-                <span className="text-sm font-mono font-black text-blue-400">{datosCobro.alias}</span>
-                <button
-                  type="button"
-                  onClick={copiarAlias}
-                  className="ml-2 text-xs text-slate-300 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg font-bold active:scale-95"
-                >
-                  {copiado ? "¡Copiado! ✓" : "Copiar"}
-                </button>
-              </div>
-              {datosCobro.titular && (
-                <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs text-slate-300">
-                  <span className="text-slate-400">Titular:</span> <strong>{datosCobro.titular}</strong>
-                </div>
-              )}
+      <section aria-labelledby="como-pagar" className="flex flex-col gap-3 rounded-2xl bg-[#162A50] p-4">
+        <h2 id="como-pagar" className="text-[17px] font-bold text-white">Cómo pagar</h2>
+        {datosCobro.alias ? (
+          <div className="flex items-center gap-3 rounded-xl bg-[#0E1B36] p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] text-slate-400">
+                Transferencia o Mercado Pago
+                <Separador />
+                Alias
+              </p>
+              <p className="mt-0.5 break-words font-bold text-white">{datosCobro.alias}</p>
+              {datosCobro.titular && <p className="mt-0.5 text-[13px] text-slate-500">Titular: {datosCobro.titular}</p>}
             </div>
-            </>
-            ) : (
-            <>
-            <h2 className="text-xl font-black">Abonás en recepción</h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Consultá en recepción o por WhatsApp los medios de pago disponibles (efectivo, transferencia o tarjeta).
-            </p>
-            </>
-            )}
+            <button type="button" onClick={copiarAlias} className="h-11 shrink-0 rounded-[10px] bg-blue-600 px-3.5 text-sm font-bold text-white hover:bg-blue-500">
+              {copiado ? "Copiado" : "Copiar"}
+            </button>
           </div>
+        ) : null}
+        <p className="text-sm text-slate-400">
+          {datosCobro.alias
+            ? "También podés abonar en recepción, en efectivo o con tarjeta."
+            : "Abonás en recepción, en efectivo, con transferencia o con tarjeta."}
+        </p>
+        <a
+          href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
+            `Hola! Soy ${alumno.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
+          )}`}
+          target="atlas_whatsapp_tab"
+          rel="noopener noreferrer"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold text-slate-100 hover:bg-slate-900"
+        >
+          <WhatsAppIcon className="size-[18px] fill-current" />
+          Enviar comprobante por WhatsApp
+        </a>
+      </section>
 
-          <div className="shrink-0">
-            <a
-              href={`${CONTACTO_ATLAS.whatsappUrl}?text=${encodeURIComponent(
-                `Hola! Soy ${alumno?.nombre || "alumno"}, les adjunto mi comprobante de pago de la cuota.`
-              )}`}
-              target="atlas_whatsapp_tab"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 active:scale-95 text-sm"
-            >
-              <WhatsAppIcon className="w-5 h-5 fill-white" />
-              Enviar comprobante por WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden text-slate-100 shadow-sm backdrop-blur-md">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div>
-            <h2 className="text-lg font-black text-white">Historial de mis cuotas</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Registro histórico de tus pagos</p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400 border-b border-slate-800 bg-slate-950/20">
-                <th className="font-bold px-6 py-3.5">Plan / Concepto</th>
-                <th className="font-bold px-6 py-3.5">Monto</th>
-                <th className="font-bold px-6 py-3.5">Fecha</th>
-                <th className="font-bold px-6 py-3.5">Medio de pago</th>
-                <th className="font-bold px-6 py-3.5">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {misPagos.map((pago) => {
-                const esParcial = pago.estado === "PARCIAL";
-                const abonado = obtenerMontoRecaudadoPago(pago);
-                const saldo = obtenerSaldoPendientePago(pago);
-                return (
-                  <tr key={pago.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors">
-                    <td className="px-6 py-4 font-bold text-white">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span>{pago.plan}</span>
-                        {(pago.cantidadMeses ?? 1) > 1 && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                            ×{pago.cantidadMeses} meses
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-black text-white">
-                      ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
-                      {esParcial && (
-                        <div className="text-[11px] font-bold text-amber-400">
-                          Resta ${saldo.toLocaleString("es-AR")}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
+      <section aria-labelledby="historial-cuotas" className="rounded-2xl bg-[#162A50] px-4 py-1.5">
+        <h2 id="historial-cuotas" className="pb-1.5 pt-2.5 text-[17px] font-bold text-white">Historial</h2>
+        {misPagos.length === 0 ? (
+          <p className="border-t border-[#22396A] py-6 text-center text-sm text-slate-500">No tenés pagos registrados en el sistema todavía.</p>
+        ) : (
+          <ul>
+            {misPagos.map((pago) => {
+              const esParcial = pago.estado === "PARCIAL";
+              const Icono = IconoPago(pago);
+              return (
+                <li key={pago.id} className="flex items-center gap-2.5 border-t border-[#22396A] py-[11px] text-[15px]">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white">
+                      {formatearMes(pago.periodoMes || pago.fecha.slice(0, 7)).replace(` de ${new Date().getFullYear()}`, "")}
+                      {(pago.cantidadMeses ?? 1) > 1 && <span className="ml-1 font-normal text-slate-500">({pago.cantidadMeses} meses)</span>}
+                    </p>
+                    <p className="text-[13px] text-slate-500">
                       {formatFechaAR(pago.fecha)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">{pago.metodo}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          ESTADO_STYLES[pago.estado]
-                        }`}
-                      >
-                        {esParcial ? "SEÑA PARCIAL" : pago.estado}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {misPagos.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                    No tenés pagos registrados en el sistema todavía.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      <Separador />
+                      {pago.metodo}
+                    </p>
+                    {esParcial && <p className="text-[13px] text-amber-400">Resta ${obtenerSaldoPendientePago(pago).toLocaleString("es-AR")}</p>}
+                  </div>
+                  <span className="tabular-nums text-slate-100">${(esParcial ? obtenerMontoRecaudadoPago(pago) : pago.monto).toLocaleString("es-AR")}</span>
+                  <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] font-semibold ${ESTADO_STYLES[pago.estado]}`}>
+                    <Icono className="size-3.5" aria-hidden="true" />
+                    {etiquetaPago(pago)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
@@ -426,6 +371,7 @@ export default function FinanzasPage() {
     planes,
     pagos,
     agregarPago,
+    refrescarPagos,
     actualizarEstadoPago,
     completarSaldoPago,
     anularPago,
@@ -446,6 +392,7 @@ export default function FinanzasPage() {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 250);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cobroPreseleccionado, setCobroPreseleccionado] = useState<CobroPreseleccionado | null>(null);
   const [dniPreseleccionado, setDniPreseleccionado] = useState<string | null>(null);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
@@ -531,6 +478,29 @@ export default function FinanzasPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // La ficha del socio llega con ?cobrarSocio=<id>&periodo=YYYY-MM&meses=N o ?completar=<idPago>
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const alumnoId = params.get("cobrarSocio");
+    const pagoId = params.get("completar");
+    if (!alumnoId && !pagoId) return;
+    if (alumnoId) {
+      const periodo = params.get("periodo") ?? "";
+      const meses = Number(params.get("meses"));
+      setCobroPreseleccionado({
+        alumnoId,
+        periodo: /^\d{4}-\d{2}$/.test(periodo) ? periodo : undefined,
+        meses: Number.isInteger(meses) && meses >= 1 && meses <= 24 ? meses : undefined,
+      });
+      setModalAbierto(true);
+    }
+    const pago = pagos.find((p) => p.id === pagoId && p.estado === "PARCIAL");
+    if (pago) setPagoACompletar(pago);
+    window.history.replaceState(null, "", "/finanzas");
+    // Solo al entrar: después el modal ya vive por su cuenta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!usuarioActual) {
     return null;
   }
@@ -587,18 +557,8 @@ export default function FinanzasPage() {
   const handleNuevoPago = async (
     nuevo: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }
   ) => {
-    agregarPago(nuevo);
-    if (nuevo.alumnoId && nuevo.usuarioApp?.trim() && nuevo.passwordApp?.trim()) {
-      try {
-        await asignarCredencialesAlumno(
-          nuevo.alumnoId,
-          nuevo.usuarioApp.trim(),
-          nuevo.passwordApp.trim()
-        );
-      } catch (err) {
-        console.warn("No se pudieron sincronizar las credenciales con el backend:", err);
-      }
-    }
+    const resultado = await agregarPago(nuevo);
+    if (!resultado.ok) return resultado;
     setModalAbierto(false); setDniPreseleccionado(null);
     if (nuevo.usuarioApp && nuevo.passwordApp) {
       toast(
@@ -610,6 +570,7 @@ export default function FinanzasPage() {
     } else {
       toast("Pago registrado con éxito", "success");
     }
+    return resultado;
   };
 
   const confirmarAnulacion = async (motivo: string) => {
@@ -635,19 +596,15 @@ export default function FinanzasPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1500px] px-4 sm:px-5 py-6 sm:py-8 md:px-10 md:py-10 space-y-6 sm:space-y-8 overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-10 overflow-x-hidden px-4 pb-28 pt-6 sm:px-5 md:gap-12 md:px-14 md:pb-16 md:pt-12">
+      {/* ENCABEZADO */}
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Finanzas y Caja</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              {verTodos
-                ? "Viendo el historial completo auditado de cobros, señas y anulaciones."
-                : `Viendo ${formatearMes(mes)} — caja trazable con señas parciales y anulaciones auditadas.`}
-            </p>
+            <p className="mb-2 text-sm text-slate-500">{verTodos ? "Historial completo" : formatearMes(mes)}</p>
+            <h1 className="text-4xl font-bold uppercase text-white md:text-[40px]">Finanzas y caja</h1>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap w-full sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             <button
               onClick={() => setModalDatosCobro(true)}
               title={
@@ -655,29 +612,32 @@ export default function FinanzasPage() {
                   ? `Alias vigente: ${datosCobro.alias}. Tocá para cambiarlo.`
                   : "Cargá el alias de transferencia que ven los alumnos"
               }
-              className={`flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95 ${
+              className={`flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium ${
                 datosCobro.alias
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700"
-                  : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40"
+                  ? "border-slate-800 text-slate-300 hover:bg-slate-900"
+                  : "border-amber-400/50 text-amber-300 hover:bg-amber-500/10"
               }`}
             >
-              <Landmark className="w-4 h-4 shrink-0" />
-              <span className="truncate">{datosCobro.alias ? "Datos de cobro" : "Cargar alias"}</span>
+              <Landmark className="size-4 shrink-0" />
+              {datosCobro.alias ? "Datos de cobro" : "Cargar alias"}
             </button>
             <button
               onClick={exportarCSVFinanzas}
               title="Exportar planilla actual a archivo CSV / Excel"
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs sm:text-sm font-semibold h-11 px-3 sm:px-4 rounded-xl border border-slate-700 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 active:scale-95"
+              className="flex h-11 items-center gap-2 rounded-xl border border-slate-800 px-4 text-sm font-medium text-slate-300 hover:bg-slate-900"
             >
-              <Download className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="truncate">Exportar CSV</span>
+              <Download className="size-4 shrink-0" />
+              Exportar CSV
             </button>
             <button
-              onClick={() => setModalAbierto(true)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold h-11 px-4 sm:px-6 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/30 active:scale-95"
+              onClick={() => {
+                setCobroPreseleccionado(null);
+                setModalAbierto(true);
+              }}
+              className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-500"
             >
-              <Plus className="w-5 h-5 shrink-0" />
-              <span className="truncate">Registrar pago</span>
+              <Plus className="size-4 shrink-0" />
+              Registrar pago
             </button>
           </div>
         </div>
@@ -697,17 +657,16 @@ export default function FinanzasPage() {
               setMes(mesActualISO());
               setVerTodos(false);
             }}
-            className="h-11 px-4 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-[color,background-color] duration-200 active:scale-95"
+            className="h-11 rounded-full border border-slate-800 px-4 text-sm font-medium text-slate-300 hover:bg-slate-900"
           >
             Mes actual
           </button>
           <button
             type="button"
+            aria-pressed={verTodos}
             onClick={() => setVerTodos((v) => !v)}
-            className={`h-11 px-4 rounded-full text-sm font-bold transition-[color,background-color] duration-200 active:scale-95 ${
-              verTodos
-                ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className={`h-11 rounded-full px-4 text-sm font-medium ${
+              verTodos ? "bg-slate-200 text-slate-950" : "border border-slate-800 text-slate-300 hover:bg-slate-900"
             }`}
           >
             Ver todos
@@ -715,210 +674,132 @@ export default function FinanzasPage() {
         </div>
       </div>
 
-      {/* Tarjetas de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          icon={<DollarSign className="size-6" />}
-          label={verTodos ? "Ingresos netos totales" : "Ingresos del mes"}
-          value={`$${metrica.ingresosDelMes.toLocaleString("es-AR")}`}
-          tint={{ bg: "bg-blue-500/15 border border-blue-500/30", text: "text-blue-400", bar: "bg-blue-500" }}
-        />
-        <MetricCard
-          icon={<Clock className="size-6" />}
-          label="Saldos y cuotas pendientes"
-          value={`$${metrica.pendientesMonto.toLocaleString("es-AR")}`}
-          sub={`${metrica.pendientesCount} comprobantes`}
-          tint={{ bg: "bg-amber-500/15 border border-amber-500/30", text: "text-amber-400", bar: "bg-amber-500" }}
-        />
-        <MetricCard
-          icon={<AlertCircle className="size-6" />}
-          label="Cuotas vencidas"
-          value={`$${metrica.vencidosMonto.toLocaleString("es-AR")}`}
-          sub={`${metrica.vencidosCount} cuotas`}
-          tint={{ bg: "bg-rose-500/15 border border-rose-500/30", text: "text-rose-400", bar: "bg-rose-500" }}
-        />
-        <MetricCard
-          icon={<Users className="size-6" />}
-          label="Socios morosos hoy"
-          value={`${metrica.morosos}`}
-          tint={{ bg: "bg-slate-800 border border-slate-700", text: "text-slate-400", bar: "bg-slate-600" }}
-        />
-      </div>
-
-      {/* Panel de Arqueo de Caja del Día */}
-      <div className="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 sm:p-6 text-slate-100 shadow-sm backdrop-blur-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-white">
-                Arqueo de Caja del Día
-              </h2>
-              <p className="text-xs text-slate-400">
-                Efectivo físico en cajón, transferencias y desglose nominal por operador ({formatFechaAR(fechaArqueo)}).
-              </p>
-            </div>
-          </div>
+      {/* CAJA DEL DÍA: franja con el total y el desglose */}
+      <section aria-labelledby="titulo-caja" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="titulo-caja" className="text-base font-semibold text-slate-300">
+            {fechaArqueo === fechaLocalHoy() ? "Caja de hoy" : `Caja del ${formatFechaAR(fechaArqueo)}`}
+          </h2>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              aria-label="Fecha de arqueo de caja"
-              value={fechaArqueo}
-              onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
-              className="h-9 px-3 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-slate-200 outline-none focus:border-blue-500"
-            />
+            <label className="flex items-center gap-2 text-[13px] text-slate-500">
+              Ver otro día
+              <input
+                type="date"
+                aria-label="Fecha de arqueo de caja"
+                value={fechaArqueo}
+                onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
+                className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200 outline-none focus:border-blue-500"
+              />
+            </label>
             {fechaArqueo !== fechaLocalHoy() && (
               <button
                 type="button"
                 onClick={() => setFechaArqueo(fechaLocalHoy())}
-                className="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700"
+                className="h-11 rounded-xl border border-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-900"
               >
                 Hoy
               </button>
             )}
           </div>
         </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-              Efectivo en cajón
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalEfectivo.toLocaleString("es-AR")}
-            </p>
+        <div className="grid grid-cols-2 border-y border-slate-800 lg:grid-cols-4">
+          <div className="flex flex-col gap-1 py-4 pr-4 md:py-5">
+            <span className="text-[13px] text-slate-500">Total cobrado ({arqueoDelDia.cantidadCobros})</span>
+            <span className="text-xl font-semibold text-white md:text-2xl">${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}</span>
           </div>
-          <div className="rounded-xl bg-blue-500/10 border border-blue-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
-              Transferencias / MP
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalTransferencia.toLocaleString("es-AR")}
-            </p>
-          </div>
-          <div className="rounded-xl bg-purple-500/10 border border-purple-500/25 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
-              Tarjeta
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalTarjeta.toLocaleString("es-AR")}
-            </p>
-          </div>
-          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Total recaudado ({arqueoDelDia.cantidadCobros})
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              ${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-400">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-300 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              Por operador:
-            </span>
-            {arqueoDelDia.porOperador.length === 0 ? (
-              <span className="text-slate-500 italic">Sin cobros registrados en esta fecha</span>
-            ) : (
-              arqueoDelDia.porOperador.map((op) => (
-                <span
-                  key={op.operador}
-                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-semibold"
-                >
-                  {op.operador}:{" "}
-                  <strong className="text-emerald-400">
-                    ${op.totalRecaudado.toLocaleString("es-AR")}
-                  </strong>{" "}
-                  ({op.cantidadOperaciones})
-                </span>
-              ))
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {arqueoDelDia.cantidadParciales > 0 && (
-              <span className="text-sky-300 font-semibold">
-                {arqueoDelDia.cantidadParciales} seña(s) con $
-                {arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar
-              </span>
-            )}
-            {arqueoDelDia.cantidadAnulados > 0 && (
-              <span className="text-rose-400 font-semibold">
-                {arqueoDelDia.cantidadAnulados} anulado(s) ($
-                {arqueoDelDia.montoAnulado.toLocaleString("es-AR")} excluidos de caja)
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tarjeta principal: filtros + tabla */}
-      <div className="bg-slate-900/60 rounded-2xl shadow-sm border border-slate-800 overflow-hidden text-slate-100 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 border-b border-slate-800 bg-slate-950/40">
-          <div className="flex gap-4 flex-wrap items-center">
-            <div className="flex gap-2 flex-wrap">
-              {FILTROS.map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setFiltro(f.value)}
-                  className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-[color,background-color] duration-200 active:scale-95 ${
-                    filtro === f.value
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                      : "bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+          {[
+            { label: "Efectivo", valor: arqueoDelDia.totalEfectivo },
+            { label: "Transferencia / MP", valor: arqueoDelDia.totalTransferencia },
+            { label: "Tarjeta", valor: arqueoDelDia.totalTarjeta },
+          ].map((m, i) => (
+            <div
+              key={m.label}
+              className={`flex flex-col gap-1 border-slate-800 py-4 md:py-5 ${
+                i === 0 ? "border-l pl-4 md:pl-6" : i === 1 ? "border-t pr-4 lg:border-l lg:border-t-0 lg:pl-6" : "border-l border-t pl-4 md:pl-6 lg:border-t-0"
+              }`}
+            >
+              <span className="text-[13px] text-slate-500">{m.label}</span>
+              <span className="text-lg font-medium text-slate-200 md:text-xl">${m.valor.toLocaleString("es-AR")}</span>
             </div>
+          ))}
+        </div>
+        <p className="text-[13px] text-slate-500">
+          {arqueoDelDia.porOperador.length === 0
+            ? "Sin cobros registrados en esta fecha."
+            : `Por titular: ${arqueoDelDia.porOperador
+                .map((op) => `${op.operador} $${op.totalRecaudado.toLocaleString("es-AR")} (${op.cantidadOperaciones})`)
+                .join(", ")}.`}
+          {arqueoDelDia.cantidadParciales > 0 &&
+            ` ${arqueoDelDia.cantidadParciales} seña(s) con $${arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar.`}
+          {arqueoDelDia.cantidadAnulados > 0 &&
+            ` ${arqueoDelDia.cantidadAnulados} anulado(s) por $${arqueoDelDia.montoAnulado.toLocaleString("es-AR")}, fuera de la caja.`}
+        </p>
+      </section>
 
-            <div className="h-5 w-px bg-slate-800 hidden sm:block" />
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold text-slate-400 mr-1">Método:</span>
-              {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
-                <button
-                  key={met}
-                  onClick={() => setFiltroMetodo(met)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
-                    filtroMetodo === met
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-slate-800/60 text-slate-300 border border-slate-700/60 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {met === "TODOS" ? "Todos" : met}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* MOVIMIENTOS: la tabla es lo principal */}
+      <section aria-labelledby="titulo-movimientos" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="titulo-movimientos" className="text-xl font-semibold text-white">
+            {verTodos ? "Todos los movimientos" : "Movimientos del mes"}
+          </h2>
+          <label className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
             <input
               id="buscar-finanzas"
               aria-label="Buscar alumno"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar socio u operador..."
-              className="pl-9 pr-4 h-10 text-sm bg-slate-800/80 text-white placeholder:text-slate-500 border border-slate-700 rounded-full outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 w-full sm:w-64"
+              className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900 pl-10 pr-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500/60"
             />
-          </div>
+          </label>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por estado">
+          {FILTROS.map((f) => {
+            const cantidad = f.value === "TODOS" ? pagosDelMes.length : pagosDelMes.filter((p) => p.estado === f.value).length;
+            const activo = filtro === f.value;
+            return (
+              <button
+                key={f.value}
+                aria-pressed={activo}
+                onClick={() => setFiltro(f.value)}
+                className={`flex h-11 items-center gap-2 rounded-full px-4 text-sm ${
+                  activo ? "bg-slate-200 font-semibold text-slate-950" : "border border-slate-800 text-slate-300 hover:bg-slate-900"
+                }`}
+              >
+                {f.label}
+                <span className={activo ? "font-normal" : "text-slate-500"}>{cantidad}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por medio de pago">
+          <span className="text-[13px] text-slate-500">Medio de pago:</span>
+          {["TODOS", "Efectivo", "Transferencia", "Tarjeta"].map((met) => (
+            <button
+              key={met}
+              aria-pressed={filtroMetodo === met}
+              onClick={() => setFiltroMetodo(met)}
+              className={`h-9 rounded-lg px-3 text-[13px] ${
+                filtroMetodo === met ? "bg-slate-800 font-semibold text-white" : "text-slate-400 hover:bg-slate-900"
+              }`}
+            >
+              {met === "TODOS" ? "Todos" : met}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative overflow-x-auto rounded-2xl border border-slate-800">
+          <table className="w-full min-w-[860px] border-collapse text-[15px]">
             <thead>
-              <tr className="text-left text-slate-400 border-b border-slate-800">
-                <th className="font-bold px-6 py-3.5">Alumno</th>
-                <th className="font-bold px-6 py-3.5">Plan / Período</th>
-                <th className="font-bold px-6 py-3.5">Importe</th>
-                <th className="font-bold px-6 py-3.5">Fecha</th>
-                <th className="font-bold px-6 py-3.5">Método / Operador</th>
-                <th className="font-bold px-6 py-3.5">Estado</th>
-                <th className="font-bold px-6 py-3.5 text-right">Acciones</th>
+              <tr className="bg-slate-900/60 text-left text-[13px] text-slate-500">
+                <th className="px-5 py-3 font-medium">Alumno</th>
+                <th className="px-5 py-3 font-medium">Período</th>
+                <th className="px-5 py-3 text-right font-medium">Importe</th>
+                <th className="px-5 py-3 font-medium">Cobro</th>
+                <th className="px-5 py-3 font-medium">Estado</th>
+                <th className="px-5 py-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
@@ -929,153 +810,139 @@ export default function FinanzasPage() {
                 const abonado = obtenerMontoRecaudadoPago(pago);
                 const saldo = obtenerSaldoPendientePago(pago);
                 const requiereRecordatorio =
-                  pago.estado === "PARCIAL" ||
-                  pago.estado === "PENDIENTE" ||
-                  pago.estado === "VENCIDO";
-                const puedeWhatsapp =
-                  requiereRecordatorio && alumno && tieneCelularWhatsappValido(alumno.celular);
+                  pago.estado === "PARCIAL" || pago.estado === "PENDIENTE" || pago.estado === "VENCIDO";
+                const puedeWhatsapp = requiereRecordatorio && alumno && tieneCelularWhatsappValido(alumno.celular);
 
                 return (
-                  <tr
-                    key={pago.id}
-                    className={`border-b border-slate-800/50 last:border-0 hover:bg-slate-800/40 transition-colors ${
-                      esAnulado ? "opacity-60 bg-slate-950/30" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4 font-bold text-white">
+                  <tr key={pago.id} className={`border-t border-slate-800 ${esAnulado ? "text-slate-500" : ""}`}>
+                    <td className="px-5 py-4">
                       {alumno ? (
-                        <Link href={`/alumnos/${alumno.id}`} className="hover:text-blue-400 hover:underline underline-offset-2">
+                        <Link
+                          href={`/alumnos/${alumno.id}`}
+                          className={`block font-semibold hover:underline ${esAnulado ? "text-slate-500 line-through" : "text-white"}`}
+                        >
                           {nombreHistoricoDelPago(pago, alumno)}
                         </Link>
                       ) : (
-                        <span className="text-slate-500 italic font-medium">
-                          {nombreHistoricoDelPago(pago, alumno)}
-                        </span>
+                        <span className="block italic text-slate-500">{nombreHistoricoDelPago(pago, alumno)}</span>
                       )}
+                      {alumno?.dni && <span className="mt-0.5 block text-[13px] text-slate-500">DNI {alumno.dni}</span>}
                       {alumnoDePagoEstaDeBaja(pago, alumno) && (
-                        <span className="mt-1 block text-xs font-semibold text-amber-400">
-                          Alumno dado de baja
-                        </span>
-                      )}
-                      {esAnulado && pago.motivoAnulacion && (
-                        <div className="text-[11px] font-medium text-rose-400/90 mt-0.5">
-                          Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}: {pago.motivoAnulacion}
-                        </div>
+                        <span className="mt-0.5 block text-[13px] text-amber-400">Alumno dado de baja</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span>{pago.plan}</span>
+                    <td className="px-5 py-4 text-slate-300">
+                      {pago.periodoMes || pago.fecha.slice(0, 7)}
+                      <span className="mt-0.5 block text-[13px] text-slate-500">
+                        {pago.plan}
                         {(pago.cantidadMeses ?? 1) > 1 && (
-                          <span
-                            title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}
-                            className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                          >
-                            ×{pago.cantidadMeses} meses
-                          </span>
+                          <span title={`Cubre hasta ${obtenerPeriodoFinCubierto(pago) || ""}`}>, {pago.cantidadMeses} meses</span>
                         )}
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
-                        Período: {pago.periodoMes || pago.fecha.slice(0, 7)}
-                      </div>
+                      </span>
                     </td>
-                    <td className="px-6 py-4 font-black text-white">
-                      <span className={esAnulado ? "line-through text-slate-500" : ""}>
+                    <td className="px-5 py-4 text-right tabular-nums">
+                      <span className={esAnulado ? "line-through" : "text-white"}>
                         ${(esParcial ? abonado : pago.monto).toLocaleString("es-AR")}
                       </span>
                       {esParcial && (
-                        <div className="text-[11px] font-bold text-amber-400 mt-0.5">
-                          Resta ${saldo.toLocaleString("es-AR")} (total ${pago.monto.toLocaleString("es-AR")})
-                        </div>
+                        <span className="mt-0.5 block text-[13px] text-slate-500">resta ${saldo.toLocaleString("es-AR")}</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      {formatFechaAR(pago.fecha)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      <div>{pago.metodo}</div>
-                      {pago.registradoPor && (
-                        <div className="text-[11px] text-slate-500">
-                          Por: {pago.registradoPor}
-                        </div>
-                      )}
+                    <td className="px-5 py-4 text-slate-300">
+                      {esAnulado ? `Anulado${pago.anuladoPor ? ` por ${pago.anuladoPor}` : ""}` : pago.metodo}
+                      <span className="mt-0.5 block text-[13px] text-slate-500">
+                        {esAnulado && pago.motivoAnulacion
+                          ? `Motivo: ${pago.motivoAnulacion}`
+                          : [pago.registradoPor, formatFechaAR(pago.fecha)].filter(Boolean).join(", ")}
+                      </span>
                       {pago.comprobante && (
-                        <div className="text-[11px] text-sky-400/90 truncate max-w-[180px]" title={pago.comprobante}>
+                        <span className="block max-w-[180px] truncate text-[13px] text-slate-500" title={pago.comprobante}>
                           {pago.comprobante}
-                        </div>
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      {esAnulado || esParcial ? (
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${ESTADO_STYLES[pago.estado]}`}
-                        >
-                          {esParcial ? "SEÑA PARCIAL" : "ANULADO"}
+                    <td className="px-5 py-4">
+                      {esAnulado ? (
+                        <span className="text-sm text-slate-500">Anulado</span>
+                      ) : esParcial ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm text-amber-400">
+                          <Clock className="size-3.5" />Seña parcial
                         </span>
                       ) : (
-                        <div className="relative inline-block">
+                        <span className="relative inline-flex items-center gap-1.5">
+                          {pago.estado === "PAGADO" ? null : pago.estado === "VENCIDO" ? (
+                            <AlertCircle className="size-3.5 text-rose-400" />
+                          ) : (
+                            <Clock className="size-3.5 text-amber-400" />
+                          )}
                           <select
                             aria-label="Cambiar estado del pago"
                             value={pago.estado}
-                            onChange={(e) =>
-                              actualizarEstadoPago(pago.id, e.target.value as EstadoPago)
-                            }
-                            className={`appearance-none cursor-pointer pl-2.5 pr-6 py-1 rounded-full text-xs font-bold outline-none transition-colors ${ESTADO_STYLES[pago.estado]}`}
+                            onChange={(e) => actualizarEstadoPago(pago.id, e.target.value as EstadoPago)}
+                            className={`cursor-pointer appearance-none bg-transparent pr-5 text-sm outline-none ${ESTADO_STYLES[pago.estado]}`}
                           >
-                            <option value="PAGADO" className="bg-slate-900 text-white">PAGADO</option>
-                            <option value="PENDIENTE" className="bg-slate-900 text-white">PENDIENTE</option>
-                            <option value="VENCIDO" className="bg-slate-900 text-white">VENCIDO</option>
+                            <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
+                            <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
+                            <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
                           </select>
-                          <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
-                        </div>
+                          <ChevronDown className="pointer-events-none absolute right-0 size-3.5 opacity-60" />
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
+                    <td className="px-5 py-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         {esParcial && (
                           <button
                             type="button"
                             onClick={() => setPagoACompletar(pago)}
                             title={`Completar saldo restante ($${saldo.toLocaleString("es-AR")})`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 text-xs font-bold transition-colors active:scale-95"
+                            className="h-11 whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Completar</span>
+                            Completar saldo
                           </button>
-                        )}
-                        {puedeWhatsapp && alumno?.celular && (
-                          <a
-                            href={construirUrlWaMe(
-                              alumno.celular,
-                              mensajeRecordatorioCuotaWhatsapp({
-                                nombre: alumno.nombre,
-                                plan: pago.plan,
-                                estadoPago: pago.estado,
-                                saldoPendiente: saldo,
-                                montoTotal: pago.monto,
-                                periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
-                                aliasPago: datosCobro.alias,
-                              })
-                            )}
-                            target="atlas_whatsapp_tab"
-                            rel="noopener noreferrer"
-                            title={`Enviar recordatorio 1-clic por WhatsApp a ${alumno.nombre}`}
-                            aria-label={`Recordar por WhatsApp a ${alumno.nombre}`}
-                            className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/15 transition-colors active:scale-90"
-                          >
-                            <WhatsAppIcon className="w-4 h-4 fill-current" />
-                          </a>
                         )}
                         {!esAnulado && (
-                          <button
-                            type="button"
-                            onClick={() => setPagoAAnular(pago)}
-                            title="Anular comprobante con motivo auditado"
-                            aria-label={`Anular comprobante de ${alumno?.nombre ?? "alumno"}`}
-                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors duration-150 active:scale-90"
-                          >
-                            <Ban className="w-4 h-4" />
-                          </button>
+                          <details className="relative">
+                            <summary
+                              aria-label={`Más acciones para ${alumno?.nombre ?? "este pago"}`}
+                              className="flex size-11 cursor-pointer list-none items-center justify-center rounded-xl text-slate-400 hover:bg-slate-900 [&::-webkit-details-marker]:hidden"
+                            >
+                              <MoreHorizontal className="size-5" />
+                            </summary>
+                            <div className="absolute right-0 z-20 mt-1 flex w-56 flex-col rounded-xl border border-slate-700 bg-slate-900 py-1 text-left shadow-xl">
+                              {puedeWhatsapp && alumno?.celular && (
+                                <a
+                                  href={construirUrlWaMe(
+                                    alumno.celular,
+                                    mensajeRecordatorioCuotaWhatsapp({
+                                      nombre: alumno.nombre,
+                                      plan: pago.plan,
+                                      estadoPago: pago.estado,
+                                      saldoPendiente: saldo,
+                                      montoTotal: pago.monto,
+                                      periodoMes: pago.periodoMes || pago.fecha.slice(0, 7),
+                                      aliasPago: datosCobro.alias,
+                                    })
+                                  )}
+                                  target="atlas_whatsapp_tab"
+                                  rel="noopener noreferrer"
+                                  className="flex min-h-11 items-center gap-2.5 px-4 text-sm text-slate-200 hover:bg-slate-800"
+                                >
+                                  <WhatsAppIcon className="size-4 fill-current" />
+                                  Recordar por WhatsApp
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setPagoAAnular(pago)}
+                                aria-label={`Anular comprobante de ${alumno?.nombre ?? "este socio"}`}
+                                className="flex min-h-11 items-center gap-2.5 px-4 text-left text-sm text-rose-300 hover:bg-slate-800"
+                              >
+                                <Ban className="size-4" />
+                                Anular comprobante
+                              </button>
+                            </div>
+                          </details>
                         )}
                       </div>
                     </td>
@@ -1084,7 +951,7 @@ export default function FinanzasPage() {
               })}
               {pagosFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">
+                  <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
                     {verTodos
                       ? "No se encontraron pagos con ese criterio."
                       : `Todavía no hay pagos registrados en ${formatearMes(mes)}. Arrancá agregando el primero.`}
@@ -1097,9 +964,12 @@ export default function FinanzasPage() {
 
         {/* Paginación */}
         {pagosFiltrados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
+          <div className="flex flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
             <div className="flex items-center gap-2">
-              <span>Mostrar</span>
+              <span>
+                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
+                {Math.min(paginaActual * elementosPorPagina, pagosFiltrados.length)} de {pagosFiltrados.length}
+              </span>
               <select
                 aria-label="Pagos por página"
                 value={elementosPorPagina}
@@ -1107,47 +977,73 @@ export default function FinanzasPage() {
                   setElementosPorPagina(Number(e.target.value));
                   setPaginaActual(1);
                 }}
-                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 outline-none"
+                className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-2.5 text-slate-300 outline-none"
               >
                 <option value={15} className="bg-slate-900 text-white">15 por página</option>
                 <option value={30} className="bg-slate-900 text-white">30 por página</option>
                 <option value={50} className="bg-slate-900 text-white">50 por página</option>
                 <option value={100} className="bg-slate-900 text-white">100 por página</option>
               </select>
-              <span>
-                Mostrando {(paginaActual - 1) * elementosPorPagina + 1} a{" "}
-                {Math.min(paginaActual * elementosPorPagina, pagosFiltrados.length)} de{" "}
-                {pagosFiltrados.length} pagos
-              </span>
             </div>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
                 disabled={paginaActual === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-4 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Anterior
               </button>
-              <span className="px-2 font-bold text-slate-300">
-                Página {paginaActual} de {totalPaginas}
-              </span>
+              <span className="px-1 text-slate-400">Página {paginaActual} de {totalPaginas}</span>
               <button
                 onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
                 disabled={paginaActual === totalPaginas}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="h-11 rounded-xl border border-slate-800 px-4 text-slate-300 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Siguiente
               </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* RESUMEN DEL MES: al final, en una línea */}
+      <section aria-labelledby="titulo-mes" className="flex flex-col gap-3">
+        <h2 id="titulo-mes" className="text-base font-semibold text-slate-300">
+          {verTodos ? "Resumen total" : "Resumen del mes"}
+        </h2>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-slate-800 pt-4 text-[15px] text-slate-400">
+          <span>
+            {verTodos ? "Ingresos netos totales" : "Ingresos del mes"}
+            <strong className="ml-2 font-semibold text-white">${metrica.ingresosDelMes.toLocaleString("es-AR")}</strong>
+          </span>
+          <span>
+            Saldos y cuotas pendientes
+            <strong className="ml-2 font-semibold text-white">${metrica.pendientesMonto.toLocaleString("es-AR")}</strong>
+            <span className="ml-1 text-[13px] text-slate-500">({metrica.pendientesCount})</span>
+          </span>
+          <span>
+            Cuotas vencidas
+            <strong className="ml-2 font-semibold text-white">${metrica.vencidosMonto.toLocaleString("es-AR")}</strong>
+            <span className="ml-1 text-[13px] text-slate-500">({metrica.vencidosCount})</span>
+          </span>
+          <span>
+            Socios morosos hoy<strong className="ml-2 font-semibold text-white">{metrica.morosos}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setFiltro("VENCIDO")}
+            className="flex h-11 items-center rounded-xl border border-slate-800 px-4 text-sm text-slate-300 hover:bg-slate-900 sm:ml-auto"
+          >
+            Ver cuotas vencidas
+          </button>
+        </div>
+      </section>
 
       <Suspense fallback={null}>
         <CobrarPorParametro
           alumnos={alumnos}
           onSeleccionar={(dni) => {
+            setCobroPreseleccionado(null);
             setDniPreseleccionado(dni);
             setModalAbierto(true);
           }}
@@ -1159,9 +1055,12 @@ export default function FinanzasPage() {
           planes={planes}
           pagos={pagos}
           getEstadoCuenta={getEstadoCuenta}
+          cobrador={usuarioActual.nombre}
+          preseleccion={cobroPreseleccionado}
           alumnoInicialDni={dniPreseleccionado ?? undefined}
           onClose={() => { setModalAbierto(false); setDniPreseleccionado(null); }}
           onSubmit={handleNuevoPago}
+          onConsultarPagos={refrescarPagos}
           onAsignarCredenciales={asignarCredencialesAlumno}
         />
       )}
@@ -1221,91 +1120,89 @@ function ModalAnularPago({
   onCancel: () => void;
   onConfirm: (motivo: string) => void;
 }) {
-  const [motivo, setMotivo] = useState("");
-  const [error, setError] = useState("");
+  const [elegido, setElegido] = useState("");
+  const [detalle, setDetalle] = useState("");
+  const esOtro = elegido === MOTIVO_OTRO;
+  const motivo = (esOtro ? detalle : elegido).trim();
+  const motivoValido = motivo.length >= 4;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (motivo.trim().length < 4) {
-      setError("Indicá brevemente el motivo de anulación para la auditoría de caja.");
-      return;
-    }
-    onConfirm(motivo.trim());
+    if (motivoValido) onConfirm(motivo);
   };
 
   return (
-    <div
-      onClick={onCancel}
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
+    <div onClick={onCancel} className={claseFondoHoja}>
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-anular"
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4"
+        className={`${claseHoja} gap-4 overflow-y-auto px-5 pb-6 pt-2.5`}
       >
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30">
-          <Ban className="w-6 h-6" />
-        </div>
+        <span aria-hidden="true" className="h-[5px] w-11 shrink-0 self-center rounded-full bg-slate-700 md:hidden" />
         <div>
-          <h2 className="text-lg font-black text-white">Anular comprobante de caja</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            El comprobante de <span className="font-semibold text-white">{nombreAlumno}</span> por{" "}
-            <span className="font-semibold text-emerald-400">
-              ${obtenerMontoRecaudadoPago(pago).toLocaleString("es-AR")}
-            </span>{" "}
-            no se borrará: quedará registrado como <strong>ANULADO</strong> con tu usuario, fecha y motivo, descontándose de la recaudación y habilitando recobrar ese período.
-          </p>
+          <h2 id="titulo-anular" className="text-[26px] font-extrabold uppercase leading-tight text-white">Anular comprobante</h2>
+          <p className="mt-1.5 text-sm text-slate-400">No se borra: queda tachado en la caja, con tu nombre y el motivo.</p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          {MOTIVOS_ANULACION_RAPIDOS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => {
-                setMotivo(preset);
-                setError("");
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition-colors"
-            >
-              {preset}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[#0E1B36] p-3.5">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-white">{nombreAlumno}</p>
+            <p className="mt-0.5 text-[13px] text-slate-400">
+              {pago.plan}
+              <Separador />
+              {formatearMes(pago.periodoMes || pago.fecha.slice(0, 7))}
+              <Separador />
+              {pago.metodo}
+            </p>
+          </div>
+          <span className="shrink-0 font-display text-[26px] font-bold text-white">
+            ${obtenerMontoRecaudadoPago(pago).toLocaleString("es-AR")}
+          </span>
         </div>
 
-        <Field label="Motivo de anulación (obligatorio)">
-          <input
-            aria-label="Motivo de anulación"
-            value={motivo}
-            onChange={(e) => {
-              setMotivo(e.target.value);
-              if (error) setError("");
-            }}
-            placeholder="Ej: Importe mal tipeado, se recobra por monto real"
-            className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-rose-500 text-white placeholder-slate-500 text-sm"
-            autoFocus
-          />
-        </Field>
+        <div>
+          <p className="mb-2 text-[13px] font-semibold text-slate-400">Motivo (obligatorio)</p>
+          <div role="radiogroup" aria-label="Motivo de anulación" className="flex flex-wrap gap-2">
+            {MOTIVOS_ANULACION_RAPIDOS.map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                role="radio"
+                aria-checked={elegido === opcion}
+                onClick={() => setElegido(opcion)}
+                className={`h-11 rounded-full px-4 text-sm ${
+                  elegido === opcion
+                    ? "border-2 border-[#FF8A80] bg-[#FF8A80]/15 font-bold text-white"
+                    : "border border-[#2A4677] font-semibold text-slate-300"
+                }`}
+              >
+                {opcion}
+              </button>
+            ))}
+          </div>
+          {esOtro && (
+            <label className="mt-3 block text-[13px] font-semibold text-slate-400">
+              Contanos qué pasó
+              <textarea
+                rows={2}
+                autoFocus
+                value={detalle}
+                onChange={(e) => setDetalle(e.target.value)}
+                className="mt-1.5 block w-full resize-none rounded-xl border border-[#2A4677] bg-[#0E1B36] p-3 text-[15px] font-normal text-slate-100 outline-none focus:border-blue-400"
+              />
+            </label>
+          )}
+        </div>
 
-        {error && (
-          <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-          >
-            Cancelar
+        <div className="grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={onCancel} className="h-[54px] rounded-[14px] border border-[#2A4677] text-base font-semibold text-slate-100">
+            Volver
           </button>
-          <button
-            type="submit"
-            className="h-11 rounded-xl bg-rose-600 px-5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-colors"
-          >
-            Confirmar anulación
+          <button type="submit" disabled={!motivoValido} className="h-[54px] rounded-[14px] bg-[#C4362F] text-base font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+            Anular
           </button>
         </div>
       </form>
@@ -1342,7 +1239,7 @@ function ModalCompletarSaldo({
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Completar saldo pendiente</h2>
+          <h2 className="text-2xl font-black text-white">Completar saldo pendiente</h2>
           <p className="mt-1 text-sm text-slate-400">
             <span className="font-semibold text-white">{nombreAlumno}</span> dejó una seña de{" "}
             <strong className="text-slate-200">${abonado.toLocaleString("es-AR")}</strong>. Resta cobrar{" "}
@@ -1432,7 +1329,7 @@ function ModalDatosCobro({
           <Landmark className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Datos de cobro por transferencia</h2>
+          <h2 className="text-2xl font-black text-white">Datos de cobro por transferencia</h2>
           <p className="mt-1 text-sm text-slate-400">
             Es lo que ven los alumnos en <strong className="text-slate-200">Mis cuotas</strong> y lo que se
             incluye en los recordatorios por WhatsApp. Si lo dejás vacío, se les indica abonar en recepción.
@@ -1555,21 +1452,30 @@ function ModalRegistrarPago({
   planes,
   pagos,
   getEstadoCuenta,
+  cobrador,
+  preseleccion,
   alumnoInicialDni,
   onClose,
   onSubmit,
+  onConsultarPagos,
   onAsignarCredenciales,
 }: {
   alumnos: Alumno[];
   planes: Plan[];
   pagos: Pago[];
   getEstadoCuenta: (alumnoId: string) => EstadoCuenta;
+  cobrador: string;
+  preseleccion: CobroPreseleccionado | null;
   alumnoInicialDni?: string;
   onClose: () => void;
-  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => void;
+  onSubmit: (pago: Omit<Pago, "id"> & { usuarioApp?: string; passwordApp?: string }) => Promise<ResultadoAgregarPago>;
+  onConsultarPagos: () => Promise<boolean>;
   onAsignarCredenciales: (alumnoId: string, usuario: string, password: string) => Promise<void>;
 }) {
-  const primerAlumno = (alumnoInicialDni ? alumnos.find((a) => a.dni === alumnoInicialDni) : undefined) ?? alumnos[0];
+  const primerAlumno =
+    alumnos.find((a) => a.id === preseleccion?.alumnoId) ??
+    (alumnoInicialDni ? alumnos.find((a) => a.dni === alumnoInicialDni) : undefined) ??
+    alumnos[0];
   const obtenerPlanYPrecio = (alumno?: Alumno) => {
     if (!alumno) return { planNombre: "", planPrecio: "" };
     const planObj = planes.find(
@@ -1584,6 +1490,7 @@ function ModalRegistrarPago({
   };
 
   const inicial = obtenerPlanYPrecio(primerAlumno);
+  const mesesIniciales = preseleccion?.meses ?? 1;
 
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
   const [esSeniaParcial, setEsSeniaParcial] = useState(false);
@@ -1591,10 +1498,10 @@ function ModalRegistrarPago({
   const [form, setForm] = useState({
     alumnoId: primerAlumno?.id ?? "",
     plan: inicial.planNombre,
-    monto: inicial.planPrecio,
+    monto: inicial.planPrecio ? String(Number(inicial.planPrecio) * mesesIniciales) : "",
     fecha: fechaLocalHoy(),
-    periodoMes: mesActualISO(),
-    cantidadMeses: 1,
+    periodoMes: preseleccion?.periodo ?? mesActualISO(),
+    cantidadMeses: mesesIniciales,
     metodo: "Efectivo",
     estado: "PAGADO" as EstadoPago,
   });
@@ -1604,6 +1511,21 @@ function ModalRegistrarPago({
   const [usuarioApp, setUsuarioApp] = useState(() => sugerirUsuarioAlumno(primerAlumno));
   const [passwordApp, setPasswordApp] = useState("");
   const [errorValidacion, setErrorValidacion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [incierto, setIncierto] = useState(false);
+  const [consultando, setConsultando] = useState(false);
+  const enviando = useRef(false);
+  const cerrar = () => { if (!enviando.current && !consultando) onClose(); };
+  const consultar = async () => {
+    if (consultando) return;
+    setConsultando(true);
+    try {
+      if (await onConsultarPagos()) onClose();
+      else setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } catch {
+      setErrorValidacion("No pudimos actualizar los pagos. El resultado sigue sin confirmar; no vuelvas a cobrar todavía.");
+    } finally { setConsultando(false); }
+  };
 
   const alumnosFiltrados = alumnos.filter(
     (a) =>
@@ -1613,6 +1535,8 @@ function ModalRegistrarPago({
   );
   const alumnoSeleccionado = alumnos.find((a) => a.id === form.alumnoId);
   const estadoCuentaSeleccionado = form.alumnoId ? getEstadoCuenta(form.alumnoId) : "AL_DIA";
+
+  const [cambiandoAlumno, setCambiandoAlumno] = useState(!preseleccion);
 
   const mesActual = mesActualISO();
   const mesAnterior = sumarMesesPeriodo(mesActual, -1);
@@ -1692,8 +1616,9 @@ function ModalRegistrarPago({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (enviando.current || incierto) return;
     const montoNum = Number(form.monto);
     if (!form.alumnoId) {
       setErrorValidacion("Seleccioná un alumno");
@@ -1745,7 +1670,10 @@ function ModalRegistrarPago({
     const incluyeCredenciales =
       tipoMensaje === "bienvenida" && usuarioApp.trim() && passwordApp.trim();
 
-    onSubmit({
+    enviando.current = true;
+    setGuardando(true);
+    try {
+    const resultado = await onSubmit({
       ...form,
       estado: estadoFinal,
       planId: planObj?.id ?? alumnoSeleccionado?.planId,
@@ -1760,306 +1688,332 @@ function ModalRegistrarPago({
           }
         : {}),
     });
+    if (!resultado.ok) {
+      setErrorValidacion(resultado.error);
+      setIncierto(Boolean(resultado.esIncierto));
+    }
+    } catch {
+      setErrorValidacion("No pudimos confirmar el resultado. Revisá los pagos antes de volver a cobrar.");
+      setIncierto(true);
+    } finally { enviando.current = false; setGuardando(false); }
   };
 
+  const saldoSenia = Number(form.monto) - Number(montoSenia);
+  const opcionesVigencia = OPCIONES_VIGENCIA_MESES.some((o) => o.value === form.cantidadMeses)
+    ? OPCIONES_VIGENCIA_MESES
+    : [...OPCIONES_VIGENCIA_MESES, { value: form.cantidadMeses, label: `${form.cantidadMeses} meses` }];
+  const claseSegmento = (activo: boolean) =>
+    `h-11 rounded-[10px] text-[15px] ${activo ? "bg-blue-600 font-bold text-white" : "font-semibold text-slate-300"}`;
+
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-    >
+    <div onClick={cerrar} className={claseFondoHoja}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-cobrar"
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 rounded-3xl shadow-2xl text-slate-100 border border-slate-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className={claseHoja}
       >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-black text-white">Registrar pago</h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="text-slate-400 hover:text-white rounded-full p-1.5 hover:bg-slate-800 transition-colors active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex shrink-0 flex-col gap-1 px-5 pt-2.5">
+          <span aria-hidden="true" className="h-[5px] w-11 self-center rounded-full bg-slate-700 md:hidden" />
+          <div className="flex items-center justify-between">
+            <h2 id="titulo-cobrar" className="text-[26px] font-extrabold uppercase text-white">Cobrar cuota</h2>
+            <button type="button" onClick={cerrar} disabled={guardando || consultando} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-xl text-slate-300 hover:bg-slate-800 disabled:opacity-40">
+              <X className="size-5" />
+            </button>
+          </div>
         </div>
 
         {alumnos.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="px-5 pb-8 pt-4 text-center">
             <p className="text-sm text-slate-400">
               Todavía no hay alumnos cargados. Agregá un alumno primero para poder registrarle un pago.
             </p>
-            <Link
-              href="/alumnos"
-              className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold h-10 px-5 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
-            >
+            <Link href="/alumnos" className="mt-4 inline-flex h-11 items-center rounded-xl bg-blue-600 px-5 text-sm font-bold text-white hover:bg-blue-500">
               Ir a Alumnos
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Alumno">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={busquedaAlumno}
-                  onChange={(e) => setBusquedaAlumno(e.target.value)}
-                  placeholder="Buscar alumno por nombre o DNI..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                />
-              </div>
-              {alumnosFiltrados.length === 0 ? (
-                <p className="text-xs text-slate-400 py-2 italic text-center">No se encontraron alumnos con ese nombre o DNI</p>
-              ) : (
-                <select
-                  aria-label="Alumno"
-                  value={form.alumnoId}
-                  onChange={(e) => handleAlumnoChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm mt-1.5 cursor-pointer"
-                  required
-                  size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
-                >
-                  {alumnosFiltrados.map((a) => (
-                    <option key={a.id} value={a.id} className="py-1 bg-slate-900 text-white">
-                      {a.nombre} {a.dni ? `(${a.dni})` : ""}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
-
-            {/* Asistente de imputación para socios MOROSOS */}
-            {estadoCuentaSeleccionado === "MOROSO" && (
-              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-3.5 space-y-2">
-                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  Socio moroso: elegí cómo imputar este cobro
-                </p>
-                <div className="flex flex-col gap-1.5">
+          <form onSubmit={handleSubmit} aria-busy={guardando} className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-4 pt-2">
+            <fieldset disabled={guardando || incierto} className="flex min-w-0 flex-col gap-4 border-0">
+              {alumnoSeleccionado && (
+                <div className="flex items-center gap-3 rounded-[14px] bg-[#0E1B36] p-3">
+                  <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#1E3663] text-sm font-bold text-blue-200">
+                    {inicialesDe(alumnoSeleccionado.nombre)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{alumnoSeleccionado.nombre}</p>
+                    <p className="mt-0.5 truncate text-[13px] text-slate-400">
+                      {form.plan || "Sin plan"}
+                      <Separador />
+                      {formatearMes(periodoInicioEfectivo)}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => aplicarImputacionMoroso(mesAnterior, 1)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesAnterior && form.cantidadMeses === 1
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
+                    onClick={() => setCambiandoAlumno((v) => !v)}
+                    aria-expanded={cambiandoAlumno}
+                    className="h-11 shrink-0 rounded-lg border border-[#2A4677] px-2.5 text-[13px] font-semibold text-slate-300"
                   >
-                    1. Saldar solo mes adeudado ({mesAnterior})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarImputacionMoroso(mesAnterior, 2)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesAnterior && form.cantidadMeses === 2
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    2. Ponerse al día: deuda + mes actual (2 meses)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarImputacionMoroso(mesActual, 1)}
-                    className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                      form.periodoMes === mesActual && form.cantidadMeses === 1
-                        ? "bg-amber-500/25 border-amber-400 text-white"
-                        : "bg-slate-900/70 border-slate-700 text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    3. Reactivar desde mes actual ({mesActual})
+                    {cambiandoAlumno ? "Listo" : "Cambiar"}
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            <Field label="Plan">
-              <input
-                aria-label="Plan"
-                value={form.plan}
-                onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                placeholder="Ej: Musculación"
-              />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Valor total cuota ($)">
-                <input
-                  aria-label="Monto"
-                  type="number"
-                  value={form.monto}
-                  onChange={(e) => setForm({ ...form, monto: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white placeholder-slate-500 text-sm"
-                  placeholder="$"
-                  required
-                />
-              </Field>
-              <Field label="Fecha de pago">
-                <input
-                  aria-label="Fecha"
-                  type="date"
-                  value={form.fecha}
-                  onChange={(e) => {
-                    const nuevaFecha = e.target.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      fecha: nuevaFecha,
-                      periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7),
-                    }));
-                  }}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                />
-              </Field>
-            </div>
-
-            {/* Opción de Seña / Entrega Parcial */}
-            <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-3.5 space-y-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={esSeniaParcial}
-                  onChange={(e) => setEsSeniaParcial(e.target.checked)}
-                  className="size-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-xs font-bold text-slate-200">
-                  Dejó una seña / entrega parcial (resta completar saldo)
-                </span>
-              </label>
-
-              {esSeniaParcial && (
-                <div className="space-y-1.5 pt-1">
-                  <Field label="Importe entregado hoy ($)">
+              {cambiandoAlumno && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
                     <input
+                      type="text"
+                      aria-label="Buscar alumno"
+                      value={busquedaAlumno}
+                      onChange={(e) => setBusquedaAlumno(e.target.value)}
+                      placeholder="Buscar alumno por nombre o DNI..."
+                      className={`${claseCampoHoja} pl-9`}
+                    />
+                  </div>
+                  {alumnosFiltrados.length === 0 ? (
+                    <p className="py-2 text-center text-[13px] text-slate-500">No se encontraron alumnos con ese nombre o DNI</p>
+                  ) : (
+                    <select
+                      aria-label="Alumno"
+                      value={form.alumnoId}
+                      onChange={(e) => handleAlumnoChange(e.target.value)}
+                      className="w-full cursor-pointer rounded-xl border border-[#2A4677] bg-[#0E1B36] px-3 py-2 text-[15px] text-slate-100 outline-none focus:border-blue-400"
+                      required
+                      size={Math.min(Math.max(alumnosFiltrados.length, 2), 5)}
+                    >
+                      {alumnosFiltrados.map((a) => (
+                        <option key={a.id} value={a.id} className="py-1">
+                          {a.nombre} {a.dni ? `(${a.dni})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {/* Asistente de imputación para socios MOROSOS */}
+              {/* Si viene de la ficha, los meses ya se eligieron ahí */}
+              {estadoCuentaSeleccionado === "MOROSO" && !(preseleccion?.periodo && preseleccion.alumnoId === form.alumnoId) && (
+                <div className="flex flex-col gap-2 rounded-[14px] border border-amber-500/30 p-3">
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-400">
+                    <AlertCircle className="size-3.5 shrink-0" />
+                    Socio moroso: elegí cómo imputar este cobro
+                  </p>
+                  {[
+                    { periodo: mesAnterior, meses: 1, texto: `Saldar solo el mes adeudado (${formatearMes(mesAnterior)})` },
+                    { periodo: mesAnterior, meses: 2, texto: "Ponerse al día: deuda + mes actual (2 meses)" },
+                    { periodo: mesActual, meses: 1, texto: `Reactivar desde el mes actual (${formatearMes(mesActual)})` },
+                  ].map((o) => {
+                    const activo = form.periodoMes === o.periodo && form.cantidadMeses === o.meses;
+                    return (
+                      <button
+                        key={o.texto}
+                        type="button"
+                        aria-pressed={activo}
+                        onClick={() => aplicarImputacionMoroso(o.periodo, o.meses)}
+                        className={`min-h-11 rounded-xl border px-3 py-1.5 text-left text-[13px] font-semibold ${
+                          activo ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#2A4677] text-slate-300"
+                        }`}
+                      >
+                        {o.texto}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div role="radiogroup" aria-label="Tipo de pago" className="grid shrink-0 grid-cols-2 gap-1.5 rounded-xl bg-[#0E1B36] p-1">
+                <button type="button" role="radio" aria-checked={!esSeniaParcial} onClick={() => setEsSeniaParcial(false)} className={claseSegmento(!esSeniaParcial)}>
+                  Pago completo
+                </button>
+                <button type="button" role="radio" aria-checked={esSeniaParcial} onClick={() => setEsSeniaParcial(true)} className={claseSegmento(esSeniaParcial)}>
+                  Seña parcial
+                </button>
+              </div>
+
+              <div>
+                <label htmlFor="monto-cobro" className="mb-1.5 block text-[13px] font-semibold text-slate-400">
+                  {esSeniaParcial ? "Entrega hoy" : "Importe"}
+                </label>
+                <div className="flex h-16 items-center gap-2 rounded-[14px] border-2 border-blue-600 bg-[#0E1B36] px-4">
+                  <span aria-hidden="true" className="font-display text-4xl font-bold text-slate-500">$</span>
+                  {esSeniaParcial ? (
+                    <input
+                      id="monto-cobro"
                       aria-label="Importe entregado hoy"
                       type="number"
+                      inputMode="numeric"
                       value={montoSenia}
                       onChange={(e) => setMontoSenia(e.target.value)}
-                      placeholder="Ej: 10000"
-                      className="w-full px-3.5 py-2 bg-slate-800/80 border border-sky-500/40 rounded-xl outline-none focus:border-sky-400 text-white text-sm"
+                      className={claseMontoGrande}
                     />
-                  </Field>
-                  {Number(form.monto) > 0 && Number(montoSenia) > 0 && Number(montoSenia) < Number(form.monto) && (
-                    <p className="text-[11px] font-bold text-sky-300">
-                      Quedará un saldo pendiente de $
-                      {(Number(form.monto) - Number(montoSenia)).toLocaleString("es-AR")}.
-                    </p>
+                  ) : (
+                    <input
+                      id="monto-cobro"
+                      aria-label="Monto"
+                      type="number"
+                      inputMode="numeric"
+                      value={form.monto}
+                      onChange={(e) => setForm({ ...form, monto: e.target.value })}
+                      className={claseMontoGrande}
+                      required
+                    />
                   )}
                 </div>
+                {esSeniaParcial && Number(montoSenia) > 0 && saldoSenia > 0 && (
+                  <p className="mt-2 text-sm text-amber-400">
+                    Queda saldo de ${saldoSenia.toLocaleString("es-AR")}
+                    <Separador />
+                    aparece en “Para resolver”
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[13px] font-semibold text-slate-400">Medio de pago</p>
+                <div role="radiogroup" aria-label="Medio de pago" className="grid grid-cols-3 gap-2">
+                  {["Efectivo", "Transferencia", "Tarjeta"].map((metodo) => (
+                    <button
+                      key={metodo}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.metodo === metodo}
+                      onClick={() => setForm({ ...form, metodo })}
+                      className={`h-[52px] rounded-xl text-sm ${
+                        form.metodo === metodo
+                          ? "border-2 border-blue-400 bg-[#1E3663] font-bold text-white"
+                          : "border border-[#2A4677] font-semibold text-slate-300"
+                      }`}
+                    >
+                      {metodo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {pagoSolapado && (
+                <p className="flex gap-2 text-[13px] font-semibold text-amber-400">
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    Este socio ya registra un comprobante ({pagoSolapado.estado}) que cubre {pagoSolapado.periodoMes}. Para evitar cobros duplicados, elegí otro período o anulá el anterior.
+                  </span>
+                </p>
+              )}
+
+              {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
+                <p className="text-[13px] text-blue-300">
+                  Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta {formatearMes(periodoFinEfectivo)} (próximo vencimiento: {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
+                </p>
+              )}
+
+              <details className="group rounded-[14px] border border-[#2A4677]">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold text-slate-300">
+                  Más datos del cobro
+                  <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="flex flex-col gap-3 border-t border-[#2A4677] p-3">
+                  <Field label="Plan">
+                    <input aria-label="Plan" value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} placeholder="Ej: Musculación" className={claseCampoHoja} />
+                  </Field>
+                  {esSeniaParcial && (
+                    <Field label="Valor total cuota ($)">
+                      <input aria-label="Monto" type="number" value={form.monto} onChange={(e) => setForm({ ...form, monto: e.target.value })} className={claseCampoHoja} required />
+                    </Field>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Fecha de pago">
+                      <input
+                        aria-label="Fecha"
+                        type="date"
+                        value={form.fecha}
+                        onChange={(e) => {
+                          const nuevaFecha = e.target.value;
+                          setForm((prev) => ({ ...prev, fecha: nuevaFecha, periodoMes: prev.periodoMes || nuevaFecha.slice(0, 7) }));
+                        }}
+                        className={claseCampoHoja}
+                      />
+                    </Field>
+                    <Field label="Mes que abona">
+                      <input aria-label="Mes que abona" type="month" value={form.periodoMes} onChange={(e) => setForm({ ...form, periodoMes: e.target.value })} className={claseCampoHoja} required />
+                    </Field>
+                    <Field label="Vigencia">
+                      <select aria-label="Vigencia / Meses" value={form.cantidadMeses} onChange={(e) => handleCantidadMesesChange(Number(e.target.value))} className={claseCampoHoja}>
+                        {opcionesVigencia.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Estado">
+                      <select
+                        disabled={esSeniaParcial}
+                        value={esSeniaParcial ? "PARCIAL" : form.estado}
+                        onChange={(e) => setForm({ ...form, estado: e.target.value as EstadoPago })}
+                        className={`${claseCampoHoja} disabled:opacity-60`}
+                      >
+                        <option value="PAGADO">Pagado</option>
+                        {esSeniaParcial && <option value="PARCIAL">Seña parcial</option>}
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="VENCIDO">Vencido</option>
+                      </select>
+                    </Field>
+                  </div>
+                  <SeccionNotificarWhatsapp
+                    alumnoId={form.alumnoId}
+                    alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
+                    plan={form.plan}
+                    monto={esSeniaParcial && montoSenia ? montoSenia : form.monto}
+                    cantidadMeses={form.cantidadMeses}
+                    celular={celular}
+                    onCelularChange={setCelular}
+                    tipoMensaje={tipoMensaje}
+                    onTipoMensajeChange={(nuevoTipo) => {
+                      setTipoMensaje(nuevoTipo);
+                      if (nuevoTipo === "bienvenida") {
+                        if (!usuarioApp.trim() && alumnoSeleccionado) {
+                          setUsuarioApp(sugerirUsuarioAlumno(alumnoSeleccionado));
+                        }
+                        if (!passwordApp.trim()) {
+                          setPasswordApp(generarPassword());
+                        }
+                      }
+                    }}
+                    usuarioApp={usuarioApp}
+                    onUsuarioAppChange={setUsuarioApp}
+                    passwordApp={passwordApp}
+                    onPasswordAppChange={setPasswordApp}
+                    onAsignarCredenciales={onAsignarCredenciales}
+                  />
+                </div>
+              </details>
+            </fieldset>
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-3 border-t border-[#2A4677] px-5 pb-6 pt-3">
+              {errorValidacion && <p role="alert" className="text-[13px] font-semibold text-rose-400">{errorValidacion}</p>}
+              <p className="text-[13px] text-slate-500">
+                Cobra: {cobrador}
+                <Separador />
+                {form.fecha === fechaLocalHoy()
+                  ? `Hoy ${new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                  : formatFechaAR(form.fecha)}
+              </p>
+              <button
+                type="submit"
+                disabled={guardando || incierto}
+                className="min-h-14 rounded-[14px] bg-blue-600 px-3 text-[17px] font-bold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+              >
+                {guardando ? "Registrando…" : esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
+              </button>
+              {incierto && (
+                <button type="button" disabled={consultando} onClick={consultar} className="min-h-11 rounded-xl border border-[#2A4677] px-3 text-sm font-semibold text-slate-100 disabled:opacity-60">
+                  {consultando ? "Consultando…" : "Consultar pagos registrados"}
+                </button>
               )}
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Mes que abona (Período)">
-                <input
-                  aria-label="Mes que abona"
-                  type="month"
-                  value={form.periodoMes}
-                  onChange={(e) => setForm({ ...form, periodoMes: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                  required
-                />
-              </Field>
-              <Field label="Vigencia / Meses">
-                <select
-                  aria-label="Vigencia / Meses"
-                  value={form.cantidadMeses}
-                  onChange={(e) => handleCantidadMesesChange(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                >
-                  {OPCIONES_VIGENCIA_MESES.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-
-            {pagoSolapado && (
-              <p className="text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
-                ⚠️ Este socio ya registra un comprobante ({pagoSolapado.estado}) que cubre{" "}
-                <strong>{pagoSolapado.periodoMes}</strong>. Para evitar cobros duplicados, seleccioná otro período o anulá el anterior.
-              </p>
-            )}
-
-            {form.cantidadMeses > 1 && /^\d{4}-\d{2}$/.test(periodoInicioEfectivo) && (
-              <p className="text-[11px] font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
-                Cubre {form.cantidadMeses} meses: {formatearMes(periodoInicioEfectivo)} hasta{" "}
-                {formatearMes(periodoFinEfectivo)} (próximo vencimiento:{" "}
-                {calcularVencimientoCuota("AL_DIA", new Date(), periodoFinEfectivo)}).
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Método">
-                <select
-                  value={form.metodo}
-                  onChange={(e) => setForm({ ...form, metodo: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm"
-                >
-                  <option className="bg-slate-900 text-white">Efectivo</option>
-                  <option className="bg-slate-900 text-white">Transferencia</option>
-                  <option className="bg-slate-900 text-white">Tarjeta</option>
-                </select>
-              </Field>
-              <Field label="Estado">
-                <select
-                  disabled={esSeniaParcial}
-                  value={esSeniaParcial ? "PARCIAL" : form.estado}
-                  onChange={(e) =>
-                    setForm({ ...form, estado: e.target.value as EstadoPago })
-                  }
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white text-sm disabled:opacity-60"
-                >
-                  <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
-                  {esSeniaParcial && (
-                    <option value="PARCIAL" className="bg-slate-900 text-white">Seña parcial</option>
-                  )}
-                  <option value="PENDIENTE" className="bg-slate-900 text-white">Pendiente</option>
-                  <option value="VENCIDO" className="bg-slate-900 text-white">Vencido</option>
-                </select>
-              </Field>
-            </div>
-
-            {errorValidacion && (
-              <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
-                {errorValidacion}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-[color,background-color,transform] duration-200 active:scale-95"
-            >
-              {esSeniaParcial ? "Guardar seña parcial" : "Guardar pago"}
-            </button>
-
-            <SeccionNotificarWhatsapp
-              alumnoId={form.alumnoId}
-              alumnoNombre={alumnoSeleccionado?.nombre ?? ""}
-              plan={form.plan}
-              monto={esSeniaParcial && montoSenia ? montoSenia : form.monto}
-              cantidadMeses={form.cantidadMeses}
-              celular={celular}
-              onCelularChange={setCelular}
-              tipoMensaje={tipoMensaje}
-              onTipoMensajeChange={(nuevoTipo) => {
-                setTipoMensaje(nuevoTipo);
-                if (nuevoTipo === "bienvenida") {
-                  if (!usuarioApp.trim() && alumnoSeleccionado) {
-                    setUsuarioApp(sugerirUsuarioAlumno(alumnoSeleccionado));
-                  }
-                  if (!passwordApp.trim()) {
-                    setPasswordApp(generarPassword());
-                  }
-                }
-              }}
-              usuarioApp={usuarioApp}
-              onUsuarioAppChange={setUsuarioApp}
-              passwordApp={passwordApp}
-              onPasswordAppChange={setPasswordApp}
-              onAsignarCredenciales={onAsignarCredenciales}
-            />
           </form>
         )}
       </div>
@@ -2229,7 +2183,7 @@ function SeccionNotificarWhatsapp({
               </div>
             </Field>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-400">
             {credencialesGuardadas ? (
               <span className="text-emerald-400 font-semibold">
                 ✓ Credenciales activadas en el sistema para el ingreso del alumno.

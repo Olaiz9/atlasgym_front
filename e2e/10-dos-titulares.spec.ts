@@ -17,7 +17,7 @@ test('guardar una ficha que el otro titular cambió mientras tanto no pisa su ca
   // Titular 1 abre la ficha en su celular...
   await iniciarSesionTitular(page)
   await page.goto('/alumnos')
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await page.getByRole('button', { name: `Editar a ${original}` }).click()
 
   // ...mientras el titular 2 le cambia el celular desde el suyo
@@ -51,7 +51,7 @@ test('el padrón no queda guardado en el teléfono: siempre se pide al servidor'
 
   await iniciarSesionTitular(page)
   await page.goto('/alumnos')
-  await page.getByPlaceholder('Buscar alumno...').fill(dni)
+  await page.getByPlaceholder('Nombre, DNI o celular').fill(dni)
   await expect(page.getByRole('button', { name: `Editar a ${nombre}` })).toBeVisible()
 
   const clavesConDatos = () =>
@@ -70,7 +70,7 @@ test('el padrón no queda guardado en el teléfono: siempre se pide al servidor'
     )
   )
   await page.reload()
-  await page.getByPlaceholder('Buscar alumno...').fill('Fantasma')
+  await page.getByPlaceholder('Nombre, DNI o celular').fill('Fantasma')
   await expect(page.getByText('Socio Fantasma De Copia Vieja')).toHaveCount(0)
   expect(await clavesConDatos()).toEqual([])
 })

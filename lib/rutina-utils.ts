@@ -1,5 +1,5 @@
 // lib/rutina-utils.ts
-import { RegistroSerie, VideoTecnica, Rutina } from "./types";
+import { RegistroSerie, VideoTecnica, Rutina, SesionEntrenamiento } from "./types";
 
 /**
  * Busca un video de técnica en el catálogo cuyo título coincida
@@ -71,6 +71,49 @@ export function formatPrevia(serie: RegistroSerie | undefined): string {
 /**
  * Clave unificada para almacenar borradores de entrenamientos en curso en localStorage.
  */
+type SesionParaDia = Pick<SesionEntrenamiento, "rutinaId" | "diaId" | "fecha">;
+
+/** Última sesión del alumno. En la misma fecha gana la cargada después (las locales aún no tienen id numérico). */
+export function ultimaSesionDeAlumno<T extends SesionParaDia & Pick<SesionEntrenamiento, "id" | "alumnoId">>(
+  sesiones: T[],
+  alumnoId: string
+): T | undefined {
+  const orden = (id: string) => (/^\d+$/.test(id) ? Number(id) : Infinity);
+  return sesiones
+    .filter((s) => s.alumnoId === alumnoId)
+    .reduce<T | undefined>((ultima, s) => {
+      if (!ultima || s.fecha > ultima.fecha) return s;
+      return s.fecha === ultima.fecha && orden(s.id) >= orden(ultima.id) ? s : ultima;
+    }, undefined);
+}
+
+/**
+ * Día que le toca al socio: el mismo si ya entrenó hoy, si no el siguiente de la rutina
+ * (después del último, el primero). Sin sesión de esta rutina, el primero.
+ */
+export function indiceDiaDeRutina(
+  rutina: { id: string; dias: { id: string }[] },
+  ultima: SesionParaDia | undefined,
+  hoy: string
+): number {
+  if (!ultima || ultima.rutinaId !== rutina.id) return 0;
+  const indice = rutina.dias.findIndex((d) => d.id === ultima.diaId);
+  if (indice === -1) return 0;
+  return ultima.fecha.slice(0, 10) === hoy ? indice : (indice + 1) % rutina.dias.length;
+}
+
+/** Día con el que se abre la rutina: el elegido a mano hoy o, si no hubo, el que le toca. */
+export function diaInicialDeRutina(
+  rutina: Pick<Rutina, "id" | "dias">,
+  sesiones: SesionEntrenamiento[],
+  alumnoId: string,
+  hoy: string
+): number {
+  const borrador = obtenerBorradorEntrenamiento(alumnoId, rutina.id, hoy);
+  if (borrador?.diaElegidoAMano && borrador.diaActivo < rutina.dias.length) return borrador.diaActivo;
+  return indiceDiaDeRutina(rutina, ultimaSesionDeAlumno(sesiones, alumnoId), hoy);
+}
+
 export function getClaveBorradorEntrenamiento(alumnoId: string, rutinaId: string, fecha: string): string {
   return `atlas_borrador_${alumnoId}_${rutinaId}_${fecha}`;
 }
@@ -82,7 +125,11 @@ export function obtenerBorradorEntrenamiento(
   alumnoId: string,
   rutinaId: string,
   fecha: string
-): { diaActivo: number; seriesPorDia: Record<string, Record<string, RegistroSerie[]>> } | null {
+): {
+  diaActivo: number;
+  diaElegidoAMano?: boolean;
+  seriesPorDia: Record<string, Record<string, RegistroSerie[]>>;
+} | null {
   if (typeof window === "undefined") return null;
   try {
     const key = getClaveBorradorEntrenamiento(alumnoId, rutinaId, fecha);
@@ -92,6 +139,7 @@ export function obtenerBorradorEntrenamiento(
     if (parsed && typeof parsed === "object" && parsed.seriesPorDia) {
       return {
         diaActivo: typeof parsed.diaActivo === "number" ? parsed.diaActivo : 0,
+        ...(parsed.diaElegidoAMano === true ? { diaElegidoAMano: true } : {}),
         seriesPorDia: parsed.seriesPorDia,
       };
     }
