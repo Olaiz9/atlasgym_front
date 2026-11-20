@@ -211,22 +211,36 @@ export default function TotemPage() {
     if (terminalAutorizada && usuarioActual) cerrarSesion()
   }, [terminalAutorizada, usuarioActual, cerrarSesion])
 
-  const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
+  // El modo tótem siempre exige autorizar la terminal (PIN o clave), incluso si había un ADMIN logueado,
+  // para garantizar que quede marcado atlas_totem_terminal_autorizada y se cierre la sesión del titular.
+  const esAutorizada = montado && !bloqueadaManualmente && terminalAutorizada
 
   // Trampa de historial en modo kiosco: evita que el botón "Atrás" de la tablet Android
   // saque al socio de /totem y lo devuelva al panel administrativo.
+  // Se refuerza también ante gestos del usuario (pointerdown) para que Chrome Android no ignore
+  // la entrada del historial (History Manipulation Intervention).
   useEffect(() => {
     if (!montado || !esAutorizada || typeof window === 'undefined') return
-    try {
-      window.history.pushState({ totemKiosco: true }, '', '/totem')
-    } catch {}
-    const bloquearBotonAtras = () => {
+    const empujarEstadoKiosco = () => {
       try {
         window.history.pushState({ totemKiosco: true }, '', '/totem')
       } catch {}
     }
+    empujarEstadoKiosco()
+    const bloquearBotonAtras = () => {
+      empujarEstadoKiosco()
+    }
+    const reforzarConGesto = () => {
+      if (!window.history.state?.totemKiosco) {
+        empujarEstadoKiosco()
+      }
+    }
     window.addEventListener('popstate', bloquearBotonAtras)
-    return () => window.removeEventListener('popstate', bloquearBotonAtras)
+    window.addEventListener('pointerdown', reforzarConGesto, { passive: true })
+    return () => {
+      window.removeEventListener('popstate', bloquearBotonAtras)
+      window.removeEventListener('pointerdown', reforzarConGesto)
+    }
   }, [montado, esAutorizada])
 
   // Auto-enfoque de inputs según pantalla activa (solo en dispositivos con puntero fino / PC,
@@ -251,6 +265,9 @@ export default function TotemPage() {
       if (nuevoPin === pinEsperado) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
+          try {
+            window.history.pushState({ totemKiosco: true }, '', '/totem')
+          } catch {}
         }
         setBloqueadaManualmente(false)
         setTerminalAutorizada(true)
