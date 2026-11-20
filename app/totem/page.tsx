@@ -206,6 +206,11 @@ export default function TotemPage() {
     setMontado(true)
   }, [])
 
+  // En modo tótem no puede quedar abierta la sesión de nadie.
+  useEffect(() => {
+    if (terminalAutorizada && usuarioActual) cerrarSesion()
+  }, [terminalAutorizada, usuarioActual, cerrarSesion])
+
   const esAutorizada = montado && !bloqueadaManualmente && (terminalAutorizada || (usuarioActual && usuarioActual.rol === 'ADMIN'))
 
   // Trampa de historial en modo kiosco: evita que el botón "Atrás" de la tablet Android
@@ -247,9 +252,6 @@ export default function TotemPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
         }
-        if (usuarioActual) {
-          cerrarSesion()
-        }
         setBloqueadaManualmente(false)
         setTerminalAutorizada(true)
         setPinInput('')
@@ -265,7 +267,24 @@ export default function TotemPage() {
         }, 900)
       }
     }
-  }, [usuarioActual, cerrarSesion])
+  }, [])
+
+  const procesarPinSalida = useCallback((nuevo: string) => {
+    setPinSalidaInput(nuevo)
+    setErrorPinSalida(false)
+    if (nuevo.length === 4) {
+      const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
+      if (nuevo === pinEsperado) {
+        setPinSalidaVerificado(true)
+      } else {
+        setErrorPinSalida(true)
+        setTimeout(() => {
+          setPinSalidaInput('')
+          setErrorPinSalida(false)
+        }, 700)
+      }
+    }
+  }, [])
 
   const manejarDigitoPin = useCallback((digito: string) => {
     const actual = pinInputRef.current
@@ -1224,21 +1243,7 @@ export default function TotemPage() {
                       type="button"
                       onClick={() => {
                         if (pinSalidaInput.length >= 4) return
-                        const nuevo = pinSalidaInput + n
-                        setPinSalidaInput(nuevo)
-                        setErrorPinSalida(false)
-                        if (nuevo.length === 4) {
-                          const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
-                          if (nuevo === pinEsperado) {
-                            setPinSalidaVerificado(true)
-                          } else {
-                            setErrorPinSalida(true)
-                            setTimeout(() => {
-                              setPinSalidaInput('')
-                              setErrorPinSalida(false)
-                            }, 700)
-                          }
-                        }
+                        procesarPinSalida(pinSalidaInput + n)
                       }}
                       className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
                     >
@@ -1259,21 +1264,7 @@ export default function TotemPage() {
                     type="button"
                     onClick={() => {
                       if (pinSalidaInput.length >= 4) return
-                      const nuevo = pinSalidaInput + '0'
-                      setPinSalidaInput(nuevo)
-                      setErrorPinSalida(false)
-                      if (nuevo.length === 4) {
-                        const pinEsperado = process.env.NEXT_PUBLIC_TOTEM_PIN || PIN_TERMINAL_TOTEM_DEFAULT
-                        if (nuevo === pinEsperado) {
-                          setPinSalidaVerificado(true)
-                        } else {
-                          setErrorPinSalida(true)
-                          setTimeout(() => {
-                            setPinSalidaInput('')
-                            setErrorPinSalida(false)
-                          }, 700)
-                        }
-                      }
+                      procesarPinSalida(pinSalidaInput + '0')
                     }}
                     className="h-12 rounded-xl border border-slate-800 bg-slate-800/80 text-xl font-bold text-white hover:bg-slate-700 active:scale-95 cursor-pointer select-none"
                   >
@@ -1390,9 +1381,6 @@ export default function TotemPage() {
                     localStorage.setItem('atlas_totem_terminal_autorizada', 'true')
                   }
                   setTerminalAutorizada(true)
-                  if (usuarioActual) {
-                    cerrarSesion()
-                  }
                   setClaveTerminalInput('')
                   guardarPadronCacheTotem(res.padron)
                   setPadronSincronizadoCount(res.padron.length)
