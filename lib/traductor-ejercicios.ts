@@ -140,107 +140,115 @@ const DICCIONARIO_MOVIMIENTOS: [RegExp, string][] = [
   [/\bcontralateral\b/gi, 'contralateral'],
   [/\binside leg kick\b/gi, 'con patada interna'],
   [/\bagainst wall\b/gi, 'contra la pared'],
-  [/\bon (stability |bosu |exercise )?ball\b/gi, 'sobre fitball'],
-  [/\bwith rope( attachment)?\b/gi, 'con soga'],
-  [/\bwith arm blaster\b/gi, 'con soporte de bíceps'],
-  [/\bwith support\b/gi, 'con apoyo'],
-  [/\btwo legs on bench\b/gi, 'apoyado en banco'],
-  [/\bon (flat )?bench\b/gi, 'en banco'],
-  [/\bon floor\b/gi, 'en suelo'],
-  [/\bon knees\b/gi, 'de rodillas'],
-  [/\bhip thrusts?\b/gi, 'empuje de cadera (hip thrust)'],
-  [/\bhip abduction\b/gi, 'abducción de cadera'],
-  [/\bhip adduction\b/gi, 'aducción de cadera'],
-  [/\bhip extension\b/gi, 'extensión de cadera (patada de glúteo)'],
-  [/\bhip lift\b/gi, 'elevación de cadera'],
-  [/\bpull[- ]?through\b/gi, 'pull through de glúteos'],
-  [/\breverse hyper( ?extension)?\b/gi, 'hiperextensión inversa de glúteos'],
-  [/\bhyperextensions?\b/gi, 'hiperextensiones lumbares'],
-  [/\bgood morning\b/gi, 'buenos días'],
-  [/\bstep[- ]?ups?\b/gi, 'subida al cajón'],
-  [/\bmonster walk\b/gi, 'caminata lateral con banda'],
-  [/\bpelvic tilt\b/gi, 'retroversión pélvica'],
-  [/\bpiriformis\b/gi, 'piriforme / glúteo'],
-  [/\bpullovers?\b/gi, 'pullover'],
-  [/\breverse wrist curls?\b/gi, 'curl de muñeca inverso'],
-  [/\bwrist curls?\b/gi, 'curl de muñeca'],
-  [/\bwrist roller\b/gi, 'rodillo de muñeca y antebrazo'],
-  [/\bsit[- ]?ups?\b/gi, 'abdominales sit-up'],
-  [/\bab rollerout\b/gi, 'rueda abdominal'],
-  [/\bpallof press\b/gi, 'press Pallof antirrotación'],
-  [/\bdead bug\b/gi, 'bicho muerto (dead bug)'],
-  [/\breverse fly(es)?\b/gi, 'vuelos posteriores'],
-  [/\brear lateral raises?\b/gi, 'vuelos posteriores'],
-  [/\brear delt rows?\b/gi, 'remo al deltoides posterior (face pull)'],
-  [/\brear delt\b/gi, 'deltoides posterior'],
-  [/\bclose[- ]?grip\b/gi, 'agarre estrecho'],
-  [/\bwide[- ]?grip\b/gi, 'agarre ancho'],
-  [/\bnarrow[- ]?(grip|stance)\b/gi, 'posición cerrada'],
-  [/\bclean[- ]?grip\b/gi, 'agarre olímpico'],
-  [/\bunderhand( grip)?\b/gi, 'agarre supino'],
-  [/\boverhand( grip)?\b/gi, 'agarre prono'],
-  [/\brevers(e)? grip\b/gi, 'agarre invertido'],
-  [/\balternate\b/gi, 'alternado'],
-  [/\btwo arms?\b/gi, 'a dos brazos'],
-  [/\btwo legs?\b/gi, 'a dos piernas'],
-  [/\bstraight legs?\b/gi, 'piernas extendidas'],
-  [/\bstraight arms?\b/gi, 'brazos extendidos'],
-  [/\bbent[- ]?over\b/gi, 'inclinado'],
-  [/\bbent knees?\b/gi, 'rodillas flexionadas'],
-  [/\bweighted\b/gi, 'con lastre'],
-  [/\bassisted\b/gi, 'asistido'],
-  [/\bsuspended\b/gi, 'en suspensión'],
-  [/\bresistance band\b/gi, 'con banda elástica'],
-  [/\bexercise ball\b/gi, 'con fitball'],
-  [/\bmedicine ball\b/gi, 'con balón medicinal'],
-  [/\bstability ball\b/gi, 'con fitball'],
-  [/\bstretch(es)?\b/gi, 'estiramiento'],
-  [/\bjump(ing)?\b/gi, 'con salto'],
-  [/\btwist(ing)?\b/gi, 'con giro'],
-  [/\brotation\b/gi, 'rotación'],
-  [/\bprone\b/gi, 'boca abajo'],
-  [/\bsupine\b/gi, 'boca arriba'],
-  [/\bparallel\b/gi, 'en paralelas'],
-  [/\bouter hip abductor\b/gi, 'abductor de cadera'],
-  [/\babductor\b/gi, 'abductor'],
-  [/\badductor\b/gi, 'aductor'],
-  [/\bglutes?\b/gi, 'glúteos'],
-  [/\bgluteus\b/gi, 'glúteos'],
-  [/\bhamstrings?\b/gi, 'isquiotibiales'],
-  [/\bcalves\b/gi, 'gemelos'],
-  [/\bcalf\b/gi, 'gemelos'],
-  [/\bchest\b/gi, 'pecho'],
-  [/\bshoulder(s)?\b/gi, 'hombros'],
-  [/\btriceps?\b/gi, 'tríceps'],
-  [/\bbiceps?\b/gi, 'bíceps'],
-  [/\bforearms?\b/gi, 'antebrazos'],
-  [/\babs\b/gi, 'abdominales'],
-  [/\bback\b/gi, 'espalda'],
-  [/\bfront\b/gi, 'frontal'],
-  [/\bside\b/gi, 'lateral'],
-  [/\brear\b/gi, 'posterior'],
-  [/\bhigh\b/gi, 'alto'],
-  [/\blow\b/gi, 'bajo'],
-  [/\bwide\b/gi, 'amplio'],
-  [/\bfull\b/gi, 'completo'],
-  [/\bdeep\b/gi, 'profundo'],
-  [/\bbridge\b/gi, 'puente'],
-  [/\braises?\b/gi, 'elevaciones'],
-  [/\bextensions?\b/gi, 'extensión'],
-  [/\bpress\b/gi, 'press'],
-  [/\bbarbell\b/gi, 'con barra'],
-  [/\bdumbbells?\b/gi, 'con mancuerna'],
-  [/\bcable\b/gi, 'en polea'],
-  [/\bband\b/gi, 'con banda'],
-  [/\bkettlebell\b/gi, 'con pesa rusa'],
-  [/\blever(age)?\b/gi, 'en máquina'],
-  [/\bmachine\b/gi, 'en máquina'],
-  [/\bsmith\b/gi, 'en máquina Smith'],
-  [/\bsled\b/gi, 'en prensa'],
-  [/\bbench\b/gi, 'en banco'],
-  [/\bfloor\b/gi, 'en suelo'],
-  [/\bwall\b/gi, 'en pared'],
-  [/\brope\b/gi, 'con soga'],
+  ...`
+on (stability |bosu |exercise )?ball=sobre fitball
+with rope( attachment)?=con soga
+with arm blaster=con soporte de bíceps
+with support=con apoyo
+two legs on bench=apoyado en banco
+on (flat )?bench=en banco
+on floor=en suelo
+on knees=de rodillas
+hip thrusts?=empuje de cadera (hip thrust)
+hip abduction=abducción de cadera
+hip adduction=aducción de cadera
+hip extension=extensión de cadera (patada de glúteo)
+hip lift=elevación de cadera
+pull[- ]?through=pull through de glúteos
+reverse hyper( ?extension)?=hiperextensión inversa de glúteos
+hyperextensions?=hiperextensiones lumbares
+good morning=buenos días
+step[- ]?ups?=subida al cajón
+monster walk=caminata lateral con banda
+pelvic tilt=retroversión pélvica
+piriformis=piriforme / glúteo
+pullovers?=pullover
+reverse wrist curls?=curl de muñeca inverso
+wrist curls?=curl de muñeca
+wrist roller=rodillo de muñeca y antebrazo
+sit[- ]?ups?=abdominales sit-up
+ab rollerout=rueda abdominal
+pallof press=press Pallof antirrotación
+dead bug=bicho muerto (dead bug)
+reverse fly(es)?=vuelos posteriores
+rear lateral raises?=vuelos posteriores
+rear delt rows?=remo al deltoides posterior (face pull)
+rear delt=deltoides posterior
+close[- ]?grip=agarre estrecho
+wide[- ]?grip=agarre ancho
+narrow[- ]?(grip|stance)=posición cerrada
+clean[- ]?grip=agarre olímpico
+underhand( grip)?=agarre supino
+overhand( grip)?=agarre prono
+revers(e)? grip=agarre invertido
+alternate=alternado
+two arms?=a dos brazos
+two legs?=a dos piernas
+straight legs?=piernas extendidas
+straight arms?=brazos extendidos
+bent[- ]?over=inclinado
+bent knees?=rodillas flexionadas
+weighted=con lastre
+assisted=asistido
+suspended=en suspensión
+resistance band=con banda elástica
+exercise ball=con fitball
+medicine ball=con balón medicinal
+stability ball=con fitball
+stretch(es)?=estiramiento
+jump(ing)?=con salto
+twist(ing)?=con giro
+rotation=rotación
+prone=boca abajo
+supine=boca arriba
+parallel=en paralelas
+outer hip abductor=abductor de cadera
+abductor=abductor
+adductor=aductor
+glutes?=glúteos
+gluteus=glúteos
+hamstrings?=isquiotibiales
+calves=gemelos
+calf=gemelos
+chest=pecho
+shoulder(s)?=hombros
+triceps?=tríceps
+biceps?=bíceps
+forearms?=antebrazos
+abs=abdominales
+back=espalda
+front=frontal
+side=lateral
+rear=posterior
+high=alto
+low=bajo
+wide=amplio
+full=completo
+deep=profundo
+bridge=puente
+raises?=elevaciones
+extensions?=extensión
+press=press
+barbell=con barra
+dumbbells?=con mancuerna
+cable=en polea
+band=con banda
+kettlebell=con pesa rusa
+lever(age)?=en máquina
+machine=en máquina
+smith=en máquina Smith
+sled=en prensa
+bench=en banco
+floor=en suelo
+wall=en pared
+rope=con soga
+`
+    .trim()
+    .split('\n')
+    .map((par): [RegExp, string] => {
+      const [patron, traduccion] = par.split('=')
+      return [new RegExp(`\\b${patron}\\b`, 'gi'), traduccion]
+    }),
 ]
 
 const DICCIONARIO_MUSCULOS: Record<string, string> = {
