@@ -1169,6 +1169,8 @@ function ModalBuscarEjercicioVideoteca({
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\bthrusts?\b/g, 'trust')
+      .replace(/\btrusts\b/g, 'trust')
 
   const ejerciciosFiltrados = useMemo(() => {
     const queryNorm = normalizar(busqueda.trim())
@@ -1292,7 +1294,7 @@ function ModalBuscarEjercicioVideoteca({
           </div>
 
           {/* Chips de Grupo Muscular */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto sm:flex-wrap pb-1 text-xs">
             {GRUPOS.map((grupo) => {
               const activo = grupoSeleccionado === grupo
               return (

@@ -18,7 +18,12 @@ for (const e of CATALOGO_EJERCICIOS_GIF) {
 }
 
 function normalizar(texto: string): string {
-  return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\bthrusts?\b/g, 'trust')
+    .replace(/\btrusts\b/g, 'trust')
 }
 
 export async function GET(request: Request) {
