@@ -14,17 +14,19 @@ const GRUPOS_MUSCULARES = [
   'Pecho',
   'Espalda',
   'Piernas',
+  'Glúteos',
   'Hombros',
   'Brazos',
   'Core',
 ] as const
 
-type GrupoValido = 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Core'
+type GrupoValido = 'Pecho' | 'Espalda' | 'Piernas' | 'Glúteos' | 'Hombros' | 'Brazos' | 'Core'
 
 const TOTALES_INICIALES: Record<GrupoValido, number> = {
   Pecho: 192,
   Espalda: 241,
-  Piernas: 351,
+  Piernas: 315,
+  Glúteos: 36,
   Hombros: 159,
   Brazos: 362,
   Core: 195,
@@ -61,6 +63,7 @@ export default function VideotecaPage() {
       Pecho: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Pecho'),
       Espalda: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Espalda'),
       Piernas: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Piernas'),
+      Glúteos: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Glúteos'),
       Hombros: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Hombros'),
       Brazos: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Brazos'),
       Core: CLASICOS_CURADOS.filter((e) => e.grupoMuscular === 'Core'),
@@ -172,6 +175,7 @@ export default function VideotecaPage() {
       Pecho: [],
       Espalda: [],
       Piernas: [],
+      Glúteos: [],
       Hombros: [],
       Brazos: [],
       Core: [],
@@ -215,7 +219,7 @@ export default function VideotecaPage() {
   // Grupos a mostrar según el filtro activo
   const gruposAMostrar = useMemo(() => {
     if (filtroGrupo === 'TODOS') {
-      return ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core'] as GrupoValido[]
+      return ['Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros', 'Brazos', 'Core'] as GrupoValido[]
     }
     return [filtroGrupo as GrupoValido]
   }, [filtroGrupo])
@@ -755,6 +759,7 @@ function ModalNuevoVideo({
                 <option value="Pecho">Pecho</option>
                 <option value="Espalda">Espalda</option>
                 <option value="Piernas">Piernas</option>
+                <option value="Glúteos">Glúteos</option>
                 <option value="Hombros">Hombros</option>
                 <option value="Brazos">Brazos</option>
                 <option value="Core">Core</option>

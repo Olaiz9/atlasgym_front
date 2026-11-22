@@ -1162,7 +1162,7 @@ function ModalBuscarEjercicioVideoteca({
   const [recientesAgregados, setRecientesAgregados] = useState<Record<string, boolean>>({})
   const [contadorAgregados, setContadorAgregados] = useState(0)
 
-  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros', 'Brazos', 'Core']
 
   const normalizar = (texto: string) =>
     texto
