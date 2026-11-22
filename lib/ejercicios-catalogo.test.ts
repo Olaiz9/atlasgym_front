@@ -16,6 +16,7 @@ describe('Catálogo de Ejercicios GIF y API', () => {
     expect(grupos.has('Pecho')).toBe(true)
     expect(grupos.has('Espalda')).toBe(true)
     expect(grupos.has('Piernas')).toBe(true)
+    expect(grupos.has('Glúteos')).toBe(true)
     expect(grupos.has('Hombros')).toBe(true)
     expect(grupos.has('Brazos')).toBe(true)
     expect(grupos.has('Core')).toBe(true)
@@ -40,6 +41,10 @@ describe('Catálogo de Ejercicios GIF y API', () => {
     const matchPierna = buscarVideoParaEjercicio('Sentadilla con barra', CATALOGO_EJERCICIOS_GIF)
     expect(matchPierna).toBeDefined()
     expect(matchPierna?.grupoMuscular).toBe('Piernas')
+
+    const matchGluteos = buscarVideoParaEjercicio('Hip Thrust con Barra', CATALOGO_EJERCICIOS_GIF)
+    expect(matchGluteos).toBeDefined()
+    expect(matchGluteos?.grupoMuscular).toBe('Glúteos')
 
     const matchHombros = buscarVideoParaEjercicio('Elevaciones Laterales', CATALOGO_EJERCICIOS_GIF)
     expect(matchHombros).toBeDefined()
@@ -75,8 +80,8 @@ describe('Catálogo de Ejercicios GIF y API', () => {
     expect(setIds.size).toBe(ids.length)
   })
 
-  it('CLASICOS_CURADOS están distribuidos en los 6 grupos musculares sin repeticiones', () => {
-    const grupos = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+  it('CLASICOS_CURADOS están distribuidos en los 7 grupos musculares sin repeticiones', () => {
+    const grupos = ['Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros', 'Brazos', 'Core']
     grupos.forEach((g) => {
       const enGrupo = CLASICOS_CURADOS.filter((c: any) => c.grupoMuscular === g)
       expect(enGrupo.length).toBeGreaterThanOrEqual(2)

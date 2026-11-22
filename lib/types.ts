@@ -100,7 +100,7 @@ export interface SesionEntrenamiento {
 export interface VideoTecnica {
   id: string;
   titulo: string;
-  grupoMuscular: "Pecho" | "Espalda" | "Piernas" | "Hombros" | "Brazos" | "Core";
+  grupoMuscular: "Pecho" | "Espalda" | "Piernas" | "Glúteos" | "Hombros" | "Brazos" | "Core";
   duracion: string; // ej: "01:45", "Loop GIF"
   nivel: string; // ej: "Técnica estricta", "Básico", "Avanzado"
   videoUrl: string; // URL de YouTube, Vimeo o embed

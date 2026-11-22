@@ -729,6 +729,13 @@ function ModalNuevaRutina({
     ])
   }
 
+  const eliminarDia = (diaId: string) => {
+    setErrorValidacion(null)
+    // La rutina conserva al menos un día.
+    setDias((prev) => (prev.length > 1 ? prev.filter((d) => d.id !== diaId) : prev))
+    setDiaParaBuscar((actual) => (actual === diaId ? null : actual))
+  }
+
   const agregarEjercicioADia = (diaId: string) => {
     setErrorValidacion(null)
     setDias((prev) =>
@@ -921,12 +928,14 @@ function ModalNuevaRutina({
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {dias.map((dia, idx) => (
                 <TarjetaDiaRutina
                   key={dia.id}
                   dia={dia}
                   idx={idx}
+                  puedeEliminar={dias.length > 1}
+                  onEliminarDia={() => eliminarDia(dia.id)}
                   onAbrirBuscador={() => setDiaParaBuscar(dia.id)}
                   onActualizarNombre={(nombre) => actualizarNombreDia(dia.id, nombre)}
                   onAgregarEjercicio={() => agregarEjercicioADia(dia.id)}
@@ -980,6 +989,8 @@ function ModalNuevaRutina({
 function TarjetaDiaRutina({
   dia,
   idx,
+  puedeEliminar,
+  onEliminarDia,
   onAbrirBuscador,
   onActualizarNombre,
   onAgregarEjercicio,
@@ -988,6 +999,8 @@ function TarjetaDiaRutina({
 }: {
   dia: DiaRutina
   idx: number
+  puedeEliminar: boolean
+  onEliminarDia: () => void
   onAbrirBuscador: () => void
   onActualizarNombre: (nombre: string) => void
   onAgregarEjercicio: () => void
@@ -995,14 +1008,31 @@ function TarjetaDiaRutina({
   onEliminarEjercicio: (ejId: string) => void
 }) {
   return (
-    <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950/40 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <input
-          value={dia.nombre}
-          onChange={(e) => onActualizarNombre(e.target.value)}
-          placeholder={`Día ${idx + 1}`}
-          className="font-bold text-sm bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 outline-none text-white focus:ring-2 focus:ring-blue-500 flex-1"
-        />
+    <div className="rounded-2xl border border-slate-700/80 border-l-4 border-l-blue-500 bg-slate-950/40 shadow-md overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-800/70 border-b border-slate-700/80 px-4 py-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="shrink-0 text-[11px] font-black tracking-wide px-2 py-1 rounded-md bg-blue-600/20 border border-blue-500/40 text-blue-300">
+            DÍA {idx + 1}
+          </span>
+          <input
+            aria-label={`Nombre del día ${idx + 1}`}
+            value={dia.nombre}
+            onChange={(e) => onActualizarNombre(e.target.value)}
+            placeholder={`Día ${idx + 1}`}
+            className="font-bold text-sm bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 outline-none text-white focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"
+          />
+          {puedeEliminar && (
+            <button
+              type="button"
+              onClick={onEliminarDia}
+              aria-label={`Eliminar día ${idx + 1}`}
+              title="Eliminar este día"
+              className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors shrink-0"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
@@ -1023,7 +1053,7 @@ function TarjetaDiaRutina({
         </div>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="p-4 space-y-2.5">
         {dia.ejercicios.map((ej) => (
           <div key={ej.id} className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-2.5 shadow-sm">
             {/* Fila superior: Nombre del ejercicio y botón eliminar */}
@@ -1162,7 +1192,7 @@ function ModalBuscarEjercicioVideoteca({
   const [recientesAgregados, setRecientesAgregados] = useState<Record<string, boolean>>({})
   const [contadorAgregados, setContadorAgregados] = useState(0)
 
-  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros', 'Brazos', 'Core']
 
   const normalizar = (texto: string) =>
     texto
