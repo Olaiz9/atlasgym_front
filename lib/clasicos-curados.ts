@@ -196,6 +196,68 @@ export const CLASICOS_CURADOS: EjercicioCatalogo[] = [
     instruccionesPasoAPaso: ['Flexioná piernas llevando talones hacia los glúteos.'],
   },
 
+  // GLÚTEOS
+  ...([
+    [
+      'cat-gluteos-1',
+      'qg2PGl6',
+      'Hip Thrust con Barra en Banco',
+      'Barbell Glute Bridge Two Legs on Bench',
+      'Hipertrofia',
+      'Barra',
+      'Empuje de cadera con espalda apoyada en banco para máxima activación del glúteo mayor.',
+      ['Glúteo mayor'],
+      ['Isquiotibiales', 'Core'],
+      'Mentón al pecho, tibias verticales arriba y retroversión pélvica en el bloqueo.',
+      'Apoyá escápulas en el banco, empujá desde los talones y contraé glúteos 1 segundo arriba.',
+    ],
+    [
+      'cat-gluteos-2',
+      'qKBpF7I',
+      'Puente de Glúteos con Barra',
+      'Barbell Glute Bridge',
+      'Fuerza básica',
+      'Barra',
+      'Extensión de cadera desde el suelo enfocada en glúteos sin sobrecarga lumbar.',
+      ['Glúteos'],
+      ['Isquiotibiales'],
+      'Evitá hiperextender la zona lumbar; el movimiento nace en la cadera.',
+      'Elevá la pelvis empujando con los talones hasta alinear rodillas, cadera y hombros.',
+    ],
+    [
+      'cat-gluteos-3',
+      'CHpahtl',
+      'Abducción de Cadera en Máquina',
+      'Lever Seated Hip Abduction',
+      'Aislamiento',
+      'Máquina',
+      'Aislamiento específico para glúteo medio y menor (estabilidad y redondez lateral de cadera).',
+      ['Glúteo medio', 'Abductores'],
+      ['Glúteo mayor'],
+      'Controlá el retorno sin que las placas choquen para sostener la tensión.',
+      'Abrí las piernas empujando las almohadillas hacia afuera y volvé lento.',
+    ],
+  ] as const).map(
+    ([id, exerciseId, titulo, nombreIngles, nivel, equipo, descripcion, princ, sec, consejo, paso]): EjercicioCatalogo => ({
+      id,
+      exerciseId,
+      titulo,
+      nombreIngles,
+      grupoMuscular: 'Glúteos',
+      duracion: 'Loop GIF',
+      formato: 'GIF',
+      nivel,
+      equipo,
+      videoUrl: `https://static.exercisedb.dev/media/${exerciseId}.gif`,
+      gifUrl: `https://static.exercisedb.dev/media/${exerciseId}.gif`,
+      descripcion,
+      musculosPrincipales: [...princ],
+      musculosSecundarios: [...sec],
+      consejosClave: [consejo],
+      instruccionesPasoAPaso: [paso],
+    })
+  ),
+
   // HOMBROS
   {
     id: 'cat-hombros-1',

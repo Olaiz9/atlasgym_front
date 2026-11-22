@@ -6,7 +6,7 @@ import { traducirNombre, traducirMusculo, traducirInstrucciones, generarDescripc
 export { type EjercicioCatalogo, CLASICOS_CURADOS } from './clasicos-curados'
 import { CLASICOS_CURADOS, EjercicioCatalogo } from './clasicos-curados'
 
-const BODY_PART_MAP: Record<string, 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' | 'Brazos' | 'Core'> = {
+const BODY_PART_MAP: Record<string, VideoTecnica['grupoMuscular']> = {
   chest: 'Pecho',
   back: 'Espalda',
   'upper legs': 'Piernas',
@@ -17,6 +17,24 @@ const BODY_PART_MAP: Record<string, 'Pecho' | 'Espalda' | 'Piernas' | 'Hombros' 
   'lower arms': 'Brazos',
   waist: 'Core',
   cardio: 'Piernas',
+}
+
+function esEjercicioDeGluteos(raw: { name?: string; targetMuscles?: string[] }): boolean {
+  const name = String(raw.name || '').toLowerCase()
+  const targets = Array.isArray(raw.targetMuscles)
+    ? raw.targetMuscles.map((t) => String(t).toLowerCase())
+    : []
+  if (targets.includes('abductors')) return true
+  if (
+    targets.includes('glutes') &&
+    !/push[- ]?up|hamstring curl/i.test(name) &&
+    /\b(glute|glutes|gluteus|hip thrusts?|hip lift|bridge|abduct|abductor|hip extension|pull[- ]?through|reverse hyper(?: ?extension)?|piriformis|monster walk|pelvic|frog)\b/i.test(
+      name
+    )
+  ) {
+    return true
+  }
+  return false
 }
 
 const EQUIPMENT_MAP: Record<string, string> = {
@@ -51,7 +69,9 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
   .filter((raw) => !idsCurados.has(raw.exerciseId))
   .map((raw) => {
     const rawBody = (raw.bodyParts && raw.bodyParts[0]) ? String(raw.bodyParts[0]).toLowerCase() : 'chest'
-    const grupo = BODY_PART_MAP[rawBody] || 'Core'
+    const grupo: VideoTecnica['grupoMuscular'] = esEjercicioDeGluteos(raw)
+      ? 'Glúteos'
+      : (BODY_PART_MAP[rawBody] || 'Core')
 
     const rawEquip = (raw.equipments && raw.equipments[0]) ? String(raw.equipments[0]).toLowerCase() : 'body weight'
     const equipo = EQUIPMENT_MAP[rawEquip] || capitalizar(rawEquip)
