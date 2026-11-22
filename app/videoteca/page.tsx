@@ -252,7 +252,7 @@ export default function VideotecaPage() {
       </div>
 
       {/* Barra de Filtros por Músculo y Buscador */}
-      <div className="flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between md:gap-4">
+      <div className="flex flex-col gap-3.5 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-4">
         {/* Buscador */}
         <label className="flex h-12 items-center gap-2 rounded-xl border border-[#2A4677] bg-[#162A50] px-3.5 focus-within:border-blue-400 md:h-11 md:w-80 md:shrink-0">
           <Search className="size-[18px] shrink-0 text-slate-500" />
@@ -268,7 +268,7 @@ export default function VideotecaPage() {
         </label>
 
         {/* Pestañas de Grupos Musculares con Conteo */}
-        <div role="group" aria-label="Grupo muscular" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0">
+        <div role="group" aria-label="Grupo muscular" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           {GRUPOS_MUSCULARES.map((grupo) => {
             const activo = filtroGrupo === grupo
             const totalGrupo = grupo === 'TODOS' ? totalGeneral : totalesPorGrupo[grupo as GrupoValido] || 0
