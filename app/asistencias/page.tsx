@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { EstadoCuentaEtiqueta } from '@/components/estado-cuenta-etiqueta'
 import { RegistroAsistencia, saldosDeSeniaPorAlumno } from '@/lib/types'
+import { coincideBusqueda } from '@/lib/utils'
 
 type VistaSala = 'SALA' | 'EXCEDIDOS' | 'HISTORIAL'
 
@@ -152,13 +153,8 @@ export default function AsistenciasPage() {
 
   // Filtrado y paginación de socios en sala
   const sociosEnSalaFiltrados = useMemo(() => {
-    const q = busquedaSala.trim().toLowerCase()
-    if (!q) return sociosEnSala
-    return sociosEnSala.filter(
-      (s) =>
-        s.alumnoNombre.toLowerCase().includes(q) ||
-        s.alumnoDni.toLowerCase().includes(q) ||
-        s.planNombre.toLowerCase().includes(q)
+    return sociosEnSala.filter((s) =>
+      coincideBusqueda(busquedaSala, s.alumnoNombre, s.alumnoDni, s.planNombre)
     )
   }, [sociosEnSala, busquedaSala])
 
@@ -236,13 +232,8 @@ export default function AsistenciasPage() {
       base = base.filter((a) => cupoPorAsistenciaId.get(a.id)?.excedeLimiteSemanal === true)
     }
 
-    const q = busquedaHistorial.trim().toLowerCase()
-    if (!q) return base
-    return base.filter(
-      (a) =>
-        a.alumnoNombre.toLowerCase().includes(q) ||
-        a.alumnoDni.toLowerCase().includes(q) ||
-        a.planNombre.toLowerCase().includes(q)
+    return base.filter((a) =>
+      coincideBusqueda(busquedaHistorial, a.alumnoNombre, a.alumnoDni, a.planNombre)
     )
   }, [
     asistencias,

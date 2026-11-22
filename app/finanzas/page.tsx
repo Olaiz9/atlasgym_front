@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
-import { inicialesDe } from "@/lib/utils";
+import { coincideBusqueda, inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
   formatearMes,
@@ -57,7 +57,7 @@ import {
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
-import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "@/lib/pago-historial";
+import { alumnoDePagoEstaDeBaja, nombreDelPago } from "@/lib/pago-historial";
 import { descargarCSV } from "@/lib/export-utils";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -406,9 +406,9 @@ export default function FinanzasPage() {
     return pagos.filter((p) => (p.periodoMes || p.fecha.slice(0, 7)) === mes);
   }, [pagos, mes, verTodos]);
 
-  const arqueoDelDia = useMemo(
-    () => calcularArqueoCajaLocal(pagos, fechaArqueo),
-    [pagos, fechaArqueo]
+  const arqueoCaja = useMemo(
+    () => (verTodos ? calcularArqueoCajaLocal(pagos) : calcularArqueoCajaLocal(pagos, fechaArqueo)),
+    [pagos, fechaArqueo, verTodos]
   );
 
   const metrica = useMemo(() => {
@@ -441,18 +441,13 @@ export default function FinanzasPage() {
   }, [pagosDelMes, alumnos, getEstadoCuenta]);
 
   const pagosFiltrados = useMemo(() => {
-    const q = busquedaDebounced.trim().toLowerCase();
+    const q = busquedaDebounced;
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
       const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
-      const nombreAlumno = nombreHistoricoDelPago(p, getAlumno(p.alumnoId));
-      const coincideBusqueda =
-        !q ||
-        nombreAlumno.toLowerCase().includes(q) ||
-        p.plan.toLowerCase().includes(q) ||
-        p.metodo.toLowerCase().includes(q) ||
-        (p.registradoPor && p.registradoPor.toLowerCase().includes(q));
-      return coincideFiltro && coincideMetodo && coincideBusqueda;
+      const nombreAlumno = nombreDelPago(p, getAlumno(p.alumnoId));
+      const coincideTexto = coincideBusqueda(q, nombreAlumno, p.alumnoNombreHistorico, p.plan, p.metodo, p.registradoPor);
+      return coincideFiltro && coincideMetodo && coincideTexto;
     });
   }, [pagosDelMes, filtro, filtroMetodo, busquedaDebounced, getAlumno]);
 
@@ -529,7 +524,7 @@ export default function FinanzasPage() {
     ];
     const filas = pagosDelMes.map((p) => {
       const alumno = getAlumno(p.alumnoId);
-      const nombre = nombreHistoricoDelPago(p, alumno) + (alumnoDePagoEstaDeBaja(p, alumno) ? " (Alumno dado de baja)" : "");
+      const nombre = nombreDelPago(p, alumno) + (alumnoDePagoEstaDeBaja(p, alumno) ? " (Alumno dado de baja)" : "");
       const inicioPeriodo = p.periodoMes || p.fecha.slice(0, 7);
       return [
         p.id,
@@ -674,43 +669,49 @@ export default function FinanzasPage() {
         </div>
       </div>
 
-      {/* CAJA DEL DÍA: franja con el total y el desglose */}
+      {/* CAJA: franja con el total y el desglose (del día o acumulado de todos los meses) */}
       <section aria-labelledby="titulo-caja" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="titulo-caja" className="text-base font-semibold text-slate-300">
-            {fechaArqueo === fechaLocalHoy() ? "Caja de hoy" : `Caja del ${formatFechaAR(fechaArqueo)}`}
+            {verTodos
+              ? "Caja acumulada (todos los meses)"
+              : fechaArqueo === fechaLocalHoy()
+              ? "Caja de hoy"
+              : `Caja del ${formatFechaAR(fechaArqueo)}`}
           </h2>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-[13px] text-slate-500">
-              Ver otro día
-              <input
-                type="date"
-                aria-label="Fecha de arqueo de caja"
-                value={fechaArqueo}
-                onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
-                className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200 outline-none focus:border-blue-500"
-              />
-            </label>
-            {fechaArqueo !== fechaLocalHoy() && (
-              <button
-                type="button"
-                onClick={() => setFechaArqueo(fechaLocalHoy())}
-                className="h-11 rounded-xl border border-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-900"
-              >
-                Hoy
-              </button>
-            )}
-          </div>
+          {!verTodos && (
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-[13px] text-slate-500">
+                Ver otro día
+                <input
+                  type="date"
+                  aria-label="Fecha de arqueo de caja"
+                  value={fechaArqueo}
+                  onChange={(e) => e.target.value && setFechaArqueo(e.target.value)}
+                  className="h-11 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-200 outline-none focus:border-blue-500"
+                />
+              </label>
+              {fechaArqueo !== fechaLocalHoy() && (
+                <button
+                  type="button"
+                  onClick={() => setFechaArqueo(fechaLocalHoy())}
+                  className="h-11 rounded-xl border border-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-900"
+                >
+                  Hoy
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 border-y border-slate-800 lg:grid-cols-4">
           <div className="flex flex-col gap-1 py-4 pr-4 md:py-5">
-            <span className="text-[13px] text-slate-500">Total cobrado ({arqueoDelDia.cantidadCobros})</span>
-            <span className="text-xl font-semibold text-white md:text-2xl">${arqueoDelDia.totalRecaudado.toLocaleString("es-AR")}</span>
+            <span className="text-[13px] text-slate-500">Total cobrado ({arqueoCaja.cantidadCobros})</span>
+            <span className="text-xl font-semibold text-white md:text-2xl">${arqueoCaja.totalRecaudado.toLocaleString("es-AR")}</span>
           </div>
           {[
-            { label: "Efectivo", valor: arqueoDelDia.totalEfectivo },
-            { label: "Transferencia / MP", valor: arqueoDelDia.totalTransferencia },
-            { label: "Tarjeta", valor: arqueoDelDia.totalTarjeta },
+            { label: "Efectivo", valor: arqueoCaja.totalEfectivo },
+            { label: "Transferencia / MP", valor: arqueoCaja.totalTransferencia },
+            { label: "Tarjeta", valor: arqueoCaja.totalTarjeta },
           ].map((m, i) => (
             <div
               key={m.label}
@@ -724,15 +725,17 @@ export default function FinanzasPage() {
           ))}
         </div>
         <p className="text-[13px] text-slate-500">
-          {arqueoDelDia.porOperador.length === 0
-            ? "Sin cobros registrados en esta fecha."
-            : `Por titular: ${arqueoDelDia.porOperador
+          {arqueoCaja.porOperador.length === 0
+            ? verTodos
+              ? "Sin cobros registrados."
+              : "Sin cobros registrados en esta fecha."
+            : `Por titular: ${arqueoCaja.porOperador
                 .map((op) => `${op.operador} $${op.totalRecaudado.toLocaleString("es-AR")} (${op.cantidadOperaciones})`)
                 .join(", ")}.`}
-          {arqueoDelDia.cantidadParciales > 0 &&
-            ` ${arqueoDelDia.cantidadParciales} seña(s) con $${arqueoDelDia.saldoPendienteParciales.toLocaleString("es-AR")} por completar.`}
-          {arqueoDelDia.cantidadAnulados > 0 &&
-            ` ${arqueoDelDia.cantidadAnulados} anulado(s) por $${arqueoDelDia.montoAnulado.toLocaleString("es-AR")}, fuera de la caja.`}
+          {arqueoCaja.cantidadParciales > 0 &&
+            ` ${arqueoCaja.cantidadParciales} seña(s) con $${arqueoCaja.saldoPendienteParciales.toLocaleString("es-AR")} por completar.`}
+          {arqueoCaja.cantidadAnulados > 0 &&
+            ` ${arqueoCaja.cantidadAnulados} anulado(s) por $${arqueoCaja.montoAnulado.toLocaleString("es-AR")}, fuera de la caja.`}
         </p>
       </section>
 
@@ -821,10 +824,10 @@ export default function FinanzasPage() {
                           href={`/alumnos/${alumno.id}`}
                           className={`block font-semibold hover:underline ${esAnulado ? "text-slate-500 line-through" : "text-white"}`}
                         >
-                          {nombreHistoricoDelPago(pago, alumno)}
+                          {nombreDelPago(pago, alumno)}
                         </Link>
                       ) : (
-                        <span className="block italic text-slate-500">{nombreHistoricoDelPago(pago, alumno)}</span>
+                        <span className="block italic text-slate-500">{nombreDelPago(pago, alumno)}</span>
                       )}
                       {alumno?.dni && <span className="mt-0.5 block text-[13px] text-slate-500">DNI {alumno.dni}</span>}
                       {alumnoDePagoEstaDeBaja(pago, alumno) && (

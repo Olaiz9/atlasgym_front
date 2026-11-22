@@ -29,3 +29,18 @@ export function formatearMoneda(monto: number | string): string {
   const valor = Number(monto) || 0;
   return `$${valor.toLocaleString("es-AR")}`;
 }
+
+/** Texto comparable para buscar: sin mayúsculas, acentos ni puntos ("Ramírez" -> "ramirez", "12.345.678" -> "12345678"). */
+export function textoBusqueda(texto?: string | null): string {
+  return (texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\./g, "");
+}
+
+/** true si la búsqueda está vacía o aparece en alguno de los campos. */
+export function coincideBusqueda(busqueda: string, ...campos: (string | null | undefined)[]): boolean {
+  const q = textoBusqueda(busqueda).trim();
+  return !q || campos.some((c) => textoBusqueda(c).includes(q));
+}
