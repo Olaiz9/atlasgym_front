@@ -48,6 +48,19 @@ describe("Finanzas del administrador", () => {
     expect(screen.getByText("Ingresos netos totales")).toBeInTheDocument();
   });
 
+  it("al activar 'Ver todos' calcula el recuento de caja acumulado de todos los meses", () => {
+    render(<FinanzasPage />);
+    expect(screen.getByRole("heading", { name: "Caja de hoy" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Fecha de arqueo de caja")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver todos" }));
+
+    const seccionCaja = screen.getByRole("heading", { name: "Caja acumulada (todos los meses)" }).closest("section")!;
+    expect(within(seccionCaja).getByText("Total cobrado (1)")).toBeInTheDocument();
+    expect(within(seccionCaja).getAllByText("$20.000").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByLabelText("Fecha de arqueo de caja")).not.toBeInTheDocument();
+  });
+
   it("sin alias cargado, el formulario no sugiere un alias que parezca real", () => {
     render(<FinanzasPage />);
     fireEvent.click(screen.getByRole("button", { name: /Cargar alias/ }));
