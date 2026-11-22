@@ -270,8 +270,10 @@ export function movimientosDeCaja(p: Pago): MovimientoCaja[] {
 /**
  * Calcula en memoria el Arqueo de Caja de una fecha exacta ("YYYY-MM-DD"),
  * homólogo a PagoService.calcularArqueoDiario en Spring Boot.
+ * Si se omite `fecha` (o viene vacía), calcula el recuento acumulado de todos los meses.
  */
-export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCajaResumen {
+export function calcularArqueoCajaLocal(pagos: Pago[], fecha?: string): ArqueoCajaResumen {
+  const fechaFiltro = (fecha || "").trim();
   let totalRecaudado = 0;
   let totalEfectivo = 0;
   let totalTransferencia = 0;
@@ -286,13 +288,14 @@ export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCaj
   let montoAnulado = 0;
 
   for (const p of pagos) {
-    const anuladoEseDia =
+    const anuladoEnRango =
       p.estado === "ANULADO" &&
-      ((p.fechaAnulacion && p.fechaAnulacion.slice(0, 10) === fecha) ||
-        (!p.fechaAnulacion && p.fecha === fecha));
+      (!fechaFiltro ||
+        (p.fechaAnulacion && p.fechaAnulacion.slice(0, 10) === fechaFiltro) ||
+        (!p.fechaAnulacion && p.fecha === fechaFiltro));
 
     if (p.estado === "ANULADO") {
-      if (!anuladoEseDia) continue;
+      if (!anuladoEnRango) continue;
       if (!idsAnulados.has(p.id)) {
         idsAnulados.add(p.id);
         const orig = p.montoAbonado != null && p.montoAbonado > 0 ? p.montoAbonado : p.monto;
@@ -305,7 +308,7 @@ export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCaj
 
     let contoParcial = false;
     for (const mov of movimientosDeCaja(p)) {
-      if (mov.fecha !== fecha || !mov.monto) continue;
+      if ((fechaFiltro && mov.fecha !== fechaFiltro) || !mov.monto) continue;
 
       totalRecaudado += mov.monto;
       if (mov.monto > 0) cantidadCobros += 1;
@@ -340,7 +343,7 @@ export function calcularArqueoCajaLocal(pagos: Pago[], fecha: string): ArqueoCaj
     .sort((a, b) => b.totalRecaudado - a.totalRecaudado);
 
   return {
-    fecha,
+    fecha: fechaFiltro,
     totalRecaudado,
     totalEfectivo,
     totalTransferencia,

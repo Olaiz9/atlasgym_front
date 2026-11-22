@@ -160,4 +160,72 @@ describe("Etapa 5 — Caja Real Argentina (Señas Parciales, Anulación Auditada
     expect(diaSaldo.cantidadCobros).toBe(1);
     expect(diaSaldo.porOperador).toEqual([{ operador: "Titular 2", totalRecaudado: 12000, cantidadOperaciones: 1 }]);
   });
+
+  it("calcula el arqueo acumulado de todos los meses cuando se omite la fecha", () => {
+    const pagos: Pago[] = [
+      {
+        id: "m1",
+        alumnoId: "a1",
+        plan: "Libre",
+        monto: 30000,
+        montoAbonado: 30000,
+        fecha: "2026-09-10",
+        periodoMes: "2026-09",
+        metodo: "Efectivo",
+        estado: "PAGADO",
+        registradoPor: "Bruno",
+      },
+      {
+        id: "m2",
+        alumnoId: "a2",
+        plan: "Libre",
+        monto: 32000,
+        montoAbonado: 32000,
+        fecha: "2026-10-05",
+        periodoMes: "2026-10",
+        metodo: "Transferencia",
+        estado: "PAGADO",
+        registradoPor: "Lucas",
+      },
+      {
+        id: "m3",
+        alumnoId: "a3",
+        plan: "3 días",
+        monto: 25000,
+        montoAbonado: 10000,
+        fecha: "2026-11-15",
+        periodoMes: "2026-11",
+        metodo: "Tarjeta",
+        estado: "PARCIAL",
+        registradoPor: "Bruno",
+      },
+      {
+        id: "m4",
+        alumnoId: "a4",
+        plan: "Libre",
+        monto: 40000,
+        montoAbonado: 40000,
+        fecha: "2026-10-20",
+        periodoMes: "2026-10",
+        metodo: "Efectivo",
+        estado: "ANULADO",
+        registradoPor: "Bruno",
+      },
+    ];
+
+    const acumulado = calcularArqueoCajaLocal(pagos);
+    expect(acumulado.totalRecaudado).toBe(72000);
+    expect(acumulado.totalEfectivo).toBe(30000);
+    expect(acumulado.totalTransferencia).toBe(32000);
+    expect(acumulado.totalTarjeta).toBe(10000);
+    expect(acumulado.cantidadCobros).toBe(3);
+    expect(acumulado.cantidadParciales).toBe(1);
+    expect(acumulado.saldoPendienteParciales).toBe(15000);
+    expect(acumulado.cantidadAnulados).toBe(1);
+    expect(acumulado.montoAnulado).toBe(40000);
+    expect(acumulado.porOperador).toEqual([
+      { operador: "Bruno", totalRecaudado: 40000, cantidadOperaciones: 2 },
+      { operador: "Lucas", totalRecaudado: 32000, cantidadOperaciones: 1 },
+    ]);
+  });
 });
