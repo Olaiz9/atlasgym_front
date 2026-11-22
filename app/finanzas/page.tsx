@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
-import { inicialesDe } from "@/lib/utils";
+import { coincideBusqueda, inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
   formatearMes,
@@ -57,7 +57,7 @@ import {
 import { WhatsAppIcon } from "@/components/icons/brand-icons";
 import { useToast } from "@/components/ui/toast";
 import { useDebounce } from "@/lib/use-debounce";
-import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "@/lib/pago-historial";
+import { alumnoDePagoEstaDeBaja, nombreDelPago } from "@/lib/pago-historial";
 import { descargarCSV } from "@/lib/export-utils";
 
 const FILTROS: { label: string; value: EstadoPago | "TODOS" }[] = [
@@ -441,18 +441,13 @@ export default function FinanzasPage() {
   }, [pagosDelMes, alumnos, getEstadoCuenta]);
 
   const pagosFiltrados = useMemo(() => {
-    const q = busquedaDebounced.trim().toLowerCase();
+    const q = busquedaDebounced;
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
       const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
-      const nombreAlumno = nombreHistoricoDelPago(p, getAlumno(p.alumnoId));
-      const coincideBusqueda =
-        !q ||
-        nombreAlumno.toLowerCase().includes(q) ||
-        p.plan.toLowerCase().includes(q) ||
-        p.metodo.toLowerCase().includes(q) ||
-        (p.registradoPor && p.registradoPor.toLowerCase().includes(q));
-      return coincideFiltro && coincideMetodo && coincideBusqueda;
+      const nombreAlumno = nombreDelPago(p, getAlumno(p.alumnoId));
+      const coincideTexto = coincideBusqueda(q, nombreAlumno, p.alumnoNombreHistorico, p.plan, p.metodo, p.registradoPor);
+      return coincideFiltro && coincideMetodo && coincideTexto;
     });
   }, [pagosDelMes, filtro, filtroMetodo, busquedaDebounced, getAlumno]);
 
@@ -529,7 +524,7 @@ export default function FinanzasPage() {
     ];
     const filas = pagosDelMes.map((p) => {
       const alumno = getAlumno(p.alumnoId);
-      const nombre = nombreHistoricoDelPago(p, alumno) + (alumnoDePagoEstaDeBaja(p, alumno) ? " (Alumno dado de baja)" : "");
+      const nombre = nombreDelPago(p, alumno) + (alumnoDePagoEstaDeBaja(p, alumno) ? " (Alumno dado de baja)" : "");
       const inicioPeriodo = p.periodoMes || p.fecha.slice(0, 7);
       return [
         p.id,
@@ -821,10 +816,10 @@ export default function FinanzasPage() {
                           href={`/alumnos/${alumno.id}`}
                           className={`block font-semibold hover:underline ${esAnulado ? "text-slate-500 line-through" : "text-white"}`}
                         >
-                          {nombreHistoricoDelPago(pago, alumno)}
+                          {nombreDelPago(pago, alumno)}
                         </Link>
                       ) : (
-                        <span className="block italic text-slate-500">{nombreHistoricoDelPago(pago, alumno)}</span>
+                        <span className="block italic text-slate-500">{nombreDelPago(pago, alumno)}</span>
                       )}
                       {alumno?.dni && <span className="mt-0.5 block text-[13px] text-slate-500">DNI {alumno.dni}</span>}
                       {alumnoDePagoEstaDeBaja(pago, alumno) && (
