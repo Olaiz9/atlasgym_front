@@ -382,28 +382,55 @@ export function reproducirSonidoFeedback(tipo: "EXITO" | "ALERTA" | "ERROR"): vo
  * Emite una campana / chime sonoro nítido y agradable cuando finaliza el tiempo de descanso
  * entre series en la rutina del alumno, avisándole que debe comenzar la siguiente serie.
  */
-export function reproducirSonidoFinDescanso(): void {
-  if (typeof window === "undefined") return;
+let contextoDescanso: AudioContext | null = null;
 
+function obtenerAudioDescanso(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const Constructor = window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Constructor) return null;
+  if (!contextoDescanso || contextoDescanso.state === "closed") contextoDescanso = new Constructor();
+  return contextoDescanso;
+}
+
+/** Llamar desde el toque del alumno para habilitar audio en navegadores móviles. */
+export function desbloquearAudioDescanso(): void {
   try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
+    const ctx = obtenerAudioDescanso();
+    if (!ctx) return;
+    void ctx.resume().catch(() => {});
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.01);
+  } catch {
+    // El temporizador funciona aunque el dispositivo no permita audio.
+  }
+}
+
+export function reproducirSonidoFinDescanso(): void {
+  try {
+    if (typeof navigator !== "undefined") navigator.vibrate?.([200, 100, 200]);
+  } catch { /* La vibración es opcional. */ }
+  try {
+    const ctx = obtenerAudioDescanso();
+    if (!ctx) return;
     const ahora = ctx.currentTime;
 
-    // Doble campana deportiva nítida (880 Hz y 1174.66 Hz - A5 a D6)
-    const notas = [880, 1174.66];
+    // Tres campanadas para distinguir el aviso del ruido del gimnasio.
+    const notas = [880, 1174.66, 880];
     notas.forEach((freq, i) => {
       const start = ahora + i * 0.16;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(freq, start);
 
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
+      gain.gain.linearRampToValueAtTime(0.4, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.55);
 
       osc.connect(gain);

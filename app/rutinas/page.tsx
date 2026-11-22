@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia, obtenerBorradorEntrenamiento, diaInicialDeRutina, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
-import { reproducirSonidoFinDescanso } from '@/lib/asistencia-utils'
+import { reproducirSonidoFinDescanso, desbloquearAudioDescanso } from '@/lib/asistencia-utils'
 import {
   Dumbbell,
   Plus,
@@ -1918,7 +1918,11 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     notificado: boolean
   } | null>(null)
 
+  const descansoNotificado = useRef(false)
+
   const iniciarDescanso = useCallback((ejercicioNombre: string, segundos: number) => {
+    desbloquearAudioDescanso()
+    descansoNotificado.current = false
     setTemporizador({
       ejercicioNombre,
       segundosRestantes: segundos,
@@ -1932,7 +1936,8 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     if (!temporizador || !temporizador.activo) return
 
     if (temporizador.segundosRestantes <= 0) {
-      if (!temporizador.notificado) {
+      if (!temporizador.notificado && !descansoNotificado.current) {
+        descansoNotificado.current = true
         reproducirSonidoFinDescanso()
         setTemporizador((prev) => (prev ? { ...prev, notificado: true, activo: false } : null))
       }
@@ -1943,18 +1948,9 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
       setTemporizador((prev) => {
         if (!prev || !prev.activo) return prev
         const nuevosSegundos = prev.segundosRestantes - 1
-        if (nuevosSegundos <= 0 && !prev.notificado) {
-          reproducirSonidoFinDescanso()
-          return {
-            ...prev,
-            segundosRestantes: 0,
-            activo: false,
-            notificado: true,
-          }
-        }
         return {
           ...prev,
-          segundosRestantes: nuevosSegundos,
+          segundosRestantes: Math.max(0, nuevosSegundos),
         }
       })
     }, 1000)
