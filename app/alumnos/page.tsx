@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store";
 import { calcularDiasDesde, fechaLocalHoy, formatDiasIngreso } from "@/lib/date-utils";
 import { extraerLimiteDiasSemana, filtrarAsistenciasActivas } from "@/lib/asistencia-utils";
-import { inicialesDe } from "@/lib/utils";
+import { coincideBusqueda, inicialesDe } from "@/lib/utils";
 import { ModalNuevoAlumno } from "@/components/modal-nuevo-alumno";
 import { ModalEditarAlumno } from "@/components/modal-editar-alumno";
 import { ModalConfirmarBaja } from "@/components/modal-confirmar-baja";
@@ -138,7 +138,7 @@ export default function AlumnosPage() {
   const [elementosPorPagina, setElementosPorPagina] = useState(15);
 
   const alumnosFiltrados = useMemo(() => {
-    const q = busquedaDebounced.trim().toLowerCase();
+    const q = busquedaDebounced;
     return alumnosConEstado.filter((a) => {
       const activo = a.activo !== false && a.estadoCuenta !== "INACTIVO";
       const coincideFiltro =
@@ -149,15 +149,8 @@ export default function AlumnosPage() {
           : filtro === "SENIA"
           ? activo && saldosSenia.has(a.id)
           : a.activo !== false && a.estadoCuenta === filtro;
-      const coincideBusqueda =
-        !q ||
-        a.nombre.toLowerCase().includes(q) ||
-        (a.usuario && a.usuario.toLowerCase().includes(q)) ||
-        (a.dni && a.dni.toLowerCase().includes(q)) ||
-        (a.email && a.email.toLowerCase().includes(q)) ||
-        (a.celular && a.celular.includes(q)) ||
-        (a.plan && a.plan.toLowerCase().includes(q));
-      return coincideFiltro && coincideBusqueda;
+      const coincideTexto = coincideBusqueda(q, a.nombre, a.usuario, a.dni, a.email, a.celular, a.plan);
+      return coincideFiltro && coincideTexto;
     });
   }, [alumnosConEstado, filtro, busquedaDebounced, saldosSenia]);
 
