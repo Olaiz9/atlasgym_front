@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { type ResultadoAgregarPago, useAppData } from "@/lib/store";
-import { inicialesDe } from "@/lib/utils";
+import { coincideBusqueda, inicialesDe } from "@/lib/utils";
 import {
   formatFechaAR,
   formatearMes,
@@ -441,18 +441,13 @@ export default function FinanzasPage() {
   }, [pagosDelMes, alumnos, getEstadoCuenta]);
 
   const pagosFiltrados = useMemo(() => {
-    const q = busquedaDebounced.trim().toLowerCase();
+    const q = busquedaDebounced;
     return pagosDelMes.filter((p) => {
       const coincideFiltro = filtro === "TODOS" || p.estado === filtro;
       const coincideMetodo = filtroMetodo === "TODOS" || p.metodo.toLowerCase() === filtroMetodo.toLowerCase();
       const nombreAlumno = nombreHistoricoDelPago(p, getAlumno(p.alumnoId));
-      const coincideBusqueda =
-        !q ||
-        nombreAlumno.toLowerCase().includes(q) ||
-        p.plan.toLowerCase().includes(q) ||
-        p.metodo.toLowerCase().includes(q) ||
-        (p.registradoPor && p.registradoPor.toLowerCase().includes(q));
-      return coincideFiltro && coincideMetodo && coincideBusqueda;
+      const coincideTexto = coincideBusqueda(q, nombreAlumno, p.plan, p.metodo, p.registradoPor);
+      return coincideFiltro && coincideMetodo && coincideTexto;
     });
   }, [pagosDelMes, filtro, filtroMetodo, busquedaDebounced, getAlumno]);
 
