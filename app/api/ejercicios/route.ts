@@ -6,6 +6,7 @@ const TOTALES_POR_GRUPO: Record<string, number> = {
   Pecho: 0,
   Espalda: 0,
   Piernas: 0,
+  Glúteos: 0,
   Hombros: 0,
   Brazos: 0,
   Core: 0,
