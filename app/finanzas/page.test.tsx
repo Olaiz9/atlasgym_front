@@ -7,6 +7,7 @@ const replaceMock = vi.fn();
 const cobrarMock = vi.fn();
 const refrescarMock = vi.fn();
 const toastMock = vi.fn();
+const actualizarEstadoMock = vi.fn();
 let searchParamsActual = new URLSearchParams();
 let alumnosActuales: Array<{ id: string; nombre: string; dni: string; plan: string; planId?: string; activo: boolean; fechaAlta: string }> = [];
 
@@ -24,7 +25,7 @@ vi.mock("@/lib/store", () => ({
     getAlumno: () => undefined,
     getEstadoCuenta: () => "PENDIENTE",
     usuarioActual: { id: "admin", nombre: "Admin", rol: "ADMIN" },
-    agregarPago: cobrarMock, refrescarPagos: refrescarMock, actualizarEstadoPago: vi.fn(), eliminarPago: vi.fn(),
+    agregarPago: cobrarMock, refrescarPagos: refrescarMock, actualizarEstadoPago: actualizarEstadoMock, eliminarPago: vi.fn(),
     asignarCredencialesAlumno: vi.fn(),
     datosCobro: { alias: "", titular: "" }, guardarDatosCobro: vi.fn(),
   }),
@@ -36,6 +37,22 @@ describe("Finanzas del administrador", () => {
     replaceMock.mockClear();
     searchParamsActual = new URLSearchParams();
     alumnosActuales = [];
+  });
+
+  it("pide confirmación antes de cambiar el estado de un pago desde la tabla", () => {
+    actualizarEstadoMock.mockClear();
+    render(<FinanzasPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver todos" }));
+    const fila = screen.getByText("Socio historico").closest("tr")!;
+    fireEvent.change(within(fila).getByRole("combobox"), { target: { value: "PENDIENTE" } });
+    expect(actualizarEstadoMock).not.toHaveBeenCalled();
+    const dialogo = screen.getByRole("dialog", { name: "¿Pasar a Pendiente?" });
+    expect(within(dialogo).getByText(/sale de la caja de hoy/)).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
+    expect(actualizarEstadoMock).not.toHaveBeenCalled();
+    fireEvent.change(within(fila).getByRole("combobox"), { target: { value: "PENDIENTE" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cambiar" }));
+    expect(actualizarEstadoMock).toHaveBeenCalledWith("7", "PENDIENTE");
   });
 
   it("muestra el pago historico y su baja aunque la ficha no este en el listado", () => {
