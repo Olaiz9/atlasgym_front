@@ -396,6 +396,8 @@ export default function FinanzasPage() {
   const [dniPreseleccionado, setDniPreseleccionado] = useState<string | null>(null);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const [pagoACompletar, setPagoACompletar] = useState<Pago | null>(null);
+  // Un toque mal en la tabla movía plata de la caja sin aviso: el cambio de estado se confirma antes.
+  const [cambioEstado, setCambioEstado] = useState<{ pago: Pago; estado: EstadoPago } | null>(null);
   const [fechaArqueo, setFechaArqueo] = useState<string>(() => fechaLocalHoy());
 
   const [paginaActual, setPaginaActual] = useState(1);
@@ -881,7 +883,7 @@ export default function FinanzasPage() {
                           <select
                             aria-label="Cambiar estado del pago"
                             value={pago.estado}
-                            onChange={(e) => actualizarEstadoPago(pago.id, e.target.value as EstadoPago)}
+                            onChange={(e) => setCambioEstado({ pago, estado: e.target.value as EstadoPago })}
                             className={`cursor-pointer appearance-none bg-transparent pr-5 text-sm outline-none ${ESTADO_STYLES[pago.estado]}`}
                           >
                             <option value="PAGADO" className="bg-slate-900 text-white">Pagado</option>
@@ -1099,6 +1101,18 @@ export default function FinanzasPage() {
           }}
         />
       )}
+      {cambioEstado && (
+        <ModalConfirmarEstadoPago
+          pago={cambioEstado.pago}
+          estadoNuevo={cambioEstado.estado}
+          nombreAlumno={getAlumno(cambioEstado.pago.alumnoId)?.nombre ?? cambioEstado.pago.alumnoNombreHistorico ?? "este socio"}
+          onCancel={() => setCambioEstado(null)}
+          onConfirm={() => {
+            actualizarEstadoPago(cambioEstado.pago.id, cambioEstado.estado);
+            setCambioEstado(null);
+          }}
+        />
+      )}
       {pagoACompletar && (
         <ModalCompletarSaldo
           pago={pagoACompletar}
@@ -1107,6 +1121,67 @@ export default function FinanzasPage() {
           onConfirm={confirmarCompletarSaldo}
         />
       )}
+    </div>
+  );
+}
+
+const NOMBRE_ESTADO: Record<string, string> = { PAGADO: "Pagado", PENDIENTE: "Pendiente", VENCIDO: "Vencido" };
+
+// ---------- Modal: confirmar el cambio de estado desde la tabla ----------
+function ModalConfirmarEstadoPago({
+  pago,
+  estadoNuevo,
+  nombreAlumno,
+  onCancel,
+  onConfirm,
+}: {
+  pago: Pago;
+  estadoNuevo: EstadoPago;
+  nombreAlumno: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const monto = `$${pago.monto.toLocaleString("es-AR")}`;
+  const sacaDeCaja = pago.estado === "PAGADO" && estadoNuevo !== "PAGADO";
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-cambio-estado"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6 text-slate-100 shadow-2xl"
+      >
+        <h2 id="titulo-cambio-estado" className="text-xl font-semibold text-white">
+          {`¿Pasar a ${NOMBRE_ESTADO[estadoNuevo] ?? estadoNuevo}?`}
+        </h2>
+        <p className="mt-1.5 text-sm text-slate-400">
+          {sacaDeCaja
+            ? `El pago de ${nombreAlumno} (${monto}) sale de la caja de hoy y el socio queda debiendo. Si querés deshacer un cobro mal hecho, usá Anular: queda registrado el motivo.`
+            : estadoNuevo === "PAGADO"
+            ? `El pago de ${nombreAlumno} (${monto}) entra en la caja de hoy como cobrado.`
+            : `Cambia el estado del pago de ${nombreAlumno} (${monto}) y su estado de cuenta.`}
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-11 rounded-xl border border-slate-700 bg-slate-800/50 px-5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white hover:bg-blue-500"
+          >
+            Sí, cambiar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
