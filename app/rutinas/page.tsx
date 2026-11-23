@@ -2467,7 +2467,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
 
             {temporizador.segundosRestantes === 0 && (
               <p className="text-center text-xs font-bold text-emerald-300 mt-2 animate-pulse">
-                🔔 ¡Descanso completado! Preparate para tu próxima serie.
+                ¡Descanso completado! Preparate para tu próxima serie.
               </p>
             )}
           </div>
