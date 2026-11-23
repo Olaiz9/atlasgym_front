@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mapPagoDtoToFront } from "./api-mappers";
-import { alumnoDePagoEstaDeBaja, nombreHistoricoDelPago } from "./pago-historial";
+import { alumnoDePagoEstaDeBaja, nombreDelPago } from "./pago-historial";
 import { ejecutarBajaAlumno } from "./plan-utils";
 import type { Alumno } from "./types";
 
@@ -14,9 +14,10 @@ const alumno: Alumno = {
 };
 
 describe("Pagos historicos de alumnos dados de baja", () => {
-  it("conserva el nombre recibido del backend y detecta baja con o sin ficha cargada", () => {
+  it("muestra el nombre actual de la ficha, usa el del pago si no hay ficha, y detecta baja con o sin ficha cargada", () => {
     const pago = mapPagoDtoToFront(dto);
-    expect(nombreHistoricoDelPago(pago, alumno)).toBe("Nombre al pagar");
+    expect(nombreDelPago(pago, alumno)).toBe("Nombre actualizado");
+    expect(nombreDelPago(pago)).toBe("Nombre al pagar");
     expect(alumnoDePagoEstaDeBaja(pago)).toBe(true);
     expect(alumnoDePagoEstaDeBaja(pago, alumno)).toBe(true);
     expect(pago.monto).toBe(20000);
@@ -43,6 +44,6 @@ describe("Pagos historicos de alumnos dados de baja", () => {
   });
   it("admite el nombre enviado por versiones antiguas de la API", () => {
     const pago = mapPagoDtoToFront({ ...dto, alumnoNombreHistorico: undefined, alumnoNombre: "Nombre anterior" });
-    expect(nombreHistoricoDelPago(pago)).toBe("Nombre anterior");
+    expect(nombreDelPago(pago)).toBe("Nombre anterior");
   });
 });

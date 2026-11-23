@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
 import { buscarVideoParaEjercicio, formatPrevia, obtenerBorradorEntrenamiento, diaInicialDeRutina, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
-import { reproducirSonidoFinDescanso } from '@/lib/asistencia-utils'
+import { reproducirSonidoFinDescanso, desbloquearAudioDescanso } from '@/lib/asistencia-utils'
 import {
   Dumbbell,
   Plus,
@@ -729,6 +729,13 @@ function ModalNuevaRutina({
     ])
   }
 
+  const eliminarDia = (diaId: string) => {
+    setErrorValidacion(null)
+    // La rutina conserva al menos un día.
+    setDias((prev) => (prev.length > 1 ? prev.filter((d) => d.id !== diaId) : prev))
+    setDiaParaBuscar((actual) => (actual === diaId ? null : actual))
+  }
+
   const agregarEjercicioADia = (diaId: string) => {
     setErrorValidacion(null)
     setDias((prev) =>
@@ -921,12 +928,14 @@ function ModalNuevaRutina({
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {dias.map((dia, idx) => (
                 <TarjetaDiaRutina
                   key={dia.id}
                   dia={dia}
                   idx={idx}
+                  puedeEliminar={dias.length > 1}
+                  onEliminarDia={() => eliminarDia(dia.id)}
                   onAbrirBuscador={() => setDiaParaBuscar(dia.id)}
                   onActualizarNombre={(nombre) => actualizarNombreDia(dia.id, nombre)}
                   onAgregarEjercicio={() => agregarEjercicioADia(dia.id)}
@@ -980,6 +989,8 @@ function ModalNuevaRutina({
 function TarjetaDiaRutina({
   dia,
   idx,
+  puedeEliminar,
+  onEliminarDia,
   onAbrirBuscador,
   onActualizarNombre,
   onAgregarEjercicio,
@@ -988,6 +999,8 @@ function TarjetaDiaRutina({
 }: {
   dia: DiaRutina
   idx: number
+  puedeEliminar: boolean
+  onEliminarDia: () => void
   onAbrirBuscador: () => void
   onActualizarNombre: (nombre: string) => void
   onAgregarEjercicio: () => void
@@ -995,14 +1008,31 @@ function TarjetaDiaRutina({
   onEliminarEjercicio: (ejId: string) => void
 }) {
   return (
-    <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950/40 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <input
-          value={dia.nombre}
-          onChange={(e) => onActualizarNombre(e.target.value)}
-          placeholder={`Día ${idx + 1}`}
-          className="font-bold text-sm bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 outline-none text-white focus:ring-2 focus:ring-blue-500 flex-1"
-        />
+    <div className="rounded-2xl border border-slate-700/80 border-l-4 border-l-blue-500 bg-slate-950/40 shadow-md overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-800/70 border-b border-slate-700/80 px-4 py-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="shrink-0 text-[11px] font-black tracking-wide px-2 py-1 rounded-md bg-blue-600/20 border border-blue-500/40 text-blue-300">
+            DÍA {idx + 1}
+          </span>
+          <input
+            aria-label={`Nombre del día ${idx + 1}`}
+            value={dia.nombre}
+            onChange={(e) => onActualizarNombre(e.target.value)}
+            placeholder={`Día ${idx + 1}`}
+            className="font-bold text-sm bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 outline-none text-white focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"
+          />
+          {puedeEliminar && (
+            <button
+              type="button"
+              onClick={onEliminarDia}
+              aria-label={`Eliminar día ${idx + 1}`}
+              title="Eliminar este día"
+              className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors shrink-0"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
@@ -1023,7 +1053,7 @@ function TarjetaDiaRutina({
         </div>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="p-4 space-y-2.5">
         {dia.ejercicios.map((ej) => (
           <div key={ej.id} className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-2.5 shadow-sm">
             {/* Fila superior: Nombre del ejercicio y botón eliminar */}
@@ -1162,13 +1192,15 @@ function ModalBuscarEjercicioVideoteca({
   const [recientesAgregados, setRecientesAgregados] = useState<Record<string, boolean>>({})
   const [contadorAgregados, setContadorAgregados] = useState(0)
 
-  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core']
+  const GRUPOS = ['TODOS', 'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros', 'Brazos', 'Core']
 
   const normalizar = (texto: string) =>
     texto
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\bthrusts?\b/g, 'trust')
+      .replace(/\btrusts\b/g, 'trust')
 
   const ejerciciosFiltrados = useMemo(() => {
     const queryNorm = normalizar(busqueda.trim())
@@ -1292,7 +1324,7 @@ function ModalBuscarEjercicioVideoteca({
           </div>
 
           {/* Chips de Grupo Muscular */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto sm:flex-wrap pb-1 text-xs">
             {GRUPOS.map((grupo) => {
               const activo = grupoSeleccionado === grupo
               return (
@@ -1888,7 +1920,11 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     notificado: boolean
   } | null>(null)
 
+  const descansoNotificado = useRef(false)
+
   const iniciarDescanso = useCallback((ejercicioNombre: string, segundos: number) => {
+    desbloquearAudioDescanso()
+    descansoNotificado.current = false
     setTemporizador({
       ejercicioNombre,
       segundosRestantes: segundos,
@@ -1902,7 +1938,8 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     if (!temporizador || !temporizador.activo) return
 
     if (temporizador.segundosRestantes <= 0) {
-      if (!temporizador.notificado) {
+      if (!temporizador.notificado && !descansoNotificado.current) {
+        descansoNotificado.current = true
         reproducirSonidoFinDescanso()
         setTemporizador((prev) => (prev ? { ...prev, notificado: true, activo: false } : null))
       }
@@ -1913,18 +1950,9 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
       setTemporizador((prev) => {
         if (!prev || !prev.activo) return prev
         const nuevosSegundos = prev.segundosRestantes - 1
-        if (nuevosSegundos <= 0 && !prev.notificado) {
-          reproducirSonidoFinDescanso()
-          return {
-            ...prev,
-            segundosRestantes: 0,
-            activo: false,
-            notificado: true,
-          }
-        }
         return {
           ...prev,
-          segundosRestantes: nuevosSegundos,
+          segundosRestantes: Math.max(0, nuevosSegundos),
         }
       })
     }, 1000)
@@ -2439,7 +2467,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
 
             {temporizador.segundosRestantes === 0 && (
               <p className="text-center text-xs font-bold text-emerald-300 mt-2 animate-pulse">
-                🔔 ¡Descanso completado! Preparate para tu próxima serie.
+                ¡Descanso completado! Preparate para tu próxima serie.
               </p>
             )}
           </div>

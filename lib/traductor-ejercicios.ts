@@ -20,7 +20,13 @@ const MAPA_EQUIPOS_PREFIJO: [RegExp, string][] = [
   [/^medicine ball\s+/i, 'con balón medicinal'],
   [/^foam roll(er)?\s+/i, 'con rodillo'],
   [/^ez barbell\s+/i, 'con barra Z'],
+  [/^trap bar\s+/i, 'con barra hexagonal'],
   [/^rope\s+/i, 'con soga'],
+  [/^sled\s+/i, 'en prensa / trineo'],
+  [/^assisted\s+/i, 'asistido'],
+  [/^weighted\s+/i, 'con lastre'],
+  [/^resistance band\s+/i, 'con banda elástica'],
+  [/^exercise ball\s+/i, 'en fitball'],
 ]
 
 const DICCIONARIO_MOVIMIENTOS: [RegExp, string][] = [
@@ -134,7 +140,115 @@ const DICCIONARIO_MOVIMIENTOS: [RegExp, string][] = [
   [/\bcontralateral\b/gi, 'contralateral'],
   [/\binside leg kick\b/gi, 'con patada interna'],
   [/\bagainst wall\b/gi, 'contra la pared'],
-  [/\bon (stability |bosu )?ball\b/gi, 'sobre balón / fitball'],
+  ...`
+on (stability |bosu |exercise )?ball=sobre fitball
+with rope( attachment)?=con soga
+with arm blaster=con soporte de bíceps
+with support=con apoyo
+two legs on bench=apoyado en banco
+on (flat )?bench=en banco
+on floor=en suelo
+on knees=de rodillas
+hip thrusts?=empuje de cadera (hip thrust)
+hip abduction=abducción de cadera
+hip adduction=aducción de cadera
+hip extension=extensión de cadera (patada de glúteo)
+hip lift=elevación de cadera
+pull[- ]?through=pull through de glúteos
+reverse hyper( ?extension)?=hiperextensión inversa de glúteos
+hyperextensions?=hiperextensiones lumbares
+good morning=peso muerto buenos días (good morning)
+step[- ]?ups?=subida al cajón
+monster walk=caminata lateral con banda
+pelvic tilt=retroversión pélvica
+piriformis=piriforme / glúteo
+pullovers?=pullover
+reverse wrist curls?=curl de muñeca inverso
+wrist curls?=curl de muñeca
+wrist roller=rodillo de muñeca y antebrazo
+sit[- ]?ups?=abdominales sit-up
+ab rollerout=rueda abdominal
+pallof press=press Pallof antirrotación
+dead bug=bicho muerto (dead bug)
+reverse fly(es)?=vuelos posteriores
+rear lateral raises?=vuelos posteriores
+rear delt rows?=remo al deltoides posterior
+rear delt=deltoides posterior
+close[- ]?grip=agarre estrecho
+wide[- ]?grip=agarre ancho
+narrow[- ]?(grip|stance)=posición cerrada
+clean[- ]?grip=agarre olímpico
+underhand( grip)?=agarre supino
+overhand( grip)?=agarre prono
+revers(e)? grip=agarre invertido
+alternate=alternado
+two arms?=a dos brazos
+two legs?=a dos piernas
+straight legs?=piernas extendidas
+straight arms?=brazos extendidos
+bent[- ]?over=inclinado
+bent knees?=rodillas flexionadas
+weighted=con lastre
+assisted=asistido
+suspended=en suspensión
+resistance band=con banda elástica
+exercise ball=con fitball
+medicine ball=con balón medicinal
+stability ball=con fitball
+stretch(es)?=estiramiento
+jump(ing)?=con salto
+twist(ing)?=con giro
+rotation=rotación
+prone=boca abajo
+supine=boca arriba
+parallel=en paralelas
+outer hip abductor=abductor de cadera
+abductor=abductor
+adductor=aductor
+glutes?=glúteos
+gluteus=glúteos
+hamstrings?=isquiotibiales
+calves=gemelos
+calf=gemelos
+chest=pecho
+shoulder(s)?=hombros
+triceps?=tríceps
+biceps?=bíceps
+forearms?=antebrazos
+abs=abdominales
+back=espalda
+front=frontal
+side=lateral
+rear=posterior
+high=alto
+low=bajo
+wide=amplio
+full=completo
+deep=profundo
+bridge=puente
+raises?=elevaciones
+extensions?=extensión
+press=press
+barbell=con barra
+dumbbells?=con mancuerna
+cable=en polea
+band=con banda
+kettlebell=con pesa rusa
+lever(age)?=en máquina
+machine=en máquina
+smith=en máquina Smith
+sled=en prensa
+bench=en banco
+floor=en suelo
+wall=en pared
+rope=con soga
+`
+    .trim()
+    .split('\n')
+    .map((par): [RegExp, string] => {
+      const [patron, traduccion] = par.split('=')
+      return [new RegExp(`\\b${patron}\\b`, 'gi'), traduccion]
+    }),
 ]
 
 const DICCIONARIO_MUSCULOS: Record<string, string> = {
@@ -238,7 +352,16 @@ const FRASES_INSTRUCCIONES: [RegExp, string][] = [
  */
 export function traducirNombre(nombreIngles: string): string {
   if (!nombreIngles) return 'Ejercicio'
-  let raw = nombreIngles.toLowerCase().trim()
+  let raw = nombreIngles
+    .toLowerCase()
+    .replace(/в°/g, '°')
+    .replace(/\((male|female|back pov|side pov)\)/gi, '')
+    .replace(/\bv\.\s*\d+\b/gi, '')
+    .replace(/\b(fast|sharp|fierce|micro|wall|inclined)\s+style\b/gi, '')
+    .replace(/\s*-\s*(deep|expanded|blunt)\s+variation\b/gi, '')
+    .replace(/\b(pointed|twisted|fierce|rough|controlled|advanced|traditional)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   // Extraer equipo inicial si existe para ordenarlo al final
   let equipoFinal = ''
