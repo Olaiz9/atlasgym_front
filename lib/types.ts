@@ -33,6 +33,8 @@ export interface Alumno {
   planId?: string;
   plan: string;
   fechaAlta: string; // "YYYY-MM-DD"
+  /** Última reactivación ("YYYY-MM-DD"): cuenta como alta nueva para la regla de 60 días. */
+  fechaReactivacion?: string;
   activo: boolean;
   ultimaAsistencia?: string; // "YYYY-MM-DD" — null/undefined = todavía no registró asistencia
   tieneRutina?: boolean;
@@ -457,11 +459,18 @@ export function estadoCuentaDeAlumno(
   pagos: Pago[],
   fechaAlta?: string,
   socioActivo: boolean = true,
-  fechaReferencia: Date = new Date()
+  fechaReferencia: Date = new Date(),
+  fechaReactivacion?: string
 ): EstadoCuenta {
   if (!socioActivo) {
     return "INACTIVO";
   }
+
+  // Reactivar a un socio cuenta como un alta nueva para la regla de los 60 días (igual que el back).
+  const inicio =
+    fechaReactivacion && (!fechaAlta || fechaReactivacion > fechaAlta) ? fechaReactivacion : fechaAlta;
+  const reactivacionReciente =
+    !!fechaReactivacion && calcularDiferenciaDiasCalendario(fechaReactivacion, fechaReferencia) <= 60;
 
   const ymActual = periodoMesActual(fechaReferencia);
   const dia = fechaReferencia.getDate();
@@ -469,10 +478,10 @@ export function estadoCuentaDeAlumno(
 
   // 1. Socio sin pagos activos registrados aún (excluyendo anulados)
   if (pagosDelAlumno.length === 0) {
-    if (fechaAlta && fechaAlta.length >= 7) {
-      const ymAlta = fechaAlta.slice(0, 7);
+    if (inicio && inicio.length >= 7) {
+      const ymAlta = inicio.slice(0, 7);
       const mesesDesdeAlta = diferenciaMesesPeriodo(ymAlta, ymActual);
-      const diasDesdeAlta = calcularDiferenciaDiasCalendario(fechaAlta, fechaReferencia);
+      const diasDesdeAlta = calcularDiferenciaDiasCalendario(inicio, fechaReferencia);
       if (mesesDesdeAlta >= 2 || diasDesdeAlta > 60) {
         return "INACTIVO";
       }
@@ -513,8 +522,9 @@ export function estadoCuentaDeAlumno(
 
   // 3. Abandono (> 60 días sin actividad de pagos y >= 3 meses sin cobertura pagada)
   const tieneMovimientoReciente =
-    !!ultimaFechaMovimiento &&
-    calcularDiferenciaDiasCalendario(ultimaFechaMovimiento, fechaReferencia) <= 60;
+    (!!ultimaFechaMovimiento &&
+      calcularDiferenciaDiasCalendario(ultimaFechaMovimiento, fechaReferencia) <= 60) ||
+    reactivacionReciente;
 
   if (maxPeriodoPagado) {
     const mesesSinCobertura = diferenciaMesesPeriodo(maxPeriodoPagado, ymActual);

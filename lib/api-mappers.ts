@@ -48,6 +48,7 @@ export interface BackendAlumnoDto {
   ultimaAsistencia?: string | null;
   activo?: boolean | null;
   estadoCuenta?: EstadoCuenta | null;
+  fechaReactivacion?: string | null;
   rutinaId?: number | null;
   rutinaNombre?: string | null;
   /** Versión de la ficha: se manda de vuelta al editar para no pisar cambios del otro titular. */
@@ -249,6 +250,7 @@ export function mapAlumnoDtoToFront(dto: BackendAlumnoDto): Alumno {
     planId: dto.planId != null ? String(dto.planId) : undefined,
     plan: dto.planNombre || "Sin plan",
     fechaAlta: dto.fechaAlta || new Date().toISOString().slice(0, 10),
+    fechaReactivacion: dto.fechaReactivacion || undefined,
     ultimaAsistencia: dto.ultimaAsistencia || undefined,
     activo: dto.activo ?? true,
     tieneRutina: dto.rutinaId != null,
