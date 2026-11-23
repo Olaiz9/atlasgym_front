@@ -61,6 +61,15 @@ describe("Etapa 3 - Resiliencia Offline Real del Tótem (Padrón Mínimo + Cola 
     expect(inactivo.ok).toBe(false);
     expect(inactivo.estadoCuenta).toBe("INACTIVO");
 
+    // 2b. Activo pero INACTIVO por no pagar hace 60+ días -> entra, como en el modo online
+    const abandono = resolverCheckInOfflineConPadron(
+      "38999000",
+      [...padronReal, { ...padronReal[0], alumnoId: 103, dni: "38999000", estadoCuenta: "INACTIVO", activo: true }],
+      [], ahora, "2026-10-31"
+    );
+    expect(abandono.ok).toBe(true);
+    expect(abandono.estadoCuenta).toBe("INACTIVO");
+
     // 3. Socio activo -> aprobado + genera asistencia local y evento Outbox con clientEventId único
     const exito = resolverCheckInOfflineConPadron("40.555.666", padronReal, [], ahora, "2026-10-31");
     expect(exito.ok).toBe(true);
