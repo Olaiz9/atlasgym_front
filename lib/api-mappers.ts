@@ -579,6 +579,7 @@ export function mapSesionDtoToFront(dto: BackendSesionResponseDto): SesionEntren
     fecha: dto.fecha,
     ejercicios: (dto.ejercicios || []).map((ej) => ({
       ejercicioId: ej.ejercicioId != null ? String(ej.ejercicioId) : "",
+      nombre: ej.nombreEjercicio || undefined,
       series: (ej.series || []).map((s) => ({
         serieNumero: s.serieNumero,
         kg: Number(s.kg || 0),
@@ -599,7 +600,7 @@ export function mapSesionFrontToRequestDto(sesion: Omit<SesionEntrenamiento, "id
     notas: null,
     ejercicios: (sesion.ejercicios || []).map((ej) => ({
       ejercicioId: parseNumericId(ej.ejercicioId),
-      nombreEjercicio: null,
+      nombreEjercicio: ej.nombre ?? null,
       series: (ej.series || []).map((s) => ({
         serieNumero: s.serieNumero,
         kg: s.kg,

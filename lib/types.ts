@@ -86,6 +86,8 @@ export interface RegistroSerie {
 /** Registro de todas las series de un ejercicio dentro de una sesión. */
 export interface SesionEjercicio {
   ejercicioId: string;
+  /** Nombre del ejercicio cuando se entrenó: la fila de la rutina puede cambiar de contenido al editarla. */
+  nombre?: string;
   series: RegistroSerie[];
 }
 
