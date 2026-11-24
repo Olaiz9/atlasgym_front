@@ -1,7 +1,7 @@
 'use client'
 
 import { HelpCircle, X, ExternalLink } from 'lucide-react'
-import { CONTACTO_ATLAS } from '@/lib/constants'
+import { CONTACTO_ATLAS, HORARIOS_ATLAS } from '@/lib/constants'
 import { useEscapeKey } from '@/lib/use-escape-key'
 import { GmailIcon, WhatsAppIcon, InstagramIcon } from '@/components/icons/brand-icons'
 
@@ -105,7 +105,7 @@ export function ModalCentroAyuda({ abierto, onCerrar }: ModalCentroAyudaProps) {
 
         <div className="mt-5 border-t border-slate-800/60 pt-3 text-center">
           <p className="text-xs text-slate-500">
-            Horario de atención: Lunes a Viernes 07:00 a 22:00 hs · Sábados 09:00 a 14:00 hs
+            Horario de atención: {HORARIOS_ATLAS.textoCompleto}
           </p>
         </div>
       </div>
