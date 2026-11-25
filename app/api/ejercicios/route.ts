@@ -66,6 +66,7 @@ export async function GET(request: Request) {
         [
           e.titulo,
           e.nombreIngles,
+          ...(e.sinonimos ?? []),
           e.descripcion,
           e.grupoMuscular,
           ...e.musculosPrincipales,

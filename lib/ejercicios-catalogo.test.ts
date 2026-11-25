@@ -95,5 +95,32 @@ describe('Catálogo de Ejercicios GIF y API', () => {
       expect(v.videoUrl).toContain('youtube')
     })
   })
+
+  it('traduce los 1.500 ejercicios al español sin palabras crudas en inglés (respetando la lista blanca de jerga argentina)', () => {
+    const prohibidasIngles =
+      /\b(with|legs|arms|chest|shoulder|shoulders|squat|squats|lunge|lunges|deadlift|deadlifts|bench|floor|rope|dumbbell|dumbbells|barbell|sled|stretch|kneeling|standing|seated|lying|male|female|pov|kickback|kickbacks|abduction|adduction|extension|extensions|raise|raises|row|rows|pulldown|pushdown|fly|flyes|dip|dips|shrug|shrugs|underhand|overhand|attachment|blaster|variation)\b/i
+
+    for (const ej of CATALOGO_EJERCICIOS_GIF) {
+      expect(ej.titulo, `Título con inglés sin traducir en ${ej.exerciseId}: "${ej.titulo}"`).not.toMatch(
+        prohibidasIngles
+      )
+    }
+  })
+
+  it('mapea cada variante clave al GIF verificado y permite encontrarla por sus sinónimos argentinos', () => {
+    const porId = (id: string) => CATALOGO_EJERCICIOS_GIF.find((e) => e.id === id || e.exerciseId === id)
+
+    expect(porId('x69MAlq')?.titulo).toContain('Pullover en Polea Alta')
+    expect(porId('2IxROQ1')?.titulo).toContain('Press Francés en Polea con Soga')
+    expect(porId('iaapw0g')?.titulo).toContain('con Barra Z')
+    expect(porId('YTur5nR')?.titulo).toContain('Curl de Bíceps a un Brazo en Polea Baja')
+    expect(porId('0xDpB4L')?.titulo).toContain('Sentado con Banda Elástica')
+    expect(porId('O95afRA')?.titulo).toContain('Pasos Laterales con Banda Elástica')
+    expect(porId('sVQCCeG')?.titulo).toContain('Sentadilla Isométrica en Pared')
+
+    expect(buscarVideoParaEjercicio('pasos laterales', CATALOGO_EJERCICIOS_GIF)?.id).toBe('cat-gluteos-8')
+    expect(buscarVideoParaEjercicio('sentadilla isométrica', CATALOGO_EJERCICIOS_GIF)?.id).toBe('cat-piernas-10')
+    expect(buscarVideoParaEjercicio('sillón de cuádriceps', CATALOGO_EJERCICIOS_GIF)?.id).toBe('cat-piernas-4')
+  })
 })
 
