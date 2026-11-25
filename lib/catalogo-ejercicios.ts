@@ -1,10 +1,25 @@
 // lib/catalogo-ejercicios.ts
 import { VideoTecnica } from './types'
 import rawExercises from './data/exercises.json'
+import nombresEjerciciosEs from './data/nombres-ejercicios-es.json'
 import { traducirNombre, traducirMusculo, traducirInstrucciones, generarDescripcionEspanol } from './traductor-ejercicios'
 
 export { type EjercicioCatalogo, CLASICOS_CURADOS } from './clasicos-curados'
 import { CLASICOS_CURADOS, EjercicioCatalogo } from './clasicos-curados'
+
+const MAPA_NOMBRES_ES = nombresEjerciciosEs as Record<string, string>
+
+export function obtenerNombreYSinonimosEs(exerciseId: string, rawName?: string): { titulo: string; sinonimos: string[] } {
+  const entrada = MAPA_NOMBRES_ES[exerciseId]
+  if (entrada) {
+    const [titulo, sinRaw] = entrada.split('|')
+    const sinonimos = sinRaw
+      ? sinRaw.split(',').map((s) => s.trim()).filter(Boolean)
+      : []
+    return { titulo: titulo.trim(), sinonimos }
+  }
+  return { titulo: traducirNombre(rawName || ''), sinonimos: [] }
+}
 
 const BODY_PART_MAP: Record<string, VideoTecnica['grupoMuscular']> = {
   chest: 'Pecho',
@@ -76,7 +91,7 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
     const rawEquip = (raw.equipments && raw.equipments[0]) ? String(raw.equipments[0]).toLowerCase() : 'body weight'
     const equipo = EQUIPMENT_MAP[rawEquip] || capitalizar(rawEquip)
 
-    const nombreTraducido = traducirNombre(raw.name)
+    const { titulo: nombreTraducido, sinonimos } = obtenerNombreYSinonimosEs(raw.exerciseId, raw.name)
     const instruccionesTraducidas = traducirInstrucciones(raw.instructions)
     const musculosPrincipalesTraducidos = Array.isArray(raw.targetMuscles)
       ? raw.targetMuscles.map(traducirMusculo)
@@ -97,6 +112,7 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
       exerciseId: raw.exerciseId,
       titulo: nombreTraducido,
       nombreIngles: raw.name,
+      sinonimos,
       grupoMuscular: grupo,
       duracion: 'Loop GIF',
       formato: 'GIF',
@@ -116,6 +132,9 @@ const EJERCICIOS_RESTANTES: EjercicioCatalogo[] = (rawExercises as any[])
  * Catálogo completo unificado de más de 1.500 ejercicios con demostraciones en bucle (GIF).
  */
 export const CATALOGO_EJERCICIOS_GIF: EjercicioCatalogo[] = [
-  ...CLASICOS_CURADOS,
+  ...CLASICOS_CURADOS.map((c) => ({
+    ...c,
+    sinonimos: c.sinonimos ?? obtenerNombreYSinonimosEs(c.exerciseId, c.nombreIngles).sinonimos,
+  })),
   ...EJERCICIOS_RESTANTES,
 ]
