@@ -122,5 +122,24 @@ describe('Catálogo de Ejercicios GIF y API', () => {
     expect(buscarVideoParaEjercicio('sentadilla isométrica', CATALOGO_EJERCICIOS_GIF)?.id).toBe('cat-piernas-10')
     expect(buscarVideoParaEjercicio('sillón de cuádriceps', CATALOGO_EJERCICIOS_GIF)?.id).toBe('cat-piernas-4')
   })
+  it('no repite títulos: cada ejercicio se distingue en el buscador', () => {
+    const vistos = new Map<string, string>()
+    for (const ej of CATALOGO_EJERCICIOS_GIF) {
+      const t = ej.titulo.toLowerCase()
+      expect(vistos.get(t), `"${ej.titulo}" repetido en ${vistos.get(t)} y ${ej.exerciseId}`).toBeUndefined()
+      vistos.set(t, ej.exerciseId)
+    }
+  })
+
+  it('los sinónimos corresponden al ejercicio (mariposa solo en aperturas, búlgara solo en la búlgara)', () => {
+    for (const ej of CATALOGO_EJERCICIOS_GIF) {
+      const sinonimos = (ej.sinonimos ?? []).join(', ').toLowerCase()
+      const ingles = (ej.nombreIngles ?? '').toLowerCase()
+      if (/mariposa|pec deck/.test(sinonimos)) expect(ingles, ej.exerciseId).toMatch(/fly|pec deck|butterfly/)
+      if (sinonimos.includes('sentadilla búlgara')) expect(ingles, ej.exerciseId).toMatch(/bulgarian|single leg split squat/)
+      if (sinonimos.includes('pullover en polea')) expect(ingles, ej.exerciseId).toMatch(/cable/)
+      if (sinonimos.includes('sillón aductor')) expect(ingles, ej.exerciseId).not.toMatch(/stretch/)
+    }
+  })
 })
 
