@@ -64,7 +64,10 @@ export function buscarVideoParaEjercicio(
   let mejorPuntaje = 0;
 
   for (const v of videos) {
-    const tituloNorm = normalizar(v.titulo);
+    const extras = Array.isArray((v as { sinonimos?: string[] }).sinonimos)
+      ? (v as { sinonimos?: string[] }).sinonimos!.join(' ')
+      : '';
+    const tituloNorm = normalizar(`${v.titulo} ${extras}`);
     const palabrasTitulo = tituloNorm.split(/[\s,\-–—/]+/).filter((w) => w.length > 2);
 
     let puntaje = 0;
