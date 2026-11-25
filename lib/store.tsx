@@ -1158,6 +1158,10 @@ function useGymStore(): AppDataContextValue {
         if (encontrado) plan = encontrado.nombre;
       }
       const alumnoActualizado: Alumno = { ...alumnoAnterior, ...cambios, planId, plan };
+      // Igual que el back: reactivar deja la fecha para la regla de 60 días (la respuesta del servidor la confirma).
+      if (cambios.activo === true && alumnoAnterior.activo === false) {
+        alumnoActualizado.fechaReactivacion = fechaLocalHoy();
+      }
 
       // La ref se actualiza ya, para que otra edición en el mismo instante parta de esta.
       alumnosRef.current = alumnosRef.current.map((a) => (a.id === id ? alumnoActualizado : a));
@@ -1401,7 +1405,9 @@ function useGymStore(): AppDataContextValue {
         alumnoId,
         listaPagos,
         alumno?.fechaAlta,
-        alumno ? alumno.activo : true
+        alumno ? alumno.activo : true,
+        undefined,
+        alumno?.fechaReactivacion
       );
       setAsistencias((asistPrev) => {
         const actualizadas = asistPrev.map((asist) =>
@@ -2094,7 +2100,9 @@ function useGymStore(): AppDataContextValue {
         alumnoId,
         pagos,
         alumno?.fechaAlta,
-        alumno ? alumno.activo : true
+        alumno ? alumno.activo : true,
+        undefined,
+        alumno?.fechaReactivacion
       );
     },
     [alumnos, pagos]

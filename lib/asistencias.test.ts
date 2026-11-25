@@ -165,11 +165,20 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
       },
     ]
 
-    it('devuelve todas las franjas de 07:00 a 22:00 hs', () => {
+    it('devuelve todas las franjas de 06:00 a 23:00 hs', () => {
       const dist = calcularDistribucionHoraria(asistencias)
-      expect(dist).toHaveLength(16) // 7 a 22 inclusive
-      expect(dist[0].etiqueta).toBe('07:00')
-      expect(dist[dist.length - 1].etiqueta).toBe('22:00')
+      expect(dist).toHaveLength(18) // 6 a 23 inclusive
+      expect(dist[0].etiqueta).toBe('06:00')
+      expect(dist[dist.length - 1].etiqueta).toBe('23:00')
+    })
+
+    it('incluye ingresos a las 06 y 23, sin contar horas fuera del rango', () => {
+      const entradas = ['05:59', '06:00', '06:59', '22:59', '23:00', '00:01'].map((hora, i) => ({ ...asistencias[0], id: String(i), hora }))
+      const dist = calcularDistribucionHoraria(entradas)
+      expect(dist.find(d => d.hora === 6)?.cantidad).toBe(2)
+      expect(dist.find(d => d.hora === 22)?.cantidad).toBe(1)
+      expect(dist.find(d => d.hora === 23)?.cantidad).toBe(1)
+      expect(dist.reduce((total, d) => total + d.cantidad, 0)).toBe(4)
     })
 
     it('acumula correctamente la cantidad y calcula el pico', () => {

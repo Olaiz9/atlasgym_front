@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
 import { Rutina, DiaRutina, Ejercicio, Alumno, RegistroSerie, SesionEjercicio, SesionEntrenamiento, VideoTecnica, TipoSerieEjercicio } from '@/lib/types'
-import { buscarVideoParaEjercicio, formatPrevia, obtenerBorradorEntrenamiento, diaInicialDeRutina, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
+import { buscarVideoParaEjercicio, ejercicioDeSesionPrevia, moverEnLista, formatPrevia, obtenerBorradorEntrenamiento, diaInicialDeRutina, limpiarBorradoresObsoletos, getClaveBorradorEntrenamiento, detectarConflictosAsignacionRutina } from '@/lib/rutina-utils'
 import { CONTACTO_ATLAS } from '@/lib/constants'
 import { fechaLocalHoy } from '@/lib/date-utils'
 import { reproducirSonidoFinDescanso, desbloquearAudioDescanso } from '@/lib/asistencia-utils'
@@ -798,6 +798,12 @@ function ModalNuevaRutina({
     )
   }
 
+  const moverEjercicio = (diaId: string, desde: number, hasta: number) => {
+    setDias((prev) =>
+      prev.map((d) => (d.id === diaId ? { ...d, ejercicios: moverEnLista(d.ejercicios, desde, hasta) } : d))
+    )
+  }
+
   const eliminarEjercicio = (diaId: string, ejId: string) => {
     setErrorValidacion(null)
     setDias((prev) =>
@@ -941,6 +947,7 @@ function ModalNuevaRutina({
                   onAgregarEjercicio={() => agregarEjercicioADia(dia.id)}
                   onActualizarEjercicio={(ejId, campo, valor) => actualizarEjercicio(dia.id, ejId, campo, valor)}
                   onEliminarEjercicio={(ejId) => eliminarEjercicio(dia.id, ejId)}
+                  onMoverEjercicio={(desde, hasta) => moverEjercicio(dia.id, desde, hasta)}
                 />
               ))}
             </div>
@@ -996,6 +1003,7 @@ function TarjetaDiaRutina({
   onAgregarEjercicio,
   onActualizarEjercicio,
   onEliminarEjercicio,
+  onMoverEjercicio,
 }: {
   dia: DiaRutina
   idx: number
@@ -1006,6 +1014,7 @@ function TarjetaDiaRutina({
   onAgregarEjercicio: () => void
   onActualizarEjercicio: (ejId: string, campo: string, valor: any) => void
   onEliminarEjercicio: (ejId: string) => void
+  onMoverEjercicio: (desde: number, hasta: number) => void
 }) {
   return (
     <div className="rounded-2xl border border-slate-700/80 border-l-4 border-l-blue-500 bg-slate-950/40 shadow-md overflow-hidden">
@@ -1054,16 +1063,38 @@ function TarjetaDiaRutina({
       </div>
 
       <div className="p-4 space-y-2.5">
-        {dia.ejercicios.map((ej) => (
+        {dia.ejercicios.map((ej, idxEj) => (
           <div key={ej.id} className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-2.5 shadow-sm">
-            {/* Fila superior: Nombre del ejercicio y botón eliminar */}
+            {/* Fila superior: orden, nombre del ejercicio y acciones */}
             <div className="flex items-center gap-2">
+              <div className="flex flex-col shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onMoverEjercicio(idxEj, idxEj - 1)}
+                  disabled={idxEj === 0}
+                  aria-label={`Subir ${ej.nombre || 'ejercicio'}`}
+                  title="Subir"
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 rounded p-0.5 disabled:opacity-25 disabled:hover:bg-transparent"
+                >
+                  <ChevronUp className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMoverEjercicio(idxEj, idxEj + 1)}
+                  disabled={idxEj === dia.ejercicios.length - 1}
+                  aria-label={`Bajar ${ej.nombre || 'ejercicio'}`}
+                  title="Bajar"
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 rounded p-0.5 disabled:opacity-25 disabled:hover:bg-transparent"
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              </div>
               <input
                 aria-label="Nombre del ejercicio"
                 value={ej.nombre}
                 onChange={(e) => onActualizarEjercicio(ej.id, 'nombre', e.target.value)}
                 placeholder="Nombre del ejercicio..."
-                className="flex-1 font-semibold outline-none text-white placeholder:text-slate-500 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/80 focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20"
+                className="flex-1 min-w-0 font-semibold outline-none text-white placeholder:text-slate-500 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/80 focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20"
               />
               <button
                 type="button"
@@ -1983,7 +2014,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
       const prevDia = getUltimaSesion(alumnoId, rutina.id, d.id)
       const diaInicial: Record<string, RegistroSerie[]> = {}
       d.ejercicios.forEach((ej) => {
-        const prevEj = prevDia?.ejercicios.find((e) => e.ejercicioId === ej.id)
+        const prevEj = ejercicioDeSesionPrevia(prevDia?.ejercicios, ej)
         diaInicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
           serieNumero: i + 1,
           kg: prevEj?.series[i]?.kg ?? 0,
@@ -2033,7 +2064,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
         const prevDia = getUltimaSesion(usuario.alumnoId || 'a1', rutina.id, nuevoDia.id)
         const diaInicial: Record<string, RegistroSerie[]> = {}
         nuevoDia.ejercicios.forEach((ej) => {
-          const prevEj = prevDia?.ejercicios.find((e) => e.ejercicioId === ej.id)
+          const prevEj = ejercicioDeSesionPrevia(prevDia?.ejercicios, ej)
           diaInicial[ej.id] = Array.from({ length: ej.series }, (_, i) => ({
             serieNumero: i + 1,
             kg: prevEj?.series[i]?.kg ?? 0,
@@ -2087,6 +2118,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
     if (!dia || !usuario.alumnoId) return
     const ejerciciosSesion: SesionEjercicio[] = dia.ejercicios.map((ej) => ({
       ejercicioId: ej.id,
+      nombre: ej.nombre,
       series: seriesPorEjercicio[ej.id] ?? [],
     }))
     guardarSesion({
@@ -2246,7 +2278,7 @@ function VistaMiRutinaAlumno({ rutina, usuario }: { rutina: Rutina; usuario: any
                 key={ejercicioActual.id}
                 ejercicio={ejercicioActual}
                 seriesData={seriesDe(ejercicioActual)}
-                sesionPrevia={sesionPrevia?.ejercicios.find((e) => e.ejercicioId === ejercicioActual.id)}
+                sesionPrevia={ejercicioDeSesionPrevia(sesionPrevia?.ejercicios, ejercicioActual)}
                 videos={videosTecnica}
                 onChange={(series) => handleChangeSeries(ejercicioActual.id, series)}
                 onIniciarDescanso={iniciarDescanso}

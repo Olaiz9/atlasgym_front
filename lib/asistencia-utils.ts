@@ -1,3 +1,4 @@
+import { HORARIOS_ATLAS } from "./constants";
 // lib/asistencia-utils.ts
 import { Alumno, Plan, RegistroAsistencia } from "./types";
 import { fechaLocalHoy, parsearFechaLocal, restarDiasFechaLocal } from "./date-utils";
@@ -221,11 +222,11 @@ export interface DistribucionHorariaItem {
 }
 
 /**
- * Calcula la distribución por hora de las asistencias (horarios de 07:00 a 22:00).
+ * Calcula la distribución por hora de las asistencias (según el horario habitual configurado).
  */
 export function calcularDistribucionHoraria(asistencias: RegistroAsistencia[]): DistribucionHorariaItem[] {
   const conteoPorHora: Record<number, number> = {};
-  for (let h = 7; h <= 22; h++) {
+  for (let h = HORARIOS_ATLAS.horaAperturaSemana; h <= HORARIOS_ATLAS.horaCierreSemana; h++) {
     conteoPorHora[h] = 0;
   }
 
@@ -233,7 +234,7 @@ export function calcularDistribucionHoraria(asistencias: RegistroAsistencia[]): 
     if (!a.hora) continue;
     const partes = a.hora.split(":");
     const h = parseInt(partes[0], 10);
-    if (!isNaN(h) && h >= 7 && h <= 22) {
+    if (!isNaN(h) && h >= HORARIOS_ATLAS.horaAperturaSemana && h <= HORARIOS_ATLAS.horaCierreSemana) {
       conteoPorHora[h] = (conteoPorHora[h] || 0) + 1;
     }
   }
@@ -241,7 +242,7 @@ export function calcularDistribucionHoraria(asistencias: RegistroAsistencia[]): 
   const maximo = Math.max(...Object.values(conteoPorHora), 1);
 
   const resultado: DistribucionHorariaItem[] = [];
-  for (let h = 7; h <= 22; h++) {
+  for (let h = HORARIOS_ATLAS.horaAperturaSemana; h <= HORARIOS_ATLAS.horaCierreSemana; h++) {
     const cant = conteoPorHora[h] || 0;
     resultado.push({
       hora: h,

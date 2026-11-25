@@ -1,5 +1,33 @@
 // lib/rutina-utils.ts
-import { RegistroSerie, VideoTecnica, Rutina, SesionEntrenamiento } from "./types";
+import { RegistroSerie, VideoTecnica, Rutina, SesionEntrenamiento, SesionEjercicio, Ejercicio } from "./types";
+
+const nombreComparable = (s?: string) =>
+  (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** Copia de la lista con el elemento de `desde` movido a `hasta` (sin cambios si `hasta` se sale). */
+export function moverEnLista<T>(lista: T[], desde: number, hasta: number): T[] {
+  if (desde < 0 || desde >= lista.length || hasta < 0 || hasta >= lista.length) return lista;
+  const copia = [...lista];
+  const [movido] = copia.splice(desde, 1);
+  copia.splice(hasta, 0, movido);
+  return copia;
+}
+
+/**
+ * Registro de la sesión anterior que corresponde a este ejercicio de la rutina.
+ * El back guarda las ediciones de la rutina por posición: si el profe reordena o borra un ejercicio,
+ * el mismo id pasa a ser otro ejercicio. Por eso el id solo vale si el nombre coincide; si no, se busca por nombre.
+ */
+export function ejercicioDeSesionPrevia(
+  previos: SesionEjercicio[] | undefined,
+  ej: Pick<Ejercicio, "id" | "nombre">
+): SesionEjercicio | undefined {
+  if (!previos) return undefined;
+  const nombre = nombreComparable(ej.nombre);
+  const porId = previos.find((p) => p.ejercicioId === ej.id);
+  if (porId && (!porId.nombre || nombreComparable(porId.nombre) === nombre)) return porId;
+  return previos.find((p) => nombreComparable(p.nombre) === nombre);
+}
 
 /**
  * Busca un video de técnica en el catálogo cuyo título coincida
@@ -36,7 +64,10 @@ export function buscarVideoParaEjercicio(
   let mejorPuntaje = 0;
 
   for (const v of videos) {
-    const tituloNorm = normalizar(v.titulo);
+    const extras = Array.isArray((v as { sinonimos?: string[] }).sinonimos)
+      ? (v as { sinonimos?: string[] }).sinonimos!.join(' ')
+      : '';
+    const tituloNorm = normalizar(`${v.titulo} ${extras}`);
     const palabrasTitulo = tituloNorm.split(/[\s,\-–—/]+/).filter((w) => w.length > 2);
 
     let puntaje = 0;

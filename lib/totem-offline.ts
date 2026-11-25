@@ -160,7 +160,9 @@ export function resolverCheckInOfflineConPadron(
     tieneRutina: false,
   };
 
-  if (!item.activo || item.estadoCuenta === "INACTIVO") {
+  // Igual que online: solo se rechaza al socio dado de baja. El que no paga hace 60+ días entra
+  // (el tótem nunca frena el ingreso) y queda la alerta para que el titular hable con él.
+  if (!item.activo) {
     return {
       ok: false,
       alumno,

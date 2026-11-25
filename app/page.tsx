@@ -1,6 +1,8 @@
 // app/page.tsx
 'use client'
 
+import { HORARIOS_ATLAS } from '@/lib/constants'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
@@ -252,9 +254,9 @@ function HomeAlumno({ usuario, fechaHoy }: { usuario: UsuarioSesion; fechaHoy: D
             <section aria-labelledby="titulo-horarios" className="hidden flex-col gap-2 md:flex">
               <h2 id="titulo-horarios" className="text-lg font-semibold text-white">Horarios</h2>
               <p className="text-sm leading-relaxed text-slate-400">
-                Lunes a viernes de 07:00 a 22:00
+                Lunes a viernes de {HORARIOS_ATLAS.semana}
                 <br />
-                Sábados de 09:00 a 14:00
+                Sábados de {HORARIOS_ATLAS.sabado}
               </p>
             </section>
           </aside>

@@ -1,6 +1,8 @@
 // app/asistencias/page.tsx
 'use client'
 
+import { HORARIOS_ATLAS } from '@/lib/constants'
+
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useAppData } from '@/lib/store'
@@ -580,7 +582,7 @@ export default function AsistenciasPage() {
             <div>
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Clock className="size-4 text-blue-400" />
-                Distribución por franja horaria (07:00 a 22:00 hs)
+                Distribución por franja horaria ({HORARIOS_ATLAS.semana})
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Visualizá las horas con mayor y menor afluencia para organizar profesores en sala.
@@ -660,11 +662,11 @@ export default function AsistenciasPage() {
                 })}
               </div>
               <div className="flex items-center justify-between text-xs text-slate-500 mt-2 px-1">
-                <span>Apertura (07:00 hs)</span>
+                <span>Apertura ({HORARIOS_ATLAS.aperturaSemana} hs)</span>
                 <span className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-amber-500" /> Hora pico destacada
                 </span>
-                <span>Cierre (22:00 hs)</span>
+                <span>Cierre ({HORARIOS_ATLAS.cierreSemana} hs)</span>
               </div>
             </div>
           </div>
