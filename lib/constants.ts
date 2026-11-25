@@ -4,7 +4,7 @@ const horaCierreSemana = 23;
 const aperturaSemana = horaAperturaSemana.toString().padStart(2, "0") + ":00";
 const cierreSemana = horaCierreSemana.toString().padStart(2, "0") + ":00";
 const semana = aperturaSemana + " a " + cierreSemana + " hs";
-const sabado = "09:00 a 14:00 hs";
+const sabado = "08:00 a 13:00 hs";
 
 export const HORARIOS_ATLAS = {
   horaAperturaSemana,
