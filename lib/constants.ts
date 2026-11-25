@@ -1,7 +1,19 @@
+// Horario habitual de lunes a viernes; también define las franjas del gráfico.
+const horaAperturaSemana = 6;
+const horaCierreSemana = 23;
+const aperturaSemana = horaAperturaSemana.toString().padStart(2, "0") + ":00";
+const cierreSemana = horaCierreSemana.toString().padStart(2, "0") + ":00";
+const semana = aperturaSemana + " a " + cierreSemana + " hs";
+const sabado = "08:00 a 13:00 hs";
+
 export const HORARIOS_ATLAS = {
-  semana: "07:00 a 22:00 hs",
-  sabado: "09:00 a 14:00 hs",
-  textoCompleto: "Lunes a Viernes: 07:00 a 22:00 hs · Sábados: 09:00 a 14:00 hs",
+  horaAperturaSemana,
+  horaCierreSemana,
+  aperturaSemana,
+  cierreSemana,
+  semana,
+  sabado,
+  textoCompleto: "Lunes a Viernes: " + semana + " · Sábados: " + sabado,
 };
 
 export const CONTACTO_ATLAS = {
