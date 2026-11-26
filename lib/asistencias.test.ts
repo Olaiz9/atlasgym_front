@@ -8,6 +8,8 @@ import {
   filtrarAsistenciasActivas,
   calcularDistribucionHoraria,
   calcularDistribucionSemanal,
+  calcularResumenSemanalPersonas,
+  calcularResumenPeriodoAsistencias,
   obtenerUltimos7Dias,
   reproducirSonidoFinDescanso,
   extraerLimiteDiasSemana,
@@ -469,6 +471,36 @@ describe('Módulo de Asistencias y Caducidad de Sesiones (1h 40m)', () => {
       expect(recortada).toHaveLength(500)
       expect(recortada.every((r) => r.fecha >= '2026-10-24')).toBe(true)
       expect(recortada[0].timestamp).toBeGreaterThan(recortada[499].timestamp)
+    })
+
+    it('calcularResumenSemanalPersonas cuenta personas individuales sin duplicar múltiples visitas en la semana', () => {
+      // Semana del lunes 2026-11-23 al jueves 2026-11-26 (hoy)
+      // Semana anterior: lunes 2026-11-16 al domingo 2026-11-22
+      const registros: RegistroAsistencia[] = [
+        // Socio 1 vino lunes, martes y jueves (2 veces el jueves) -> 4 ingresos, 1 persona esta semana y 1 hoy
+        { ...hoy1, id: 'r1', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-23', timestamp: 100 },
+        { ...hoy1, id: 'r2', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-24', timestamp: 200 },
+        { ...hoy1, id: 'r3', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-26', timestamp: 300 },
+        { ...hoy1, id: 'r4', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-26', timestamp: 400 },
+        // Socio 2 vino miércoles -> 1 ingreso, 1 persona esta semana
+        { ...hoy1, id: 'r5', alumnoId: 'a2', alumnoDni: '35222333', fecha: '2026-11-25', timestamp: 500 },
+        // Socio 3 vino jueves (hoy) -> 1 ingreso, 1 persona esta semana y 1 hoy
+        { ...hoy1, id: 'r6', alumnoId: 'a3', alumnoDni: '40333444', fecha: '2026-11-26', timestamp: 600 },
+        // Semana pasada: Socio 1 (2 veces) y Socio 4 (1 vez) -> 2 personas semana anterior
+        { ...hoy1, id: 'r7', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-17', timestamp: 50 },
+        { ...hoy1, id: 'r8', alumnoId: 'a1', alumnoDni: '30111222', fecha: '2026-11-19', timestamp: 60 },
+        { ...hoy1, id: 'r9', alumnoId: 'a4', alumnoDni: '42555666', fecha: '2026-11-20', timestamp: 70 },
+      ]
+
+      const resumen = calcularResumenSemanalPersonas(registros, '2026-11-26')
+      expect(resumen.personasUnicas).toBe(3)
+      expect(resumen.ingresosTotales).toBe(6)
+      expect(resumen.personasUnicasHoy).toBe(2)
+      expect(resumen.personasSemanaAnterior).toBe(2)
+
+      const resumenPeriodo = calcularResumenPeriodoAsistencias(registros.slice(0, 6))
+      expect(resumenPeriodo.ingresos).toBe(6)
+      expect(resumenPeriodo.personasUnicas).toBe(3)
     })
   })
 })

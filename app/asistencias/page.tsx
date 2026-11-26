@@ -10,6 +10,8 @@ import {
   filtrarAsistenciasActivas,
   calcularDistribucionHoraria,
   calcularDistribucionSemanal,
+  calcularResumenSemanalPersonas,
+  calcularResumenPeriodoAsistencias,
   formatearTiempoEnSala,
   calcularMinutosTranscurridos,
   obtenerUltimos7Dias,
@@ -178,6 +180,10 @@ export default function AsistenciasPage() {
     return calcularDistribucionSemanal(asistencias)
   }, [asistencias])
 
+  const resumenSemanalPersonas = useMemo(() => {
+    return calcularResumenSemanalPersonas(asistencias, hoyFechaStr)
+  }, [asistencias, hoyFechaStr])
+
   // Etiqueta legible del día del gráfico seleccionado
   const etiquetaDiaGrafico = useMemo(() => {
     if (diaGrafico === 'SEMANA_COMPLETA') return 'Últimos 7 días'
@@ -207,14 +213,31 @@ export default function AsistenciasPage() {
     return Math.round((alDia / asistenciasHoy.length) * 100)
   }, [asistenciasHoy, getEstadoCuenta])
 
+  const fechasUltimos7DiasSet = useMemo(() => new Set(ultimos7Dias.map((d) => d.fecha)), [ultimos7Dias])
+
+  const conteoPorFechaHistorial = useMemo(() => {
+    const mapa = new Map<string, number>()
+    for (const a of asistencias) {
+      if (!a.fecha) continue
+      mapa.set(a.fecha, (mapa.get(a.fecha) ?? 0) + 1)
+    }
+    return mapa
+  }, [asistencias])
+
+  const asistenciasUltimos7Dias = useMemo(() => {
+    return asistencias.filter((a) => fechasUltimos7DiasSet.has(a.fecha))
+  }, [asistencias, fechasUltimos7DiasSet])
+
   // Lista filtrada para la tabla de historial (con filtro de fecha, estado de cuota y exceso de plan)
   const listaFiltrada = useMemo(() => {
     let base = asistencias
     if (filtroFechaHistorial === 'HOY') {
-      base = base.filter((a) => a.fecha === hoyFechaStr)
+      base = asistenciasHoy
+    } else if (filtroFechaHistorial === 'TODOS') {
+      base = asistenciasUltimos7Dias
     } else if (filtroFechaHistorial === 'RANGO_PERSONALIZADO') {
       base = base.filter((a) => a.fecha >= rangoDesde && a.fecha <= rangoHasta)
-    } else if (filtroFechaHistorial !== 'TODOS') {
+    } else {
       base = base.filter((a) => a.fecha === filtroFechaHistorial)
     }
 
@@ -239,6 +262,8 @@ export default function AsistenciasPage() {
     )
   }, [
     asistencias,
+    asistenciasHoy,
+    asistenciasUltimos7Dias,
     filtroFechaHistorial,
     rangoDesde,
     rangoHasta,
@@ -248,6 +273,20 @@ export default function AsistenciasPage() {
     getEstadoCuenta,
     cupoPorAsistenciaId,
   ])
+
+  const resumenHistorial = useMemo(() => {
+    return calcularResumenPeriodoAsistencias(listaFiltrada)
+  }, [listaFiltrada])
+
+  const etiquetaPeriodoHistorial = useMemo(() => {
+    if (filtroFechaHistorial === 'HOY') return 'Hoy'
+    if (filtroFechaHistorial === 'TODOS') return 'Últimos 7 días'
+    if (filtroFechaHistorial === 'RANGO_PERSONALIZADO') {
+      return `Rango ${formatFechaAR(rangoDesde)} al ${formatFechaAR(rangoHasta)}`
+    }
+    const diaEncontrado = ultimos7Dias.find((d) => d.fecha === filtroFechaHistorial)
+    return diaEncontrado ? `${diaEncontrado.etiqueta} (${diaEncontrado.diaNombre})` : formatFechaAR(filtroFechaHistorial)
+  }, [filtroFechaHistorial, rangoDesde, rangoHasta, ultimos7Dias])
 
   const exportarCSV = () => {
     if (listaFiltrada.length === 0) return
@@ -420,17 +459,31 @@ export default function AsistenciasPage() {
           </div>
         </div>
 
-        <section aria-label="Resumen de la sala" className="flex items-center gap-4 rounded-2xl bg-[#162A50] p-4 md:max-w-2xl">
-          <div className="flex-1">
-            <p className="text-[13px] text-slate-400">Entrenando ahora</p>
-            <p className="mt-0.5 font-display text-5xl font-bold leading-none text-white">{sociosEnSala.length}</p>
-          </div>
-          <dl className="flex flex-[1.3] flex-col gap-2 text-[13px]">
-            <div className="flex justify-between gap-2"><dt className="text-slate-400">Ingresos hoy</dt><dd className="font-bold">{asistenciasHoy.length}</dd></div>
-            <div className="flex justify-between gap-2"><dt className="text-slate-400">Con cuota paga</dt><dd className="font-bold">{porcentajeAlDiaHoy} %</dd></div>
-            <div className="flex justify-between gap-2"><dt className="text-slate-400">Pico del día</dt><dd className="font-bold">{picoCorto}</dd></div>
-          </dl>
-        </section>
+        <div className="grid gap-3.5 md:grid-cols-2 md:gap-4">
+          <section aria-label="Resumen de la sala" className="flex items-center gap-4 rounded-2xl bg-[#162A50] p-4">
+            <div className="flex-1">
+              <p className="text-[13px] text-slate-400">Entrenando ahora</p>
+              <p className="mt-0.5 font-display text-5xl font-bold leading-none text-white">{sociosEnSala.length}</p>
+            </div>
+            <dl className="flex flex-[1.3] flex-col gap-2 text-[13px]">
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Ingresos hoy</dt><dd className="font-bold">{asistenciasHoy.length}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Con cuota paga</dt><dd className="font-bold">{porcentajeAlDiaHoy} %</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Pico del día</dt><dd className="font-bold">{picoCorto}</dd></div>
+            </dl>
+          </section>
+
+          <section aria-label="Personas en la semana" className="flex items-center gap-4 rounded-2xl bg-[#162A50] p-4">
+            <div className="flex-1">
+              <p className="text-[13px] text-slate-400">Personas esta semana</p>
+              <p className="mt-0.5 font-display text-5xl font-bold leading-none text-white">{resumenSemanalPersonas.personasUnicas}</p>
+            </div>
+            <dl className="flex flex-[1.3] flex-col gap-2 text-[13px]">
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Ingresos semana</dt><dd className="font-bold">{resumenSemanalPersonas.ingresosTotales}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Personas hoy</dt><dd className="font-bold">{resumenSemanalPersonas.personasUnicasHoy}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-slate-400">Semana pasada</dt><dd className="font-bold">{resumenSemanalPersonas.personasSemanaAnterior}</dd></div>
+            </dl>
+          </section>
+        </div>
 
         <div role="group" aria-label="Filtrar" className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0">
           {pestanas.map((p) => {
@@ -517,9 +570,11 @@ export default function AsistenciasPage() {
             >
               <option value="HOY">Hoy ({asistenciasHoy.length})</option>
               {ultimos7Dias.slice(1).map((d) => (
-                <option key={d.fecha} value={d.fecha}>{d.etiqueta} - {d.diaNombre}</option>
+                <option key={d.fecha} value={d.fecha}>
+                  {d.etiqueta} - {d.diaNombre} ({conteoPorFechaHistorial.get(d.fecha) ?? 0})
+                </option>
               ))}
-              <option value="TODOS">Últimos cargados ({asistencias.length})</option>
+              <option value="TODOS">Últimos cargados ({asistenciasUltimos7Dias.length})</option>
               <option value="RANGO_PERSONALIZADO">Consultar rango histórico...</option>
             </select>
             {filtroFechaHistorial === 'RANGO_PERSONALIZADO' && (
@@ -560,6 +615,24 @@ export default function AsistenciasPage() {
                 {f.label}
               </button>
             ))}
+          </div>
+
+          <div
+            aria-label="Resumen del período seleccionado"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#22396A] bg-[#162A50] px-4 py-3 text-[13px]"
+          >
+            <span className="font-semibold text-slate-300">{etiquetaPeriodoHistorial}</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-slate-400">
+                {filtroFechaHistorial === 'TODOS' || filtroFechaHistorial === 'RANGO_PERSONALIZADO'
+                  ? 'Total de ingresos:'
+                  : 'Ingresos del día:'}{' '}
+                <strong className="font-bold text-white">{resumenHistorial.ingresos}</strong>
+              </span>
+              <span className="text-slate-400">
+                Personas únicas: <strong className="font-bold text-white">{resumenHistorial.personasUnicas}</strong>
+              </span>
+            </div>
           </div>
           {listaFiltrada.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-500">No se encontraron registros de asistencia para los filtros seleccionados.</p>
