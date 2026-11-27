@@ -305,6 +305,89 @@ export function calcularDistribucionSemanal(asistencias: RegistroAsistencia[]): 
   });
 }
 
+export interface ResumenSemanalPersonas {
+  /** Cantidad de personas distintas (socios únicos) que asistieron desde el lunes de la semana actual hasta hoy. */
+  personasUnicas: number;
+  /** Cantidad total de ingresos (fichajes) registrados desde el lunes de la semana actual hasta hoy. */
+  ingresosTotales: number;
+  /** Cantidad de personas distintas que asistieron en el día de hoy. */
+  personasUnicasHoy: number;
+  /** Cantidad de personas distintas que asistieron durante la semana anterior completa (lunes a domingo). */
+  personasSemanaAnterior: number;
+}
+
+function clavePersonaAsistencia(a: RegistroAsistencia): string {
+  const id = a.alumnoId?.trim();
+  if (id) return `id:${id}`;
+  const dni = normalizarDni(a.alumnoDni);
+  if (dni) return `dni:${dni}`;
+  const nombre = a.alumnoNombre?.trim().toLowerCase();
+  if (nombre) return `nom:${nombre}`;
+  return `reg:${a.id}`;
+}
+
+/**
+ * Calcula cuántas personas individuales (sin duplicar a quien vino varios días o doble turno)
+ * asistieron en la semana ISO actual (lunes a hoy), hoy y en la semana anterior.
+ */
+export function calcularResumenSemanalPersonas(
+  asistencias: RegistroAsistencia[],
+  fechaHoyStr: string = fechaLocalHoy()
+): ResumenSemanalPersonas {
+  const lunesActual = inicioSemanaLunes(fechaHoyStr);
+  const lunesAnterior = restarDiasFechaLocal(lunesActual, 7);
+  const domingoAnterior = restarDiasFechaLocal(lunesActual, 1);
+
+  const personasSemana = new Set<string>();
+  const personasHoy = new Set<string>();
+  const personasSemanaPasada = new Set<string>();
+  let ingresosTotales = 0;
+
+  for (const a of asistencias) {
+    if (!a.fecha) continue;
+    const clave = clavePersonaAsistencia(a);
+
+    if (a.fecha >= lunesActual && a.fecha <= fechaHoyStr) {
+      ingresosTotales++;
+      personasSemana.add(clave);
+    }
+    if (a.fecha === fechaHoyStr) {
+      personasHoy.add(clave);
+    }
+    if (a.fecha >= lunesAnterior && a.fecha <= domingoAnterior) {
+      personasSemanaPasada.add(clave);
+    }
+  }
+
+  return {
+    personasUnicas: personasSemana.size,
+    ingresosTotales,
+    personasUnicasHoy: personasHoy.size,
+    personasSemanaAnterior: personasSemanaPasada.size,
+  };
+}
+
+export interface ResumenPeriodoAsistencias {
+  ingresos: number;
+  personasUnicas: number;
+}
+
+/**
+ * Calcula el total de ingresos y la cantidad de personas únicas dentro de una lista de asistencias filtrada.
+ */
+export function calcularResumenPeriodoAsistencias(
+  asistencias: RegistroAsistencia[]
+): ResumenPeriodoAsistencias {
+  const personas = new Set<string>();
+  for (const a of asistencias) {
+    personas.add(clavePersonaAsistencia(a));
+  }
+  return {
+    ingresos: asistencias.length,
+    personasUnicas: personas.size,
+  };
+}
+
 /**
  * Sintetizador de tonos de audio nativo con Web Audio API.
  * 100% autónomo: no requiere descargar archivos de audio externos.
